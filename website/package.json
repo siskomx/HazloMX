@@ -1,0 +1,13 @@
+{
+  "name": "hazlo-mexa-website",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/preview.mjs",
+    "test": "node --test scripts/site.test.mjs"
+  }
+}

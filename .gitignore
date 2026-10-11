@@ -1,6 +1,7 @@
 /target/
 node_modules/
 /dist/
+website/dist/
 .env
 .env.*
 !.env.example

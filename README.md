@@ -1,4 +1,4 @@
-# HazloMX
+# Hazlo Mexa
 
 A Windows-first, open-source desktop interface for AI-assisted DIY and engineering workflows, planned around Rust and Tauri.
 
@@ -12,5 +12,9 @@ Repository identities, licenses, provider access, and Windows compatibility rema
 
 ## License
 
-HazloMX's original code is licensed under the [MIT License](LICENSE).
+Hazlo Mexa's original code is licensed under the [MIT License](LICENSE).
 Third-party applications and dependencies retain their own licenses.
+
+## Website
+
+The [landing page](website/) is ready for Cloudflare Pages. See [website setup and hosting](website/README.md) for build, preview, and deployment settings.
