@@ -1,0 +1,26 @@
+{
+  "guest_stopped": true,
+  "main_native_jobs": 21,
+  "ordinary_user_native_jobs": 2,
+  "main_export_files_independently_matched": 704,
+  "ordinary_export_files_independently_matched": 67,
+  "all_prelaunch_inputs_unchanged": true,
+  "captured_source_entries_verified_unchanged": 138,
+  "source_manifest_sha256": "d98571aa20b046e9cc2263d5ac0ce534239ef776e82d06ba4635e83af0453d2d",
+  "native_ui_automation": false,
+  "signed_in_agents": false,
+  "live_unsaved_document_editing": false,
+  "freecad_new_solid_job_in_this_guest": false,
+  "ordinary_user_scope": [
+    "per-user lifecycle",
+    "installed helper transport",
+    "two native KiCad jobs and recovery",
+    "hidden startup",
+    "project/app-data preservation"
+  ],
+  "tool_catalog_hosted_by_current_linked_harness": 17,
+  "raw_logs_profiles_and_projects_private": true,
+  "ordinary_fixture_input_manifest_sha256": "852e6f8a1bbdfa1b1eab150f09e646833bb5bc540f0d6cf5b6f894a0455f0489",
+  "ordinary_fixture_input_files": 8,
+  "retained_fixture_source_matches_executed_inputs": true
+}

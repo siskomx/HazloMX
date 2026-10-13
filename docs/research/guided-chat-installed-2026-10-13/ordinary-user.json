@@ -1,0 +1,18 @@
+{
+  "installer_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "binaries_match_package": true,
+  "native_kicad_recovery": true,
+  "approval_driver": "shared_backend_test",
+  "signed_in_agents": false,
+  "current_user_install": true,
+  "hidden_startup_pass": true,
+  "same_version_update": true,
+  "administrator_group_absent": true,
+  "installed_helper_protocol_pass": true,
+  "uninstalled": true,
+  "ordinary_nonadministrator": true,
+  "pass": true,
+  "native_ui_automation": false,
+  "native_kicad_completed_jobs": 2,
+  "user_files_preserved": true
+}

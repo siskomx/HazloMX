@@ -1,0 +1,10 @@
+{
+  "initial_fixture_attempt_passed": false,
+  "phase": "project preparation before installation",
+  "debug_harness_imports_vcruntime140": true,
+  "initial_fixture_omitted_runtime": true,
+  "loader_exit_code_not_captured": true,
+  "correction": "Supply the previously verified DLL locally beside the debug harnesses; use a fresh ordinary test account.",
+  "corrected_fixture_passed": true,
+  "host_accounts_changed": false
+}

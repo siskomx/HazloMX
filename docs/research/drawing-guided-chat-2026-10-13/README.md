@@ -1,5 +1,7 @@
 # Guided circle measurements
 
+The same installer now has [fresh guest and ordinary-user acceptance](../guided-chat-installed-2026-10-13/README.md): 21 native main-gate jobs plus two ordinary-user KiCad jobs, lifecycle and independent closed-export checks. The guest is stopped. The pending statements below describe the earlier host-only checkpoint; native guided-chat interaction remains unverified.
+
 Guided chat now gathers a circle's full width and horizontal/vertical center position after source discovery. Each answer requires a number and an explicit metric or imperial unit. Unknown dimensions stay unknown; invalid or unsupported inputs preserve the draft. Negative center positions are accepted, while diameter must be positive.
 
 The caller converts confirmed values into the draft's current measurement unit, using the existing conversion and proposal flow. Chat does not prepare or approve an operation. Pending clarification clears on project/source/runtime/provider/workflow/new-conversation changes. Running or awaiting-approval jobs refuse draft edits.
