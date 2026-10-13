@@ -1,5 +1,7 @@
 # Connect external agents to Hazlo Mexa tools
 
+Verified PCB report reads redact the internal source folder before returning content to an agent. `sha256` still binds the actual saved report for follow-up proposals; `content_sha256` hashes the returned text, and `private_paths_redacted` identifies this projection. Saved reports and native validation remain unchanged.
+
 This connects an external agent to the running desktop's tools. The source also includes embedded Claude Code and Codex conversation routes; native, signed-in and installed acceptance remains unfinished. The seventeen current source tools read capabilities/status, propose a rectangular FreeCAD solid in metric/imperial units or Arduino Uno compilation, inspect selected sketches/schematics/PCBs, propose sketch/component/PCB placement/CAD/drawing/slicing changes and re-read verified completed results. Other engineering tool surfaces are unfinished.
 
 The current fifteen-tool installer includes the connector beside the desktop. [Fresh guest previous-build upgrade/native KiCad evidence](research/installer-upgrade-2026-10-12/README.md) verifies old/new exact bytes, SDK calls before/after update, two actual approved KiCad jobs through the installed connector, readback/recovery and project-preserving uninstall. Approval uses the shared backend test driver. Native desktop UI, other installed engineering workflows and signed-in conversations remain unfinished.

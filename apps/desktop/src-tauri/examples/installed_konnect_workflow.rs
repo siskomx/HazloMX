@@ -151,6 +151,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let context =
                 json!({"selection":selection,"base_job_id":id,"result_sha256":read["sha256"]});
             if pcb {
+                use sha2::Digest;
+                assert_eq!(read["private_paths_redacted"], true);
+                let content = read["content"]
+                    .as_str()
+                    .ok_or("Missing projected PCB report")?;
+                let public: serde_json::Value = serde_json::from_str(content)?;
+                assert_eq!(
+                    public["verification_input"]["source_root"],
+                    "private source folder"
+                );
+                assert_eq!(
+                    read["content_sha256"],
+                    format!("{:x}", sha2::Sha256::digest(content.as_bytes()))
+                );
+                assert_ne!(read["content_sha256"], read["sha256"]);
                 let expected_x = if index == 0 { 203.34 } else { 205.0 };
                 let actual = call("inspect_selected_pcb", context.clone()).await?;
                 let component = actual["components"]
