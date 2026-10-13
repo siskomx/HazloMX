@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "package_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "installed_app_sha256": "f46d60bea1f662862e70f4e27202af895571277c29f0cfa630f45a1c84a871c2",
+  "interaction": "native installed Windows UI; owned local project; computer-use skill",
+  "observed": [
+    "project folder picker",
+    "nine workflow choices",
+    "CADCraft CLI picker",
+    "drawing source picker and native inspection",
+    "guided diameter then horizontal then vertical questions",
+    "imperial answer converted to metric draft",
+    "explicit proposal preview",
+    "cancel before approval; zero published artifact files at cancellation",
+    "fresh proposal and explicit UI approval",
+    "completed and cancelled history displayed"
+  ],
+  "input_answers": [
+    "añade un círculo",
+    "1 pulgada",
+    "-5 mm",
+    "0 mm"
+  ],
+  "saved_circle_mm": {
+    "center_x": -5,
+    "center_y": 0,
+    "diameter": 25.4,
+    "radius": 12.7
+  },
+  "job_phases": [
+    "cancelled",
+    "completed"
+  ],
+  "native_circle_readback": {
+    "before_matches": 0,
+    "edited_matches": 1,
+    "final_matches": 1
+  },
+  "output_summary": {
+    "entity_count": 2,
+    "counts": {
+      "Circle": 2
+    },
+    "extents": [
+      [
+        -17.7,
+        -12.7
+      ],
+      [
+        10.0,
+        12.7
+      ]
+    ]
+  },
+  "warnings": [],
+  "source_and_imported_original_hash_match": true,
+  "published_output_and_preview_hash_match": true,
+  "independent_saved_dxf_circle_check": true,
+  "model_inference": false,
+  "unverified": [
+    "signed-in agent conversation",
+    "live unsaved document editing",
+    "running-process cancellation via native UI",
+    "other eight workflows via native UI",
+    "artifact opening buttons",
+    "native restart history recovery"
+  ],
+  "tooling_recovery": [
+    "sky launch failed twice before starting app directly",
+    "capture composition failure recovered after target activation",
+    "native WebView dropdown used keyboard confirmation"
+  ]
+}
