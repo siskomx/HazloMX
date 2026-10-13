@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "package_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "installed_app_sha256": "f46d60bea1f662862e70f4e27202af895571277c29f0cfa630f45a1c84a871c2",
+  "freecad_version": "1.1.4",
+  "interaction": "installed Windows UI through computer-use skill; owned project and selected runtime",
+  "observed": [
+    "native FreeCAD runtime picker",
+    "empty initial manual dimensions",
+    "preparation disabled until all dimensions confirmed",
+    "imperial measurement selection",
+    "2 x 1 x 0.5 inch entry",
+    "3D proposal preview with imperial and metric sizes",
+    "explicit approval",
+    "completed native publication",
+    "FCStd opening in selected FreeCAD",
+    "native editable box properties visible",
+    "STEP opening in selected FreeCAD",
+    "imported STEP visible after Fit All"
+  ],
+  "dimensions_in": {
+    "length": 2,
+    "width": 1,
+    "height": 0.5
+  },
+  "dimensions_mm": {
+    "length": 50.8,
+    "width": 25.4,
+    "height": 12.7
+  },
+  "geometry": {
+    "bounds_mm": [
+      50.8,
+      25.4,
+      12.7
+    ],
+    "volume_mm3": 16387.064,
+    "solids": 1
+  },
+  "saved_fcstd_type": "Part::Box",
+  "saved_fcstd_dimensions_match": true,
+  "step_signature_valid": true,
+  "persisted_job_phase": "completed",
+  "prior_artifact_files_unchanged": 92,
+  "published_files": [
+    {
+      "name": "input.json",
+      "bytes": 127,
+      "sha256": "7bb55b548c218761ee2ebbf3f41ded4fccf003a4e8c71ef6fe50046643f38f09"
+    },
+    {
+      "name": "result.json",
+      "bytes": 333,
+      "sha256": "d448335436a1f44851229ef3a504a5336fa03ba53c7040a5aa8d275879e3c84f"
+    },
+    {
+      "name": "solid.FCStd",
+      "bytes": 3025,
+      "sha256": "05f3fce906fd40b8aa6eb7b5c996007d710e6d422dbaac0be20091fec20f66cd"
+    },
+    {
+      "name": "solid.step",
+      "bytes": 6881,
+      "sha256": "c334d71dc77aa5e6d3bace5d38646b78b87ba9be4fc108aa29aac3588930f725"
+    }
+  ],
+  "model_inference": false,
+  "scope_limits": [
+    "manual measurement workflow; no signed-in chat",
+    "STEP import needed Fit All for framing",
+    "FreeCAD menu targeting unreliable; no axonometric STEP claim",
+    "owned STEP viewer stopped by exact-process cleanup",
+    "no live unsaved edit or CADPilot GUI-save fidelity claim"
+  ]
+}
