@@ -6,4 +6,4 @@ The caller converts confirmed values into the draft's current measurement unit, 
 
 Focused parser assertions and the nine-workflow headless browser regression passed, covering multi-turn circle entry, converted draft values, missing/invalid inputs, no implicit preparation and new-conversation reset. TypeScript and the production frontend build pass. Screenshots remain private in the ignored test output.
 
-The final regression rerun also passed after redundant reset statements were removed. The installer rebuild is pending. Native guided-chat interaction, signed-in interpretation and this package's second-Windows acceptance are not established by these browser fixtures.
+The final regression rerun also passed after redundant reset statements were removed. The installer rebuild passed with unchanged captured inputs, and both release binaries have zero matches for the builder's current profile path across native, forward-slash and JSON-escaped forms. Its identity is recorded alongside this note. Native guided-chat interaction, signed-in interpretation and this package's installed/second-Windows acceptance remain pending.

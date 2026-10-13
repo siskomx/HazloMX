@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "inputs_unchanged": true,
+  "installer_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "app_sha256": "09e32152bc8b3d148d30e3470e3d1cc6974e7185df83bb050e152966228bdffa",
+  "helper_sha256": "973184f5146715f01f1bb1b818271c76b8d12fe2d7b8f8a4e7580122fa6a2ea3",
+  "installed_verified": false,
+  "current_builder_profile_path_matches": {
+    "hazlomexa.exe": 0,
+    "hazlomexa-tools.exe": 0
+  },
+  "signed": false
+}
