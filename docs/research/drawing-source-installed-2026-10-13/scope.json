@@ -1,0 +1,13 @@
+{
+  "committed_input_entries_verified_privately": 92,
+  "generated_permission_entries_verified_unchanged": 45,
+  "source_manifest_sha256": "2e38770c7ae1e5acc377b0c8b9d7d0214d2ca1ede16e0786b523482eb85d91a6",
+  "completed_jobs": 21,
+  "guest_stopped": true,
+  "native_ui_automation": false,
+  "signed_in_agents": false,
+  "ordinary_nonadministrator": false,
+  "freecad_new_solid_workflow": false,
+  "privacy_redacted_source_metadata_after_run": true,
+  "raw_logs_and_projects_kept_private": true
+}
