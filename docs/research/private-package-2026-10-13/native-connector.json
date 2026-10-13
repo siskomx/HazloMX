@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "inputs_unchanged": true,
+  "completed_jobs": 4,
+  "schematic_jobs": 2,
+  "pcb_jobs": 2,
+  "pcb_units": [
+    "in",
+    "mils"
+  ],
+  "kicad_version": "10.0.7",
+  "konnect_version": "0.13.0",
+  "approval_driver": "shared_backend_test",
+  "native_desktop_ui": false,
+  "model_inference": false,
+  "hardware_mutations": false,
+  "recovery_verified": true,
+  "sources_and_prior_results_preserved": true,
+  "pcb_source_root_redaction_verified": true,
+  "saved_and_returned_hashes_verified": true,
+  "harness_sha256": "f01a159d5171b693c49af33d23d4ddf9ab8654501aa9764db56a7c373286c671",
+  "helper_sha256": "0689484c28ef80880c19d7cdd98c4da74e37d3d333fef98c2dc7c2987dcc8ac4"
+}

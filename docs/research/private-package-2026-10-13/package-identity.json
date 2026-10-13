@@ -1,0 +1,13 @@
+{
+  "build_passed": true,
+  "captured_inputs_unchanged": true,
+  "installer_sha256": "52050b866719e2671b51d34a8a0edac30f04b22f56b849d500f76f2d4ffaa3b5",
+  "unbundled_app_sha256": "6166ed918a4d9b7170995de5130bc31a45cb58b0adc7dd9907b1ecc37e8efb7b",
+  "helper_sha256": "0689484c28ef80880c19d7cdd98c4da74e37d3d333fef98c2dc7c2987dcc8ac4",
+  "current_builder_profile_path_matches": {
+    "app": 0,
+    "helper": 0
+  },
+  "installed_verified": false,
+  "signed": false
+}
