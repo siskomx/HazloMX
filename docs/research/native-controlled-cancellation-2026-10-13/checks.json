@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "package_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "installed_app_sha256": "f46d60bea1f662862e70f4e27202af895571277c29f0cfa630f45a1c84a871c2",
+  "kicad_version": "10.0.7",
+  "interaction": "explicit approval and cancellation through installed native Windows UI",
+  "test_condition": "one exact owned native pcb drc child temporarily suspended by test-only observer; no production modifications",
+  "observer_guards": [
+    "awaiting approval for exact job UUID",
+    "exact owned installed parent executable",
+    "direct child only",
+    "exact selected KiCad executable",
+    "pcb drc arguments",
+    "job UUID in command arguments",
+    "resume watchdog after sixty seconds"
+  ],
+  "owned_drc_child_observed": true,
+  "owned_drc_child_exited": true,
+  "native_ui_cancelled_status_observed": true,
+  "persisted_job_phase": "cancelled",
+  "published_job_folder_exists": false,
+  "new_published_file_count": 0,
+  "prior_artifact_files_unchanged": 92,
+  "source_files_unchanged": 4,
+  "test_pause_seconds": 6.386,
+  "watchdog_resume_required": false,
+  "added_test_track_segments": 50000,
+  "board_bytes": 6871302,
+  "unproven": [
+    "uninterrupted DRC cancellation timing",
+    "cancellation during other adapters",
+    "signed-in conversation",
+    "live unsaved editing",
+    "other seven native UI workflows"
+  ]
+}
