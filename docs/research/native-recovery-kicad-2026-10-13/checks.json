@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "package_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "interaction": "owned installed Windows UI through computer-use skill",
+  "drawing_recovery": {
+    "persistent_files_unchanged": 9,
+    "completed_and_cancelled_history_visible": true,
+    "read_only_report_opened_after_restart": true,
+    "result_revealed_in_explorer_with_drawing_selected": true
+  },
+  "kicad_native_ui": [
+    "runtime picker",
+    "imperial report units",
+    "source root and main entry pickers",
+    "captured files and operations preview",
+    "explicit schematic approval",
+    "ERC findings dialog",
+    "explicit PCB approval"
+  ],
+  "kicad_results": [
+    {
+      "kicad_version": "10.0.7",
+      "summary": {
+        "check": "erc",
+        "units": "in",
+        "errors": 2,
+        "warnings": 1,
+        "excluded": 0,
+        "ignored_checks": [
+          "single_global_label",
+          "four_way_junction",
+          "footprint_link_issues",
+          "footprint_filter"
+        ]
+      },
+      "verified_report_file_count": 11,
+      "preserved_original_file_count": 4
+    },
+    {
+      "kicad_version": "10.0.7",
+      "summary": {
+        "check": "drc",
+        "units": "in",
+        "errors": 0,
+        "warnings": 6,
+        "excluded": 0,
+        "ignored_checks": [
+          "missing_courtyard",
+          "track_not_centered_on_via",
+          "tuning_profile_track_geometries",
+          "footprint_filters_mismatch",
+          "pth_inside_courtyard",
+          "npth_inside_courtyard",
+          "footprint_type_mismatch"
+        ]
+      },
+      "verified_report_file_count": 18,
+      "preserved_original_file_count": 4
+    },
+    {
+      "kicad_version": "10.0.7",
+      "summary": {
+        "check": "drc",
+        "units": "in",
+        "errors": 0,
+        "warnings": 6,
+        "excluded": 0,
+        "ignored_checks": [
+          "missing_courtyard",
+          "track_not_centered_on_via",
+          "tuning_profile_track_geometries",
+          "footprint_filters_mismatch",
+          "pth_inside_courtyard",
+          "npth_inside_courtyard",
+          "footprint_type_mismatch"
+        ]
+      },
+      "verified_report_file_count": 18,
+      "preserved_original_file_count": 4
+    }
+  ],
+  "source_fixture_files_unchanged": 5,
+  "prior_drawing_and_cancelled_records_unchanged": true,
+  "cancellation_attempt": {
+    "owned_process_observed_running": true,
+    "final_phase": "completed",
+    "artifacts_published": true,
+    "native_cancellation_proven": false,
+    "prior_artifact_files_unchanged": 35
+  },
+  "unverified": [
+    "signed-in agent conversation",
+    "live unsaved editing",
+    "running-process native UI cancellation",
+    "other seven engineering workflows through native UI",
+    "all artifact-opening formats",
+    "KiCad native restart history recovery"
+  ]
+}
