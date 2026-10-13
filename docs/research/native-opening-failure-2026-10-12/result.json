@@ -1,0 +1,12 @@
+{
+  "pass": true,
+  "scope": "native debug opening failure on real saved FreeCAD output",
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo opening á-DglrbG\\project",
+  "verified_history_preserved": true,
+  "engineering_project_bytes_preserved": true,
+  "excluded_operational_file": ".hazlomexa/writer.lock",
+  "reload_recovery": true,
+  "model_inference": false,
+  "actual_gui_document_opened": false,
+  "runtime_unavailable": true
+}

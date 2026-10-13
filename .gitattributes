@@ -1,0 +1,6 @@
+# Verified source and evidence hashes require unchanged bytes on checkout.
+/Cargo.toml -text
+/Cargo.lock -text
+/apps/** -text
+/tests/** -text
+/docs/** -text

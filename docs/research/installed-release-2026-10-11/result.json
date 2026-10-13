@@ -1,0 +1,13 @@
+﻿{
+    "installed":  true,
+    "app_alive":  true,
+    "webview_before":  [
+
+                       ],
+    "pass":  true,
+    "installer_exit":  0,
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "uninstalled":  true,
+    "stage":  "finished",
+    "user":  "WDAGUtilityAccount"
+}

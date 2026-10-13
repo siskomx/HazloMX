@@ -1,0 +1,45 @@
+{
+  "client_probe": "target/codex-probe/95cd1449-5eb2-4ac4-aec5-ef5b5cc1b105",
+  "tool": {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Prepare a source-bound component value change for human review in Hazlo Mexa. Use an inspected reference and a user-confirmed value. For a follow-up, read_verified_result returns the actual edited components: pass its job_id as base_job_id and its sha256 as result_sha256 together, retaining the original selection capability for project context. Hazlo revalidates and captures the verified edited sheet and dependencies, preserving the original selection. Does not approve, execute or live-edit an open user document.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "base_job_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "reference": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        "result_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "selection": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "selection",
+        "reference",
+        "value"
+      ],
+      "type": "object"
+    },
+    "name": "propose_schematic_value"
+  }
+}

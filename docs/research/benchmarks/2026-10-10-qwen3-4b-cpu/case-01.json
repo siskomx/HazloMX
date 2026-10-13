@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 1,
+    "length": 1,
+    "width": 1
+  },
+  "id": "minimum",
+  "result": {
+    "proposal": {
+      "message": "El sólido es un cubo con medidas de 1 mm en cada dimensión. ¿Es correcto?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 7.7347045
+}

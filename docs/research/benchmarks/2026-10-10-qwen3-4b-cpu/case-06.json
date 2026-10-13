@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 25,
+    "length": 25,
+    "width": 25
+  },
+  "id": "cube",
+  "result": {
+    "proposal": {
+      "message": "El usuario pide un cubo sólido de 25 mm por lado. Un cubo tiene las tres medidas iguales, por lo que las dimensiones son: largo = 25 mm, ancho = 25 mm, alto = 25 mm. Las medidas están dentro del rango de 1 a 200 mm. No hay ambigüedad ni falta de datos. Por lo tanto, se devuelve el JSON con las dimensiones específicas.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 12.5142492
+}

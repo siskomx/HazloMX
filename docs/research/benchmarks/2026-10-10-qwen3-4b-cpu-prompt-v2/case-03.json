@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 3.5,
+    "length": 12.5,
+    "width": 7.25
+  },
+  "id": "decimal",
+  "result": {
+    "proposal": {
+      "message": "El usuario proporcionó medidas específicas en milímetros: largo 12.5 mm, ancho 7.25 mm y altura 3.5 mm. Todas las medidas están dentro del rango de 1 a 200 mm y se identifican las tres dimensiones. No hay falta de unidades ni medidas. Por lo tanto, se devuelve un estado 'proposal' con las dimensiones válidas.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 14.914731
+}

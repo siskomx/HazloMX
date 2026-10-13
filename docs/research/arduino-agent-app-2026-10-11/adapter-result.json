@@ -1,0 +1,16 @@
+{
+  "cancel_before_effects": true,
+  "original_preserved": true,
+  "pass": true,
+  "result": {
+    "agent_version": "0.7.1",
+    "artifacts": [
+      "Original.ino",
+      "Sketch.ino"
+    ],
+    "job_id": "0f3ec741-bc43-4a9a-8560-e39c39e3b3e3",
+    "protocol_version": "2025-11-25",
+    "schema_version": 1
+  },
+  "root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Temp\\hazlomexa-agent-test-6e641dd5-9d80-43d2-8c58-76720e8390ad"
+}

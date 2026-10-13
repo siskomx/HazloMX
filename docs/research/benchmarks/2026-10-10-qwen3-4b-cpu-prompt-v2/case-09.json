@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 3.5,
+    "length": 12.5,
+    "width": 7.25
+  },
+  "id": "decimal_comma",
+  "result": {
+    "proposal": {
+      "message": "El usuario proporcionó las medidas en milímetros con coma decimal y unidades explícitas. Las medidas son: largo 12,5 mm, ancho 7,25 mm, alto 3,5 mm. Todas las medidas están entre 1 y 200 mm inclusive. No hay faltas de unidades ni medidas fuera de rango. El sólido es rectangular y las dimensiones son válidas para un objeto sólido. Por lo tanto, se devuelve el status 'proposal' con las dimensiones en milímetros.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 15.7073346
+}

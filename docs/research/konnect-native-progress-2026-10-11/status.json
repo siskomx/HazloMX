@@ -1,0 +1,29 @@
+{
+  "native_startup_verified": true,
+  "native_source_picker_verified": false,
+  "kicad_native_runtime_picker_verified": false,
+  "pid": 30908,
+  "native_restart_verified": false,
+  "local_chat_fills_reference_and_value_verified": true,
+  "source_sha256": {
+    "apps/desktop/src/contracts.ts": "1abf24ec0e6c7bf55a5c4cb2d048912a30ff00cf44eed9909c4ba9365c16bb5e",
+    "apps/desktop/src-tauri/build.rs": "996c35620ba77146d5e8054f75067f2ca88e9011f3f2752a2d451a67fde25fe8",
+    "apps/desktop/src-tauri/src/konnect_run.rs": "2d7e539502993a020e316027fcc95bb053323ee5f362518a556168ba29d6d757",
+    "apps/desktop/src-tauri/capabilities/main.json": "a571589d4dbe02e99332a6407141cd3ff9141aab172e7ad6152ca4226a1e02c7",
+    "apps/desktop/src/main.ts": "1c7ecfdc3d4fdd955508fb6167d8737813a028b0a0568d219b6fea788c394e52",
+    "apps/desktop/src-tauri/src/main.rs": "8c0e61b6de615bcfbc6c043bee495d6dc899407c7f3acd5622837aca4efd98ac",
+    "apps/desktop/src-tauri/src/jobs.rs": "095e953e5b867d48399de3bc3a689b01622d6d03d65490822772b32a26779e4a"
+  },
+  "pause_reason": "test app occluded by active user window; no input sent to that window",
+  "build_exit_code": 0,
+  "konnect_native_runtime_picker_verified": true,
+  "native_approval_and_publication_verified": false,
+  "partial_native_progress": true,
+  "ui_automation": "computer-use @oai/sky",
+  "date": "2026-10-11",
+  "native_eight_workflow_selector_verified": true,
+  "build_command": "rtk cargo build -p hazlomexa --features desktop,custom-protocol",
+  "native_project": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-konnect-13612374-04cf-45ce-bf04-8d0c5bb42fe0/project",
+  "executable_sha256": "166a53ce371f05b7771b800a1c11091eb2e654590697f460cc667cf2900cb1fb",
+  "native_project_folder_picker_verified": true
+}

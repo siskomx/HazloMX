@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "zero",
+  "result": {
+    "proposal": {
+      "message": "La altura es de 0 mm, lo que no forma un sólido tridimensional válido. ¿Quieres un bloque rectangular con una altura mínima de 1 mm o prefieres otro tipo de geometría?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 9.608618
+}

@@ -1,0 +1,19 @@
+{
+  "orca_version": "2.4.2",
+  "direct_shared_tool_followup": true,
+  "current_source_catalog": 14,
+  "preserved_model_geometry_units_and_profiles": true,
+  "bed_temperature_change_c": [
+    45,
+    50
+  ],
+  "native_3mf_gcode_readback": true,
+  "mcp_provenance_schema": 10,
+  "original_and_previous_result_unchanged": true,
+  "hash_path_and_temperature_refusal": true,
+  "five_runs_recovered": true,
+  "source_project": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-orca-workflow-ebaee1d9-89e5-468e-a015-970142e25e95\\project",
+  "signed_in_chat": false,
+  "native_gui": false,
+  "fourteen_tool_installer_acceptance": false
+}

@@ -1,0 +1,64 @@
+﻿{
+    "manifest_exists":  true,
+    "app_pid":  14872,
+    "app_alive":  true,
+    "published_count":  1,
+    "manifest":  {
+                     "schema_version":  1,
+                     "project_id":  "e35f61de-b193-4b28-a7ba-8b63d3dce707"
+                 },
+    "runs":  [
+                 {
+                     "schema_version":  2,
+                     "project_id":  "e35f61de-b193-4b28-a7ba-8b63d3dce707",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "0df24518-ee09-4a24-b68d-1de5bf989145",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "cancelled",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/0df24518-ee09-4a24-b68d-1de5bf989145",
+                                   "created_unix_ms":  1791748552029,
+                                   "updated_unix_ms":  1791748567894,
+                                   "sequence":  4,
+                                   "error":  null
+                               }
+                 },
+                 {
+                     "schema_version":  2,
+                     "project_id":  "e35f61de-b193-4b28-a7ba-8b63d3dce707",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "8eeb5c76-4c6e-4a9a-9cd5-01d3232ebb9b",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "completed",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/8eeb5c76-4c6e-4a9a-9cd5-01d3232ebb9b",
+                                   "created_unix_ms":  1791748437551,
+                                   "updated_unix_ms":  1791748483884,
+                                   "sequence":  3,
+                                   "error":  null
+                               }
+                 }
+             ]
+}

@@ -1,0 +1,17 @@
+# Continue editing a verified CAD result
+
+October 12, 2026. CADPilot 0.7.7 and FreeCAD 1.1.4, desktop/custom-protocol build on the Windows host.
+
+Completed CAD results now offer **Continuar desde este resultado**. Hazlo re-reads and validates that published result through the existing shared host boundary. The form lists measured boxes by their world extents, automatically binds the selected internal identifier, and requires an explicit choice even when only one box is present. It does not require the user to type object names or select the package/source again. The ordinary new-document workflow remains available.
+
+When the selected box was the target of the previous box edit, its actual verified operation parameters fill the dimensions. Changing units converts entered values and preserves a newly changed dimension. Inspection extents or rotated world bounds are not silently used as native box dimensions. A different object still requires confirmed dimensions. Literal names are rendered as text. This is a supported form continuation, not a general natural-language agent or live open-document editing.
+
+The native UI first exposed missing command permissions: `read_cadpilot_result not allowed. Command not found`. The retained first-failure observation documents that rejection; the command manifest and bundled-UI capability now register both bounded commands. A regression check covers both registrations.
+
+After rebuilding, the actual desktop reopens the retained project and continues from its verified 45 mm edit. Selecting the measured box fills 10 × 20 × 45 mm without typing Target. Changing only height to 50 mm prepares a fresh source-bound preview with the measured 45 mm original; controls lock until explicit approval. Approval performs the native copy edit, independent validation and publication. Hazlo opens the final actual report showing 45 → 50 mm and volume 9000 → 10000 mm³. Native observations, input/run/result JSON and hashes are retained here. The owned test app is closed; unrelated windows remain untouched.
+
+The extended real helper/SDK gate separately applies a manual-origin follow-up 40 → 45 mm after MCP-origin edits, keeps fresh human approval, reads the native result and recovers five runs. Its first extension failed a test assertion because the current job had correctly changed from the cancelled proposal to the completed manual edit; the cancellation assertion now runs before the next operation. The final gate passes in 8.43 seconds. The desktop adds a sixth completed run afterward; native restart after that newest run was not exercised.
+
+Validation: 89 regular Rust tests pass (29 runtime gates separately ignored), actual helper/SDK/manual native gate passes, eight-workflow browser fixtures cover ambiguous box choice, preserved dimensions, imperial conversion, binding and locked controls, TypeScript/Vite build passes, all-target desktop/custom-protocol Clippy passes, and desktop/helper builds pass. After the native run, final welcome wording and edit-target binding were checked by the browser fixture: switching add/edit cannot replace the selected box with a stale hidden name. Every accepted CAD output hash in the retained project and the selected original still matches. `status.json` records scope, source/build hashes and evidence paths.
+
+General document support, agent conversations, live editing, other native integrations and installer acceptance remain unfinished. The full application goal remains active.

@@ -1,0 +1,149 @@
+{
+  "captured_source_files": 4,
+  "completed": {
+    "audit": {
+      "adapter_version": 1,
+      "created_unix_ms": 1791821901075,
+      "destination": ".hazlomexa/artifacts/a5632f66-7753-4de4-bf0a-7bdb9b409422",
+      "error": null,
+      "files_verified": true,
+      "sequence": 3,
+      "source": {
+        "provider": "mcp"
+      },
+      "updated_unix_ms": 1791821907610,
+      "user_edited": false
+    },
+    "input": {
+      "edit": {
+        "expected_value": "12.34k",
+        "reference": "R1",
+        "value": "22k"
+      },
+      "job_id": "a5632f66-7753-4de4-bf0a-7bdb9b409422",
+      "konnect_version": "0.13.0",
+      "schema_version": 2,
+      "source": {
+        "entry": "basic_test.kicad_sch",
+        "files": [
+          {
+            "bytes": 71304,
+            "path": "basic_test.kicad_pcb",
+            "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+          },
+          {
+            "bytes": 13394,
+            "path": "basic_test.kicad_pro",
+            "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+          },
+          {
+            "bytes": 25310,
+            "path": "basic_test.kicad_sch",
+            "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+          },
+          {
+            "bytes": 2516,
+            "path": "custom_ds.kicad_wks",
+            "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+          }
+        ],
+        "job_id": "a5632f66-7753-4de4-bf0a-7bdb9b409422",
+        "kicad_version": "10.0.7",
+        "layers": [],
+        "schema_version": 1,
+        "source_root": "C:/Users/USER/AppData/Local/Temp/hazlomexa-host-tools-168b97f6-4772-4a8a-873c-010fedd62c03/project/.hazlomexa/artifacts/7656a2ba-6abd-4373-998c-eb6dfe5b7aaa/Edited",
+        "units": "mm"
+      }
+    },
+    "phase": "completed",
+    "project_id": "0e9629b3-21a7-4448-a52b-ce83e3a5820e",
+    "schema_version": 10
+  },
+  "picker_source_preserved": true,
+  "prior_result_preserved": true,
+  "proposal": {
+    "human_approval_required": true,
+    "job_id": "a5632f66-7753-4de4-bf0a-7bdb9b409422",
+    "phase": "awaiting_approval"
+  },
+  "readback": {
+    "components": [
+      {
+        "library": "power:GND",
+        "reference": "#PWR01",
+        "value": "GND"
+      },
+      {
+        "library": "power:GND",
+        "reference": "#PWR02",
+        "value": "GND"
+      },
+      {
+        "library": "power:GND",
+        "reference": "#PWR03",
+        "value": "GND"
+      },
+      {
+        "library": "power:GND",
+        "reference": "#PWR04",
+        "value": "GND"
+      },
+      {
+        "library": "Device:C_Small",
+        "reference": "C1",
+        "value": "10u"
+      },
+      {
+        "library": "Connector:Conn_01x01_Pin",
+        "reference": "J1",
+        "value": "Conn_01x01_Pin"
+      },
+      {
+        "library": "Connector:Conn_01x01_Pin",
+        "reference": "J2",
+        "value": "Conn_01x01_Pin"
+      },
+      {
+        "library": "Connector:Conn_01x01_Pin",
+        "reference": "J3",
+        "value": "Conn_01x01_Pin"
+      },
+      {
+        "library": "Connector:Conn_01x01_Pin",
+        "reference": "J4",
+        "value": "Conn_01x01_Pin"
+      },
+      {
+        "library": "Device:R_US",
+        "reference": "R1",
+        "value": "22k"
+      },
+      {
+        "library": "Device:R_US",
+        "reference": "R2",
+        "value": "10k"
+      },
+      {
+        "library": "Device:R_US",
+        "reference": "R3",
+        "value": "10k"
+      },
+      {
+        "library": "Amplifier_Operational:TLV2371DBV",
+        "reference": "U1",
+        "value": "TLV2371DBV"
+      }
+    ],
+    "content": "{\n  \"schema_version\": 2,\n  \"job_id\": \"a5632f66-7753-4de4-bf0a-7bdb9b409422\",\n  \"konnect_version\": \"0.13.0\",\n  \"protocol_version\": \"2025-06-18\",\n  \"files\": [\n    {\n      \"path\": \"Edited/basic_test.kicad_pcb\",\n      \"sha256\": \"5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_prl\",\n      \"sha256\": \"74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_sch\",\n      \"sha256\": \"41d587735fe51de9bb723210eef912e72520233f7d8e748a7ad1f1c29ecb15f0\"\n    },\n    {\n      \"path\": \"Edited/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Netlist.xml\",\n      \"sha256\": \"fa0655674397c0e788b61a1e8972aa3a409dd8d580234e891f2a393ba243bdad\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pcb\",\n      \"sha256\": \"5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_sch\",\n      \"sha256\": \"0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836\"\n    },\n    {\n      \"path\": \"Original/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"input.json\",\n      \"sha256\": \"107166c765c781e98419bcf70d107130ece8dab2988519b30471d274a56a937c\"\n    }\n  ]\n}",
+    "format": "konnect_report",
+    "job_id": "a5632f66-7753-4de4-bf0a-7bdb9b409422",
+    "project_id": "0e9629b3-21a7-4448-a52b-ce83e3a5820e",
+    "scope": "verified_published_result",
+    "sha256": "33c2469b6a09311fa19ab890984e24ec569aa649daf7b4e7742b5a3db8f098ea",
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "stale_report_refused": true,
+  "tampered_dependency_refused": true,
+  "tampered_output_refused": true
+}

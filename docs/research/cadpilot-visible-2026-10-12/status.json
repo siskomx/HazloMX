@@ -1,0 +1,39 @@
+{
+  "sdk_root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-976f6e76-19db-4c4d-bbe2-d90f23a51ada",
+  "native_root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-abb56920-bc06-4342-9c5c-cba34097e7d2",
+  "native_job_id": "166bd20f-4ef3-4c68-8c90-56cf8ae22a56",
+  "native_artifact_hashes_after_viewing": {
+    "Edited.FCStd": "b0791a2b365bd64f1162b096ffc9b7ba6a9c59076762383f049c25b38d13409a",
+    "Edited.step": "02262c9b66497804f49573e731da6d50bf91d3ec45f7d612a15c617e263bb2d2"
+  },
+  "original_preserved": true,
+  "prior_artifacts_preserved": true,
+  "fcstd_initial_visible_and_framed": true,
+  "native_properties_mm": [
+    10,
+    20,
+    35
+  ],
+  "step_opened": true,
+  "step_required_manual_fit_all": true,
+  "sdk_followup_height_mm": [
+    35,
+    40
+  ],
+  "sdk_recovered_history_count": 4,
+  "rust_regular_pass": 89,
+  "rust_runtime_gates_separately_ignored": 29,
+  "python_policy_pass": 3,
+  "desktop_custom_protocol_clippy": "pass",
+  "desktop_and_helper_build": "pass",
+  "sdk_runtime_seconds": 8.02,
+  "source_sha256": {
+    "apps/desktop/src-tauri/resources/freecad/cadpilot_policy.py": "5339ff6edf42f76adb91eb7daff0d532c05ec79cfc0b41dd7c4859c2f1860a5a",
+    "apps/desktop/src-tauri/resources/freecad/cadpilot-copy.FCMacro": "5327252be84572dbcd1f5d0165010968d60f09648be19be37697bfd89825b7b9",
+    "apps/desktop/src-tauri/src/host_tools.rs": "c3e66c465da131a636c2e726b34698d7d7b0e30aa478ec1cef1a849a4fa7e016",
+    "tests/cadpilot/test_policy.py": "1725d0e629bd282c2b451698b30de7886f66357e63e130640bada5413dc24b06",
+    "target/debug/hazlomexa.exe": "99516fb4b09fecf4b1db8d76ea99726e8f345de09998ed99b0ab72d1b1c8eabc",
+    "target/debug/hazlomexa-tools.exe": "055086bb6222e60b79e3dd5af14d2ad02cf54a3cfe50752b4200fd45d7c0699b"
+  },
+  "scope": "selected-copy primitive CAD only; broader GUI/live editing and installer remain unfinished"
+}

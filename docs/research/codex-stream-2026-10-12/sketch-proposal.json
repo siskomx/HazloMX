@@ -1,0 +1,15 @@
+{
+  "content": [
+    {
+      "text": "{\"human_approval_required\":true,\"job_id\":\"6330d226-d182-4536-8921-80aca90e32aa\",\"operation\":\"edit_copy_only\",\"phase\":\"awaiting_approval\"}",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "human_approval_required": true,
+    "job_id": "6330d226-d182-4536-8921-80aca90e32aa",
+    "operation": "edit_copy_only",
+    "phase": "awaiting_approval"
+  }
+}

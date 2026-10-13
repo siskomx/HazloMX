@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "hollow_enclosure",
+  "result": {
+    "proposal": {
+      "message": "¿Solo necesitas las dimensiones externas de la caja (100×60×30 mm) o también el espesor de pared para calcular el interior?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 0.8835528
+}

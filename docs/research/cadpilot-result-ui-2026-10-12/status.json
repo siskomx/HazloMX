@@ -1,0 +1,44 @@
+{
+  "runtime_root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b",
+  "native_job": "34dec52f-4059-4abf-adc9-5657857d0d5c",
+  "native_edit_height_mm": [
+    45,
+    50
+  ],
+  "backend_manual_edit_height_mm": [
+    40,
+    45
+  ],
+  "backend_recovery_runs": 5,
+  "native_project_runs_after_edit": 6,
+  "native_restart_after_latest_edit": "not_checked",
+  "native_result_viewed": true,
+  "original_preserved": true,
+  "all_published_hashes_match": {
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\2bb30beb-d9a6-45ad-a9f4-e0bb8b6aac9f\\Edited.FCStd": "a2ec01a4c9d1380a7869b9f9254042300c7f730b78963d16fc4617eb551855f9",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\2bb30beb-d9a6-45ad-a9f4-e0bb8b6aac9f\\Edited.step": "8296b94cc69c8641e60dcd0dfca24d3b16f0d58c542f500b0ed23495a27948a5",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\34dec52f-4059-4abf-adc9-5657857d0d5c\\Edited.FCStd": "3088771c358c54725bb3cf8e24cdbb70acc3f3e1f70cd7b185f4c5cc9a86b125",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\34dec52f-4059-4abf-adc9-5657857d0d5c\\Edited.step": "096729b6bf4632d5fa13954a3c7dd89dc08ecfc05afee966d0a6046d8c4afdc5",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\b49553eb-9132-4512-b193-22f688fc1836\\Edited.FCStd": "7ed2df5e05cf068f108d1c9fadb889b52cc7091d580a8b56e09a4d17771b86a4",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\b49553eb-9132-4512-b193-22f688fc1836\\Edited.step": "8e2a9b40c45ba11fcae4edccfa78132a7d12029f2e42095c8d786e49da35f585",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\fdef6f6a-675a-43cd-95f3-3c9e7d3c4f43\\Edited.FCStd": "a8980f62f4db57d1ea20496b9fb9d1cfc92a2aa44ee20484d66875a6fec7ae78",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\\project\\.hazlomexa\\artifacts\\fdef6f6a-675a-43cd-95f3-3c9e7d3c4f43\\Edited.step": "e65e14d73064414d3a4352821311af792b4377ffa1ca977f0b48ca7e7a3c4d3a"
+  },
+  "regular_rust_tests": 89,
+  "separately_ignored_runtime_gates": 29,
+  "actual_helper_sdk_manual_gate_seconds": 8.43,
+  "browser_fixture": "pass",
+  "clippy_desktop_custom_protocol_all_targets": "pass",
+  "source_sha256": {
+    "apps/desktop/src/main.ts": "0e0973defccf2a2da5ef77852b4124f02672a06a896b7e9dca9a85da2b754137",
+    "apps/desktop/src-tauri/src/main.rs": "0e08792b96d4f38c4b524ff09b481ebda64e5c985ce3772ca55b55f9e2542cb5",
+    "apps/desktop/src-tauri/src/jobs.rs": "55b4211192d51a6e1c5176d765932a4d4d9bb05d51a9b28d2070b28d0f56dd52",
+    "apps/desktop/src-tauri/src/host_tools.rs": "8930ac9ee17955141a99d6ccf6f2651647dd4965040ab6f66797aed3033b1696",
+    "apps/desktop/src-tauri/build.rs": "c828f473c14bae5e8957d7b0557fe8b61502069c56c43bfcda9963b5081b08b7",
+    "apps/desktop/src-tauri/capabilities/main.json": "de4a4324aa6f78fd479824287d049ece1917de09738ea5cbe215b73f213ab56d",
+    "apps/desktop/tests/design-flow.mjs": "a83dd395d151cc5ba54408f99fe98ba71b84662860f167da10f09770bdd3369d",
+    "target/debug/hazlomexa.exe": "7a31b290ffc27bbff8433e488ea1d4dd77174a32744dfbb1458a9b9eb97e79d5",
+    "target/debug/hazlomexa-tools.exe": "ab59ea6faa6aee76f2a3e2ef2c05b8ba0263636685c1c517dd949df793f53751"
+  },
+  "scope": "verified-result primitive copy editing; signed agent chat and live open-document editing remain unfinished"
+}

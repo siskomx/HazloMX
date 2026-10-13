@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 8,
+    "length": 40,
+    "width": 15
+  },
+  "id": "reordered",
+  "result": {
+    "proposal": {
+      "message": "Alto 8 mm, largo 40 mm, ancho 15 mm: crea un sólido rectangular.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 5.7600855
+}

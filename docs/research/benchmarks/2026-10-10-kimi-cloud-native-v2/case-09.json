@@ -1,0 +1,14 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 3.5,
+    "length": 12.5,
+    "width": 7.25
+  },
+  "id": "decimal_comma",
+  "result": {
+    "error": "Ollama no devolvió el flujo NDJSON requerido."
+  },
+  "seconds": 0.5105056
+}

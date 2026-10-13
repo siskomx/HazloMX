@@ -1,0 +1,11 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: GUI did not confirm loaded geometry",
+  "log": "",
+  "opening_proof": {
+    "title": "* Unnamed - FreeCAD 1.1.4",
+    "pid": 27496,
+    "command": "\"C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\bin\\FreeCAD.exe\" \"C:/Users/USER\\AppData\\Local\\Temp\\Hazlo opening á-EP73gl\\project\\.hazlomexa\\artifacts\\69092a1b-7a59-4371-89d7-83466175ab41\\solid.step\"",
+    "executable": "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\bin\\FreeCAD.exe",
+    "window": 7145988
+  }
+}

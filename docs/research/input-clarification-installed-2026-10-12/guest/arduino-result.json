@@ -1,0 +1,1 @@
+{"approval_driver":"shared_backend_test","cli_version":"1.5.1","completed_jobs":2,"core_version":"1.8.8","denied_jobs":1,"failed_jobs":1,"fqbn":"arduino:avr:uno","hardware_mutations":false,"model_inference":false,"native_desktop_ui":false,"pass":true,"prior_outputs_preserved":true,"recovery_verified":true}

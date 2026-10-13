@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_idea",
+  "result": {
+    "proposal": {
+      "message": "¿Qué tipo de pieza quieres recrear? Por ejemplo, un bloque rectangular, un cubo o otra geometría. Si es un bloque rectangular, necesito las dimensiones (largo, ancho, alto) en unidades explícitas.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 7.3924833
+}

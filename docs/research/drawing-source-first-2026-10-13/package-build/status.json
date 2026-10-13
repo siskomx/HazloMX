@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "inputs_unchanged": true,
+  "previous_installer_sha256": "b61f94df1b20670eb0b0eff42b7d50a152818bc4cf2f1de654ad8658081c228c",
+  "installed_verified": false,
+  "installer_sha256": "b37decdea5d15c82ce6e95c01034542de1cd305ccc668aedca2c2147703eff98",
+  "app_sha256": "5a1be3c1f2508f8b9c48a26daf6a802ab6457f08f4b464d918c1e2d203a63d65",
+  "helper_sha256": "395fdfd035fe3996df0a1e2bcda45c0d929cf999db6aa9db0d5491b157543ca8"
+}

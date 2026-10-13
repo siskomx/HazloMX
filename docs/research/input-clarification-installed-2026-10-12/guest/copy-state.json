@@ -1,0 +1,41 @@
+﻿{
+    "processes":  [
+                      {
+                          "Id":  7872,
+                          "ProcessName":  "installed-orca-workflow",
+                          "CPU":  45.140625
+                      },
+                      {
+                          "Id":  8780,
+                          "ProcessName":  "orca-slicer",
+                          "CPU":  0.578125
+                      },
+                      {
+                          "Id":  9744,
+                          "ProcessName":  "powershell",
+                          "CPU":  176.078125
+                      },
+                      {
+                          "Id":  15392,
+                          "ProcessName":  "powershell",
+                          "CPU":  20.6875
+                      }
+                  ],
+    "copies":  [
+                   {
+                       "files":  16104,
+                       "folder":  "C:\\KiCadOwned",
+                       "bytes":  693625517
+                   },
+                   {
+                       "files":  35587,
+                       "folder":  "C:\\FreeCADOwned",
+                       "bytes":  2307824188
+                   },
+                   {
+                       "files":  15065,
+                       "folder":  "C:\\OrcaOwned",
+                       "bytes":  390329357
+                   }
+               ]
+}

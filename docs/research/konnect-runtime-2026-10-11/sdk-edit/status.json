@@ -1,0 +1,15 @@
+{
+  "application_workflow_verified": false,
+  "child_cessation_observed": true,
+  "child_in_job_observed": true,
+  "child_pid": 29028,
+  "exact_tool_schemas_verified": true,
+  "independent_schematic_value_verifier_passed": true,
+  "job_object_wrapper_used": true,
+  "list_change_notifications": 2,
+  "mutating_document_tools_called": true,
+  "originals_and_companions_preserved": true,
+  "passed": true,
+  "protocol_version": "2025-06-18",
+  "rmcp_version": "3.5.1"
+}

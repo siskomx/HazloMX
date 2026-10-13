@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 3.5,
+    "length": 12.5,
+    "width": 7.25
+  },
+  "id": "decimal_comma",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 3.5,
+        "length": 12.5,
+        "width": 7.25
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 0.7512592
+}

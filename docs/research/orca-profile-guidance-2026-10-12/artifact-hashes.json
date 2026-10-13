@@ -1,0 +1,62 @@
+[
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Model-mm.stl",
+    "Hash": "59F935DF2943FF56968016D5DF9753EDFFA91911D67CC39D3979AD0702496059"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\result.json",
+    "Hash": "74E2BAD4E52E5D7DAF17A7391B4738394D5FEB3A7D5F9AC0F8C2784F75EE24BA"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Sliced.3mf",
+    "Hash": "01731DD07EE07506A71C6594F02BC9C76B8202CCA1A6A1F973CAB5A1B031BFE4"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Toolpath.gcode",
+    "Hash": "6B3567B5A72BA67491FB1B2F31AA8A83314250699F3BBEAD4F9798064F3ADD82"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\Filament.json",
+    "Hash": "A4444ECB2492B35CB45DB9C14FF08A80F689A6CF389DCE23AB5C3C903A39B88A"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\Machine.json",
+    "Hash": "D89873A83C6F19AD2DBB6A30CDD9B57D5555CCF3D30A2242C8BEC1BB9CDAE917"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\Original.stl",
+    "Hash": "B3D5DF7167B57E4573B7E1C52D9EDD09E974E613535DAD82660F9BBC6355E22A"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\Process.json",
+    "Hash": "6F8F64AAD70D15F30DD77D4CAD3FDDDAD4C673C1292CB6E455FE91ADAD432384"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\ProfileSources\\filament\\fdm_filament_common.json",
+    "Hash": "7E9E2AAB22308279F16FFDB84BEA3B3A0016D1E305AB411DB493C2EB9EF4FF0A"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\ProfileSources\\filament\\fdm_filament_pla.json",
+    "Hash": "412073F0EAAD84901F700F7CC3A672B9C9C39877800EBCB8DB39B9FE950E5942"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\ProfileSources\\filament\\Prusa Generic PLA.json",
+    "Hash": "AE54CFCB0C2B9F49B30AE9026379051B602B9CBF505738646256571CD5B2C223"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\ProfileSources\\machine\\fdm_machine_common.json",
+    "Hash": "DE44AA2B3073EB1056C708CF38C60B61D91F939CBBFC6E555D8436B7020F47D3"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\ProfileSources\\machine\\Prusa MK3S 0.4 nozzle.json",
+    "Hash": "532A5B004C3F49DEF83BC151481DE48D52DB9CEF340DA2ABFB35C66EEF3CE898"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\ProfileSources\\process\\0.20mm Standard @MK3S 0.4.json",
+    "Hash": "DFDD3261A378341663849303A25364F792684CB673CCB8B25AA22D7F83EAC93C"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\orca-profile-guidance-2026-10-12\\native-inch\\Original\\ProfileSources\\process\\fdm_process_common.json",
+    "Hash": "DC69DC8507F91AFEFFC9598D72B9CAC8B2597D3A20236BD2167288BAF8DD936B"
+  }
+]

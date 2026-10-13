@@ -1,0 +1,5 @@
+{
+  "error": "Las dimensiones deben estar entre 1 y 200 mm.",
+  "generated_text": "{\n  \"status\": \"proposal\",\n  \"dimensions_mm\": {\n    \"length\": 201,\n    \"width\": 20,\n    \"height\": 30\n  }\n}",
+  "id": "too_large"
+}

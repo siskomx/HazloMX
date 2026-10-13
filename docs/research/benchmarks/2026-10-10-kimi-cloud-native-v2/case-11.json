@@ -1,0 +1,10 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": "clarification",
+  "id": "missing_units",
+  "result": {
+    "error": "Ollama no devolvió el flujo NDJSON requerido."
+  },
+  "seconds": 0.4994755
+}

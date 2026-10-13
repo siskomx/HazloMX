@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "hollow_enclosure",
+  "result": {
+    "proposal": {
+      "message": "La caja hueca requiere medidas externas y espesor de pared. ¿Quieres un bloque rectangular de referencia (largo, ancho, alto) o medidas externas con espesor de pared?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 7.3983645
+}

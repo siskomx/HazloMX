@@ -1,0 +1,31 @@
+﻿{
+    "project_files":  [
+                          {
+                              "sha256":  "BB7E77F303FA3ED6162920DA114612B761D5BC48E48DD784F9B76F163288BBC6",
+                              "path":  "hazlomx.json"
+                          },
+                          {
+                              "sha256":  "22897DA95B428CD8C177CA4CDB60BD8D558B047C56FBDAFBF3DD1FFB0095FFDB",
+                              "path":  "UserOriginal.ino"
+                          },
+                          {
+                              "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                              "path":  ".hazlomexa\\writer.lock"
+                          },
+                          {
+                              "sha256":  "D249870FF3ADE57096F2DA1D6D1CF4F2B138F51014387DE802385A8456DBACF4",
+                              "path":  ".hazlomexa\\runs\\fb1ded67-c447-4d80-a863-49cf2d8eb361.json"
+                          },
+                          {
+                              "sha256":  "CE52ABA7EF27E0F7CF1CFA17B887807C24C61825E262472E7D593A1377507894",
+                              "path":  ".hazlomexa\\staging\\fb1ded67-c447-4d80-a863-49cf2d8eb361\\input.json"
+                          },
+                          {
+                              "sha256":  "614C9B8EC04F986F634CA334139DA8ABA6AABD097524D11DBF799581E28F3A45",
+                              "path":  ".hazlomexa\\staging\\fb1ded67-c447-4d80-a863-49cf2d8eb361\\working-copy.json"
+                          }
+                      ],
+    "pass":  true,
+    "agent_remains_running":  true,
+    "unaccepted_copy_sha256":  "8B67DE3860B79E0E01F33893D031E99687DEF5B9E853D66391A179DCC85227C6"
+}

@@ -1,0 +1,9 @@
+{
+  "body_prefix": "{\"model\":\"kimi-k2.7-code\",\"created_at\":\"2026-10-11T06:57:40.831084165Z\",\"respons",
+  "content_type": "application/json",
+  "json_keys": null,
+  "mentions_format": false,
+  "mentions_generate": false,
+  "requires_signin": false,
+  "status": 200
+}

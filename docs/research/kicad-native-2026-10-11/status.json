@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "native_schematic_workflow": true,
+  "project_debug_seeded": true,
+  "models_run": 0,
+  "first_binary": {
+    "sha256": "645e986bf3623eea109fc02ef8f88476860185433c1f6bfed7afedb3168dd697",
+    "bytes": 24413696,
+    "scope": "native runtime/source pickers; mils; proposal; approval; real ERC/PDF/netlist; findings; readonly report; Explorer exports"
+  },
+  "corrected_binary": {
+    "sha256": "e304a04aa14b5a2946ee4aa5718aba90506b7d72b81b0687b343db2dacb826a2",
+    "bytes": 24415232,
+    "scope": "project restart; unchanged hashes; recovered finding dialog; main-window shutdown exits owned PID 21136"
+  },
+  "first_shutdown_issue": "hidden unprivileged debug webview retained owner after main close; owned PID 23080 identity-checked and stopped",
+  "source_hashes": {
+    "Cargo.lock": "d9f6da06d7165e75de025c34a939e6e1572a2604750588553c02c5da8ac7cc08",
+    "apps\\desktop\\src-tauri\\src\\agent.rs": "a70dc3e4e86854556e969712ae08f4bdf1042ee868f9fb14dee6c2e67e1c887e",
+    "apps\\desktop\\src-tauri\\src\\arduino.rs": "28aed7203e544ba49e2c73ab9ab23d0b8dcb42510582e9bc0339a2f74dcc24a1",
+    "apps\\desktop\\src-tauri\\src\\cadcraft.rs": "1ad7a784bfceabfb4bc6cbe68466f08b708dcadf8abdddcceb3c73e39f4e7c26",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "68850ccaca24a948a50dd330c8742b3945eac8b2364a1462532a05478beb0a06",
+    "apps\\desktop\\src-tauri\\src\\jobs.rs": "8164e6d28238b569604266bf4d63e50d42be736933b4f09744933e43e32769e5",
+    "apps\\desktop\\src-tauri\\src\\kicad.rs": "87c0c98b8135f09c27ad2fdd4eb75fbe37d8168161bdadb7a095912c0f225f65",
+    "apps\\desktop\\src-tauri\\src\\kicad_project.rs": "af97e470e590af40b9a61328dcb62b143a7cfc7e0cd3f77ec307583693bff46c",
+    "apps\\desktop\\src-tauri\\src\\kicad_run.rs": "bfe3d93f5dd9976799ef8d4f2d3dd675987ba13b1dcd598ec21ea69be1f03312",
+    "apps\\desktop\\src-tauri\\src\\lib.rs": "4f0095546c9ea297c2366098396383be33b586ba7d8c79fe41bf462daa11c360",
+    "apps\\desktop\\src-tauri\\src\\main.rs": "8c97891a91787ea70e06f300a5b9517d1e74ed7b98d3075eac0886520c93486d",
+    "apps\\desktop\\src-tauri\\src\\ollama.rs": "5a19f9ba85135059589c6275da695a5b24fd19c06f69300bca0f88211702f90a",
+    "apps\\desktop\\src-tauri\\src\\process.rs": "1f7d37fdd7fa6df72da1d4dde77caa84af27a48d8b6473a62e3918e3983c5d6e",
+    "apps\\desktop\\src-tauri\\src\\project.rs": "b534130ff4c98f17c6724bf2f4eae5225cce0e5bde1025d7000b99c883a236dd",
+    "apps\\desktop\\src\\main.ts": "c08f303729038daa82f3ff0757e01ffbf71cf0602354933659ffa06a536a102c",
+    "apps\\desktop\\src\\contracts.ts": "aece5fbbc81456d1ba8250399fa542c64de854934ff47a5bff6323605a98561c",
+    "tests\\kicad\\verify_native_evidence.py": "e12e32fc016401403c9a691c498713ca8faf7afb47f9bbca9588d1a3e16161f2"
+  },
+  "installed_workflow_verified": false,
+  "native_pcb_workflow_verified": false,
+  "in_flight_cancellation_verified": false,
+  "timeout_verified": false
+}

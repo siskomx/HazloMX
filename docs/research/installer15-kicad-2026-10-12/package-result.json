@@ -1,0 +1,16 @@
+﻿{
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "installer_sha256":  "a64d78f1f172c1d28f6bf289215bae2c24d8e0bdaaa006949192c0095918d4d1",
+    "app_alive":  true,
+    "uninstalled":  true,
+    "resumed_after_identity_check":  false,
+    "current_user_install":  true,
+    "user":  "WDAGUtilityAccount",
+    "native_kicad_connector_workflow":  true,
+    "pass":  true,
+    "stage":  "finished",
+    "same_version_update":  true,
+    "connector_exit":  0,
+    "binaries_match_package_build":  true,
+    "user_files_preserved":  true
+}

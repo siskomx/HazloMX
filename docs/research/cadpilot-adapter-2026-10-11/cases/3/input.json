@@ -1,0 +1,1 @@
+{"schema_version": 1, "job_id": "3d4758cb-39d7-47b4-bfed-4c598e6cc907", "cadpilot_version": "0.7.7", "operation": "add_cylinder", "object": "AddedCylinder", "units": "mm", "parameters": {"radius": 2, "height": 8, "x": 40, "y": 0, "z": 0}}

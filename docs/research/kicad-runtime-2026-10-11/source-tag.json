@@ -1,0 +1,24 @@
+{
+  "node_id": "TA_kwDOAOKXyNoAKDkzYThhNDgyN2IwYjJhMDFhNmQxNTk5NzMzZTY5NjRlNmVhOTRjZjk",
+  "sha": "93a8a4827b0b2a01a6d1599733e6964e6ea94cf9",
+  "url": "https://api.github.com/repos/KiCad/kicad-source-mirror/git/tags/93a8a4827b0b2a01a6d1599733e6964e6ea94cf9",
+  "tagger": {
+    "name": "Wayne Stambaugh",
+    "email": "stambaughw@gmail.com",
+    "date": "2026-10-06T20:41:21Z"
+  },
+  "object": {
+    "sha": "69cafb907ebc09e7722a2a464b1d466fc2e3608d",
+    "type": "commit",
+    "url": "https://api.github.com/repos/KiCad/kicad-source-mirror/git/commits/69cafb907ebc09e7722a2a464b1d466fc2e3608d"
+  },
+  "tag": "10.0.7",
+  "message": "Tag stable version 10.0.7.\n",
+  "verification": {
+    "verified": false,
+    "reason": "unsigned",
+    "signature": null,
+    "payload": null,
+    "verified_at": null
+  }
+}

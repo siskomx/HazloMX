@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_idea",
+  "result": {
+    "proposal": {
+      "message": "¿Qué pieza es la que perdiste y para qué la usabas? Con eso entenderé qué forma tiene antes de pedirte las medidas.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 1.3886249
+}

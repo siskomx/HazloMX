@@ -1,0 +1,44 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			8 pane Hazlo Mexa
+				9 pane (disabled)
+				10 region Hazlo Mexa - Web content
+					11 region
+						12 region
+							13 region
+								14 region
+								15 region
+									16 region
+										17 region
+											18 region
+												19 region
+												23 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													90 dialog Hallazgos ERC · informe mils Secondary Actions: Raise ID: artifact-preview
+														91 heading Hallazgos ERC · informe mils ID: artifact-preview-heading
+														92 text 2 errores 1 advertencias 0 hallazgos excluidos 4 comprobaciones desactivadas single_global_label four_way_junction footprint_link_issues footprint_filter Revisa el informe completo antes de usar las exportaciones.
+														93 button Cerrar
+								20 region
+						21 region
+						22 region
+		2 title bar (settable, string) Value: Hazlo Mexa
+			3 menu bar System ID: MenuBar
+				4 menu item System
+			5 button Minimize
+			6 button Maximize
+			7 button Close
+
+Document text: ```
+Hallazgos ERC · informe mils
+2 errores
+1 advertencias
+0 hallazgos excluidos
+4 comprobaciones desactivadas
+single_global_label
+four_way_junction
+footprint_link_issues
+footprint_filter
+
+Revisa el informe completo antes de usar las exportaciones.
+Cerrar
+```

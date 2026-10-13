@@ -1,0 +1,11 @@
+{
+  "content_type": "application/json",
+  "first_model": "kimi-k2.7-code",
+  "first_remote_host": null,
+  "first_remote_model": null,
+  "json_keys": null,
+  "mentions_format": false,
+  "mentions_generate": false,
+  "requires_signin": false,
+  "status": 200
+}

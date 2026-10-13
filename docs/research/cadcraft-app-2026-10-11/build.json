@@ -1,0 +1,16 @@
+{
+  "desktop_debug_build_passed": true,
+  "features": [
+    "desktop",
+    "custom-protocol"
+  ],
+  "executable_sha256": "0a25c9a599ce89d5ad56871212d6823878f99c2aaa15a912548ad7593fca8a37",
+  "executable_bytes": 23465984,
+  "regular_tests": 54,
+  "separately_ignored_tests": 13,
+  "desktop_clippy_passed": true,
+  "frontend_build_passed": true,
+  "browser_fixture_passed": true,
+  "native_ui_verified": false,
+  "installed_workflow_verified": false
+}

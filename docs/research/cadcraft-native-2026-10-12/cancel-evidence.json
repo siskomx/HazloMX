@@ -1,0 +1,14 @@
+{
+  "cancellation_ms": 427,
+  "job_id": "e612d814-1fbb-4292-8a5e-701fff8b58dd",
+  "observed_owned_pids": [
+    31252
+  ],
+  "original_preserved": true,
+  "passed": true,
+  "phase": "cancelled",
+  "published": false,
+  "recovered_runs": 1,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-cadcraft-cancel-d1485ab8-ef9d-47cf-946d-e34194b1698e",
+  "scope": "actual approved CADCraft dispatch cancellation during an observed live CLI; exact mutation phase and native UI cancellation latency unverified"
+}

@@ -1,0 +1,11 @@
+{
+  "regular_passed": 85,
+  "ignored": 28,
+  "claude_version": "2.1.285",
+  "restricted_auth_failure_gate_passed": true,
+  "clippy_passed": true,
+  "ui_wired": false,
+  "signed_in_turn_verified": false,
+  "live_cancellation_verified": false,
+  "source_sha256": "00481b889c7d0716b93bbd9f73a23a59fcc59cf0c8e02f5a0568eefd626373d6"
+}

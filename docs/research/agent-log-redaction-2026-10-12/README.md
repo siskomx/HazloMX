@@ -1,0 +1,11 @@
+# Agent console output must stay private until redacted
+
+Fresh Windows guest `9a34f125-d6ec-4b3f-b1a2-272691f89696` passes upgrade and fifteen-tool checks for installer `8ada4074…`. [Authenticated Arduino Agent native edits](guest/agent-result.json) also pass: two approved copy edits, saved-result follow-up, stale-input refusal, approval invalidation after reconnect, one-use approval, denial, occupied-destination protection, source/prior-output preservation and four-run recovery. Hardware mutation and inference remain absent.
+
+The [overall package result stays Failed](guest/package-result.json): the new export scanner detected the actual ephemeral Agent bearer token in its captured upstream stdout. The Agent runtime had already been stopped. A separate [redaction diagnostic](guest/agent-redaction-diagnostic.json) identifies one occurrence in `agent-stdout.log` and confirms the service is stopped. The value was scrubbed before these files were retained; the token is neither printed nor included here. The sanitized log contains the upstream `Authorization` header with a replacement marker. This failure is not promoted to success, and initial UI/uninstall acceptance did not run.
+
+The fixture now keeps raw Agent stdout/stderr in an unmapped private guest directory. After stopping the owned process tree, it replaces the actual token before writing exported logs, then scans every exported file for that token. The receipt records redaction counts, private raw-log use, service shutdown and token absence. The real auth file stays only in the disposable guest profile. PowerShell syntax passes. A fresh complete installed rerun is still required.
+
+This is a test-capture correction for pinned upstream Agent 0.7.1; the runtime package and Hazlo application binary are unchanged. The fixture/example builds and passes Clippy. Other integration and native GUI/chat requirements remain active. Exact [package identities](package-identity.json), [source inputs](source-inputs.json) and original scripts retain this attempt's scope.
+
+The corrected fixture subsequently passes [the complete fresh installed Agent workflow, protected log export, initial UI and lifecycle](../installed-agent-2026-10-12/README.md). This earlier capture failure remains unchanged and is not promoted.

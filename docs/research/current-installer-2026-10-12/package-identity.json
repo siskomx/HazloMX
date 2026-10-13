@@ -1,0 +1,11 @@
+{
+  "installer_sha256": "b4bce98f0ff0424f2851f2f380b6d22b02de9d345524e59ee4b5664a27febff6",
+  "app_sha256": "87a2260098a64428a1b867f1d054092168da823c50f79bf04c1334006c02419b",
+  "unbundled_app_sha256": "ea49b2cb25aafeb015ea36224a039f519b9f322bf6c67f0632b37e6e0b8b5ec3",
+  "bundle_marker": "NSS",
+  "helper_sha256": "d2ff60df322fd7498a81133093a28e4af8c95760655f56ef23e35b9329d5f6a0",
+  "harness_sha256": "6431844e74f0d7a0b9eab7ef63e5e59dc832e8e4b32429826c68d33fb621985d",
+  "version": "0.1.0",
+  "tool_count": 13,
+  "networking": "enabled"
+}

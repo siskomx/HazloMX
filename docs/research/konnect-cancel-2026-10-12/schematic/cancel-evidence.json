@@ -1,0 +1,14 @@
+{
+  "board": false,
+  "cancellation_ms": 90,
+  "job_id": "4bbe6b91-f3bd-4b16-b1dc-e81587c7a553",
+  "observed_owned_pids": [
+    19744
+  ],
+  "originals_preserved": true,
+  "passed": true,
+  "published": false,
+  "recovered_runs": 1,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-a54d0f52-c653-41ec-b073-43b4b6b7719d",
+  "scope": "actual approved Konnect SDK startup cancelled after observing the live owned server; initialized tool-call cancellation, exact mutation phase, native UI input and full deadlines remain unverified"
+}

@@ -1,0 +1,17 @@
+{
+  "native_kicad_version": "10.0.7",
+  "native_konnect_version": "0.13.0",
+  "catalog_tools": 15,
+  "native_schematic_followup": true,
+  "actual_mcp_pcb_to_kicad_check": true,
+  "software_saved_source_hash_bound": true,
+  "originals_and_previous_results_preserved": true,
+  "schema_10_mcp_recovery": true,
+  "regular_tests": 110,
+  "browser_workflows": 9,
+  "signed_in_chat": false,
+  "native_ui": false,
+  "fifteen_tool_package_acceptance": false,
+  "native_konnect_edited_schematic_to_erc": true,
+  "edited_resistor_value_preserved": "12.34k"
+}

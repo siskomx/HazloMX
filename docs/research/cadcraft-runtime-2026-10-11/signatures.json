@@ -1,0 +1,14 @@
+[
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadcraft-probe\\runtime\\cadcraft-0.5.0-windows-x64-portable\\cadcraft-cli.exe",
+    "Status": "Valid",
+    "Subject": "CN=Learning Machines Inc, O=Learning Machines Inc, L=Atlanta, S=Georgia, C=US",
+    "Thumbprint": "9F1C8C2D733A37DBEEFFD084946BCEC285508114"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadcraft-probe\\runtime\\cadcraft-0.5.0-windows-x64-portable\\cadcraft.exe",
+    "Status": "Valid",
+    "Subject": "CN=Learning Machines Inc, O=Learning Machines Inc, L=Atlanta, S=Georgia, C=US",
+    "Thumbprint": "9F1C8C2D733A37DBEEFFD084946BCEC285508114"
+  }
+]

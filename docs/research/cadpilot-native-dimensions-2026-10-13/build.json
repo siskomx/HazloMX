@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "version": "0.1.0",
+  "signed": false,
+  "command": "npm run package",
+  "files": {
+    "target/release/bundle/nsis/Hazlo Mexa_0.1.0_x64-setup.exe": {
+      "sha256": "8d6da9344d0073e51a7a32ba91babea2f9ad43a88d65d6a1fe8243d624b55175",
+      "bytes": 5344378
+    },
+    "target/release/hazlomexa.exe": {
+      "sha256": "d266006fe4838f3be90218f4927a764fd9684a43085963f9b551f328d24d8088",
+      "bytes": 25008640
+    },
+    "target/release/hazlomexa-tools.exe": {
+      "sha256": "18405cf813a4529ed40bed01e6446c2e9c19599c09b4a0c58ca41488946e34c9",
+      "bytes": 591872
+    }
+  },
+  "installed_acceptance": false
+}

@@ -1,0 +1,14 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 200,
+    "length": 200,
+    "width": 200
+  },
+  "id": "maximum",
+  "result": {
+    "error": "Ollama no devolvió el flujo NDJSON requerido."
+  },
+  "seconds": 0.5200335
+}

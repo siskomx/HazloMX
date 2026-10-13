@@ -1,0 +1,38 @@
+﻿{
+    "input":  true,
+    "result":  true,
+    "user":  "WDAGUtilityAccount",
+    "processes":  [
+                      {
+                          "Id":  10120,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791858983836)\/",
+                          "CPU":  9.640625
+                      },
+                      {
+                          "Id":  11228,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791858983679)\/",
+                          "CPU":  0.078125
+                      },
+                      {
+                          "Id":  15868,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791858983757)\/",
+                          "CPU":  1.0625
+                      },
+                      {
+                          "Id":  10568,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791859061045)\/",
+                          "CPU":  4.296875
+                      },
+                      {
+                          "Id":  14948,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791858956844)\/",
+                          "CPU":  22.234375
+                      }
+                  ],
+    "installed":  true
+}

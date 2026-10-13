@@ -1,0 +1,13 @@
+{
+  "cancel_ms": 3.6597,
+  "client_stop_ms": 30.4035,
+  "hardware_mutations": false,
+  "job_id": "fb1ded67-c447-4d80-a863-49cf2d8eb361",
+  "late_reply_published": false,
+  "original_preserved": true,
+  "pass": true,
+  "real_upstream_write_confirmed": true,
+  "recovered_cancelled": true,
+  "root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Temp\\hazlomexa-workflow-9914a038-bc9f-45d3-ba1c-5d515d000505",
+  "write_requests": 1
+}

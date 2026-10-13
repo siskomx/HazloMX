@@ -1,0 +1,37 @@
+{
+  "sandbox_id": "a4794933-79f7-4e2a-bacd-aff15e7ddd34",
+  "direct_shared_host_tools": true,
+  "model_turn_started": false,
+  "authenticated_agent_followup": true,
+  "source_hashes": [
+    {
+      "path": "apps/desktop/src-tauri/src/jobs.rs",
+      "sha256": "7856653805B976AFB949920606B65A0EFA66749BA542BE2CD7949BB4476155EE"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/host_tools.rs",
+      "sha256": "ED43D43CDF31B44A0B22C8E1BE47974A32132D418BB3565737DE50E7869E28E1"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/agent.rs",
+      "sha256": "A70DC3E4E86854556E969712AE08F4BDF1042EE868F9FB14DEE6C2E67E1C887E"
+    },
+    {
+      "path": "target/debug/deps/hazlomexa-af07e57d7e34a273.exe",
+      "sha256": "95522ACC1704333375A04ACC9B43C954E7142A47D7F54914D71C7A194653D252"
+    },
+    {
+      "path": "tests/arduino/prepare_agent_sandbox.py",
+      "sha256": "2F709A2BC7F37D33529C80062988208EBF3874C6FD2C83D152A66424BF0D6426"
+    }
+  ],
+  "separately_ignored_gates": 29,
+  "hardware_mutations": false,
+  "regular_tests": 87,
+  "exported_files_verified": 23,
+  "pass": true,
+  "fixture": "target/arduino-agent-probe/sandbox/9a701240-7f49-436d-aea1-cf8167fb7829/output",
+  "installed_workflow_verified": false,
+  "native_chat_verified": false,
+  "owned_guest_stopped": true
+}

@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 1,
+    "length": 1,
+    "width": 1
+  },
+  "id": "minimum",
+  "result": {
+    "proposal": {
+      "message": "El usuario proporcionó medidas para un sólido rectangular con largo, ancho y alto de 1 mm cada uno. Las medidas están en milímetros y cumplen con los rangos mínimos y máximos (1.0 ≤ medida ≤ 200.0). Por lo tanto, se devuelve un estado 'proposal' con las dimensiones especificadas.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 12.5305746
+}

@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "0",
+      "operation": "inspect",
+      "expected_success": true,
+      "exit_code": 0,
+      "source_sha256": "94f9084b5451e3dea328ee812e6c97156928e4da02c65de664d18c4656d240b5",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-e2584652-a6e0-4b67-a06c-5068d5a7309b\\0\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-e2584652-a6e0-4b67-a06c-5068d5a7309b\\0\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-e2584652-a6e0-4b67-a06c-5068d5a7309b\\0\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "1",
+      "operation": "edit_box",
+      "expected_success": true,
+      "exit_code": 0,
+      "source_sha256": "39769fe44f607c916faa652e504d80b74fd3d2f3201e9d18cfee72fd8fea103b",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-e2584652-a6e0-4b67-a06c-5068d5a7309b\\1\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-e2584652-a6e0-4b67-a06c-5068d5a7309b\\1\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-e2584652-a6e0-4b67-a06c-5068d5a7309b\\1\\cadpilot-copy.FCMacro"
+      ]
+    }
+  ],
+  "cadpilot_commit": "58bfee4d45061e55c158a5fd4786ab98a427f7f6",
+  "rotated_box_verified": true,
+  "adapter_hashes": {
+    "cadpilot-copy.FCMacro": "42ba785b0e09f65ba619eaa66c2b1a1b22ad04dce9d054590db9b9d331d4c158",
+    "cadpilot_policy.py": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  "application_workflow_verified": false,
+  "native_gui_verified": false
+}

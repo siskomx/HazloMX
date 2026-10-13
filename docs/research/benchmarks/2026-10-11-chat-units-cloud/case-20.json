@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_idea",
+  "result": {
+    "proposal": {
+      "message": "¿Qué pieza es la que se perdió y para qué la usarás?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 0.9818753
+}

@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "actual_orca",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "expected_tests": [
+    "orca_run::tests::actual_orca_captures_profiles_and_slices_verified_files",
+    "jobs::tests::actual_orca_workflow_publication_and_recovery",
+    "jobs::tests::actual_orca_owned_process_cancellation"
+  ],
+  "native_ui_verified": false,
+  "installed_workflow_verified": false,
+  "source_hashes": {
+    "Cargo.lock": "9a615a7100dabb1e48cae732675fd4b1587f994529997e83a2b80fa23da18635",
+    "apps\\desktop\\src-tauri\\src\\agent.rs": "a70dc3e4e86854556e969712ae08f4bdf1042ee868f9fb14dee6c2e67e1c887e",
+    "apps\\desktop\\src-tauri\\src\\arduino.rs": "28aed7203e544ba49e2c73ab9ab23d0b8dcb42510582e9bc0339a2f74dcc24a1",
+    "apps\\desktop\\src-tauri\\src\\cadcraft.rs": "1ad7a784bfceabfb4bc6cbe68466f08b708dcadf8abdddcceb3c73e39f4e7c26",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "68850ccaca24a948a50dd330c8742b3945eac8b2364a1462532a05478beb0a06",
+    "apps\\desktop\\src-tauri\\src\\jobs.rs": "3b18f09c24c19765cf956c4de3e3e6b6407226c291045635b52520d4455d1efd",
+    "apps\\desktop\\src-tauri\\src\\kicad.rs": "87c0c98b8135f09c27ad2fdd4eb75fbe37d8168161bdadb7a095912c0f225f65",
+    "apps\\desktop\\src-tauri\\src\\kicad_project.rs": "af97e470e590af40b9a61328dcb62b143a7cfc7e0cd3f77ec307583693bff46c",
+    "apps\\desktop\\src-tauri\\src\\kicad_run.rs": "429451a8d53722bb035c23e5994ebd4d8ae62e3559e6fae0d31b04a8157e3156",
+    "apps\\desktop\\src-tauri\\src\\lib.rs": "1af1fcf605164b3f786ec44dbaa20e7400661dc7db88fed8d2177ea258d79271",
+    "apps\\desktop\\src-tauri\\src\\main.rs": "39ac93de93b5817a5772fac1daf8109b17561ccebd519c42d086ba41b78f562e",
+    "apps\\desktop\\src-tauri\\src\\ollama.rs": "5a19f9ba85135059589c6275da695a5b24fd19c06f69300bca0f88211702f90a",
+    "apps\\desktop\\src-tauri\\src\\orca.rs": "ac7fb7ff18b6f946bc37ad425b43c15a1b7ad03af94940b60f1e75a63f419868",
+    "apps\\desktop\\src-tauri\\src\\orca_run.rs": "7c86296845247da56b7e69f2138bd923677f09c7c670ace2072c8bc6ade5afab",
+    "apps\\desktop\\src-tauri\\src\\process.rs": "b566194604f1af8ccd7486ae17b57b445b084b297c98f6f6bb7a17927aac885f",
+    "apps\\desktop\\src-tauri\\src\\project.rs": "52868c40b68fcf71670c3e65c922ab70fc64df74f7fe89ec4e90295a892be476",
+    "apps\\desktop\\src\\main.ts": "58485f7d55c444535ee815cb90aa4931b9f8ac4b8f59751f4ce79143223dfc83",
+    "apps\\desktop\\src\\contracts.ts": "fffdf605bf27eea138b32b42e9676b894132fa4e5302cf48961fa7e282eef174",
+    "apps\\desktop\\tests\\design-flow.mjs": "0499a0b4460b5f3ba5fbbd49d6d98deea317c8426a93dee2a46b8993b5210f60"
+  }
+}

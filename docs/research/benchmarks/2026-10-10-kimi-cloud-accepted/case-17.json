@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "zero",
+  "result": {
+    "proposal": {
+      "message": "La altura 0 mm está fuera del rango permitido (1-200 mm). ¿Cuál es la altura correcta?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 0.900629
+}

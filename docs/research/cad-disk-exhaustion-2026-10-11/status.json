@@ -1,0 +1,43 @@
+{
+  "pass": true,
+  "full_acceptance": false,
+  "date": "2026-10-11",
+  "guest_id": "e89778b2-4353-435d-9df1-4f1220cc3616",
+  "guest_build": 26100,
+  "guest_left_running": false,
+  "networking": "disabled",
+  "models_run": 0,
+  "volume": "owned 64 MiB NTFS VHD",
+  "actual_disk_full_error": 112,
+  "filled_bytes": 53604352,
+  "publication_outcome": "completed",
+  "recovery_outcome": "completed",
+  "finish_error": null,
+  "exported_project_files": 13,
+  "independent_host_sha256_match": true,
+  "regular_backend_tests": 40,
+  "ignored_standalone_tests": 6,
+  "clippy_pass": true,
+  "checks": [
+    "Actual official FreeCAD 1.1.4 first generates/publishes baseline editable FCStd and STEP",
+    "Second actual fixed macro generates/validates a distinct approved run before disk fill",
+    "Bounded guest NTFS disk filled until error112 immediately before production Workflow.finish/Project.publish",
+    "Whole directory publication and compact snapshot save still succeed on this exhausted volume; legitimate Completed, no forced failure",
+    "Both baseline and new input/result/FCStd/STEP bytes unchanged, original preserved",
+    "After freeing only owned filler, project reopens with two Completed runs and no regeneration",
+    "All thirteen closed-export file hashes independently match on host",
+    "Current forty regular backend tests pass with six standalone ignored entries"
+  ],
+  "first_attempt": {
+    "aggregate_pass": false,
+    "reason": "Start-Process returned a null exit-code property after WaitForExit even though test body/log passed; retained as failed aggregate evidence",
+    "fix": "Use a directly owned Diagnostics.Process with concurrent stdout/stderr draining and bounded wait",
+    "fresh_rerun_pass": true
+  },
+  "limits": [
+    "Direct production backend/adapter check, not installed GUI execution on a full volume",
+    "Tests disk exhaustion after valid CAD generation and before publication; starting CAD generation on an already-full volume is not this sample",
+    "Observed publication succeeded; forced snapshot-I/O error112 rejection is established by the separate prerequisite probe",
+    "Power-loss durability is not certified"
+  ]
+}

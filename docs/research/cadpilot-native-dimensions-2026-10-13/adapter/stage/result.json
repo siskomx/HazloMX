@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "job_id": "10275728-a887-4ee6-aedf-846b91e655ee",
+  "success": true,
+  "cadpilot_version": "0.7.7",
+  "freecad_version": "1.1.4",
+  "operation": "edit_box",
+  "object": "Target",
+  "parameters_mm": {
+    "height": 7.619999999999999,
+    "length": 12.7,
+    "width": 25.4
+  },
+  "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+  "catalog": {
+    "Target": "Part::Box"
+  },
+  "before": {
+    "Target": {
+      "success": true,
+      "shape_type": "Solid",
+      "is_valid": true,
+      "volume_mm3": 6000.0,
+      "area_mm2": 2200.0,
+      "center_of_mass": [
+        5.0,
+        10.0,
+        15.0
+      ],
+      "bbox": {
+        "xmin": 0.0,
+        "ymin": 0.0,
+        "zmin": 0.0,
+        "xmax": 10.0,
+        "ymax": 20.0,
+        "zmax": 30.0
+      },
+      "counts": {
+        "solids": 1,
+        "shells": 1,
+        "faces": 6,
+        "edges": 12,
+        "vertices": 8
+      },
+      "placement": {
+        "base": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": {
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "angle_deg": 0.0,
+          "yaw_pitch_roll": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "dimensions_mm": {
+        "length": 10.0,
+        "width": 20.0,
+        "height": 30.0
+      }
+    }
+  },
+  "after": {
+    "Target": {
+      "success": true,
+      "shape_type": "Solid",
+      "is_valid": true,
+      "volume_mm3": 2458.06,
+      "area_mm2": 1225.8,
+      "center_of_mass": [
+        6.35,
+        12.7,
+        3.81
+      ],
+      "bbox": {
+        "xmin": 0.0,
+        "ymin": 0.0,
+        "zmin": 0.0,
+        "xmax": 12.7,
+        "ymax": 25.4,
+        "zmax": 7.62
+      },
+      "counts": {
+        "solids": 1,
+        "shells": 1,
+        "faces": 6,
+        "edges": 12,
+        "vertices": 8
+      },
+      "placement": {
+        "base": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": {
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "angle_deg": 0.0,
+          "yaw_pitch_roll": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "dimensions_mm": {
+        "length": 12.7,
+        "width": 25.4,
+        "height": 7.619999999999999
+      }
+    }
+  },
+  "sha256": {
+    "Edited.FCStd": "387a0e20b382bdcfb6d55b9fd15d67d97ead245f23f1a79ff93f565c3a17cd54",
+    "Edited.step": "c7f56f47ed4c6a91fc0c2c262cf68934d9cfe0064dfeec44ecf4d3fde2cb3ebb"
+  }
+}

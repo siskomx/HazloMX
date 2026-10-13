@@ -1,0 +1,9 @@
+﻿{
+    "exit":  0,
+    "pass":  true,
+    "ignored":  6,
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "passed":  40,
+    "seeded_credential_absent":  true,
+    "user":  "WDAGUtilityAccount"
+}

@@ -1,0 +1,21 @@
+{
+    "app":  [
+                {
+                    "Id":  15776,
+                    "Path":  "C:\\HazloProbeApp\\hazlomexa.exe"
+                }
+            ],
+    "notepad":  false,
+    "previews":  [
+                     {
+                         "FullName":  "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\mx.hazlomexa.desktop\\artifact-previews\\3be2027d-e426-4fab-b9b5-5e5a37909a18",
+                         "Length":  null,
+                         "IsReadOnly":  null
+                     },
+                     {
+                         "FullName":  "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\mx.hazlomexa.desktop\\artifact-previews\\3be2027d-e426-4fab-b9b5-5e5a37909a18\\Sketch.ino",
+                         "Length":  156,
+                         "IsReadOnly":  true
+                     }
+                 ]
+}

@@ -1,0 +1,25 @@
+{
+  "tag": "v1.5.1",
+  "published_at": "2026-06-05T10:26:57Z",
+  "release_url": "https://github.com/arduino/arduino-cli/releases/tag/v1.5.1",
+  "assets": [
+    {
+      "name": "1.5.1-checksums.txt",
+      "url": "https://github.com/arduino/arduino-cli/releases/download/v1.5.1/1.5.1-checksums.txt",
+      "sha256": "sha256:1deac1e8d8eff69ef1b0cb8c5d4be2a3a81224b103eaf3403b77ff470c7f4ec6",
+      "bytes": 1710
+    },
+    {
+      "name": "arduino-cli_1.5.1_Windows_64bit.msi",
+      "url": "https://github.com/arduino/arduino-cli/releases/download/v1.5.1/arduino-cli_1.5.1_Windows_64bit.msi",
+      "sha256": "sha256:f5ec9eddc0704170272c993c3e01c96237e0a7e2c08e465fd05382e5891faca8",
+      "bytes": 18468864
+    },
+    {
+      "name": "arduino-cli_1.5.1_Windows_64bit.zip",
+      "url": "https://github.com/arduino/arduino-cli/releases/download/v1.5.1/arduino-cli_1.5.1_Windows_64bit.zip",
+      "sha256": "sha256:fabe42e0eb04d00e776a66178299ff95a46c623dbc260f997e58fd514853dd40",
+      "bytes": 17965819
+    }
+  ]
+}

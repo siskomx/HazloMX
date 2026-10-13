@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "missing_height",
+  "result": {
+    "proposal": {
+      "message": "¿Cuál es la altura del bloque?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 0.6405442
+}

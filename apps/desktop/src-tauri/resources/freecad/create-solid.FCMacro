@@ -1,0 +1,126 @@
+"""Create one approved rectangular solid in an otherwise empty job directory."""
+import json
+import math
+import os
+from pathlib import Path
+import sys
+import uuid
+import zipfile
+
+import FreeCAD as App
+import Part
+
+ADAPTER_VERSION = 1
+ROOT = Path.cwd()
+
+
+def unique_fields(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate input field: " + key)
+        result[key] = value
+    return result
+
+
+def dimensions(value):
+    if not isinstance(value, dict) or set(value) != {"length", "width", "height"}:
+        raise ValueError("Expected length, width and height in millimetres")
+    for number in value.values():
+        if type(number) not in (int, float) or not math.isfinite(number) or not 1 <= number <= 200:
+            raise ValueError("Dimensions must be finite numbers between 1 and 200 mm")
+    return value
+
+
+def measure(shape, expected):
+    if shape.isNull() or not shape.isValid() or len(shape.Solids) != 1:
+        raise ValueError("Expected exactly one valid solid")
+    bounds = shape.BoundBox
+    actual = [bounds.XLength, bounds.YLength, bounds.ZLength]
+    wanted = [expected["length"], expected["width"], expected["height"]]
+    if any(abs(a - b) > 0.01 for a, b in zip(actual, wanted)):
+        raise ValueError("Solid bounds differ from approved dimensions")
+    volume = math.prod(wanted)
+    if abs(shape.Volume - volume) > max(0.001, volume * 0.000001):
+        raise ValueError("Solid volume differs from approved dimensions")
+    return {"bounds_mm": actual, "volume_mm3": shape.Volume, "solids": len(shape.Solids)}
+
+
+def create():
+    with (ROOT / "input.json").open("rb") as source:
+        raw = source.read(16385)
+    if len(raw) > 16384:
+        raise ValueError("Input exceeds 16 KiB")
+    request = json.loads(raw, object_pairs_hook=unique_fields)
+    if not isinstance(request, dict) or set(request) != {"schema_version", "job_id", "dimensions_mm"}:
+        raise ValueError("Unexpected operation fields")
+    if type(request["schema_version"]) is not int or request["schema_version"] != 1:
+        raise ValueError("Unsupported input version")
+    if str(uuid.UUID(request["job_id"])) != request["job_id"]:
+        raise ValueError("Job identity must be a canonical UUID")
+    size = dimensions(request["dimensions_mm"])
+    for name in ("solid.FCStd", "solid.step", "result.json", "result.tmp"):
+        path = ROOT / name
+        if path.exists() or path.is_symlink():
+            raise ValueError("Output already exists: " + name)
+    document = App.newDocument("HazloMexaSolid")
+    try:
+        box = document.addObject("Part::Box", "Solid")
+        box.Length, box.Width, box.Height = size["length"], size["width"], size["height"]
+        document.recompute()
+        report = measure(box.Shape, size)
+        document.saveAs(str(ROOT / "solid.FCStd"))
+        # Headless saves omit the GUI metadata required to restore visible geometry.
+        lengths = [size[name] for name in ("length", "width", "height")]
+        radius = math.sqrt(sum(value * value for value in lengths)) / 2
+        distance = 4 * radius
+        offset = distance / math.sqrt(3)
+        position = [lengths[0] / 2 + offset, lengths[1] / 2 - offset, lengths[2] / 2 + offset]
+        camera = (f"OrthographicCamera {{ position {' '.join(str(value) for value in position)} "
+                  f"orientation 0.74290609 0.30772209 0.59447283 1.2171158 "
+                  f"nearDistance {distance - 2 * radius} farDistance {distance + 2 * radius} "
+                  f"aspectRatio 1 focalDistance {distance} height {4 * radius} }}")
+        with zipfile.ZipFile(ROOT / "solid.FCStd", "a", compression=zipfile.ZIP_DEFLATED) as archive:
+            if "GuiDocument.xml" in archive.namelist():
+                raise ValueError("Unexpected GUI metadata in headless document")
+            archive.writestr("GuiDocument.xml", f'''<?xml version="1.0" encoding="utf-8"?>
+<Document SchemaVersion="1">
+  <ViewProviderData Count="1">
+    <ViewProvider name="Solid" expanded="0">
+      <Properties Count="1">
+        <Property name="Visibility" type="App::PropertyBool" status="1"><Bool value="true"/></Property>
+      </Properties>
+    </ViewProvider>
+  </ViewProviderData>
+  <Camera settings="{camera}"/>
+</Document>
+''')
+        box.Shape.exportStep(str(ROOT / "solid.step"))
+        for name in ("solid.FCStd", "solid.step"):
+            path = ROOT / name
+            if not path.is_file() or path.stat().st_size == 0:
+                raise ValueError("Missing or empty output: " + name)
+        return {"schema_version": 1, "adapter_version": ADAPTER_VERSION,
+                "job_id": request["job_id"], "success": True,
+                "freecad_version": ".".join(App.Version()[:3]),
+                "dimensions_mm": size, "geometry": report,
+                "artifacts": ["solid.FCStd", "solid.step"]}
+    finally:
+        App.closeDocument(document.Name)
+
+
+try:
+    result = create()
+except Exception as error:
+    result = {"schema_version": 1, "adapter_version": ADAPTER_VERSION,
+              "success": False, "error": str(error)}
+
+# Never replace a previous run's result, even on the failure path.
+with (ROOT / "result.tmp").open("x", encoding="utf-8") as output:
+    json.dump(result, output, ensure_ascii=False, allow_nan=False)
+    output.flush()
+    os.fsync(output.fileno())
+if (ROOT / "result.json").exists():
+    raise RuntimeError("Result already exists")
+os.rename(ROOT / "result.tmp", ROOT / "result.json")
+sys.exit(0 if result["success"] else 1)

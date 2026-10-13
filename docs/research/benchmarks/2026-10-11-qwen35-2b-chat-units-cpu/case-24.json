@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 20,
+    "length": 152.4,
+    "width": 25.4
+  },
+  "id": "design_feet",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 20.0,
+        "length": 152.4,
+        "width": 25.4
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 10.0869415
+}

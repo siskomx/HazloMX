@@ -1,0 +1,12 @@
+{
+  "capabilities": {
+    "tools": {
+      "listChanged": true
+    }
+  },
+  "protocolVersion": "2025-06-18",
+  "serverInfo": {
+    "name": "konnect",
+    "version": "0.13.0"
+  }
+}

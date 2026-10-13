@@ -1,0 +1,9 @@
+﻿{
+    "downloaded":  true,
+    "adapters":  [
+                     {
+                         "Name":  "Ethernet",
+                         "Status":  "Up"
+                     }
+                 ]
+}

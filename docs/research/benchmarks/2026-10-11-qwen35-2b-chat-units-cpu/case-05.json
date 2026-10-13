@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 30,
+    "length": 10,
+    "width": 20
+  },
+  "id": "spanish_numbers",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 30.0,
+        "length": 10.0,
+        "width": 20.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 8.845547700000001
+}

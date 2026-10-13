@@ -1,0 +1,34 @@
+[
+  {
+    "session_id": "d24e8972-c018-4bd5-9721-24266e95d548",
+    "text": "",
+    "active_tool": null,
+    "initialized": true,
+    "complete": false,
+    "error": null
+  },
+  {
+    "session_id": "d24e8972-c018-4bd5-9721-24266e95d548",
+    "text": "",
+    "active_tool": null,
+    "initialized": true,
+    "complete": false,
+    "error": null
+  },
+  {
+    "session_id": "d24e8972-c018-4bd5-9721-24266e95d548",
+    "text": "",
+    "active_tool": null,
+    "initialized": true,
+    "complete": false,
+    "error": null
+  },
+  {
+    "session_id": "d24e8972-c018-4bd5-9721-24266e95d548",
+    "text": "",
+    "active_tool": null,
+    "initialized": true,
+    "complete": true,
+    "error": "Claude no completó la solicitud. Comprueba su inicio de sesión y los mensajes del cliente antes de reintentar."
+  }
+]

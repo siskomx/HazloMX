@@ -1,0 +1,188 @@
+[
+  {
+    "checks": null,
+    "components": null,
+    "content": "{\r\n  \"schema_version\": 1,\r\n  \"job_id\": \"67207bb7-ca4a-4fe4-9f28-415a0bea378e\",\r\n  \"success\": true,\r\n  \"cadpilot_version\": \"0.7.7\",\r\n  \"freecad_version\": \"1.1.4\",\r\n  \"operation\": \"inspect\",\r\n  \"object\": \"Document\",\r\n  \"parameters_mm\": {},\r\n  \"source_sha256\": \"2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6\",\r\n  \"catalog\": {\r\n    \"Target\": \"Part::Box\"\r\n  },\r\n  \"before\": {\r\n    \"Target\": {\r\n      \"success\": true,\r\n      \"shape_type\": \"Solid\",\r\n      \"is_valid\": true,\r\n      \"volume_mm3\": 6000.0,\r\n      \"area_mm2\": 2200.0,\r\n      \"center_of_mass\": [\r\n        5.0,\r\n        10.0,\r\n        15.0\r\n      ],\r\n      \"bbox\": {\r\n        \"xmin\": 0.0,\r\n        \"ymin\": 0.0,\r\n        \"zmin\": 0.0,\r\n        \"xmax\": 10.0,\r\n        \"ymax\": 20.0,\r\n        \"zmax\": 30.0\r\n      },\r\n      \"counts\": {\r\n        \"solids\": 1,\r\n        \"shells\": 1,\r\n        \"faces\": 6,\r\n        \"edges\": 12,\r\n        \"vertices\": 8\r\n      },\r\n      \"placement\": {\r\n        \"base\": [\r\n          0.0,\r\n          0.0,\r\n          0.0\r\n        ],\r\n        \"rotation\": {\r\n          \"axis\": [\r\n            0.0,\r\n            0.0,\r\n            1.0\r\n          ],\r\n          \"angle_deg\": 0.0,\r\n          \"yaw_pitch_roll\": [\r\n            0.0,\r\n            0.0,\r\n            0.0\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"after\": {\r\n    \"Target\": {\r\n      \"success\": true,\r\n      \"shape_type\": \"Solid\",\r\n      \"is_valid\": true,\r\n      \"volume_mm3\": 6000.0,\r\n      \"area_mm2\": 2200.0,\r\n      \"center_of_mass\": [\r\n        5.0,\r\n        10.0,\r\n        15.0\r\n      ],\r\n      \"bbox\": {\r\n        \"xmin\": 0.0,\r\n        \"ymin\": 0.0,\r\n        \"zmin\": 0.0,\r\n        \"xmax\": 10.0,\r\n        \"ymax\": 20.0,\r\n        \"zmax\": 30.0\r\n      },\r\n      \"counts\": {\r\n        \"solids\": 1,\r\n        \"shells\": 1,\r\n        \"faces\": 6,\r\n        \"edges\": 12,\r\n        \"vertices\": 8\r\n      },\r\n      \"placement\": {\r\n        \"base\": [\r\n          0.0,\r\n          0.0,\r\n          0.0\r\n        ],\r\n        \"rotation\": {\r\n          \"axis\": [\r\n            0.0,\r\n            0.0,\r\n            1.0\r\n          ],\r\n          \"angle_deg\": 0.0,\r\n          \"yaw_pitch_roll\": [\r\n            0.0,\r\n            0.0,\r\n            0.0\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"sha256\": {}\r\n}",
+    "drawing": null,
+    "format": "cadpilot_report",
+    "job_id": "67207bb7-ca4a-4fe4-9f28-415a0bea378e",
+    "project_id": "58da350a-b9a3-4180-8fc4-6ec7a2537d33",
+    "scope": "verified_published_result",
+    "sha256": "5cf569cbc90feaeffbd6f44992f80f8eb4cc2b159fa1980bcd608e23d7a03094",
+    "slicing": null,
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "c71faa77-cf02-4748-958f-42e7e95bc51e",
+      "measured_before": {
+        "catalog": {
+          "Target": "Part::Box"
+        },
+        "measurements": {
+          "Target": {
+            "area_mm2": 2200.0,
+            "bbox": {
+              "xmax": 10.0,
+              "xmin": 0.0,
+              "ymax": 20.0,
+              "ymin": 0.0,
+              "zmax": 30.0,
+              "zmin": 0.0
+            },
+            "center_of_mass": [
+              5.0,
+              10.0,
+              15.0
+            ],
+            "counts": {
+              "edges": 12,
+              "faces": 6,
+              "shells": 1,
+              "solids": 1,
+              "vertices": 8
+            },
+            "is_valid": true,
+            "placement": {
+              "base": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "rotation": {
+                "angle_deg": 0.0,
+                "axis": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "yaw_pitch_roll": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "shape_type": "Solid",
+            "success": true,
+            "volume_mm3": 6000.0
+          }
+        }
+      },
+      "phase": "awaiting_approval",
+      "request": {
+        "object": "Target",
+        "operation": "edit_box",
+        "parameters": {
+          "height": 3.5,
+          "length": 1.0,
+          "width": 2.0
+        },
+        "units": "cm"
+      }
+    },
+    "readback": {
+      "checks": null,
+      "components": null,
+      "content": "{\r\n  \"schema_version\": 1,\r\n  \"job_id\": \"c71faa77-cf02-4748-958f-42e7e95bc51e\",\r\n  \"success\": true,\r\n  \"cadpilot_version\": \"0.7.7\",\r\n  \"freecad_version\": \"1.1.4\",\r\n  \"operation\": \"edit_box\",\r\n  \"object\": \"Target\",\r\n  \"parameters_mm\": {\r\n    \"height\": 35.0,\r\n    \"length\": 10.0,\r\n    \"width\": 20.0\r\n  },\r\n  \"source_sha256\": \"2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6\",\r\n  \"catalog\": {\r\n    \"Target\": \"Part::Box\"\r\n  },\r\n  \"before\": {\r\n    \"Target\": {\r\n      \"success\": true,\r\n      \"shape_type\": \"Solid\",\r\n      \"is_valid\": true,\r\n      \"volume_mm3\": 6000.0,\r\n      \"area_mm2\": 2200.0,\r\n      \"center_of_mass\": [\r\n        5.0,\r\n        10.0,\r\n        15.0\r\n      ],\r\n      \"bbox\": {\r\n        \"xmin\": 0.0,\r\n        \"ymin\": 0.0,\r\n        \"zmin\": 0.0,\r\n        \"xmax\": 10.0,\r\n        \"ymax\": 20.0,\r\n        \"zmax\": 30.0\r\n      },\r\n      \"counts\": {\r\n        \"solids\": 1,\r\n        \"shells\": 1,\r\n        \"faces\": 6,\r\n        \"edges\": 12,\r\n        \"vertices\": 8\r\n      },\r\n      \"placement\": {\r\n        \"base\": [\r\n          0.0,\r\n          0.0,\r\n          0.0\r\n        ],\r\n        \"rotation\": {\r\n          \"axis\": [\r\n            0.0,\r\n            0.0,\r\n            1.0\r\n          ],\r\n          \"angle_deg\": 0.0,\r\n          \"yaw_pitch_roll\": [\r\n            0.0,\r\n            0.0,\r\n            0.0\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"after\": {\r\n    \"Target\": {\r\n      \"success\": true,\r\n      \"shape_type\": \"Solid\",\r\n      \"is_valid\": true,\r\n      \"volume_mm3\": 7000.0,\r\n      \"area_mm2\": 2500.0,\r\n      \"center_of_mass\": [\r\n        5.0,\r\n        10.0,\r\n        17.5\r\n      ],\r\n      \"bbox\": {\r\n        \"xmin\": 0.0,\r\n        \"ymin\": 0.0,\r\n        \"zmin\": 0.0,\r\n        \"xmax\": 10.0,\r\n        \"ymax\": 20.0,\r\n        \"zmax\": 35.0\r\n      },\r\n      \"counts\": {\r\n        \"solids\": 1,\r\n        \"shells\": 1,\r\n        \"faces\": 6,\r\n        \"edges\": 12,\r\n        \"vertices\": 8\r\n      },\r\n      \"placement\": {\r\n        \"base\": [\r\n          0.0,\r\n          0.0,\r\n          0.0\r\n        ],\r\n        \"rotation\": {\r\n          \"axis\": [\r\n            0.0,\r\n            0.0,\r\n            1.0\r\n          ],\r\n          \"angle_deg\": 0.0,\r\n          \"yaw_pitch_roll\": [\r\n            0.0,\r\n            0.0,\r\n            0.0\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"sha256\": {\r\n    \"Edited.FCStd\": \"6d822c041ea974d0296ad91a86f452d0b2caa9d7678ef5e542771eba0b79c09c\",\r\n    \"Edited.step\": \"18bc849d780f5f0b6b40bf82e3e76fb154535824fecd3d46eae5dc458f261092\"\r\n  }\r\n}",
+      "drawing": null,
+      "format": "cadpilot_report",
+      "job_id": "c71faa77-cf02-4748-958f-42e7e95bc51e",
+      "project_id": "58da350a-b9a3-4180-8fc4-6ec7a2537d33",
+      "scope": "verified_published_result",
+      "sha256": "b12eb90cbf3bc926c07fc24260f5be09fd951cd8010704c06577574be2dd9834",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": null
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "593ebddc-714a-41bb-8979-2df6b5a55d8e",
+      "measured_before": {
+        "catalog": {
+          "Target": "Part::Box"
+        },
+        "measurements": {
+          "Target": {
+            "area_mm2": 2500.0,
+            "bbox": {
+              "xmax": 10.0,
+              "xmin": 0.0,
+              "ymax": 20.0,
+              "ymin": 0.0,
+              "zmax": 35.0,
+              "zmin": 0.0
+            },
+            "center_of_mass": [
+              5.0,
+              10.0,
+              17.5
+            ],
+            "counts": {
+              "edges": 12,
+              "faces": 6,
+              "shells": 1,
+              "solids": 1,
+              "vertices": 8
+            },
+            "is_valid": true,
+            "placement": {
+              "base": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "rotation": {
+                "angle_deg": 0.0,
+                "axis": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "yaw_pitch_roll": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "shape_type": "Solid",
+            "success": true,
+            "volume_mm3": 7000.0
+          }
+        }
+      },
+      "phase": "awaiting_approval",
+      "request": {
+        "object": "Cylinder",
+        "operation": "add_cylinder",
+        "parameters": {
+          "height": 1.0,
+          "radius": 1.0,
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "units": "in"
+      }
+    },
+    "readback": {
+      "checks": null,
+      "components": null,
+      "content": "{\r\n  \"schema_version\": 1,\r\n  \"job_id\": \"593ebddc-714a-41bb-8979-2df6b5a55d8e\",\r\n  \"success\": true,\r\n  \"cadpilot_version\": \"0.7.7\",\r\n  \"freecad_version\": \"1.1.4\",\r\n  \"operation\": \"add_cylinder\",\r\n  \"object\": \"Cylinder\",\r\n  \"parameters_mm\": {\r\n    \"height\": 25.4,\r\n    \"radius\": 25.4,\r\n    \"x\": 25.4,\r\n    \"y\": 0.0,\r\n    \"z\": 0.0\r\n  },\r\n  \"source_sha256\": \"6d822c041ea974d0296ad91a86f452d0b2caa9d7678ef5e542771eba0b79c09c\",\r\n  \"catalog\": {\r\n    \"Target\": \"Part::Box\"\r\n  },\r\n  \"before\": {\r\n    \"Target\": {\r\n      \"success\": true,\r\n      \"shape_type\": \"Solid\",\r\n      \"is_valid\": true,\r\n      \"volume_mm3\": 7000.0,\r\n      \"area_mm2\": 2500.0,\r\n      \"center_of_mass\": [\r\n        5.0,\r\n        10.0,\r\n        17.5\r\n      ],\r\n      \"bbox\": {\r\n        \"xmin\": 0.0,\r\n        \"ymin\": 0.0,\r\n        \"zmin\": 0.0,\r\n        \"xmax\": 10.0,\r\n        \"ymax\": 20.0,\r\n        \"zmax\": 35.0\r\n      },\r\n      \"counts\": {\r\n        \"solids\": 1,\r\n        \"shells\": 1,\r\n        \"faces\": 6,\r\n        \"edges\": 12,\r\n        \"vertices\": 8\r\n      },\r\n      \"placement\": {\r\n        \"base\": [\r\n          0.0,\r\n          0.0,\r\n          0.0\r\n        ],\r\n        \"rotation\": {\r\n          \"axis\": [\r\n            0.0,\r\n            0.0,\r\n            1.0\r\n          ],\r\n          \"angle_deg\": 0.0,\r\n          \"yaw_pitch_roll\": [\r\n            0.0,\r\n            0.0,\r\n            0.0\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"after\": {\r\n    \"Target\": {\r\n      \"success\": true,\r\n      \"shape_type\": \"Solid\",\r\n      \"is_valid\": true,\r\n      \"volume_mm3\": 7000.0,\r\n      \"area_mm2\": 2500.0,\r\n      \"center_of_mass\": [\r\n        5.0,\r\n        10.0,\r\n        17.5\r\n      ],\r\n      \"bbox\": {\r\n        \"xmin\": 0.0,\r\n        \"ymin\": 0.0,\r\n        \"zmin\": 0.0,\r\n        \"xmax\": 10.0,\r\n        \"ymax\": 20.0,\r\n        \"zmax\": 35.0\r\n      },\r\n      \"counts\": {\r\n        \"solids\": 1,\r\n        \"shells\": 1,\r\n        \"faces\": 6,\r\n        \"edges\": 12,\r\n        \"vertices\": 8\r\n      },\r\n      \"placement\": {\r\n        \"base\": [\r\n          0.0,\r\n          0.0,\r\n          0.0\r\n        ],\r\n        \"rotation\": {\r\n          \"axis\": [\r\n            0.0,\r\n            0.0,\r\n            1.0\r\n          ],\r\n          \"angle_deg\": 0.0,\r\n          \"yaw_pitch_roll\": [\r\n            0.0,\r\n            0.0,\r\n            0.0\r\n          ]\r\n        }\r\n      }\r\n    },\r\n    \"Cylinder\": {\r\n      \"success\": true,\r\n      \"shape_type\": \"Solid\",\r\n      \"is_valid\": true,\r\n      \"volume_mm3\": 51481.5,\r\n      \"area_mm2\": 8107.32,\r\n      \"center_of_mass\": [\r\n        25.4,\r\n        7.96108e-16,\r\n        12.7\r\n      ],\r\n      \"bbox\": {\r\n        \"xmin\": 0.0,\r\n        \"ymin\": -25.4,\r\n        \"zmin\": 0.0,\r\n        \"xmax\": 50.8,\r\n        \"ymax\": 25.4,\r\n        \"zmax\": 25.4\r\n      },\r\n      \"counts\": {\r\n        \"solids\": 1,\r\n        \"shells\": 1,\r\n        \"faces\": 3,\r\n        \"edges\": 3,\r\n        \"vertices\": 2\r\n      },\r\n      \"placement\": {\r\n        \"base\": [\r\n          25.4,\r\n          0.0,\r\n          0.0\r\n        ],\r\n        \"rotation\": {\r\n          \"axis\": [\r\n            0.0,\r\n            0.0,\r\n            1.0\r\n          ],\r\n          \"angle_deg\": 0.0,\r\n          \"yaw_pitch_roll\": [\r\n            0.0,\r\n            0.0,\r\n            0.0\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"sha256\": {\r\n    \"Edited.FCStd\": \"4a5b23e10138daf9ad0f4449d0a766d9eca000ad4a1b42e4f5e842bf9fe201f5\",\r\n    \"Edited.step\": \"ce135d289df689c209f5f246a81d66d51d56be2412cdafb55c13438dd0d573f7\"\r\n  }\r\n}",
+      "drawing": null,
+      "format": "cadpilot_report",
+      "job_id": "593ebddc-714a-41bb-8979-2df6b5a55d8e",
+      "project_id": "58da350a-b9a3-4180-8fc4-6ec7a2537d33",
+      "scope": "verified_published_result",
+      "sha256": "4523ff7b9a8e889f4766d8bf37037b62a06cf173a3c9efed2aa03f7a95473db6",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": null
+    }
+  }
+]

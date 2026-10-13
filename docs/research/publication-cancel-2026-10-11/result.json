@@ -1,0 +1,35 @@
+{
+  "pass": true,
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-1GIcoX\\project",
+  "artifact": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-1GIcoX\\project\\.hazlomexa\\artifacts\\a3bd49d8-d842-4a85-b7c4-119b71a351ed",
+  "screenshot": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-1GIcoX\\completed.png",
+  "unprivileged_denial": "get_snapshot not allowed on window \"unprivileged\", webview \"unprivileged\", URL: local\n\nallowed on: [webviews: \"main\", URL: local]\n\nreferenced by: capability: main, permission: allow-get-snapshot",
+  "job_id": "a3bd49d8-d842-4a85-b7c4-119b71a351ed",
+  "cad_cancellation_ms": 45.38690000000042,
+  "observed_cad_pids": [
+    18800,
+    20860
+  ],
+  "publication_race": {
+    "job_id": "4cbe75fe-61b5-41e3-9289-3afd0e01ea22",
+    "trigger": "actual fixed macro successful result observed",
+    "cancel_reply": "cancelled",
+    "final_phase": "cancelled",
+    "published": false,
+    "exact_commit_timing_observed": false
+  },
+  "checks": [
+    "native ACL denial",
+    "no staging before approval",
+    "edit invalidates approval",
+    "stale approval rejected",
+    "keyboard navigation with visible focus",
+    "keyboard approval and denial",
+    "reload during CAD",
+    "real CAD publication",
+    "persisted source, timestamps, edits and sequence match native snapshot",
+    "reload preserves one job",
+    "keyboard cancellation terminates observed real CAD processes without another published run",
+    "previous completed result remains openable after new jobs and reload"
+  ]
+}

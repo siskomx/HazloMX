@@ -1,0 +1,28 @@
+{
+  "pass": true,
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-pmNg3L\\project",
+  "artifact": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-pmNg3L\\project\\.hazlomexa\\artifacts\\bb28ffba-dce6-40d1-82d8-3ca034d8d27e",
+  "screenshot": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-pmNg3L\\completed.png",
+  "unprivileged_denial": "get_snapshot not allowed on window \"unprivileged\", webview \"unprivileged\", URL: local\n\nallowed on: [webviews: \"main\", URL: local]\n\nreferenced by: capability: main, permission: allow-get-snapshot",
+  "job_id": "bb28ffba-dce6-40d1-82d8-3ca034d8d27e",
+  "cad_cancellation_ms": 45.13290000000052,
+  "observed_cad_pids": [
+    22436,
+    22092
+  ],
+  "checks": [
+    "native ACL denial",
+    "no staging before approval",
+    "edit invalidates approval",
+    "stale approval rejected",
+    "keyboard navigation with visible focus",
+    "keyboard approval and denial",
+    "reload during CAD",
+    "real CAD publication",
+    "persisted source, timestamps, edits and sequence match native snapshot",
+    "reload preserves one job",
+    "keyboard cancellation terminates observed real CAD processes without another published run",
+    "previous completed result remains openable after new jobs and reload",
+    "inch input is converted to canonical 10 × 20 × 30 mm before native approval"
+  ]
+}

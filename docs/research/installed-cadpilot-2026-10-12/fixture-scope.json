@@ -1,0 +1,5 @@
+{
+  "prior_engineering_gates": "omitted: retained separately",
+  "scope": "CADPilot installed connector and lifecycle only",
+  "native_ui_gate": "omitted: previously terminal connection failure remains unfinished"
+}

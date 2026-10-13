@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_no_substitution",
+  "result": {
+    "proposal": {
+      "message": "La geometría solicitada (caja hueca con agujeros) no está soportada. Solo puedo crear sólidos rectangulares y cubos. ¿Quieres un bloque rectangular de referencia para medir las dimensiones de la caja hueca?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 8.3251401
+}

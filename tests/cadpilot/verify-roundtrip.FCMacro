@@ -1,0 +1,38 @@
+"""Fresh-process validation independent of CADPilot's measurement helpers."""
+import json
+import math
+import os
+from pathlib import Path
+import traceback
+import FreeCAD as App
+import Part
+
+root = Path.cwd()
+try:
+    assert ".".join(App.Version()[:3]) == "1.1.4"
+    doc = App.openDocument(str(root / "Edited.FCStd"))
+    assert {obj.Name for obj in doc.Objects} == {"Target", "AddedCylinder"}
+    box = doc.getObject("Target")
+    assert box.TypeId == "Part::Box"
+    expected = [12.7, 25.4, 7.62]
+    assert all(abs(float(getattr(box, key)) - value) < 0.001 for key, value in zip(["Length", "Width", "Height"], expected))
+    assert box.Shape.isValid() and len(box.Shape.Solids) == 1
+    bounds = box.Shape.BoundBox
+    assert all(abs(a-b) < 0.001 for a,b in zip([bounds.XLength,bounds.YLength,bounds.ZLength],expected))
+    cylinder = doc.getObject("AddedCylinder")
+    assert cylinder.TypeId == "Part::Cylinder"
+    assert abs(float(cylinder.Radius)-2) < 0.001 and abs(float(cylinder.Height)-8) < 0.001
+    assert abs(cylinder.Shape.BoundBox.XMin-38) < 0.001
+    step = Part.Shape()
+    step.read(str(root / "Edited.step"))
+    assert step.isValid() and len(step.Solids) == 2
+    assert abs(step.Volume - (math.prod(expected)+math.pi*4*8)) < 0.01
+    # Native parameters remain editable after reopening.
+    box.Length = 15
+    doc.recompute()
+    assert abs(box.Shape.BoundBox.XLength-15) < 0.001
+    (root / "roundtrip.json").write_text(json.dumps({"passed":True,"fresh_process":True,"native_parameters_editable":True,"step_solids":2}),encoding="utf-8")
+    os._exit(0)
+except BaseException:
+    (root / "roundtrip-failure.txt").write_text(traceback.format_exc(),encoding="utf-8")
+    os._exit(1)

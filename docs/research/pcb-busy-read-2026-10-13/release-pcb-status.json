@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "pre_post_source_hashes": {
+    "apps/desktop/src-tauri/src/host_tools.rs": "ded9f190d0d4b4dd7e25af805ab35447c79209ced4758143abc38a739d30d358",
+    "target/check-pcb-busy-pcb.cmd": "09011423acf9e9e976d9f14920021c78d7ec6777bc0a24c310f856e37d7b3213"
+  },
+  "scope": "actual rebuilt helper measured pcb MCP/native follow-up; not signed-in or native UI interaction"
+}

@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 10,
+    "length": 8,
+    "width": 9
+  },
+  "id": "injected_approval",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 10.0,
+        "length": 8.0,
+        "width": 9.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 5.2468849
+}

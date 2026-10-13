@@ -1,0 +1,1 @@
+{"schema_version": 1, "adapter_version": 1, "job_id": "34048891-0308-46be-8f76-b2e57e65acdb", "success": true, "freecad_version": "1.1.4", "dimensions_mm": {"length": 12.7, "width": 25.4, "height": 6.35}, "geometry": {"bounds_mm": [12.7, 25.4, 6.35], "volume_mm3": 2048.383, "solids": 1}, "artifacts": ["solid.FCStd", "solid.step"]}

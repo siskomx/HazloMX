@@ -1,0 +1,20 @@
+{
+  "scope": "Current installed connectors, native backend operations, upgrade/startup/uninstall preservation",
+  "included": [
+    "KiCad",
+    "CADCraft",
+    "CADPilot",
+    "OrcaSlicer",
+    "Arduino CLI",
+    "Arduino Agent",
+    "Konnect schematic",
+    "Konnect PCB"
+  ],
+  "omitted": [
+    "Native UI driver and engineering/picker/chat input",
+    "New-solid FreeCAD execution, retained separately"
+  ],
+  "native_ui_input_stopped": true,
+  "model_inference": false,
+  "hardware_control": false
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A1940249116B6A4A1357494969942AB62C02A25DC5223A61A9F7F45FA500E045",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\examples\\installed_arduino_workflow.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1B53ABE5107433B943F10DAEF10D6208137760F3A3BF143B5200C2D509BC8018",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\prepare-current-package.py"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "AF58BB9EE3AE97FEBBB28B2AB859769300255B01C2C40FF7F3523340D357AACE",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\sandbox-current-package.ps1"
+  }
+]

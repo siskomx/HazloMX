@@ -1,0 +1,18 @@
+{
+  "pass": true,
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-DX7Ane\\project",
+  "artifact": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-DX7Ane\\project\\.hazlomexa\\artifacts\\fe38d1ab-b558-4f57-be69-cd703fea2ebc",
+  "screenshot": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-DX7Ane\\completed.png",
+  "unprivileged_denial": "get_snapshot not allowed on window \"unprivileged\", webview \"unprivileged\", URL: local\n\nallowed on: [webviews: \"main\", URL: local]\n\nreferenced by: capability: main, permission: allow-get-snapshot",
+  "job_id": "fe38d1ab-b558-4f57-be69-cd703fea2ebc",
+  "checks": [
+    "native ACL denial",
+    "no staging before approval",
+    "edit invalidates approval",
+    "stale approval rejected",
+    "keyboard approval",
+    "reload during CAD",
+    "real CAD publication",
+    "reload preserves one job"
+  ]
+}

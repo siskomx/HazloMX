@@ -1,0 +1,251 @@
+[
+  {
+    "initial_inspection": {
+      "components": [
+        {
+          "library": "power:GND",
+          "reference": "#PWR01",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR02",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR03",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR04",
+          "value": "GND"
+        },
+        {
+          "library": "Device:C_Small",
+          "reference": "C1",
+          "value": "10u"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J1",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J2",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J3",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J4",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R1",
+          "value": "10k"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R2",
+          "value": "10k"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R3",
+          "value": "10k"
+        },
+        {
+          "library": "Amplifier_Operational:TLV2371DBV",
+          "reference": "U1",
+          "value": "TLV2371DBV"
+        }
+      ],
+      "name": "basic_test.kicad_sch",
+      "read_only_references": "Identifiers starting with # cannot be edited by this adapter.",
+      "scope": "selected_sheet_only",
+      "selection": "c76743f6-b49f-4080-b338-7db1c06a903f"
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "b7291ed8-dfff-462d-a32b-2fde532a85e7",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": null,
+      "components": [
+        {
+          "library": "power:GND",
+          "reference": "#PWR01",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR02",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR03",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR04",
+          "value": "GND"
+        },
+        {
+          "library": "Device:C_Small",
+          "reference": "C1",
+          "value": "10u"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J1",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J2",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J3",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J4",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R1",
+          "value": "12.34k"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R2",
+          "value": "10k"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R3",
+          "value": "10k"
+        },
+        {
+          "library": "Amplifier_Operational:TLV2371DBV",
+          "reference": "U1",
+          "value": "TLV2371DBV"
+        }
+      ],
+      "content": "{\n  \"schema_version\": 2,\n  \"job_id\": \"b7291ed8-dfff-462d-a32b-2fde532a85e7\",\n  \"konnect_version\": \"0.13.0\",\n  \"protocol_version\": \"2025-06-18\",\n  \"files\": [\n    {\n      \"path\": \"Edited/basic_test.kicad_pcb\",\n      \"sha256\": \"5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_prl\",\n      \"sha256\": \"74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_sch\",\n      \"sha256\": \"0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836\"\n    },\n    {\n      \"path\": \"Edited/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Netlist.xml\",\n      \"sha256\": \"0900e5d3b014f7fd94a2157fb2a6470670c1d0e1f690daa07ec5a27535ec8ae0\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pcb\",\n      \"sha256\": \"5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pro\",\n      \"sha256\": \"ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Original/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"input.json\",\n      \"sha256\": \"16f325d2390b4aa0b21c625099800333cb0f844f77053b0a0324fc37912f2b65\"\n    }\n  ]\n}",
+      "drawing": null,
+      "format": "konnect_report",
+      "job_id": "b7291ed8-dfff-462d-a32b-2fde532a85e7",
+      "project_id": "bce94ba9-0ec9-404b-b4d2-b76c6f0e699d",
+      "scope": "verified_published_result",
+      "sha256": "3e10d176b6b5786f28108dcfe235cb99b036ac27bae0ebb11cef7a54a99d0071",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": null
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "86604dea-7bdc-4122-bea0-90ed0634f85b",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": null,
+      "components": [
+        {
+          "library": "power:GND",
+          "reference": "#PWR01",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR02",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR03",
+          "value": "GND"
+        },
+        {
+          "library": "power:GND",
+          "reference": "#PWR04",
+          "value": "GND"
+        },
+        {
+          "library": "Device:C_Small",
+          "reference": "C1",
+          "value": "10u"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J1",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J2",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J3",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Connector:Conn_01x01_Pin",
+          "reference": "J4",
+          "value": "Conn_01x01_Pin"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R1",
+          "value": "22k"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R2",
+          "value": "10k"
+        },
+        {
+          "library": "Device:R_US",
+          "reference": "R3",
+          "value": "10k"
+        },
+        {
+          "library": "Amplifier_Operational:TLV2371DBV",
+          "reference": "U1",
+          "value": "TLV2371DBV"
+        }
+      ],
+      "content": "{\n  \"schema_version\": 2,\n  \"job_id\": \"86604dea-7bdc-4122-bea0-90ed0634f85b\",\n  \"konnect_version\": \"0.13.0\",\n  \"protocol_version\": \"2025-06-18\",\n  \"files\": [\n    {\n      \"path\": \"Edited/basic_test.kicad_pcb\",\n      \"sha256\": \"5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_prl\",\n      \"sha256\": \"74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_sch\",\n      \"sha256\": \"41d587735fe51de9bb723210eef912e72520233f7d8e748a7ad1f1c29ecb15f0\"\n    },\n    {\n      \"path\": \"Edited/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Netlist.xml\",\n      \"sha256\": \"c9bdef75db55fad100b7974d0e16e044a775d94b0b027802ed9c72019610cf41\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pcb\",\n      \"sha256\": \"5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_sch\",\n      \"sha256\": \"0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836\"\n    },\n    {\n      \"path\": \"Original/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"input.json\",\n      \"sha256\": \"eaf0c38eb6ef6ec7aa2bdb616635b6c406c7882cc1fefb0dcf607d6103d8611d\"\n    }\n  ]\n}",
+      "drawing": null,
+      "format": "konnect_report",
+      "job_id": "86604dea-7bdc-4122-bea0-90ed0634f85b",
+      "project_id": "bce94ba9-0ec9-404b-b4d2-b76c6f0e699d",
+      "scope": "verified_published_result",
+      "sha256": "49e1c72334ad1f312a81e3a370b0ed130762f6df73064313e265e8b2820a85e4",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": null
+    }
+  }
+]

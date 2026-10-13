@@ -1,0 +1,46 @@
+[
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "28cb87e4-7a99-43db-b8c9-d69ad4296d12",
+      "operation": "compile_only",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": null,
+      "components": null,
+      "content": "void setup() { pinMode(LED_BUILTIN, OUTPUT); } void loop() { digitalWrite(LED_BUILTIN, HIGH); }",
+      "drawing": null,
+      "format": "sketch",
+      "job_id": "28cb87e4-7a99-43db-b8c9-d69ad4296d12",
+      "project_id": "12e8daed-6d2e-4f50-8bac-2f8965f622fa",
+      "scope": "verified_published_result",
+      "sha256": "bb0a67921376536e3f4600ba46abc4d4fed6aed5fc8668929e6e3642b8ba520e",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": "Sketch.ino"
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "f21f677c-cbdc-406a-b7ca-5ed3bb45fa54",
+      "operation": "compile_only",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": null,
+      "components": null,
+      "content": "void setup() { pinMode(LED_BUILTIN, OUTPUT); } void loop() { digitalWrite(LED_BUILTIN, LOW); }",
+      "drawing": null,
+      "format": "sketch",
+      "job_id": "f21f677c-cbdc-406a-b7ca-5ed3bb45fa54",
+      "project_id": "12e8daed-6d2e-4f50-8bac-2f8965f622fa",
+      "scope": "verified_published_result",
+      "sha256": "09aee5b8f913784772a5d35274188a556f6e5f16284a3242ec14ba79f0e862a7",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": "Sketch.ino"
+    }
+  }
+]

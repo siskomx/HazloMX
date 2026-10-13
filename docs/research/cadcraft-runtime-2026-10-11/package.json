@@ -1,0 +1,9 @@
+{
+  "commit": "315751e3ec98e708bcc831dd7f80ca0433a2e3d0",
+  "asset": "cadcraft-0.5.0-windows-x64-portable.zip",
+  "size": 21587357,
+  "sha256": "ce849d6ad1145a492b9b04bdab0ff36ee0e1cf72410d5e3a491ad006ff125614",
+  "published_digest": "sha256:ce849d6ad1145a492b9b04bdab0ff36ee0e1cf72410d5e3a491ad006ff125614",
+  "download_url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/cadcraft-0.5.0-windows-x64-portable.zip",
+  "source_sha256": "77e8b529577a7c2f631652dc88be127eff47db0de46bdbbdad09f94900ef33f2"
+}

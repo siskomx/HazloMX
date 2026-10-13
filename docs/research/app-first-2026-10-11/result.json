@@ -1,0 +1,29 @@
+{
+  "focus": "Finish the app; further model downloads and evaluations deferred at user request.",
+  "frontend_build_pass": true,
+  "frontend_fixture_pass": true,
+  "frontend_fixture_scope": "Unit conversion/bounds, proportional preview, multi-turn/reload/project isolation, manual context, dirty approval, cancelled picker, and opening failure retaining completed fixture results. No actual AI or CAD execution in this fixture.",
+  "native_workflow_pass": true,
+  "native_workflow_scope": [
+    "native ACL denial",
+    "no staging before approval",
+    "edit invalidates approval",
+    "stale approval rejected",
+    "keyboard navigation with visible focus",
+    "keyboard approval and denial",
+    "reload during CAD",
+    "real CAD publication",
+    "persisted source, timestamps, edits and sequence match native snapshot",
+    "reload preserves one job",
+    "keyboard cancellation terminates observed real CAD processes without another published run",
+    "previous completed result remains openable after new jobs and reload"
+  ],
+  "cad_cancellation_ms": 27.082499999999527,
+  "second_environment_backend_pass": true,
+  "actual_snapshot_disk_exhaustion_pass": true,
+  "full_second_environment_revised_release_pass": false,
+  "model_benchmarking_deferred": true,
+  "release_installer_lifecycle_pass": true,
+  "release_installer_sha256": "6484c18e6147b104b6abca47fcae8aef5e43b959c2a11f41dd1cb0919c055d3d",
+  "desktop_clippy_pass": true
+}

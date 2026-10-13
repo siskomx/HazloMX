@@ -1,0 +1,237 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-11T18:29:01",
+    "ignored_checks": [
+        {
+            "description": "Footprint has no courtyard defined",
+            "key": "missing_courtyard"
+        },
+        {
+            "description": "Track endpoint not centered on via",
+            "key": "track_not_centered_on_via"
+        },
+        {
+            "description": "Tuning profile track geometries",
+            "key": "tuning_profile_track_geometries"
+        },
+        {
+            "description": "Footprint doesn't match symbol's footprint filters",
+            "key": "footprint_filters_mismatch"
+        },
+        {
+            "description": "PTH inside courtyard",
+            "key": "pth_inside_courtyard"
+        },
+        {
+            "description": "NPTH inside courtyard",
+            "key": "npth_inside_courtyard"
+        },
+        {
+            "description": "Footprint component type doesn't match footprint pads",
+            "key": "footprint_type_mismatch"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.7",
+    "schematic_parity": [],
+    "source": "shorted.kicad_pcb",
+    "unconnected_items": [
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Track [Net-(U1-+)] on F.Cu, length 7.0711 mm",
+                    "pos": {
+                        "x": 200.0,
+                        "y": 145.0
+                    },
+                    "uuid": "06865587-2b98-4d18-8da3-060754291302"
+                },
+                {
+                    "description": "Track [Net-(U1-+)] on F.Cu, length 1.4375 mm",
+                    "pos": {
+                        "x": 204.475,
+                        "y": 144.35
+                    },
+                    "uuid": "8f4ee24c-0318-410b-b82e-ffebe56eab0e"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        }
+    ],
+    "violations": [
+        {
+            "description": "Tracks crossing",
+            "items": [
+                {
+                    "description": "Track [GND] on F.Cu, length 7.0711 mm",
+                    "pos": {
+                        "x": 200.0,
+                        "y": 140.0
+                    },
+                    "uuid": "06865587-2b98-4d18-8da3-060754291301"
+                },
+                {
+                    "description": "Track [Net-(U1-+)] on F.Cu, length 1.4375 mm",
+                    "pos": {
+                        "x": 204.475,
+                        "y": 144.35
+                    },
+                    "uuid": "8f4ee24c-0318-410b-b82e-ffebe56eab0e"
+                }
+            ],
+            "severity": "error",
+            "type": "tracks_crossing"
+        },
+        {
+            "description": "Tracks crossing",
+            "items": [
+                {
+                    "description": "Track [Net-(U1-+)] on F.Cu, length 7.0711 mm",
+                    "pos": {
+                        "x": 200.0,
+                        "y": 145.0
+                    },
+                    "uuid": "06865587-2b98-4d18-8da3-060754291302"
+                },
+                {
+                    "description": "Track [Net-(U1--)] on F.Cu, length 1.1490 mm",
+                    "pos": {
+                        "x": 199.95,
+                        "y": 143.5375
+                    },
+                    "uuid": "f1e23dfe-1d11-4acc-bb03-65c8f578b0c4"
+                }
+            ],
+            "severity": "error",
+            "type": "tracks_crossing"
+        },
+        {
+            "description": "Clearance violation (zone clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Track [Net-(U1-+)] on F.Cu, length 7.0711 mm",
+                    "pos": {
+                        "x": 200.0,
+                        "y": 145.0
+                    },
+                    "uuid": "06865587-2b98-4d18-8da3-060754291302"
+                },
+                {
+                    "description": "Zone [GND] on F.Cu and B.Cu, priority 0",
+                    "pos": {
+                        "x": 187.0,
+                        "y": 137.0
+                    },
+                    "uuid": "9f1de67c-2f6b-46ef-9c44-e478f4e6b562"
+                }
+            ],
+            "severity": "error",
+            "type": "clearance"
+        },
+        {
+            "description": "Front solder mask aperture bridges items with different nets",
+            "items": [
+                {
+                    "description": "Track [Net-(U1-+)] on F.Cu, length 7.0711 mm",
+                    "pos": {
+                        "x": 200.0,
+                        "y": 145.0
+                    },
+                    "uuid": "06865587-2b98-4d18-8da3-060754291302"
+                },
+                {
+                    "description": "Pad 4 [Net-(U1--)] of U1 on F.Cu",
+                    "pos": {
+                        "x": 200.7625,
+                        "y": 144.35
+                    },
+                    "uuid": "9a78eba5-f755-4036-8bcc-28f230d9ce20"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "Footprint 'SOT-23-5' does not match copy in library 'Package_TO_SOT_SMD'",
+            "items": [
+                {
+                    "description": "Footprint U1",
+                    "pos": {
+                        "x": 201.9,
+                        "y": 145.3
+                    },
+                    "uuid": "46ee94d1-977a-45b0-a3f4-b6f45331a22d"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "Footprint 'R_1206_3216Metric' does not match copy in library 'Resistor_SMD'",
+            "items": [
+                {
+                    "description": "Footprint R2",
+                    "pos": {
+                        "x": 198.0,
+                        "y": 145.0
+                    },
+                    "uuid": "84d75378-f03e-476c-badf-38e6fb8d9772"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "Footprint 'R_1206_3216Metric' does not match copy in library 'Resistor_SMD'",
+            "items": [
+                {
+                    "description": "Footprint R1",
+                    "pos": {
+                        "x": 197.0,
+                        "y": 141.0
+                    },
+                    "uuid": "9ba418c8-2eec-4809-8f5b-d46c1151991e"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "Footprint 'R_1206_3216Metric' does not match copy in library 'Resistor_SMD'",
+            "items": [
+                {
+                    "description": "Footprint R3",
+                    "pos": {
+                        "x": 204.0,
+                        "y": 151.0
+                    },
+                    "uuid": "cfe1ba2c-d301-4a4b-b0fe-608ede2e0767"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "Footprint 'C_1206_3216Metric' does not match copy in library 'Capacitor_SMD'",
+            "items": [
+                {
+                    "description": "Footprint C1",
+                    "pos": {
+                        "x": 207.5,
+                        "y": 145.9
+                    },
+                    "uuid": "db9388ac-163d-40bc-be40-37f8cd7f2c2a"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        }
+    ]
+}

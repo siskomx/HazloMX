@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "version": "0.5.0",
+  "cli_sha256": "d9517678cf9216a63ecb7f4adfe4ab485af9541849d465245251bba91845724f",
+  "units": [
+    {
+      "metric": false,
+      "insunits": "1",
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    },
+    {
+      "metric": true,
+      "insunits": "4",
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  ],
+  "conversion_reports_loss_with_exit_zero": true,
+  "upstream_overwrites_output": true,
+  "native_ui_verified": false,
+  "hashes": {
+    "bad.dxf": "e3b5f8bf0e2c19efab9bc809d35671d8acd24268bc4e642db5700b82548f35bd",
+    "foreign-copy.dxf": "f8dddfa6e319502aedbf369e476dfc4b58429114859f028564b8ee33626d68da",
+    "foreign.dxf": "45332c11bcd5c2317d3e3163a1e741aa8ef968d5812db0b7338241808ad50d24",
+    "imperial-copy.dxf": "c6a6634794ada77fcc9e2148d432a1a23de38a7c93e85132f2074e4939ffcbca",
+    "imperial-dwg-reopened.dxf": "208228f3c126002ca8d9ac2c818fce0c4d0fb6e12841504e88ad6bc6714834ac",
+    "imperial.dwg": "3b2eb56e80cc6cdeaecc9a01df88f774782ed661d12dcc2ad458b3b173ee6190",
+    "imperial.dxf": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7",
+    "imperial.png": "9a67bfeb7fd0a65278b77556f899c971ae15862b5cbc8a04f6a7eebcd8bcf201",
+    "imperial.svg": "080d5472727a9755686e58ee59bb74aed77ef3bdad3f2fe2667d874a3c427066",
+    "metric-copy.dxf": "8e545bb410405ee69d8bacfba044c26344f31cb0c5748910aa725c52fc0c34d1",
+    "metric-dwg-reopened.dxf": "a4f5f867c84fe03275694a8612fde096b604adcdb8874dc83a29d75efd31da9a",
+    "metric.dwg": "a353d67e5f602f72cf057d51fc7a8348c53265e9eeab5b0204957437926a9709",
+    "metric.dxf": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982",
+    "metric.png": "9a67bfeb7fd0a65278b77556f899c971ae15862b5cbc8a04f6a7eebcd8bcf201",
+    "metric.svg": "080d5472727a9755686e58ee59bb74aed77ef3bdad3f2fe2667d874a3c427066",
+    "occupied.dxf": "8e545bb410405ee69d8bacfba044c26344f31cb0c5748910aa725c52fc0c34d1"
+  }
+}

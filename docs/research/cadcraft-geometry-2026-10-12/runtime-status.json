@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "cadcraft",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "expected_tests": [
+    "cadcraft::tests::actual_cli_copies_converts_and_adds_circle",
+    "jobs::tests::actual_cadcraft_workflow_publication_and_recovery",
+    "jobs::tests::actual_cadcraft_owned_process_cancellation"
+  ],
+  "native_ui_verified": false,
+  "installed_workflow_verified": false,
+  "source_hashes": {
+    "Cargo.lock": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4",
+    "apps\\desktop\\src-tauri\\src\\agent.rs": "a70dc3e4e86854556e969712ae08f4bdf1042ee868f9fb14dee6c2e67e1c887e",
+    "apps\\desktop\\src-tauri\\src\\arduino.rs": "28aed7203e544ba49e2c73ab9ab23d0b8dcb42510582e9bc0339a2f74dcc24a1",
+    "apps\\desktop\\src-tauri\\src\\cadcraft.rs": "864cdde79306867a540d199e5df8442c9214b82da01011e472eec16c5835a7f7",
+    "apps\\desktop\\src-tauri\\src\\cadpilot.rs": "7ae2df8f5a33bcba4f8486afc627bb2f8d489105d3949ccbac10d5bff3dd1c3a",
+    "apps\\desktop\\src-tauri\\src\\claude.rs": "2ce86da3a3435cb90a732c6cf4ce8a324126e4ab0398f61b5fc11ce2feb8358f",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "6e6230c338f7f5c1e4bb6aee59b5885f243c1e3cd30cf6f2c456f95c395a910b",
+    "apps\\desktop\\src-tauri\\src\\host_tools.rs": "8930ac9ee17955141a99d6ccf6f2651647dd4965040ab6f66797aed3033b1696",
+    "apps\\desktop\\src-tauri\\src\\jobs.rs": "5e81cb5214b20aef70ab2101b1f6016492561871c65dc0296a69dd30bb687b48",
+    "apps\\desktop\\src-tauri\\src\\kicad.rs": "87c0c98b8135f09c27ad2fdd4eb75fbe37d8168161bdadb7a095912c0f225f65",
+    "apps\\desktop\\src-tauri\\src\\kicad_project.rs": "4e4d003a2ed53d5fd6bdb5a6cbffc71aaca16b28e371fa21349322d2dacf61ea",
+    "apps\\desktop\\src-tauri\\src\\kicad_run.rs": "6a1ff028fae21b121291ae3294d5371a7ef7efc67ea2734681be79b027197551",
+    "apps\\desktop\\src-tauri\\src\\konnect.rs": "37893ac8e50aa56ea70f7ebddab44095b1b118ae525ada240b8becf64baa4ece",
+    "apps\\desktop\\src-tauri\\src\\konnect_run.rs": "3c71b13c8b8cfa432abc8f08aded3e985d04aca6c7141ce187a9ce2bf7b5c09a",
+    "apps\\desktop\\src-tauri\\src\\lib.rs": "81f677766cacde0e3cfd387d65e959046b4826de86c716a02f2ef1519a792e35",
+    "apps\\desktop\\src-tauri\\src\\main.rs": "0e08792b96d4f38c4b524ff09b481ebda64e5c985ce3772ca55b55f9e2542cb5",
+    "apps\\desktop\\src-tauri\\src\\ollama.rs": "5a19f9ba85135059589c6275da695a5b24fd19c06f69300bca0f88211702f90a",
+    "apps\\desktop\\src-tauri\\src\\orca.rs": "ac7fb7ff18b6f946bc37ad425b43c15a1b7ad03af94940b60f1e75a63f419868",
+    "apps\\desktop\\src-tauri\\src\\orca_run.rs": "7c86296845247da56b7e69f2138bd923677f09c7c670ace2072c8bc6ade5afab",
+    "apps\\desktop\\src-tauri\\src\\process.rs": "33ce7a77d0e792524dc776bce8ea7e68e4587717493fc31a345a7aea6bf0daf1",
+    "apps\\desktop\\src-tauri\\src\\project.rs": "7abbfe0fa19d3e0bfa3c91c40b83d390a863a45e6b2fe149bcb02c47af64a24d",
+    "apps\\desktop\\src-tauri\\src\\tool_bridge.rs": "df1f2e4fd31e744ffb134b74ccd95b9128eaad36bdbaa3b358f7ab6e60fc7c01",
+    "apps\\desktop\\src-tauri\\src\\tools_main.rs": "dd93517d782a85581f5c740a18410d82cff7b7ddf728dd92c2637bfebb780889",
+    "apps\\desktop\\src\\main.ts": "0e0973defccf2a2da5ef77852b4124f02672a06a896b7e9dca9a85da2b754137",
+    "apps\\desktop\\src\\contracts.ts": "f77c772a76e3f9fa10f762ab41ceeed6681691edd13e12bda3da09b542ec3482"
+  }
+}

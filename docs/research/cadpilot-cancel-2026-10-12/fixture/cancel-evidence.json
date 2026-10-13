@@ -1,0 +1,16 @@
+{
+  "cancellation_ms": 15,
+  "job_id": "06503ebb-cf01-4fd9-b756-d49c1a0825a6",
+  "launcher_pids": [
+    30988
+  ],
+  "native_pids": [
+    20352
+  ],
+  "original_preserved": true,
+  "passed": true,
+  "published": false,
+  "recovered_runs": 1,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-cadpilot-cancel-50d604e7-628e-43e4-8ec9-f5ca29bb9608",
+  "scope": "actual approved CADPilot execution cancelled after observing both the FreeCAD launcher and native child; exact mutation phase, native UI input and full production deadline remain unverified"
+}

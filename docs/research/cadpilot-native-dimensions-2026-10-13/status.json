@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "actual_cadpilot",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "source_hashes": {
+    "apps\\desktop\\src-tauri\\src\\cadpilot.rs": "26ccbc5f87c907e97106b3a6e1a59a3aab2f4c49cbc326b66d1efb055ba1d948",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "6e6230c338f7f5c1e4bb6aee59b5885f243c1e3cd30cf6f2c456f95c395a910b",
+    "Cargo.lock": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4",
+    "apps\\desktop\\src-tauri\\src\\jobs.rs": "a1e11fb31051cdf689478b4e03c24adca3b8088ec3f65f2c47016940ec550fc1",
+    "apps\\desktop\\src-tauri\\src\\process.rs": "9746ef2e7b3281201791bc0c84dea0df6906b4e3c9e697ef744a424fe9479cf8",
+    "apps\\desktop\\src-tauri\\src\\project.rs": "1d3629990c6f1889e6d0d308455382da7ac990a8be3f044c4e6427af76d4ae2d",
+    "apps\\desktop\\src-tauri\\src\\main.rs": "38bd71843fa34fbe0b34af6195e32c113b8dd22b75306e548af0501debdef8e2",
+    "apps\\desktop\\src\\main.ts": "d24a2f59cbd45e2c81f3119941fc3fdfb6e5356a9804f58443eec0852f729145",
+    "apps\\desktop\\src\\contracts.ts": "2ccffef6130fabf0b197f6a86ef158e3d16da2f63d3f1e1f3a89f2fe68eb8756",
+    "apps\\desktop\\tests\\design-flow.mjs": "db210fd04e05dce7d626d20efcfe8383af6403a1760a9ee23c8c341a3ee59f18",
+    "tests\\cadpilot\\verify_adapter.py": "5292389e55228b29353f36de9b19ce3d584a295ea408ff6a89e0ac61163cef1a",
+    "apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot-copy.FCMacro": "42ba785b0e09f65ba619eaa66c2b1a1b22ad04dce9d054590db9b9d331d4c158",
+    "apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot_policy.py": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  "expected_tests": [
+    "cadpilot::tests::actual_cadpilot_owned_selected_copy_adapter",
+    "jobs::tests::actual_cadpilot_workflow_publication_and_recovery",
+    "jobs::tests::actual_cadpilot_owned_process_cancellation"
+  ],
+  "backend_workflow_verified": true,
+  "native_ui_verified": false,
+  "installed_workflow_verified": false
+}

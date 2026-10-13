@@ -1,0 +1,58 @@
+﻿{
+    "artifact_files":  [
+                           {
+                               "sha256":  "B0C9A58383D9B5F6A3F3E8F9A42F66FD22EDC627A0525D41E6FD26068581C8BA",
+                               "name":  "input.json",
+                               "bytes":  127
+                           },
+                           {
+                               "sha256":  "0CB4938A904E3E7E1A012A8BD0BD2D84A7E2C5AA66A69B84559FF630B0FF3500",
+                               "name":  "result.json",
+                               "bytes":  330
+                           },
+                           {
+                               "sha256":  "99BD59AE62966D139F0BEAA41F8E7CD9B55F6201791A17EB4AD96A7B8884448C",
+                               "name":  "solid.FCStd",
+                               "bytes":  2959
+                           },
+                           {
+                               "sha256":  "1A22A1B1DBBE5DB45E63490775AA1A994A7DFA561034C0AD2D652B766C750A13",
+                               "name":  "solid.step",
+                               "bytes":  6854
+                           }
+                       ],
+    "original_sha256":  "96261009BA0944D01612FF707F4DE40A172A33C8BFE0ED9D63E40C3C346A5A7F",
+    "published_count":  1,
+    "runs":  [
+                 {
+                     "schema_version":  2,
+                     "project_id":  "fea3a9ce-a9aa-47e7-bf78-6c25f1477f50",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "dc465fb6-faf2-4b2e-8da5-ee9075d0c254",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "completed",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/dc465fb6-faf2-4b2e-8da5-ee9075d0c254",
+                                   "created_unix_ms":  1791746095679,
+                                   "updated_unix_ms":  1791746123776,
+                                   "sequence":  3,
+                                   "error":  null
+                               }
+                 }
+             ],
+    "manifest":  {
+                     "schema_version":  1,
+                     "project_id":  "fea3a9ce-a9aa-47e7-bf78-6c25f1477f50"
+                 }
+}

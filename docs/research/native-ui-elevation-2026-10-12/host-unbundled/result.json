@@ -1,0 +1,12 @@
+{
+  "pass": true,
+  "scope": "installed release native initial UI and read-only IPC",
+  "empty_dimensions": true,
+  "no_implicit_proposal": true,
+  "workflows": 9,
+  "reload_preserves_unknown_inputs": true,
+  "elevated_host": false,
+  "project_pickers_operated": false,
+  "engineering_ui_workflow": false,
+  "model_inference": false
+}

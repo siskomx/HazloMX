@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "job_id": "d1cc088d-3de6-4714-a2e0-6ee8fe9fceb8",
+  "cadcraft_version": "0.5.0",
+  "source_sha256": "45332c11bcd5c2317d3e3163a1e741aa8ef968d5812db0b7338241808ad50d24",
+  "output_sha256": "f8dddfa6e319502aedbf369e476dfc4b58429114859f028564b8ee33626d68da",
+  "preview_sha256": "9a67bfeb7fd0a65278b77556f899c971ae15862b5cbc8a04f6a7eebcd8bcf201",
+  "output_summary": {
+    "entity_count": 1,
+    "counts": {
+      "Circle": 1
+    },
+    "extents": [
+      [
+        -10.0,
+        -10.0
+      ],
+      [
+        10.0,
+        10.0
+      ]
+    ]
+  },
+  "warnings": [
+    "El original contiene objetos no compatibles; pueden omitirse del dibujo o de su vista previa.",
+    "Not saved (CADCraft can't write these object types yet): 1 3DSOLID"
+  ]
+}

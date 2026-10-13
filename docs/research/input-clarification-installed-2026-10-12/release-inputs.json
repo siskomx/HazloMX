@@ -1,0 +1,50 @@
+[
+  {
+    "path": "Cargo.lock",
+    "sha256": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4"
+  },
+  {
+    "path": "apps/desktop/src/design.ts",
+    "sha256": "79e6d218e60067f0acf308c1d0da4257f6c34ba4b7e52fe4c5b7364c1f302575"
+  },
+  {
+    "path": "apps/desktop/src/main.ts",
+    "sha256": "6252e96c233c55691942df03a62af650773783b35c0d7fe065cae56af5eb398f"
+  },
+  {
+    "path": "apps/desktop/src/contracts.ts",
+    "sha256": "030b41e010ab4e7ae6efcfac4f0bc6c04eb6e3fac9e204348f1c0b21bbb5de5e"
+  },
+  {
+    "path": "apps/desktop/src-tauri/src/jobs.rs",
+    "sha256": "d01c395c60209647a9d0b7a5a614468201988f23e92091a8b61fa6c9405f7042"
+  },
+  {
+    "path": "apps/desktop/src-tauri/src/process.rs",
+    "sha256": "9746ef2e7b3281201791bc0c84dea0df6906b4e3c9e697ef744a424fe9479cf8"
+  },
+  {
+    "path": "apps/desktop/src-tauri/src/konnect_run.rs",
+    "sha256": "8efcd72ebe63c4aa0bc361c19b34b8b0d3d7034e2813fff3038e8d8b5ee02555"
+  },
+  {
+    "path": "apps/desktop/tests/design-flow.mjs",
+    "sha256": "41feff1700306131225f3a1737d559a52caae7dc6ab860a874307c002fa6435b"
+  },
+  {
+    "path": "apps/desktop/tests/prepare-current-package.py",
+    "sha256": "29d5d53fa673013992baa4934e96b0492e05a559e2797f88b5b05eb659099e97"
+  },
+  {
+    "path": "apps/desktop/tests/sandbox-current-package.ps1",
+    "sha256": "559928f1f96767f6cde2cb14b246fa663a4453daac00037043e90d7e5dbee73f"
+  },
+  {
+    "path": "apps/desktop/tests/sandbox-agent-workflow.ps1",
+    "sha256": "120ee671f5ec22dc2ca568734acfd8d237fe7fd50a22d15013ee8d399538fde6"
+  },
+  {
+    "path": "apps/desktop/src-tauri/src/host_tools.rs",
+    "sha256": "ded9f190d0d4b4dd7e25af805ab35447c79209ced4758143abc38a739d30d358"
+  }
+]

@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "C:/Users/USER/Documents/GitHub/HazloMX/target/cadpilot-probe/copy-246206c0-97a5-4607-85e5-2e1f64492e8b/5/cadpilot-copy.FCMacro", line 147, in <module>
+    result = run()
+             ^^^^^
+  File "C:/Users/USER/Documents/GitHub/HazloMX/target/cadpilot-probe/copy-246206c0-97a5-4607-85e5-2e1f64492e8b/5/cadpilot-copy.FCMacro", line 51, in run
+    operation, name, parameters = request(raw)
+                                  ^^^^^^^^^^^^
+  File "C:/Users/USER\Documents\GitHub\HazloMX\target\cadpilot-probe\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\5\cadpilot_policy.py", line 45, in request
+    raise ValueError("Unsupported typed CADPilot operation")
+ValueError: Unsupported typed CADPilot operation

@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 30,
+    "length": 10,
+    "width": 20
+  },
+  "id": "spanish_numbers",
+  "result": {
+    "proposal": {
+      "message": "Crea un sólido rectangular de diez milímetros de largo, veinte de ancho y treinta de alto.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 6.5577135
+}

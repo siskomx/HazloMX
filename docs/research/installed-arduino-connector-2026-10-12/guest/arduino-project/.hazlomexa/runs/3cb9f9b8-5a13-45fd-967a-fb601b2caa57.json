@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "project_id": "42dc31de-33ba-45fa-bb8d-b00b7cba4712",
+  "input": {
+    "schema_version": 1,
+    "job_id": "3cb9f9b8-5a13-45fd-967a-fb601b2caa57",
+    "fqbn": "arduino:avr:uno",
+    "source": "void setup() { missing_symbol; } void loop() {}"
+  },
+  "phase": "failed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/3cb9f9b8-5a13-45fd-967a-fb601b2caa57",
+    "created_unix_ms": 1791855848098,
+    "updated_unix_ms": 1791855848996,
+    "sequence": 3,
+    "error": "No se pudo compilar el sketch: C:\\HazloPackageArduino\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\Sketch\\Sketch.ino: In function 'void setup()':\r\nC:\\HazloPackageArduino\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\Sketch\\Sketch.ino:1:16: error: 'missing_symbol' was not declared in this scope\r\n void setup() { missing_symbol; } void loop() {}\r\n                ^~~~~~~~~~~~~~\r\n",
+    "files_verified": false
+  }
+}

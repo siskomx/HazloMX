@@ -1,0 +1,113 @@
+{
+  "cancelled": "69824ae2-11c2-4278-8215-2fe347aae0e6",
+  "completed": {
+    "audit": {
+      "adapter_version": 1,
+      "created_unix_ms": 1791821447034,
+      "destination": ".hazlomexa/artifacts/ca84277d-c96e-42e4-adc6-269173219156",
+      "error": null,
+      "files_verified": true,
+      "sequence": 5,
+      "source": {
+        "provider": "manual"
+      },
+      "updated_unix_ms": 1791821447175,
+      "user_edited": true
+    },
+    "input": {
+      "agent_version": "0.7.1",
+      "job_id": "ca84277d-c96e-42e4-adc6-269173219156",
+      "original_source": "void setup() {} void loop() {}",
+      "schema_version": 1,
+      "source": "void setup() {} void loop() { delay(500); }",
+      "source_name": "UserOriginal.ino"
+    },
+    "phase": "completed",
+    "project_id": "ffa1558c-1e24-429a-9a22-4463f26ce528",
+    "schema_version": 4
+  },
+  "failed": {
+    "audit": {
+      "adapter_version": 1,
+      "created_unix_ms": 1791821447304,
+      "destination": ".hazlomexa/artifacts/ffb40dba-9620-42f6-8ea2-5e9d1147db55",
+      "error": "No se pudieron publicar los archivos. Cierre las aplicaciones que los estén usando y revise los permisos y el espacio libre del proyecto. La entrada y los archivos de trabajo se conservan: Cannot create a file when that file already exists. (os error 183)",
+      "files_verified": true,
+      "sequence": 3,
+      "source": {
+        "provider": "manual"
+      },
+      "updated_unix_ms": 1791821447393,
+      "user_edited": false
+    },
+    "input": {
+      "agent_version": "0.7.1",
+      "job_id": "ffb40dba-9620-42f6-8ea2-5e9d1147db55",
+      "original_source": "void setup() {} void loop() {}",
+      "schema_version": 1,
+      "source": "void setup() {} void loop() { delay(750); }",
+      "source_name": "UserOriginal.ino"
+    },
+    "phase": "failed",
+    "project_id": "ffa1558c-1e24-429a-9a22-4463f26ce528",
+    "schema_version": 4
+  },
+  "first_tool_readback": {
+    "components": null,
+    "content": "void setup() {} void loop() { delay(500); }",
+    "format": "sketch",
+    "job_id": "ca84277d-c96e-42e4-adc6-269173219156",
+    "project_id": "ffa1558c-1e24-429a-9a22-4463f26ce528",
+    "scope": "verified_published_result",
+    "sha256": "8b67de3860b79e0e01f33893d031e99687def5b9e853d66391a179dcc85227c6",
+    "source_is_untrusted_data": true,
+    "source_name": "UserOriginal.ino"
+  },
+  "followup": {
+    "audit": {
+      "adapter_version": 1,
+      "created_unix_ms": 1791821447183,
+      "destination": ".hazlomexa/artifacts/15d921a8-2e7c-447e-9687-0f6dbe191a15",
+      "error": null,
+      "files_verified": true,
+      "sequence": 3,
+      "source": {
+        "provider": "mcp"
+      },
+      "updated_unix_ms": 1791821447286,
+      "user_edited": false
+    },
+    "input": {
+      "agent_version": "0.7.1",
+      "job_id": "15d921a8-2e7c-447e-9687-0f6dbe191a15",
+      "original_source": "void setup() {} void loop() { delay(500); }",
+      "schema_version": 1,
+      "source": "void setup() {} void loop() { delay(1000); }",
+      "source_name": "UserOriginal.ino"
+    },
+    "phase": "completed",
+    "project_id": "ffa1558c-1e24-429a-9a22-4463f26ce528",
+    "schema_version": 10
+  },
+  "followup_applied_by_authenticated_agent": true,
+  "followup_original_is_previous_result": true,
+  "followup_tool_readback": {
+    "components": null,
+    "content": "void setup() {} void loop() { delay(1000); }",
+    "format": "sketch",
+    "job_id": "15d921a8-2e7c-447e-9687-0f6dbe191a15",
+    "project_id": "ffa1558c-1e24-429a-9a22-4463f26ce528",
+    "scope": "verified_published_result",
+    "sha256": "409b6c6d296614856d196e1ca0c45679c0c47db2643b7870d6713e61b290890b",
+    "source_is_untrusted_data": true,
+    "source_name": "UserOriginal.ino"
+  },
+  "occupied_destination_preserved": true,
+  "original_preserved": true,
+  "pass": true,
+  "picker_source_remains_original": true,
+  "reconnect_invalidated_approval": true,
+  "reopened_without_regeneration": true,
+  "root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Temp\\hazlomexa-workflow-e233da14-b86d-4a60-8748-3f53e13f6751",
+  "stale_approval_rejected": true
+}

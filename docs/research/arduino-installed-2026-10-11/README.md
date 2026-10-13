@@ -1,0 +1,11 @@
+# Installed Arduino workflow
+
+October 11, 2026. Owned Windows Sandbox build 26100, official Arduino CLI 1.5.1 and AVR 1.8.8 copied into an isolated guest toolchain. No models or firmware uploads ran. [Measured scope and identities](status.json).
+
+Installer `63c0c1d4…` bootstrapped WebView2 from an initially missing runtime, installed, started and uninstalled successfully. After reinstall, actual native project/CLI/data pickers selected the fixture directories. Hardware-key input entered `blink`; the app prepared its fixed LED example, displayed every approved line and actually compiled/published Sketch.ino, HEX and AVR ELF. Explorer visibly selected each firmware file. The source-opening attempt failed because this guest has no Notepad; [inspection](opening-inspection.json) confirms the missing executable and intact read-only source copy. This limitation was corrected rather than counted as a pass.
+
+Current installer `57c36bf4fa76ab1ddbb9f3cbaf3806f3b1a056a1867a9f90bd5b177b75360c0b` updated successfully without changing any project file. The actual native open-project picker restored compilation history. **Ver sketch verificado** displays the approved source in an in-app read-only dialog and Escape dismisses it. [Viewer screenshot](verified-sketch.png). This removes the external text-editor dependency. HEX/ELF remain explicit Explorer selections, not hardware uploads.
+
+Uninstall then preserved all nine project files. Their closed exported copies independently matched every guest SHA256. [Checkpoint](arduino-checkpoint.json), [update](arduino-update.json), [uninstall](arduino-uninstalled.json). The owned guest was stopped after export.
+
+Current checks: 46 regular Rust tests pass, eight standalone entries ignored; desktop/custom-protocol Clippy and frontend build/fixtures pass. The viewer regression checks literal markup, Escape, bounded UTF-8 and unchanged source. Compiler cancellation/failed compilation are established by the separate host native sample, not repeated in this guest. Compilation here precedes the viewer-only update; fresh current-package bootstrap and further boards/libraries/Arduino Agent remain unverified. Other engineering integrations are still unfinished.

@@ -1,0 +1,18 @@
+{
+  "content": [
+    {
+      "text": "{\"agent_connected\":false,\"operation\":\"edit_copy_only\",\"project_id\":\"579a8dc4-11af-4abd-af0a-2c6a214664eb\",\"scope\":\"desktop_selected_snapshot\",\"source\":\"void setup() {} void loop() {}\",\"source_name\":\"Blink.ino\",\"source_sha256\":\"22897da95b428cd8c177ca4cdb60bd8d558b047c56fbdafbf3dd1ffb0095ffdb\"}",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "agent_connected": false,
+    "operation": "edit_copy_only",
+    "project_id": "579a8dc4-11af-4abd-af0a-2c6a214664eb",
+    "scope": "desktop_selected_snapshot",
+    "source": "void setup() {} void loop() {}",
+    "source_name": "Blink.ino",
+    "source_sha256": "22897da95b428cd8c177ca4cdb60bd8d558b047c56fbdafbf3dd1ffb0095ffdb"
+  }
+}

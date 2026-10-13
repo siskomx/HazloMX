@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "ambiguous_order",
+  "result": {
+    "proposal": {
+      "message": "¿Cuál de las dimensiones (10 mm, 20 mm, 30 mm) corresponde a largo, ancho o alto?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 5.8962982
+}

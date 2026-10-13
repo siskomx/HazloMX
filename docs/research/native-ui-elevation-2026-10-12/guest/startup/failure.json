@@ -1,0 +1,6 @@
+{
+  "error": "The UI test driver is elevated. WebView2 ignores its debugging environment; run this test from a standard-user process.",
+  "elevated_host": true,
+  "app_started": false,
+  "scope": "test prerequisite; native UI unverified"
+}

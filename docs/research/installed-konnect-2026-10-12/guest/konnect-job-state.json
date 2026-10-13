@@ -1,0 +1,22 @@
+﻿[
+    {
+        "phase":  "completed",
+        "project":  "pcb",
+        "id":  "0a3f7504-60af-4251-b7d0-dcaafdd4c540"
+    },
+    {
+        "phase":  "completed",
+        "project":  "pcb",
+        "id":  "ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1"
+    },
+    {
+        "phase":  "completed",
+        "project":  "schematic",
+        "id":  "86604dea-7bdc-4122-bea0-90ed0634f85b"
+    },
+    {
+        "phase":  "completed",
+        "project":  "schematic",
+        "id":  "b7291ed8-dfff-462d-a32b-2fde532a85e7"
+    }
+]

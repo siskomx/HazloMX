@@ -1,0 +1,44 @@
+{
+  "schema_version": 9,
+  "project_id": "49fa6f28-52f7-4019-9331-b76f40491a5c",
+  "input": {
+    "schema_version": 2,
+    "job_id": "b1d2c216-6a7a-41d6-b988-3ef948a40643",
+    "konnect_version": "0.13.0",
+    "source": {
+      "schema_version": 1,
+      "job_id": "b1d2c216-6a7a-41d6-b988-3ef948a40643",
+      "kicad_version": "10.0.7",
+      "source_root": "C:/Users/USER/AppData/Local/Temp/hazlomexa-workflow-cbc1c1d3-f167-4817-aeb0-a02fc4126a7e/sources",
+      "entry": "basic_test.kicad_sch",
+      "files": [
+        {
+          "path": "basic_test.kicad_sch",
+          "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+          "bytes": 25307
+        }
+      ],
+      "units": "mm",
+      "layers": []
+    },
+    "edit": {
+      "reference": "R1",
+      "expected_value": "10k",
+      "value": "12.34k"
+    }
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/b1d2c216-6a7a-41d6-b988-3ef948a40643",
+    "created_unix_ms": 1791840496865,
+    "updated_unix_ms": 1791840511200,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

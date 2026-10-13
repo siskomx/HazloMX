@@ -1,0 +1,11 @@
+﻿{
+    "barrier_live":  true,
+    "published":  false,
+    "result_success":  true,
+    "pass":  true,
+    "break_unix_ms":  1791753411716,
+    "job_id":  "db891115-ad47-4df5-ae03-badca04a5ef9",
+    "phase":  "running",
+    "cad_ceased":  true,
+    "observed_unix_ms":  1791753419806
+}

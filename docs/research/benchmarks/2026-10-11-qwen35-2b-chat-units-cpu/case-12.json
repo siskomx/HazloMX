@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": "clarification",
+  "id": "ambiguous_order",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 10.0,
+        "length": 30.0,
+        "width": 20.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 10.0349358
+}

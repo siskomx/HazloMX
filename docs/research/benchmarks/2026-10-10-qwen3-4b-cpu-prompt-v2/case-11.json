@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "missing_units",
+  "result": {
+    "proposal": {
+      "message": "Bloque: largo 10, ancho 20, alto 30.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 4.660131
+}

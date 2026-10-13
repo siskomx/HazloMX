@@ -1,0 +1,39 @@
+[
+  {
+    "route": "/api/version",
+    "mode": "missing",
+    "closed": false,
+    "received_unix_ms": 1791749451172
+  },
+  {
+    "route": "/api/tags",
+    "mode": "missing",
+    "closed": false,
+    "received_unix_ms": 1791749451213
+  },
+  {
+    "route": "/api/version",
+    "mode": "stall",
+    "closed": false,
+    "received_unix_ms": 1791749701389
+  },
+  {
+    "route": "/api/tags",
+    "mode": "stall",
+    "closed": false,
+    "received_unix_ms": 1791749701404
+  },
+  {
+    "route": "/api/show",
+    "mode": "stall",
+    "closed": false,
+    "received_unix_ms": 1791749701424
+  },
+  {
+    "route": "/api/generate",
+    "mode": "stall",
+    "closed": true,
+    "received_unix_ms": 1791749701435,
+    "closed_unix_ms": 1791749710816
+  }
+]

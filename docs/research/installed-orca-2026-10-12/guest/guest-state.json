@@ -1,0 +1,20 @@
+﻿{
+    "input":  true,
+    "result":  false,
+    "user":  "WDAGUtilityAccount",
+    "processes":  [
+                      {
+                          "Id":  15012,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791854727767)\/",
+                          "CPU":  12.484375
+                      },
+                      {
+                          "Id":  16380,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791854737755)\/",
+                          "CPU":  6.984375
+                      }
+                  ],
+    "installed":  false
+}

@@ -1,0 +1,12 @@
+{
+  "installer_lifecycle_pass": true,
+  "initial_webview_absent": true,
+  "native_manual_approval_publication_pass": true,
+  "native_fcstd_viewport_observed": true,
+  "native_proposal_denial_preserved_completed_run": true,
+  "host_checkpoint_hashes_verified": true,
+  "restart_project_reopen_checked": false,
+  "offline_missing_webview_checked": false,
+  "full_second_environment_acceptance_pass": false,
+  "checkpoint_path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\sandbox-probe\\4a6d6a99-5323-4c06-b391-4cb81040caa2\\output\\project-checkpoint"
+}

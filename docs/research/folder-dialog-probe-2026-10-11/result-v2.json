@@ -1,0 +1,19 @@
+{
+  "pass": true,
+  "executable": "target/release/hazlomexa.exe",
+  "project": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-folder-probe\\carpeta á 54af195b-4b95-43d3-a758-14c63c3c0849",
+  "manifest": {
+    "schema_version": 1,
+    "project_id": "7da8bce8-b8fc-4a3a-b1db-cbb569041a5a"
+  },
+  "checks": [
+    "native create-folder picker with accented path",
+    "cancel picker with Escape preserves current project",
+    "close and restart release app",
+    "native open-folder picker preserves project identity",
+    "original test file preserved"
+  ],
+  "initial_input_error": "Error: coordinate input geometry is unavailable",
+  "recovery": "activate window and use screenshot-backed state before clicks",
+  "note": "Same development host; not second-environment certification"
+}

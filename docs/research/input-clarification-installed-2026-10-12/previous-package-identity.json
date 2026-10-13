@@ -1,0 +1,31 @@
+{
+  "installer_sha256": "33e45402ad0c33b06b78a32ce7a1d50b755cdb3d5874fe4f629e1d4c0c9a5276",
+  "app_sha256": "4fbd0412282392a82cfb6d06f3958c2a2bc948f774a8eafce2112b92152c98aa",
+  "unbundled_app_sha256": "2ae0e1fbd49bb81b11e85227a21c35564563d337db0f88a4055acaf27252aab6",
+  "bundle_marker": "NSS",
+  "helper_sha256": "1ac657ff6044127d9ba0a4aab97b9e8b382318138fecacd116b98072f2e79c98",
+  "harness_sha256": "2c7ee86d71c557399b6263dcb9e5d0547ddb22661892bc57add6f105e237224a",
+  "version": "0.1.0",
+  "tool_count": 15,
+  "networking": "enabled",
+  "cadcraft_cli_sha256": "d9517678cf9216a63ecb7f4adfe4ab485af9541849d465245251bba91845724f",
+  "drawing_harness_sha256": "7bb4e3da72f81c086040fcc20b786093295f569942a53ccacfb2ae5d16eed38a",
+  "cadpilot_harness_sha256": "725c45c74dfe996c3a87e725de83e43c05ba5be51be1031dfe97df23c218c1e5",
+  "freecad_cmd_sha256": "b79c648edd6e40d6769b3096317ca2063d86a1d47412afd93d02c4047521b2dd",
+  "orca_cli_sha256": "481c9f071fdb3cda033d1677ce7a9442c41a25cbeeb42cfc808af179b4dc85c3",
+  "orca_harness_sha256": "3bcd17f42788f95326200ccf7e1a6b86e8abc445af04428ca1aabbf693e3d6ff",
+  "arduino_cli_sha256": "1017de89179c3167e6b8a38ca6cc4091fa69a3cf97aafa7810f01423003f5571",
+  "arduino_harness_sha256": "f6993ece4573bc9aa76a644b84120f35f934903e4e611e27e8a7a0633ba6e164",
+  "kicad_cli_sha256": "cbd8197dd1f46b9a956f3d7973edc9a6a97960298731448ae9142dffe47abc7a",
+  "konnect_exe_sha256": "09969ec5f05600039e206acedb0b6b785528f1bced2dbe2c7f426483013e4f2c",
+  "konnect_harness_sha256": "f1e09fca8032fa297e2eb6de4ea098f439336aca56fadf0193483eb86641282c",
+  "agent_exe_sha256": "d7c6e956ceecf5214867ff063e0ecf6bf0276946950ddb1f34946de31d2c5cd9",
+  "agent_bridge_sha256": "54e7988b9f575afc9acbef763d16359c61086ebdc70e3f0563579c53f39c95e0",
+  "agent_harness_sha256": "169fed0e35ef28a679e450cb396ebd86c31f89cf365059fb65f7c1988bf4d6e2",
+  "konnect_vcruntime_sha256": "184146852727a9db4eea06178716bec3cdbb1015c911f6b0f915b184ad7775b2",
+  "konnect_vcruntime_identity": {
+    "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+    "version": "14.50.35719.0",
+    "status": "Valid"
+  }
+}

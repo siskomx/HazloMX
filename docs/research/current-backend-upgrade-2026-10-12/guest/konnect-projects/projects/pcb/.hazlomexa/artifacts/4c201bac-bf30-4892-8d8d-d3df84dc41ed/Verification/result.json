@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "job_id": "4c201bac-bf30-4892-8d8d-d3df84dc41ed",
+  "kicad_version": "10.0.7",
+  "summary": {
+    "check": "drc",
+    "units": "mils",
+    "errors": 1,
+    "warnings": 7,
+    "excluded": 0,
+    "ignored_checks": [
+      "missing_courtyard",
+      "track_not_centered_on_via",
+      "tuning_profile_track_geometries",
+      "footprint_filters_mismatch",
+      "pth_inside_courtyard",
+      "npth_inside_courtyard",
+      "footprint_type_mismatch"
+    ]
+  },
+  "files": [
+    {
+      "path": "Check.json",
+      "sha256": "a331facf192fb71c2a0c5803c507ccaed84b7192f1c85faac5338943bf3504bf"
+    },
+    {
+      "path": "Checked/basic_test.kicad_pcb",
+      "sha256": "499a1ddd87b30c7b03833eca4b0c5711012ff26d3353d9479ce74e3d15572f50"
+    },
+    {
+      "path": "Checked/basic_test.kicad_pro",
+      "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+    },
+    {
+      "path": "Checked/basic_test.kicad_sch",
+      "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+    },
+    {
+      "path": "Checked/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "Exports/drill/basic_test.drl",
+      "sha256": "78c79e8df032d5f1367b046378dcd23e6242c0da67cbafd9d04cb71e58f5b75c"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-B_Cu.gbr",
+      "sha256": "9045267e31053845bda4c5f730ca6909bbe7ba825a6c3b9852b4f46304c30658"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-B_Mask.gbr",
+      "sha256": "b31d90f7ad3a83ea500def6475a386e11e13fed04b65c092eca3040f0db15bb1"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-B_Silkscreen.gbr",
+      "sha256": "00d2ababf05aa4233c05cceb49b141bddfcb636d6def45e0763ba16e8bdeb41d"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-Edge_Cuts.gbr",
+      "sha256": "0e3668afab4412875770a22ffa757af5b3b39a31881caf84f4d7822fc3681858"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-F_Cu.gbr",
+      "sha256": "f303b1b1c2f215c331c360d3f507c4b6ae00932e0f2d58abd209f9da379cae09"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-F_Mask.gbr",
+      "sha256": "c14421562652f8048caf31564ced563a85dbd6cc1366588dc8b72bd55b54d4f3"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-F_Silkscreen.gbr",
+      "sha256": "ccc48ca87daf7c681ce9e1d6fa6cf757c363fcba685db1e26250f9741c430062"
+    },
+    {
+      "path": "Exports/gerbers/basic_test-job.gbrjob",
+      "sha256": "a974097be29db72dc5088a590e44a0414b2ab64f91c5eb68666654e7393db733"
+    },
+    {
+      "path": "Original/basic_test.kicad_pcb",
+      "sha256": "917184435be45a562888573a3007cdc2bff75127d24e32ad78288e9787c0ee3b"
+    },
+    {
+      "path": "Original/basic_test.kicad_pro",
+      "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+    },
+    {
+      "path": "Original/basic_test.kicad_sch",
+      "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+    },
+    {
+      "path": "Original/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    }
+  ]
+}

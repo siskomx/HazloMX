@@ -1,0 +1,474 @@
+[
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-result.json",
+    "sha256": "61ad60c0c047b1e5ea4169ef3802160273e3c5e77726b6932880c90a24ceac04"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-result.json",
+    "sha256": "36f461bfb8f8cb6650618b90c6baf644aa7ca08f92798a671314a0f5fc622dae"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\finish-owned-package.ps1",
+    "sha256": "d24b60b164ce4f6d6daf631c5fac29315791872d01fb8b948590be8aa153edb8"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\installed-startup.mjs",
+    "sha256": "8b7cc25282111315352b83b95043419070dda00603e3d103421677497a9406f5"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\installed-tools.json",
+    "sha256": "a798ee546aa7f7aad8aa9f857d23f694baa58e855d1a14b71b50a835ab587803"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\package-identity.json",
+    "sha256": "870a99f251e26ce83a905072ea62d8e40354ab4e6b2bf991db3088be87dcd497"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\package-result.json",
+    "sha256": "e6537567b10049934a12972aa938e76fd3585e96c38007cbd4e2886800709444"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\previous-package-identity.json",
+    "sha256": "fc7d30e95accbc96ee184a57add2f4ad40690c612e88b048b0444d04354f5c80"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\sandbox-current-package.ps1",
+    "sha256": "529d4130ddce38ec2b430ff7d66958927168403c145530a839b65de3c2d38341"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\uninstall-preserved-files.json",
+    "sha256": "7527f82203a80cecc2b616a8eb8d9519056480c2affb3334c081b067a454f6f2"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\updated-tools.json",
+    "sha256": "a798ee546aa7f7aad8aa9f857d23f694baa58e855d1a14b71b50a835ab587803"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\webview-diagnostic-summary.json",
+    "sha256": "1b02d9fbb8898feb7786babca88ff04c9c0b9d8963d7c89e110931ae92d84722"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\webview-version.json",
+    "sha256": "7a34955886b5665cc60668f082f37ac5e690a7a4b316c7fea1ba75b7d58ff1bd"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\calls.json",
+    "sha256": "1c9c1d4fcf403b63676fab32af2b1b49d9740f735ee443c9d269a76713c64317"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\hazlomx.json",
+    "sha256": "0c4cd331439d683b3fb5edd87677f33b73271c1b54b9386f417526a70adb0e35"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Drawing.dxf",
+    "sha256": "e83eacf249463230251c75ea44278caf53f8d7ab159b34fb1a06207af3ad6660"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Original.dwg",
+    "sha256": "3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Preview.png",
+    "sha256": "54e789beb08e2005b1e8b2f76efc3e48e66aaa07a226a122f9d149364a95a4a5"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\result.json",
+    "sha256": "c4d337bd61549fd0f3f6f5ec0e77086037ed41592a041570d69fbeaa3c6ba5d3"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\Drawing.dwg",
+    "sha256": "3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\Original.dxf",
+    "sha256": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\Preview.png",
+    "sha256": "46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\result.json",
+    "sha256": "511579031da1b7494232773cd8c012d1b635ed218ffe19f1957b7aef6de0d453"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\runs\\03ecf2b3-4bf6-414a-b315-0080e7f348dd.dwg",
+    "sha256": "3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\runs\\03ecf2b3-4bf6-414a-b315-0080e7f348dd.json",
+    "sha256": "53c95073de0c1be9b52c48e2281790e4d267f81a3ccd4804d4e5fa2574ced4a5"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\runs\\888773d3-da96-42ce-b09c-cfd341731948.dxf",
+    "sha256": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\imperial\\.hazlomexa\\runs\\888773d3-da96-42ce-b09c-cfd341731948.json",
+    "sha256": "cf10ac949203804c671bb918a071f778475ea99c745408c6a69cb1182c78ce76"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\calls.json",
+    "sha256": "c6de26361bffb2cd8ca24a2eff49785c245834a6ee987bbacde4d71c5bf09074"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\hazlomx.json",
+    "sha256": "cf5c868e5442f47b46cbc92df50b8d355a54e3f5b7c2b64fed17405052bf1c52"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Drawing.dwg",
+    "sha256": "60a76eb01fb19c711a052ab4c72805cd6972504b7d4ce97153714e11b4341b50"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Original.dxf",
+    "sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Preview.png",
+    "sha256": "46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\result.json",
+    "sha256": "d4e805147442f4339a152df6122a16b7942c0e2fd8d23ddc6b67b49feb509b4b"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Drawing.dxf",
+    "sha256": "8b6745fa99bc9226fe47bd631505f269d1f638d1435b9ec3110e9b2a99b14443"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Original.dwg",
+    "sha256": "60a76eb01fb19c711a052ab4c72805cd6972504b7d4ce97153714e11b4341b50"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Preview.png",
+    "sha256": "54e789beb08e2005b1e8b2f76efc3e48e66aaa07a226a122f9d149364a95a4a5"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\result.json",
+    "sha256": "4d974aa3c8730103cad9e24d99ec27428af254a1933736eedcc3ec86e10f1bf7"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\runs\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb.dxf",
+    "sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\runs\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb.json",
+    "sha256": "33705a1188bc4a68bdf4eb547749cfc5948887c310b5884342cc5f95e37f7a19"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\runs\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6.dwg",
+    "sha256": "60a76eb01fb19c711a052ab4c72805cd6972504b7d4ce97153714e11b4341b50"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\metric\\.hazlomexa\\runs\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6.json",
+    "sha256": "9409e0d359213fd40e8e4cf1f4505023ee9292597abfebb5eb47b9ebda915ac7"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\profiles\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Edited.dxf",
+    "sha256": "6e839d8fb0122f4702a9ea15899d4cf53cfa8f2d7bd189ca993d4ccbfdd446b8"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\profiles\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Edited.dxf",
+    "sha256": "93d573a7338445c0c9dbe07b5619ffd5f002c524c5f521223f5c191e7852b666"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\profiles\\888773d3-da96-42ce-b09c-cfd341731948\\Edited.dxf",
+    "sha256": "c6223e0f8549fbe86433bd7e92f738767f7a706cd7280cb2bee84c436b358fbc"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\drawing-projects\\profiles\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Edited.dxf",
+    "sha256": "37e8d73efdbf5a4ff0997b7b5091b417a2276d7a661f62aff21df31cae69390d"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\calls.json",
+    "sha256": "9d31882e76e3ca802b30fc3c5a05fba84f4032a664e525049aa0716cf877894e"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\hazlomx.json",
+    "sha256": "80ee76387aa5c12395600415f29cc53aa068cfa0682b08234079bb113e63c8a5"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Check.json",
+    "sha256": "4330e0dc68a51b6d0f1a4a173729519f73549d32f4e631ef3a397bba55df2787"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\result.json",
+    "sha256": "dafe7a3e5534f9e84f84554eb8ef0dcfaaba3df2ff548b024aad2913b91ccf35"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Exports\\Netlist.xml",
+    "sha256": "1aa7ab250f36e672e68b72c3fb414063629bf2059112dce43fd69c8f03ff882e"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Exports\\Schematic.pdf",
+    "sha256": "8535037351b186400ec5b8c550f0680c51edeb28d8e013eda415f60316b1c5a3"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Check.json",
+    "sha256": "ab263fa64004840d3cb1b36b7da226442e58000b4dfaa30771b987ad30a2fe6b"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\result.json",
+    "sha256": "583ff68038b70a8cb80d2f7e8d6d8b700654359668c2ec0b374121fe394aab9d"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Exports\\Netlist.xml",
+    "sha256": "6599a8478e8fb3cac564875917204754769aeba4fba3439eb79e34ce44b84312"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Exports\\Schematic.pdf",
+    "sha256": "131a308b617002d13054c6c5ec186afaf229bc0eb78ac29d06078c0e85592ff0"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.json",
+    "sha256": "fd8055d9195005000c8cc6809c4c99b675614676dc719c963dec6ce22f840ec6"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.json",
+    "sha256": "06a6bded943c06cfd21a642cc932b7ee86465b446328d41ecd2383061ecd0a8f"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9",
+    "sha256": "6b9d9e758a245d9c6cca3ea017c35eb5dfeef64349d75b4baadebc24b565e505"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\kicad_common.json",
+    "sha256": "4e7256f343581ba6e7f6d5deaccd3e09bfb1e928de422f114b524cfb9de4ee88"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9",
+    "sha256": "6b9d9e758a245d9c6cca3ea017c35eb5dfeef64349d75b4baadebc24b565e505"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\kicad_common.json",
+    "sha256": "e5226854a08617b78b377f10221431e977187307fa2131755526fb2c4eca07bb"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\engineering-project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\host-unbundled-preflight\\result.json",
+    "sha256": "b9dd5636d15a42e341b10ca1e9570ab1b129ef12ca8d2140fbcc6e429773f4e9"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\host-unbundled-preflight\\startup.png",
+    "sha256": "710758a6808545fc3e87e939992e7d3fb49aaf570bf99f46f79fecf2b80ccb0c"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\startup\\failure.json",
+    "sha256": "e4a8a9f66caf9f34d8dba152e2877feb947e32001db21005eae3dfe9ae01c83b"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\startup-cwd\\failure.json",
+    "sha256": "89087ea45e3d80a415fce033b2633bd702b8ae04bfefb06dd870fa18057ca492"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\startup-retry\\failure.json",
+    "sha256": "7546db58aff514f527d2393cfb53fb773f0df87b970a6fe133a29e2a2132f7c6"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\release-unknown-inputs-2026-10-12\\startup-visible\\failure.json",
+    "sha256": "2b9a9588d3010bf8a6c618c35c1cc822e4e9d8cbc3ce58647d8e36dc3c4697e4"
+  }
+]

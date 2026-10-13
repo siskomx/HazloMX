@@ -1,0 +1,12 @@
+{
+  "requested": false,
+  "error": "Los archivos están guardados, pero falta FreeCAD.exe junto a FreeCADCmd.exe. Seleccione el paquete completo de FreeCAD 1.1.4.",
+  "format": "step",
+  "directory": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-5cdTUS\\project\\.hazlomexa\\artifacts\\c00b7330-d78d-4903-a483-302044811c38",
+  "project": "C:/Users/USER/AppData/Local/Temp/Hazlo Mexa á native-5cdTUS/project",
+  "checks": [
+    "opening preserves completed phase",
+    "opening preserves artifact bytes"
+  ],
+  "note": "A successful request still requires separate GUI observation to prove the document loaded"
+}

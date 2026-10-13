@@ -1,0 +1,76 @@
+{
+  "completed_jobs": 1,
+  "copied_project_refused": true,
+  "fixture_approval_only": true,
+  "inspection": {
+    "inspection": {
+      "insunits": 4,
+      "source_format": "dxf",
+      "source_name": "Original.dxf",
+      "source_sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982",
+      "summary": {
+        "counts": {
+          "Circle": 1
+        },
+        "entity_count": 1,
+        "extents": [
+          [
+            -10.0,
+            -10.0
+          ],
+          [
+            10.0,
+            10.0
+          ]
+        ]
+      }
+    },
+    "project_id": "8474d598-56a4-4f01-a415-d20181e88a99",
+    "scope": "saved_original_copy",
+    "selection": "85420e55-baf4-46f1-b73a-cb705f55ac07",
+    "source_is_untrusted_data": true,
+    "unknown_units": "insunits 0 requires explicit user confirmation; only 1 (inch) and 4 (mm) are supported for proposals"
+  },
+  "other_project_refused": true,
+  "proposal": {
+    "human_approval_required": true,
+    "job_id": "08e9853e-2c6c-4163-85ee-afa94fe5cc2b",
+    "phase": "awaiting_approval"
+  },
+  "readback": {
+    "checks": null,
+    "components": null,
+    "content": "{\n  \"schema_version\": 2,\n  \"job_id\": \"9e05804e-0c3c-44db-ac3c-4d87a6c9b122\",\n  \"cadcraft_version\": \"0.5.0\",\n  \"source_sha256\": \"b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982\",\n  \"output_sha256\": \"c6d2b4fb34741042f9fb7334cf5d6c1492232d13a635a61a909ad4163660f232\",\n  \"preview_sha256\": \"46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4\",\n  \"output_summary\": {\n    \"entity_count\": 2,\n    \"counts\": {\n      \"Circle\": 2\n    },\n    \"extents\": [\n      [\n        -10.0,\n        -10.0\n      ],\n      [\n        32.0,\n        10.0\n      ]\n    ]\n  },\n  \"warnings\": [],\n  \"circle_readback\": {\n    \"before_matches\": 0,\n    \"edited_matches\": 1,\n    \"final_matches\": 1\n  }\n}",
+    "drawing": {
+      "editable": true,
+      "original_summary": {
+        "counts": {
+          "Circle": 1
+        },
+        "entity_count": 1,
+        "extents": [
+          [
+            -10.0,
+            -10.0
+          ],
+          [
+            10.0,
+            10.0
+          ]
+        ]
+      },
+      "output_format": "dxf",
+      "units": "mm"
+    },
+    "format": "drawing_report",
+    "job_id": "9e05804e-0c3c-44db-ac3c-4d87a6c9b122",
+    "project_id": "8474d598-56a4-4f01-a415-d20181e88a99",
+    "scope": "verified_published_result",
+    "sha256": "998917b54b42519ad609abb349bdbf986f093c9756844a51b6377f48ffed3c46",
+    "slicing": null,
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "source_preserved": true,
+  "stale_source_refused": true
+}

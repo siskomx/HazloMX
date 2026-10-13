@@ -1,0 +1,14 @@
+{
+  "account_connected": false,
+  "browser_opened": false,
+  "cancel_latency_ms": 94,
+  "credential_file_created": false,
+  "global_configuration_changed": false,
+  "login_cancelled": true,
+  "missing_login_refused_before_turn": true,
+  "model_turn_started": false,
+  "native_callback_port_closed": true,
+  "official_auth_url": true,
+  "sha256": "52f75c649bebb8001102a1dd129c1ea6d02b0940321e6d7e82ee0526753bd58a",
+  "version": "0.159.2"
+}

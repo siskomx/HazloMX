@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "actual_cadpilot",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "source_hashes": {
+    "apps\\desktop\\src-tauri\\src\\cadpilot.rs": "4b6478272b2ed1a4ce43ceea35488962640e4ac80e94c14c1c35637710219b91",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "6e6230c338f7f5c1e4bb6aee59b5885f243c1e3cd30cf6f2c456f95c395a910b",
+    "Cargo.lock": "9a615a7100dabb1e48cae732675fd4b1587f994529997e83a2b80fa23da18635",
+    "apps\\desktop\\src-tauri\\src\\jobs.rs": "d98b03b0e1d72a43d0f8e29d83f3be76cd5c9842a055ebf46cf1252be8b13da3",
+    "apps\\desktop\\src-tauri\\src\\project.rs": "4a53c02ddb7e9714250ff294fd8cf2734637218f110158186433210ef6773f91",
+    "apps\\desktop\\src-tauri\\src\\main.rs": "d4eae65883f10caf583f706ecbfab556c8d7cea39f2e724d51868201e016ab64",
+    "apps\\desktop\\src\\main.ts": "001c335f11ac2d0b81f6d3de985f331acdced8948305e9c84a5221ae26e3b037",
+    "apps\\desktop\\src\\contracts.ts": "c3bb37b0277843a01bbda6282eb36c704fe3010f1066ea0ce0e7dca514bc7550",
+    "apps\\desktop\\tests\\design-flow.mjs": "4efb936e8edeb5ab307a42bbbcf43b1d823c898d2eb367b25caa79692742ea11",
+    "apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot-copy.FCMacro": "664a1fe1ef6ba9a680106aa028e864f5cde1c257fd36dfbffb0895305ab18e82",
+    "apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot_policy.py": "528f649ce8201133d3bde60f33fbbb103b12d46273cd285f98fa785367608e14"
+  },
+  "expected_tests": [
+    "cadpilot::tests::actual_cadpilot_owned_selected_copy_adapter",
+    "jobs::tests::actual_cadpilot_workflow_publication_and_recovery"
+  ],
+  "backend_workflow_verified": true,
+  "native_ui_verified": false,
+  "installed_workflow_verified": false
+}

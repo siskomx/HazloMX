@@ -1,0 +1,7 @@
+{
+  "pass": true,
+  "source_files": 134,
+  "isolated_source_block_check": true,
+  "guest_started": false,
+  "subsequent_full_preparation": "Refused: 1768 MiB available; requires 3072 MiB; no configuration prepared"
+}

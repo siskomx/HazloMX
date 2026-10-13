@@ -1,0 +1,12 @@
+{
+  "client_cancel_ms": 0.0323,
+  "delta_bytes": 2,
+  "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "engine_cessation": "requires independent runner observation",
+  "error": "Generación cancelada.",
+  "model": "qwen3:4b",
+  "pass": true,
+  "runtime": {
+    "version": "0.35.1"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Only bundled main UI may use the bounded Hazlo Mexa workflow",
+  "webviews": ["main"],
+  "permissions": [
+    "allow-select-codex", "allow-connect-codex", "allow-cancel-codex-login", "allow-open-codex-login", "allow-start-codex-chat", "allow-answer-codex-question",
+    "allow-select-claude", "allow-start-claude-chat", "allow-cancel-chat",
+    "allow-set-agent-tools",
+    "allow-get-snapshot", "allow-select-project", "allow-select-freecad", "allow-select-arduino",
+    "allow-start-compile", "allow-edit-compile",
+    "allow-select-cadcraft", "allow-prepare-drawing",
+    "allow-discover-drawing", "allow-prepare-selected-drawing",
+    "allow-select-kicad", "allow-prepare-kicad", "allow-read-kicad-summary",
+    "allow-select-konnect", "allow-prepare-konnect",
+    "allow-discover-pcb", "allow-prepare-pcb-move", "allow-discover-schematic", "allow-prepare-discovered-schematic",
+    "allow-select-orca", "allow-prepare-slice",
+    "allow-prepare-cadpilot", "allow-read-cadpilot-result", "allow-prepare-cadpilot-followup",
+    "allow-connect-agent", "allow-select-agent-sketch", "allow-start-agent-edit", "allow-edit-agent-proposal",
+    "allow-start-proposal", "allow-edit-proposal", "allow-approve-operation",
+    "allow-cancel-job", "allow-open-artifact", "allow-start-inference", "allow-cancel-inference"
+  ]
+}

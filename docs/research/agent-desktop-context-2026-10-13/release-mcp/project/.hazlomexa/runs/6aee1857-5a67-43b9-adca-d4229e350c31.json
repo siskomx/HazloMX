@@ -1,0 +1,121 @@
+{
+  "schema_version": 8,
+  "project_id": "4b33da42-eaaf-4e34-b90d-596da0972214",
+  "input": {
+    "schema_version": 1,
+    "job_id": "6aee1857-5a67-43b9-adca-d4229e350c31",
+    "cadpilot_version": "0.7.7",
+    "source_name": "Selected.FCStd",
+    "request": {
+      "operation": "inspect",
+      "object": "Document",
+      "units": "mm",
+      "parameters": {}
+    },
+    "files": [
+      {
+        "path": "Original.FCStd",
+        "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+        "bytes": 2492
+      },
+      {
+        "path": "addon/rpc_server/__init__.py",
+        "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228",
+        "bytes": 111
+      },
+      {
+        "path": "addon/rpc_server/geometry_query.py",
+        "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773",
+        "bytes": 25095
+      },
+      {
+        "path": "addon/rpc_server/object_factory.py",
+        "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893",
+        "bytes": 7316
+      },
+      {
+        "path": "addon/rpc_server/property_mapper.py",
+        "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6",
+        "bytes": 14535
+      },
+      {
+        "path": "addon/rpc_server/tip_policy.py",
+        "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a",
+        "bytes": 5114
+      }
+    ],
+    "preview": {
+      "catalog": {
+        "Target": "Part::Box"
+      },
+      "measurements": {
+        "Target": {
+          "area_mm2": 2200.0,
+          "bbox": {
+            "xmax": 10.0,
+            "xmin": 0.0,
+            "ymax": 20.0,
+            "ymin": 0.0,
+            "zmax": 30.0,
+            "zmin": 0.0
+          },
+          "center_of_mass": [
+            5.0,
+            10.0,
+            15.0
+          ],
+          "counts": {
+            "edges": 12,
+            "faces": 6,
+            "shells": 1,
+            "solids": 1,
+            "vertices": 8
+          },
+          "dimensions_mm": {
+            "height": 30.0,
+            "length": 10.0,
+            "width": 20.0
+          },
+          "is_valid": true,
+          "placement": {
+            "base": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": {
+              "angle_deg": 0.0,
+              "axis": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "yaw_pitch_roll": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "shape_type": "Solid",
+          "success": true,
+          "volume_mm3": 6000.0
+        }
+      }
+    }
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/6aee1857-5a67-43b9-adca-d4229e350c31",
+    "created_unix_ms": 1791909568831,
+    "updated_unix_ms": 1791909569649,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "lid",
+  "result": {
+    "proposal": {
+      "message": "La geometría 'caja hueca con tapa' no es soportada por mi sistema (solo genero sólidos rectangulares). ¿Quieres un bloque rectangular de referencia en lugar de la caja?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 10.5885544
+}

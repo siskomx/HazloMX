@@ -1,0 +1,29 @@
+{
+  "pass": true,
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-T3Wwzw\\project",
+  "artifact": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-T3Wwzw\\project\\.hazlomexa\\artifacts\\1e98861f-4b4a-45ab-bb5f-fa8f5a8da94d",
+  "screenshot": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-T3Wwzw\\completed.png",
+  "unprivileged_denial": "get_snapshot not allowed on window \"unprivileged\", webview \"unprivileged\", URL: local\n\nallowed on: [webviews: \"main\", URL: local]\n\nreferenced by: capability: main, permission: allow-get-snapshot",
+  "job_id": "1e98861f-4b4a-45ab-bb5f-fa8f5a8da94d",
+  "cad_cancellation_ms": 64.02250000000095,
+  "observed_cad_pids": [
+    34096,
+    18940
+  ],
+  "checks": [
+    "missing model reports error without sending prompt or creating job",
+    "manual fallback clears failed inference and error",
+    "native ACL denial",
+    "no staging before approval",
+    "edit invalidates approval",
+    "stale approval rejected",
+    "keyboard navigation with visible focus",
+    "keyboard approval and denial",
+    "reload during CAD",
+    "real CAD publication",
+    "persisted source, timestamps, edits and sequence match native snapshot",
+    "reload preserves one job",
+    "keyboard cancellation terminates observed real CAD processes without another published run",
+    "previous completed result remains openable after new jobs and reload"
+  ]
+}

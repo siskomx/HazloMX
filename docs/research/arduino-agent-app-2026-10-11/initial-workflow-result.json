@@ -1,0 +1,62 @@
+{
+  "cancelled": "abb787d3-3eb8-48a3-92de-ab4d878d36aa",
+  "completed": {
+    "audit": {
+      "adapter_version": 1,
+      "created_unix_ms": 1791764152844,
+      "destination": ".hazlomexa/artifacts/fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc",
+      "error": null,
+      "files_verified": true,
+      "sequence": 5,
+      "source": {
+        "provider": "manual"
+      },
+      "updated_unix_ms": 1791764152953,
+      "user_edited": true
+    },
+    "input": {
+      "agent_version": "0.7.1",
+      "job_id": "fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc",
+      "original_source": "void setup() {} void loop() {}",
+      "schema_version": 1,
+      "source": "void setup() {} void loop() { delay(500); }",
+      "source_name": "UserOriginal.ino"
+    },
+    "phase": "completed",
+    "project_id": "3a029ed7-90b6-4cee-bdf0-7111a217d973",
+    "schema_version": 4
+  },
+  "failed": {
+    "audit": {
+      "adapter_version": 1,
+      "created_unix_ms": 1791764152964,
+      "destination": ".hazlomexa/artifacts/2de14c30-e918-4a2f-b911-0e73f9e7c78e",
+      "error": "No se pudieron publicar los archivos. Cierre las aplicaciones que los estén usando y revise los permisos y el espacio libre del proyecto. La entrada y los archivos de trabajo se conservan: Cannot create a file when that file already exists. (os error 183)",
+      "files_verified": true,
+      "sequence": 3,
+      "source": {
+        "provider": "manual"
+      },
+      "updated_unix_ms": 1791764153078,
+      "user_edited": false
+    },
+    "input": {
+      "agent_version": "0.7.1",
+      "job_id": "2de14c30-e918-4a2f-b911-0e73f9e7c78e",
+      "original_source": "void setup() {} void loop() {}",
+      "schema_version": 1,
+      "source": "void setup() {} void loop() { delay(750); }",
+      "source_name": "UserOriginal.ino"
+    },
+    "phase": "failed",
+    "project_id": "3a029ed7-90b6-4cee-bdf0-7111a217d973",
+    "schema_version": 4
+  },
+  "occupied_destination_preserved": true,
+  "original_preserved": true,
+  "pass": true,
+  "reconnect_invalidated_approval": true,
+  "reopened_without_regeneration": true,
+  "root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Temp\\hazlomexa-workflow-ddc325c2-9556-48d1-bcab-3bc1c2c5e278",
+  "stale_approval_rejected": true
+}

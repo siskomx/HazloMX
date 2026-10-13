@@ -1,0 +1,54 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "server_pid": 7880,
+  "private_configuration": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\konnect-probe\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\config.json",
+  "runtime_identity": {
+    "version": "0.13.0",
+    "commit": "6bbe3e4f890ba1d37c0e5d5f38ccd03d90958c9e",
+    "asset_url": "https://github.com/mixelpixx/Konnect/releases/download/v0.13.0/konnect-v0.13.0-x86_64-pc-windows-msvc.zip",
+    "asset_bytes": 13354938,
+    "asset_sha256": "9099ad41becbfdbd00263af827a9ebab10d5732a6e42e8dfcff9a1a07dc1f089",
+    "source_url": "https://codeload.github.com/mixelpixx/Konnect/zip/6bbe3e4f890ba1d37c0e5d5f38ccd03d90958c9e",
+    "source_bytes": 4072825,
+    "source_sha256": "a848a8ebeb601bfd8e52d72ddd60ba40122a802bb220a1770dcf91fd3230c20b",
+    "runtime_files": {
+      "konnect.exe": {
+        "bytes": 35495424,
+        "sha256": "09969ec5f05600039e206acedb0b6b785528f1bced2dbe2c7f426483013e4f2c"
+      }
+    }
+  },
+  "checks": {
+    "only_approved_value_changed": true,
+    "editor_lock_refused_without_write": true,
+    "independent_kicad_netlist_readback": true,
+    "netlist_command": [
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\runtime\\bin\\kicad-cli.exe",
+      "sch",
+      "export",
+      "netlist",
+      "--format",
+      "kicadxml",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\konnect-probe\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\Edited.net",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\konnect-probe\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\Edited\\basic_test.kicad_sch"
+    ],
+    "kicad_cli_sha256": "cbd8197dd1f46b9a956f3d7973edc9a6a97960298731448ae9142dffe47abc7a",
+    "originals_and_companions_preserved": true,
+    "original_sha256": {
+      "basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+      "basic_test.kicad_pcb": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a",
+      "basic_test.kicad_pro": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837",
+      "custom_ds.kicad_wks": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    }
+  },
+  "source_sha256": {
+    "runtime_probe.py": "1432352626d0036ac71da6952f770e5b0fc0ef2d9cce2e709312744600018a20",
+    "verify_schematic.py": "f43343619330857b7193f8986c4231a4b1bdbd0861f3aced6a151a0e23e22600",
+    "test_verify_schematic.py": "f0957641e6cb167ac7d1ab52bc84a1ea33c8687a6cbe35cd16787d2398590fc6"
+  },
+  "raw_wire_probe": true,
+  "rust_sdk_verified": false,
+  "native_gui_verified": false
+}

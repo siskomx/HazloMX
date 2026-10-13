@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "negative",
+  "result": {
+    "proposal": {
+      "message": "El largo no puede ser negativo. Por favor, corrige la medida del largo.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 6.0845318
+}

@@ -1,0 +1,35 @@
+﻿{
+    "processes":  [
+                      {
+                          "Id":  11740,
+                          "ProcessName":  "arduino-cli",
+                          "CPU":  0.578125
+                      },
+                      {
+                          "Id":  1260,
+                          "ProcessName":  "avr-g++",
+                          "CPU":  null
+                      },
+                      {
+                          "Id":  15556,
+                          "ProcessName":  "avr-g++",
+                          "CPU":  0.0625
+                      },
+                      {
+                          "Id":  12244,
+                          "ProcessName":  "installed-arduino-workflow",
+                          "CPU":  0.5625
+                      },
+                      {
+                          "Id":  14288,
+                          "ProcessName":  "powershell",
+                          "CPU":  8.25
+                      },
+                      {
+                          "Id":  14932,
+                          "ProcessName":  "powershell",
+                          "CPU":  21.90625
+                      }
+                  ],
+    "files":  2197
+}

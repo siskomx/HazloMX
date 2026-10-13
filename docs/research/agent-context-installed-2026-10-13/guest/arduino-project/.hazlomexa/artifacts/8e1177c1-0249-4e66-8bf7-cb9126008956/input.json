@@ -1,0 +1,1 @@
+{"schema_version":1,"job_id":"8e1177c1-0249-4e66-8bf7-cb9126008956","fqbn":"arduino:avr:uno","source":"void setup() { pinMode(LED_BUILTIN, OUTPUT); } void loop() { digitalWrite(LED_BUILTIN, HIGH); }"}

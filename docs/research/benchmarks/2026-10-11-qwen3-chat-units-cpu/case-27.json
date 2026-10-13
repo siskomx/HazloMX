@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_changed_object",
+  "result": {
+    "proposal": {
+      "message": "¿Qué pieza rectangular quieres recrear y para qué la usarás?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 4.8544816
+}

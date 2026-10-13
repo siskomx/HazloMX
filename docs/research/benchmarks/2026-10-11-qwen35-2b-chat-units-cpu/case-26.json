@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_imperial_limit",
+  "result": {
+    "proposal": {
+      "message": "¿Qué unidad deseas para las medidas (pulgadas, centímetros o milímetros)?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 10.4203765
+}

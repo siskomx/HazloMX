@@ -1,0 +1,26 @@
+{
+  "pass": true,
+  "freecad_version": "1.1.4",
+  "project": "C:/Users/USER/AppData/Local/Temp/Hazlo Mexa á native-T3Wwzw/project",
+  "job_id": "1e98861f-4b4a-45ab-bb5f-fa8f5a8da94d",
+  "fcstd": {
+    "initial_solid_visible": true,
+    "initial_view": "centered isometric",
+    "manual_visibility_or_fit_actions": false,
+    "screenshot": "fcstd-visible.jpg"
+  },
+  "step": {
+    "rendered_solid_visible": true,
+    "actions": [
+      "0: isometric view",
+      "V, F: Fit All"
+    ],
+    "screenshot": "step-rendered.jpg"
+  },
+  "checks": [
+    "native opening preserves completed phase and artifact bytes",
+    "initial FCStd viewport renders the generated box",
+    "STEP viewport renders the imported box"
+  ],
+  "note": "Development-host visual observation; STEP contains geometry, not a saved FreeCAD camera"
+}

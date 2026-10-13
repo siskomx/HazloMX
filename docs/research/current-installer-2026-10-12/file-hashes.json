@@ -1,0 +1,14 @@
+{
+  "initial-installed-files.json": "0ceb333a142a0082a96643cc0b83899dc2068d8e7585662cbef57f48ac03bc85",
+  "initial-package-connector-attempt.json": "58c3e31a7d2ce6e34bca345af5ca872cefa932dd70e821ecfdff403c586acbb4",
+  "initial-package-first-attempt.json": "d6a1ed34b756b135aaca3d1230952754df5d0a7964a0664cb4336a6453d46d21",
+  "initial-package-result.json": "12dd819890a7ad76cffc044aa368ad814b329776c22bb6890fca9ab87351bcf2",
+  "installed-tools.json": "70422a01f3f1d70e0e6e55d6e322bcc25031106ce18850937fef930551c51279",
+  "offline-offline-prerequisite.json": "10d5db3981444b2a4d9c48805779d40fb92df0a0ad31e121d571658dc2b00562",
+  "offline-package-result.json": "ca599694ae0622140bf65fb2a9c2914e2a7215e9456473e15ee699f4600b8604",
+  "package-identity.json": "660cd1c366302d9e50127e88692590cebe4b7507d8dc5909841d2a10eac328a8",
+  "package-result.json": "a6ed5adb90883d2e9a996496479fa300b04ba1015f62e85dbce2b788b032a994",
+  "sandbox-current-package.ps1": "8e87f3f5e1493dd030b6319eafade0544c5b4990b01bcd72827833af81193013",
+  "updated-tools.json": "70422a01f3f1d70e0e6e55d6e322bcc25031106ce18850937fef930551c51279",
+  "webview-version.json": "7a34955886b5665cc60668f082f37ac5e690a7a4b316c7fea1ba75b7d58ff1bd"
+}

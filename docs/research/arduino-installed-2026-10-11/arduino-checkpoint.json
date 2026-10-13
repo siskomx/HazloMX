@@ -1,0 +1,57 @@
+﻿{
+    "project_files":  [
+                          {
+                              "sha256":  "1C285074DB36ABCDCC8C84C2D7CA490837E1247591902F3035E862A01F005C44",
+                              "path":  "hazlomx.json"
+                          },
+                          {
+                              "sha256":  "C41FDC4AC79305652E1B64A29238BAF73240C12D0A5ECEC203566D5795C383F5",
+                              "path":  "original.txt"
+                          },
+                          {
+                              "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                              "path":  ".hazlomexa\\writer.lock"
+                          },
+                          {
+                              "sha256":  "F35D9B63459836830FA71F20A2B5332CBDD2C300F48E7EDDEA4E851F48BCFD57",
+                              "path":  ".hazlomexa\\artifacts\\799213d6-6089-439e-9ec7-871230efd71d\\firmware.elf"
+                          },
+                          {
+                              "sha256":  "FCA1D74F3E16EA45D3E7AAF7D3B89F0DABB462A645D241AA5CF74DCE11FB84C3",
+                              "path":  ".hazlomexa\\artifacts\\799213d6-6089-439e-9ec7-871230efd71d\\firmware.hex"
+                          },
+                          {
+                              "sha256":  "CB8779DAC980F2C83903D84064FD1B640DA3D31A9BA5C95A0D9DC95A2102B647",
+                              "path":  ".hazlomexa\\artifacts\\799213d6-6089-439e-9ec7-871230efd71d\\input.json"
+                          },
+                          {
+                              "sha256":  "574EBEC99941CC905775F42823254BF076560B8A09DD670A4D6AAB50245C4A71",
+                              "path":  ".hazlomexa\\artifacts\\799213d6-6089-439e-9ec7-871230efd71d\\result.json"
+                          },
+                          {
+                              "sha256":  "9277BE2D39D511E9180023AC160E3669012245C37172935BE2DD4103C0E7BE36",
+                              "path":  ".hazlomexa\\artifacts\\799213d6-6089-439e-9ec7-871230efd71d\\Sketch.ino"
+                          },
+                          {
+                              "sha256":  "8EA1C6FB16AA0658A0F58DACAC02EC86FE31A18B391CD69E5A262D5D434393E0",
+                              "path":  ".hazlomexa\\runs\\799213d6-6089-439e-9ec7-871230efd71d.json"
+                          }
+                      ],
+    "pass":  true,
+    "original_preserved":  true,
+    "result":  {
+                   "schema_version":  1,
+                   "job_id":  "799213d6-6089-439e-9ec7-871230efd71d",
+                   "cli_version":  "1.5.1",
+                   "core_version":  "1.8.8",
+                   "fqbn":  "arduino:avr:uno",
+                   "flash_bytes":  924,
+                   "artifacts":  [
+                                     "firmware.hex",
+                                     "firmware.elf",
+                                     "Sketch.ino"
+                                 ]
+               },
+    "job_id":  "799213d6-6089-439e-9ec7-871230efd71d",
+    "app_closed":  true
+}

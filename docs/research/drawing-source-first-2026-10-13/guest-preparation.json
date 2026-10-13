@@ -1,0 +1,9 @@
+{
+  "launched": false,
+  "prepared": false,
+  "required_available_mib": 3072,
+  "observed_available_mib": 1348,
+  "reason": "Insufficient available host RAM after the harness build",
+  "latest_os_free_kib": 1462932,
+  "no_guest_running": true
+}

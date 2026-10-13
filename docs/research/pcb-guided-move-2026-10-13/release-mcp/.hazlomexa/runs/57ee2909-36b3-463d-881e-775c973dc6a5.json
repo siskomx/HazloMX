@@ -1,0 +1,57 @@
+{
+  "schema_version": 10,
+  "project_id": "d4d54c1d-f5e5-4870-948d-21f40a84c613",
+  "input": {
+    "schema_version": 1,
+    "job_id": "57ee2909-36b3-463d-881e-775c973dc6a5",
+    "kicad_version": "10.0.7",
+    "source_root": "C:/Users/USER/Documents/GitHub/HazloMX/target/mcp-pcb-0b7eb603-2be2-4beb-89cf-50d9ccc5766e/.hazlomexa/artifacts/b5226bb2-3283-4d6a-9414-8852e6894e6c/Verification/Checked",
+    "entry": "basic_test.kicad_pcb",
+    "files": [
+      {
+        "path": "basic_test.kicad_pcb",
+        "sha256": "014c9dc162f40181160c838c4f59057e6c40b879fa2cd2066de9ab1e30803673",
+        "bytes": 79695
+      },
+      {
+        "path": "basic_test.kicad_pro",
+        "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da",
+        "bytes": 13394
+      },
+      {
+        "path": "basic_test.kicad_sch",
+        "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+        "bytes": 25307
+      },
+      {
+        "path": "custom_ds.kicad_wks",
+        "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077",
+        "bytes": 2516
+      }
+    ],
+    "units": "mils",
+    "layers": [
+      "F.Cu",
+      "B.Cu",
+      "F.SilkS",
+      "B.SilkS",
+      "F.Mask",
+      "B.Mask",
+      "Edge.Cuts"
+    ]
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "mcp"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/57ee2909-36b3-463d-881e-775c973dc6a5",
+    "created_unix_ms": 1791914769608,
+    "updated_unix_ms": 1791914800268,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

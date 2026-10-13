@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-11",
+  "platform": "Windows 11 x64, local NTFS",
+  "command": "rtk cargo test --workspace --lib",
+  "result": {"passed": 32, "ignored": 4, "duration_seconds": 6.15},
+  "lint": {"command": "rtk cargo clippy --workspace --all-targets --features desktop,custom-protocol -- -D warnings", "pass": true},
+  "checks": [
+    {"test": "project::tests::abrupt_exit_at_publication_boundaries_recovers_without_regeneration", "checkpoints": ["before_validation", "before_commit", "after_commit"], "mechanism": "owned test subprocess exits with native ExitProcess(73), bypassing Rust destructors", "expected_recovery": ["interrupted", "interrupted", "completed"], "pass": true},
+    {"test": "project::tests::locked_output_fails_publication_and_preserves_private_input", "pass": true},
+    {"test": "jobs::tests::concurrent_cancel_and_commit_have_one_authoritative_outcome", "iterations": 24, "allowed_outcomes": ["cancelled without published directory", "completed with FCStd and STEP"], "persisted_recovery_agrees": true, "pass": true}
+  ],
+  "limits": ["Publication fixtures contain synthetic file bytes plus a contract-valid result; actual editable FreeCAD geometry is tested separately", "No power-loss durability claim", "Disk exhaustion is not tested", "Previously built installer predates the new publication-error explanation; rebuild before release"]
+}

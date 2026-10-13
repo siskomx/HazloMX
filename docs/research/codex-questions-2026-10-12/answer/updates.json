@@ -1,0 +1,50 @@
+[
+  {
+    "text": "",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "¿Qué quieres ",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "¿Qué quieres cambiar?",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "¿Qué quieres cambiar?",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "¿Qué quieres cambiar?",
+    "complete": true,
+    "cancelled": false,
+    "error": null
+  }
+]

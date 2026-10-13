@@ -1,0 +1,46 @@
+{
+  "discovered_components": 13,
+  "original_hashes_preserved": true,
+  "native_before_after_approval": true,
+  "native_report_dialog": true,
+  "project": "target/native-konnect-c42af480-0f36-4145-b7ff-3357d7e1cc71/project",
+  "native_source_discovery_before_runtime_selection": true,
+  "full_goal_complete": false,
+  "date": "2026-10-12",
+  "native_netlist_reveal": true,
+  "source_hashes": [
+    {
+      "sha256": "741CA9F1EB65E5B648FD8CEDB21AF815ED138C221A23503209E0DE6D067919B3",
+      "path": "apps/desktop/src/main.ts"
+    },
+    {
+      "sha256": "6FFA2D3AAE4A269F506178502BBAB912886AC830B835CD8D3FF1B9994366D53E",
+      "path": "apps/desktop/tests/design-flow.mjs"
+    },
+    {
+      "sha256": "3C71B13C8B8CFA432ABC8F08ADED3E985D04ACA6C7141CE187A9CE2BF7B5C09A",
+      "path": "apps/desktop/src-tauri/src/konnect_run.rs"
+    },
+    {
+      "sha256": "D5B78C039B7C4AD30E502D153A98F8914397A9C472C7883A664675601C2E3D14",
+      "path": "apps/desktop/src-tauri/src/main.rs"
+    },
+    {
+      "sha256": "236A06092FBDCE72569696687825BFC555E2D4AE5F26BF675C7C61ADA9620826",
+      "path": "target/debug/hazlomexa.exe"
+    },
+    {
+      "sha256": "89251C2E30DB44A65807D4DC968A0816C98E4D64AE1C0F0A211709C15ED32E5B",
+      "path": "target/debug/hazlomexa-tools.exe"
+    }
+  ],
+  "native_human_component_labels": true,
+  "scope": "host native selected-sheet component-value copy edit; not installed or live IPC",
+  "native_project_picker": true,
+  "native_verified_publication": true,
+  "native_restart_history_and_report": true,
+  "first_failed_job": "0c8c72e2-3c3e-4e2c-9992-9ae56ceb69cd",
+  "completed_job": "ab5cc639-b3ef-4f50-a889-edc638115f8c",
+  "native_runtime_pickers": true,
+  "owned_test_app_closed": true
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "job_id": "f913cdb3-725b-4a73-bc09-b908a295f8c3",
+  "cadcraft_version": "0.5.0",
+  "source_sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982",
+  "output_sha256": "9a67bfeb7fd0a65278b77556f899c971ae15862b5cbc8a04f6a7eebcd8bcf201",
+  "preview_sha256": "9a67bfeb7fd0a65278b77556f899c971ae15862b5cbc8a04f6a7eebcd8bcf201",
+  "output_summary": null,
+  "warnings": []
+}

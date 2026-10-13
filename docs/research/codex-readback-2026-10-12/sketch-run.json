@@ -1,0 +1,26 @@
+{
+  "schema_version": 10,
+  "project_id": "579a8dc4-11af-4abd-af0a-2c6a214664eb",
+  "input": {
+    "schema_version": 1,
+    "job_id": "203c508e-5e5d-44ad-8df5-111e3e72bc9a",
+    "agent_version": "0.7.1",
+    "source_name": "Blink.ino",
+    "original_source": "void setup() {} void loop() {}",
+    "source": "void setup() {} void loop() { delay(500); }"
+  },
+  "phase": "awaiting_approval",
+  "audit": {
+    "source": {
+      "provider": "mcp"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/203c508e-5e5d-44ad-8df5-111e3e72bc9a",
+    "created_unix_ms": 1791821133378,
+    "updated_unix_ms": 1791821133378,
+    "sequence": 1,
+    "error": null,
+    "files_verified": false
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_imperial_limit",
+  "result": {
+    "proposal": {
+      "message": "8 pulgadas equivalen a 203.2 mm y el límite es 200 mm. ¿Qué largo menor quieres usar?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 1.0513173
+}

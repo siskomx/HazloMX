@@ -1,0 +1,19 @@
+# Native Windows CADPilot inspection, imperial edit and recovery
+
+October 12, 2026. Rebuilt desktop/custom-protocol source binary, FreeCAD 1.1.4 and identified CADPilot 0.7.7. Computer Use operated only the owned Hazlo/FreeCAD windows and source fixture. No model inference, hardware control or installation ran.
+
+The real native flow creates an owned project and selects FreeCAD through its file picker. CADPilot starts in inspection mode with no required dimensions and a disabled object field. Selecting the FCStd and CADPilot package produces the actual catalog and box dimensions **10 × 20 × 30 mm**, volume 6000 mm³, before approval. Human-workflow approval completes native measurement, validation and publication. The read-only report opens in Hazlo.
+
+The first package selection exposed a usability failure: capture expected the inner `addon/CADPilot` folder, while selecting the extracted package root produced a generic file-not-found error. `first-package-folder-failure.txt` retains that observed failure. Capture now recognizes the package root or inner addon, reports an actionable error for an unrelated folder, and retains the exact identified module hashes, regular-file/lineage checks and source-copy boundary. A regression test proves both layouts still reject mismatching modules without creating a captured output. The native retry selects the same package root successfully.
+
+The second native proposal selects the measured Target box and explicitly enters **0.5 × 1 × 1.5 inches**. The approval preview shows normalized **12.7 × 25.4 × 38.1 mm**, the original geometry in both units and locked pending fields. Approval executes the existing native copy adapter. Hazlo reports verified publication and opens its actual saved result report. The final native bounding-box dimensions independently match those three millimetre values.
+
+The edited FCStd opens in the real FreeCAD GUI. Selecting Target shows native Length 12.70 mm, Width 25.40 mm and Height 38.10 mm. **The initial viewport is blank and Target loads hidden.** No display change or save was performed. This verifies file opening/deserialized properties, not a finished visualization experience; automatic visible/fitted opening remains an actionable app gap. STEP opening was not exercised.
+
+Follow-up: [newly generated primitive copies now open visible and framed](../cadpilot-visible-2026-10-12/README.md). That later gate also opens STEP with manual Fit All and applies a second approved change to a verified result. The older artifacts and observations above are retained unchanged.
+
+After closing both owned windows, restarting Hazlo and reopening the project restores both completed runs. The edited result report opens again without regenerating or selecting CADPilot. Every accepted artifact hash matches its before-restart value, and the selected original retains SHA256 `2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6`. Both owned test windows are closed afterward; unrelated user windows are left alone.
+
+Retained evidence includes native accessibility observations, inspection/edit snapshots and results, original/recovery hashes and exact source/build hashes in `status.json`. The owned project remains in `target/native-cadpilot-20261012-01/project`. Inspection job: `553690f9-e044-45c0-8ff9-1da1d5146b86`; imperial edit: `5a0ee5c0-f667-41e1-bffd-55f44354b307`.
+
+Validation: **89 regular tests pass** (29 separately ignored runtime gates), all-target desktop/custom-protocol Clippy passes, and the native binary rebuild passes. This native acceptance covers inspection and one primitive box edit only. The full application goal remains active: visible/fitted opening, STEP/native cancellation, signed-in conversation, broader CAD documents, other native integrations and the updated installer remain unfinished.

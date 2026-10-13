@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "zero",
+  "result": {
+    "proposal": {
+      "message": "La altura no puede ser 0 mm. ¿Qué altura quieres usar? (Mínimo 1 mm)",
+      "status": "clarification"
+    }
+  },
+  "seconds": 4.9535253
+}

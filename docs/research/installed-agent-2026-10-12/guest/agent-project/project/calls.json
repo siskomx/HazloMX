@@ -1,0 +1,57 @@
+[
+  {
+    "inspection": {
+      "agent_connected": true,
+      "operation": "edit_copy_only",
+      "project_id": "64c9fd74-42e2-466b-b7f8-614e02247211",
+      "scope": "desktop_selected_snapshot",
+      "source": "void setup() {} void loop() {}",
+      "source_name": "UserOriginal.ino",
+      "source_sha256": "22897da95b428cd8c177ca4cdb60bd8d558b047c56fbdafbf3dd1ffb0095ffdb"
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "61a0535e-1e7a-4c1f-8078-07abdca0bc10",
+      "operation": "edit_copy_only",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": null,
+      "components": null,
+      "content": "void setup() {} void loop() { delay(500); }",
+      "drawing": null,
+      "format": "sketch",
+      "job_id": "61a0535e-1e7a-4c1f-8078-07abdca0bc10",
+      "project_id": "64c9fd74-42e2-466b-b7f8-614e02247211",
+      "scope": "verified_published_result",
+      "sha256": "8b67de3860b79e0e01f33893d031e99687def5b9e853d66391a179dcc85227c6",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": "UserOriginal.ino"
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "94773771-02d8-4125-9f82-8d2c18c4190e",
+      "operation": "edit_copy_only",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": null,
+      "components": null,
+      "content": "void setup() {} void loop() { delay(1000); }",
+      "drawing": null,
+      "format": "sketch",
+      "job_id": "94773771-02d8-4125-9f82-8d2c18c4190e",
+      "project_id": "64c9fd74-42e2-466b-b7f8-614e02247211",
+      "scope": "verified_published_result",
+      "sha256": "409b6c6d296614856d196e1ca0c45679c0c47db2643b7870d6713e61b290890b",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": "UserOriginal.ino"
+    }
+  }
+]

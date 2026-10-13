@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": "clarification",
+  "id": "missing_units",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 30.0,
+        "length": 10.0,
+        "width": 20.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 4.7388065
+}

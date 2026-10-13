@@ -1,0 +1,44 @@
+{
+  "schema_version": 9,
+  "project_id": "1b0dc7d2-476b-4730-92ca-9d7aafbb628f",
+  "input": {
+    "schema_version": 2,
+    "job_id": "128443bc-1ad2-4d3c-ab8f-c92a7016fb6c",
+    "konnect_version": "0.13.0",
+    "source": {
+      "schema_version": 1,
+      "job_id": "128443bc-1ad2-4d3c-ab8f-c92a7016fb6c",
+      "kicad_version": "10.0.7",
+      "source_root": "C:/Users/USER/AppData/Local/Temp/hazlomexa-workflow-04bd9051-2c57-4fd8-9084-41efa7e74fd9/sources",
+      "entry": "basic_test.kicad_sch",
+      "files": [
+        {
+          "path": "basic_test.kicad_sch",
+          "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+          "bytes": 25307
+        }
+      ],
+      "units": "mils",
+      "layers": []
+    },
+    "edit": {
+      "reference": "R1",
+      "expected_value": "10k",
+      "value": "12.34k"
+    }
+  },
+  "phase": "failed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/128443bc-1ad2-4d3c-ab8f-c92a7016fb6c",
+    "created_unix_ms": 1791783092474,
+    "updated_unix_ms": 1791783098807,
+    "sequence": 3,
+    "error": "No se pudieron publicar los archivos. Cierre las aplicaciones que los estén usando y revise los permisos y el espacio libre del proyecto. La entrada y los archivos de trabajo se conservan: Cannot create a file when that file already exists. (os error 183)",
+    "files_verified": true
+  }
+}

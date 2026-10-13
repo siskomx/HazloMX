@@ -1,0 +1,30 @@
+{
+  "os": "Windows Sandbox build 26100",
+  "networking": "disabled",
+  "models_run": 0,
+  "backend_regression_pass": true,
+  "regular_tests": 38,
+  "native_geometry_and_failure_pass": true,
+  "geometry_tests": 8,
+  "production_backend_ascii_profiles_pass": true,
+  "actual_backend_tests": 2,
+  "accented_profiles_without_short_aliases_supported": false,
+  "full_acceptance_pass": false,
+  "checks": [
+    "Actual editable FCStd and STEP geometry/roundtrip at four sizes",
+    "Fixed macro rejects invalid/duplicate input and unknown version",
+    "Occupied output preserved",
+    "Forced export exception rejects partial artifacts",
+    "Result write failure cannot leave success record",
+    "User addon and inherited Python path excluded",
+    "Owned real FreeCAD launch with private ASCII config and accented artifact path",
+    "Explicit approved workflow publishes and recovers without another generation",
+    "38 backend cases cover approval, project boundaries, cancellation/commit races, crash recovery and protocol rejection"
+  ],
+  "limitations": [
+    "Accented private profiles fail closed when no ASCII short alias exists",
+    "This directly tests the production backend and adapter, not installed GUI event wiring",
+    "Installed-guest inference/CAD/commit cancellation and remaining GUI negative cases still pending"
+  ],
+  "report_correction": "First script attempt let the nested backend script overwrite its result variable. first-attempt-invalid-report.json is invalid evidence. Corrected isolated scope reports the two native profile failures honestly."
+}

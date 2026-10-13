@@ -1,0 +1,17 @@
+{
+  "cancelled_result_refused": true,
+  "claude_health_checked": false,
+  "codex_mcp_read_passed": true,
+  "exact_catalog_passed": true,
+  "measured_cad_capabilities": true,
+  "model_turn_started": false,
+  "owned_process_stopped": true,
+  "pid": 34988,
+  "project_id": "dad62e60-5c99-4827-8fcb-9196719b41f4",
+  "refusals_preserve_history": true,
+  "selected_sketch_read_and_proposal": true,
+  "stale_selection_refused": true,
+  "stale_sketch_refused": true,
+  "tool_catalog_count": 10,
+  "unverified_cad_target_refused": true
+}

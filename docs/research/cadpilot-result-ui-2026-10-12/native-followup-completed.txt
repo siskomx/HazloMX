@@ -1,0 +1,134 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			8 pane Hazlo Mexa
+				9 pane (disabled)
+				10 region Hazlo Mexa - Web content
+					11 region
+						12 region
+							13 region
+								14 region
+								15 region
+									16 region
+										17 region
+											18 region
+												19 region
+												20 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													21 main ID: app
+														22 section header
+															23 heading Hazlo Mexa
+															24 text De una idea a un archivo que puedes editar.
+															25 text CAD y Arduino · v0.1
+														26 region Tu proyecto
+															27 heading Tu proyecto ID: project-heading
+															350 text C:/Users/USER\AppData\Local\Temp\hazlomexa-host-tools-3cfa9e5d-fcf9-46b0-94b7-213d6fffd06b\project
+															29 button Crear en carpeta… ID: create-project
+															30 button Abrir proyecto… ID: open-project
+														31 details ID: agent-tools-panel
+															32 disclosure triangle Usar las herramientas de Hazlo con Claude Code o Codex
+																33 text Usar las herramientas de Hazlo con Claude Code o Codex
+														34 region ¿Qué quieres crear?
+															35 text 01 / CONVERSA
+															36 heading ¿Qué quieres crear? ID: proposal-heading
+															351 text Describe el documento que quieres medir, modificar o ampliar. Podemos reunir primero su catálogo y medidas.
+															38 text ¿Qué vas a trabajar?
+															39 combo box (settable, string) ¿Qué vas a trabajar? Value: Documento existente · CADPilot ID: workflow
+															40 text ¿Con quién quieres conversar?
+															41 combo box (settable, string) ¿Con quién quieres conversar? Value: Guía actual / Ollama ID: assistant-provider
+															42 status ID: claude-chat-progress
+															43 log Conversación de diseño ID: conversation
+																149 text Hazlo Mexa:
+																150 text ¿Quieres medir un documento, modificar una caja o añadir geometría? Si aún no sabes sus medidas o nombres internos, empieza por Medir e inspeccionar. Seleccionaremos una copia del FCStd y reuniremos su catálogo antes de aprobar; el original se conserva.
+															49 text Tu idea o respuesta
+															50 edit (settable, string) Tu idea o respuesta Description: Quiero recrear o modificar este documento, pero aún no conozco sus medidas ID: prompt
+															51 button Enviar ID: infer
+															52 button (disabled) Detener ID: cancel-inference
+															53 button Nueva conversación ID: new-conversation
+															54 status ID: inference-status
+															352 text La inspección mide una copia del documento nativo; no necesitas conocer sus dimensiones para empezar. Confirma después los parámetros y unidades de la operación.
+															353 text C:/Users/USER\AppData\Local\HazloMexa/runtimes/FreeCAD-1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311/FreeCADCmd.exe
+															153 button Seleccionar FreeCAD 1.1.4… ID: select-pilot-freecad
+															354 text Cambiarás una copia de este resultado verificado. Sus archivos se volverán a comprobar antes de preparar la propuesta.
+															155 button Elegir otro documento ID: cadpilot-new-source
+															156 text ¿Qué quieres hacer con el documento?
+															157 combo box (settable, string) ¿Qué quieres hacer con el documento? Value: Cambiar dimensiones de una caja ID: cadpilot-operation
+															158 text ¿Qué caja quieres cambiar?
+															159 combo box (settable, string) ¿Qué caja quieres cambiar? Value: Caja · 10 × 20 × 45 mm de extensión · Target ID: cadpilot-component
+															160 text Unidad de los parámetros nuevos
+															161 combo box (settable, string) Unidad de los parámetros nuevos Value: Milímetros ID: cadpilot-unit
+															162 group Medidas que tendrá la copia ID: cadpilot-size
+																163 text Medidas que tendrá la copia
+																164 text Largo
+																165 spin button (settable, float) Largo Value: 10 ID: cadpilot-length
+																166 text Ancho
+																167 spin button (settable, float) Ancho Value: 20 ID: cadpilot-width
+																168 text Alto
+																169 spin button (settable, float) Alto Value: 50 ID: cadpilot-height
+															170 text El documento nativo conserva sus medidas en mm. La inspección reúne el catálogo y medidas antes de aprobar; el original se conserva. Por ahora se aceptan hasta 32 primitivas nativas independientes, con visibilidad validada limitada, sin expresiones ni documentos vinculados.
+															171 button Preparar cambio sobre este resultado ID: prepare-cadpilot
+														65 region Vista de la propuesta
+															66 text 02 / REVISA
+															67 heading Vista de la propuesta ID: preview-heading
+															355 text Compara las medidas actuales con los parámetros de la copia. Para cambiar la propuesta, cancélala y prepara otra.
+															356 text Edited.FCStd · Editar caja · Target · 1 objeto medido · alto: 50 mm → 50 mm · largo: 10 mm → 10 mm · ancho: 20 mm → 20 mm
+															357 text Target · Part::Box · 10 × 20 × 45 mm · volumen 9000 mm³
+															70 button (disabled) Aprobar operación sobre copia ID: approve
+															71 button (disabled) Cancelar ID: cancel
+															358 text La operación se liga al original capturado, catálogo y geometría medidos. Se revalidan antes de editar; el original y los objetos no seleccionados se conservan.
+														73 region Resultados
+															74 text 03 / ABRE
+															75 heading Resultados ID: results-heading
+															76 status ID: status
+																359 text Mediciones y archivos verificados y publicados. El original se conserva.
+															78 list
+																79 term Generación
+																	80 text Generación
+																360 text Completada
+																82 term Verificación
+																	83 text Verificación
+																361 text Catálogo y geometría medidos, originales y archivos de la copia verificados
+																85 term Publicación
+																	86 text Publicación
+																362 text Archivos disponibles en el proyecto
+															363 text Edited.FCStd · Editar caja · Target · 1 objeto medido · alto: 50 mm → 50 mm · largo: 10 mm → 10 mm · ancho: 20 mm → 20 mm · Archivos seleccionados · 12/10/2026, 10:10:38 a.m.
+															364 button Mostrar FCStd original
+															365 button Ver mediciones y operación
+															366 button Abrir FCStd editado
+															367 button Abrir STEP editado
+															368 button Continuar desde este resultado
+															369 text Selected.FCStd · Medir documento · 1 objeto medido · Archivos seleccionados · 12/10/2026, 10:05:46 a.m.
+															370 button Mostrar FCStd original
+															371 button Ver mediciones y operación
+															372 button Continuar desde este resultado
+															373 text Edited.FCStd · Editar caja · Target · 1 objeto medido · alto: 4.5 cm → 45 mm · largo: 1 cm → 10 mm · ancho: 2 cm → 20 mm · Archivos seleccionados · 12/10/2026, 10:05:52 a.m.
+															374 button Mostrar FCStd original
+															375 button Ver mediciones y operación
+															376 button Abrir FCStd editado
+															377 button Abrir STEP editado
+															378 button Continuar desde este resultado
+															379 text Operación cancelada. · Propuesta por herramienta · MCP · 12/10/2026, 10:05:51 a.m.
+															380 text Original.FCStd · Editar caja · Target · 1 objeto medido · alto: 3.5 cm → 35 mm · largo: 1 cm → 10 mm · ancho: 2 cm → 20 mm · Propuesta por herramienta · MCP · 12/10/2026, 10:05:48 a.m.
+															381 button Mostrar FCStd original
+															382 button Ver mediciones y operación
+															383 button Abrir FCStd editado
+															384 button Abrir STEP editado
+															385 button Continuar desde este resultado
+															386 text Edited.FCStd · Editar caja · Target · 1 objeto medido · alto: 4 cm → 40 mm · largo: 1 cm → 10 mm · ancho: 2 cm → 20 mm · Propuesta por herramienta · MCP · 12/10/2026, 10:05:49 a.m.
+															387 button Mostrar FCStd original
+															388 button Ver mediciones y operación
+															389 button Abrir FCStd editado
+															390 button Abrir STEP editado
+															391 button Continuar desde este resultado
+								88 region
+						89 region
+						90 region
+		2 title bar (settable, string) Value: Hazlo Mexa
+			3 menu bar System ID: MenuBar
+				4 menu item System
+			5 button Minimize
+			6 button Maximize
+			7 button Close
+
+Document text: ```
+￼
+```

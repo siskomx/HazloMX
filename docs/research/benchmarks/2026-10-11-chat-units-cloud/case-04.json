@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 8,
+    "length": 40,
+    "width": 15
+  },
+  "id": "reordered",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 8.0,
+        "length": 40.0,
+        "width": 15.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 0.9982452
+}

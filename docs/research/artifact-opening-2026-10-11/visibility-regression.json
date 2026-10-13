@@ -1,0 +1,17 @@
+{
+  "adapter_sha256": "5abc79546b17926d0ecc8590bd013e373bdf73e8f00cf9dbd4f7930d98e47df1",
+  "regular_rust_tests": {
+    "passed": 38,
+    "ignored": 4
+  },
+  "native_freecad_tests": {
+    "passed": 8,
+    "duration_seconds": 30.404
+  },
+  "frontend_build": "pass",
+  "desktop_clippy": "pass",
+  "native_missing_model_cad_smoke": "pass",
+  "installer_lifecycle": "pass",
+  "native_viewports": "pass: initial FCStd, STEP after native view commands",
+  "full_acceptance": false
+}

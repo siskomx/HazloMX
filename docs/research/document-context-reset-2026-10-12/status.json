@@ -1,0 +1,8 @@
+{
+  "same_id_folder_reset": true,
+  "verified_followup_discards_unrelated_draft": true,
+  "new_document_blank_inputs": true,
+  "browser_workflows": 9,
+  "production_build_passed": true,
+  "native_installed_acceptance": false
+}

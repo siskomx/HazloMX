@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "negative",
+  "result": {
+    "proposal": {
+      "message": "¿Podrías confirmar el largo? -10 mm queda fuera del rango permitido.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 1.1398714
+}

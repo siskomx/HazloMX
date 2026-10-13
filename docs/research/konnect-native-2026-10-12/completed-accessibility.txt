@@ -1,0 +1,106 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			8 pane Hazlo Mexa
+				9 pane (disabled)
+				10 region Hazlo Mexa - Web content
+					11 region
+						12 region
+							13 region
+								14 region
+								15 region
+									16 region
+										17 region
+											18 region
+												19 region
+												20 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													21 main ID: app
+														22 section header
+															23 heading Hazlo Mexa
+															24 text De una idea a un archivo que puedes editar.
+															25 text CAD y Arduino · v0.1
+														26 region Tu proyecto
+															27 heading Tu proyecto ID: project-heading
+															371 text C:/Users/USER\Documents\GitHub\HazloMX\target\native-konnect-c42af480-0f36-4145-b7ff-3357d7e1cc71\project
+															29 button Crear en carpeta… ID: create-project
+															30 button Abrir proyecto… ID: open-project
+														31 details ID: agent-tools-panel
+															32 disclosure triangle Usar las herramientas de Hazlo con Claude Code o Codex
+																33 text Usar las herramientas de Hazlo con Claude Code o Codex
+														34 region ¿Qué quieres crear?
+															35 text 01 / CONVERSA
+															36 heading ¿Qué quieres crear? ID: proposal-heading
+															372 text Describe el componente que quieres modificar en una copia del esquema.
+															38 text ¿Qué vas a trabajar?
+															39 combo box (settable, string) ¿Qué vas a trabajar? Value: Editar esquema · Konnect ID: workflow
+															40 text ¿Con quién quieres conversar?
+															41 combo box (settable, string) ¿Con quién quieres conversar? Value: Guía actual / Ollama ID: assistant-provider
+															42 status ID: claude-chat-progress
+															43 log Conversación de diseño ID: conversation
+																138 text Hazlo Mexa:
+																139 text ¿Qué quieres cambiar en tu circuito? Abre el esquema y veremos qué componentes contiene y sus valores actuales. No necesitas saber sus identificadores. Elegiremos el componente y revisaremos el cambio antes de aprobar.
+															49 text Tu idea o respuesta
+															50 edit (settable, string) Tu idea o respuesta Description: Quiero cambiar una resistencia, pero no sé cómo se llama en el dibujo ID: prompt
+															51 button Enviar ID: infer
+															52 button (disabled) Detener ID: cancel-inference
+															53 button Nueva conversación ID: new-conversation
+															54 status ID: inference-status
+															373 text Abre el esquema para elegir un componente por su tipo y valor. Por ahora este chat usa respuestas guiadas; todavía no conecta agentes para interpretar peticiones abiertas.
+															374 text C:/Users/USER\Documents\GitHub\HazloMX\target\konnect-probe\runtime\konnect.exe · C:/Users/USER\Documents\GitHub\HazloMX\target\kicad-probe\runtime\bin\kicad-cli.exe
+															142 button Seleccionar Konnect 0.13.0… ID: select-konnect
+															143 button Seleccionar KiCad CLI 10.0.7… ID: select-konnect-kicad
+															144 button Abrir esquema y ver qué contiene… ID: discover-schematic
+															145 status ID: schematic-discovery
+																205 text Su valor actual es 10k. ¿Qué valor necesitas?
+															146 text ¿Qué componente quieres cambiar?
+															147 combo box (settable, string) ¿Qué componente quieres cambiar? Value: Resistencia · 10k (R1) ID: schematic-component
+															148 details
+																149 disclosure triangle Identificador técnico del componente
+																	150 text Identificador técnico del componente
+															151 text ¿Qué valor quieres que tenga?
+															152 edit (settable, string) ¿Qué valor quieres que tenga? Description: Escribe el valor que necesitas Value: 12.34k ID: konnect-value
+															153 text El valor actual se obtiene del esquema seleccionado. Revisa el cambio antes de aprobar. El original se conserva; se publica una copia editada.
+															154 button Revisar el cambio… ID: prepare-konnect
+														65 region Vista de la propuesta
+															66 text 02 / REVISA
+															67 heading Vista de la propuesta ID: preview-heading
+															375 text Revisa el valor actual y el nuevo. Para cambiar la propuesta, cancélala y prepara otra.
+															376 text basic_test.kicad_sch · R1: 10k → 12.34k
+															377 text basic_test.kicad_pcb · 71304 bytes basic_test.kicad_pro · 13507 bytes basic_test.kicad_sch · 25307 bytes custom_ds.kicad_wks · 2516 bytes
+															70 button (disabled) Aprobar edición del esquema ID: approve
+															71 button (disabled) Cancelar ID: cancel
+															378 text Se conserva el original y se verifica que solo cambie el valor aprobado. No se controla hardware.
+														73 region Resultados
+															74 text 03 / ABRE
+															75 heading Resultados ID: results-heading
+															76 status ID: status
+																379 text Archivos verificados y publicados.
+															78 list
+																79 term Generación
+																	80 text Generación
+																380 text Completada
+																82 term Verificación
+																	83 text Verificación
+																381 text Original conservado, esquema completo y valor leído por KiCad verificados
+																85 term Publicación
+																	86 text Publicación
+																382 text Archivos disponibles en el proyecto
+															383 text basic_test.kicad_sch · R1: 10k → 12.34k · Código manual · 12/10/2026, 8:36:33 a.m.
+															384 button Mostrar esquema original
+															385 button Mostrar copia editada
+															386 button Mostrar netlist KiCad
+															387 button Ver informe de edición
+															388 text La generación falló. Revisa el detalle y prepara otra propuesta. · Código manual · 12/10/2026, 8:25:26 a.m. · Los archivos de Konnect cambiaron o contienen una salida inesperada.
+								88 region
+						89 region
+						90 region
+		2 title bar (settable, string) Value: Hazlo Mexa
+			3 menu bar System ID: MenuBar
+				4 menu item System
+			5 button Minimize
+			6 button Maximize
+			7 button Close
+
+Document text: ```
+12.34k
+```

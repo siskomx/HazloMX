@@ -1,0 +1,14 @@
+{
+  "frontend_fixture_pass": true,
+  "native_manual_imperial_pass": true,
+  "cloud_cases_passed": 30,
+  "cloud_cases_total": 30,
+  "rust_regular_tests_passed": 38,
+  "rust_ignored_tests": 4,
+  "desktop_clippy_pass": true,
+  "full_acceptance_pass": false,
+  "local_model_new_prompt_measured": false,
+  "release_package_updated": true,
+  "release_installer_lifecycle_pass": true,
+  "release_installer_sha256": "16ca459b27b3fb3d8adae3ae9c297d6da008dfb4f732ddc38ddf43bc3c573cfd"
+}

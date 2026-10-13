@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "hollow_enclosure",
+  "result": {
+    "proposal": {
+      "message": "La pieza es una caja hueca (no un sólido). ¿Quieres que calcule el volumen o las dimensiones internas? ¿Y qué unidad prefieres para las medidas: milímetros, centímetros, pulgadas, etc.?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 11.0368982
+}

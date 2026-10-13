@@ -1,0 +1,18 @@
+{
+  "window_title": " solid - FreeCAD 1.1.4",
+  "unicode_argument_verified": true,
+  "gui_visual_verification": false,
+  "computer_use_error": "failed to activate captured window",
+  "capture": "black; no usable accessibility tree",
+  "temporary_process_closed": true,
+  "limits": [
+    "Rendered viewport visual verification remains incomplete; window activation fails in this automation environment"
+  ],
+  "opening_change_in_rebuilt_installer": true,
+  "step_import_confirmed_by_accessibility": true,
+  "step_object_label": "Open CASCADE STEP translator 7.8 1",
+  "fcstd_load_confirmed_by_accessibility": true,
+  "fcstd_document": "solid",
+  "fcstd_object_label": "Solid",
+  "temporary_processes_closed": true
+}

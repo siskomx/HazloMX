@@ -1,0 +1,80 @@
+{
+  "content": [
+    {
+      "text": "{\"approval\":\"Only the human in Hazlo Mexa can approve or execute a proposal.\",\"arduino\":{\"boards\":[{\"core\":\"AVR 1.8.8\",\"fqbn\":\"arduino:avr:uno\",\"name\":\"Arduino Uno\"}],\"operation\":\"compile_only\",\"outputs\":[\"ino\",\"HEX\",\"ELF\"],\"runtime_selected\":false,\"source_limit_bytes\":65536},\"cadpilot\":{\"guidance\":\"Read the measured catalog and current dimensions first. Ask which object and what should change. Preserve confirmed dimensions; do not invent missing values.\",\"live_editing\":false,\"object_limit\":32,\"operations\":[\"inspect\",\"edit_box\",\"add_box\",\"add_cylinder\"],\"position_range_mm\":[-10000,10000],\"size_range_mm\":[0.1,1000],\"source\":\"completed_verified_cadpilot_job\",\"units\":[\"mm\",\"cm\",\"m\",\"in\",\"ft\"]},\"design\":{\"dimension_range_mm\":[1.0,200.0],\"outputs\":[\"FCStd\",\"STEP\"],\"required_when_proposing\":[\"length\",\"width\",\"height\"],\"shape\":\"rectangular_solid\",\"units\":[\"mm\",\"cm\",\"m\",\"in\",\"ft\"],\"unknown_measurements\":\"Ask what the part is for and which object it must fit. Ask for missing measurements; do not invent them or claim an image was measured.\"}}",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "approval": "Only the human in Hazlo Mexa can approve or execute a proposal.",
+    "arduino": {
+      "boards": [
+        {
+          "core": "AVR 1.8.8",
+          "fqbn": "arduino:avr:uno",
+          "name": "Arduino Uno"
+        }
+      ],
+      "operation": "compile_only",
+      "outputs": [
+        "ino",
+        "HEX",
+        "ELF"
+      ],
+      "runtime_selected": false,
+      "source_limit_bytes": 65536
+    },
+    "cadpilot": {
+      "guidance": "Read the measured catalog and current dimensions first. Ask which object and what should change. Preserve confirmed dimensions; do not invent missing values.",
+      "live_editing": false,
+      "object_limit": 32,
+      "operations": [
+        "inspect",
+        "edit_box",
+        "add_box",
+        "add_cylinder"
+      ],
+      "position_range_mm": [
+        -10000,
+        10000
+      ],
+      "size_range_mm": [
+        0.1,
+        1000
+      ],
+      "source": "completed_verified_cadpilot_job",
+      "units": [
+        "mm",
+        "cm",
+        "m",
+        "in",
+        "ft"
+      ]
+    },
+    "design": {
+      "dimension_range_mm": [
+        1.0,
+        200.0
+      ],
+      "outputs": [
+        "FCStd",
+        "STEP"
+      ],
+      "required_when_proposing": [
+        "length",
+        "width",
+        "height"
+      ],
+      "shape": "rectangular_solid",
+      "units": [
+        "mm",
+        "cm",
+        "m",
+        "in",
+        "ft"
+      ],
+      "unknown_measurements": "Ask what the part is for and which object it must fit. Ask for missing measurements; do not invent them or claim an image was measured."
+    }
+  }
+}

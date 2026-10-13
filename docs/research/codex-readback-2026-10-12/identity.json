@@ -1,0 +1,18 @@
+[
+  {
+    "sha256": "0B3C94A5C44717B8C4DFB8E51BCE7DEACC1349FA17E7AE74967F0434EA51C2BC",
+    "path": "apps/desktop/src-tauri/examples/codex_protocol.rs"
+  },
+  {
+    "sha256": "ED43D43CDF31B44A0B22C8E1BE47974A32132D418BB3565737DE50E7869E28E1",
+    "path": "apps/desktop/src-tauri/src/host_tools.rs"
+  },
+  {
+    "sha256": "54132C183A429557E17CFBBB672529F6201C3594ACCAF8B920CDA7CCDA3EA113",
+    "path": "target/release/hazlomexa-tools.exe"
+  },
+  {
+    "sha256": "52F75C649BEBB8001102A1DD129C1EA6D02B0940321E6D7E82EE0526753BD58A",
+    "path": "C:/Users/USER/AppData/Roaming/npm/node_modules/@openai/codex/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe"
+  }
+]

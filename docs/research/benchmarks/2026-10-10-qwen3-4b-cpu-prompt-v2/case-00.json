@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": true,
+  "expected": {
+    "height": 30,
+    "length": 10,
+    "width": 20
+  },
+  "id": "explicit",
+  "result": {
+    "proposal": {
+      "message": "Crea un sólido rectangular de largo 10 mm, ancho 20 mm y alto 30 mm.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 33.5513958
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot_policy.py",
+    "Hash": "7F7B44C4952DBADE09605167763CB3D46440CD7E7B66AB5E46D1614EF299DB2B"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot-copy.FCMacro",
+    "Hash": "9C4BA1ED98C6B032BDCD70747F5D6077913389C0DA86F13E88B88AF37B5BF90A"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\src\\cadpilot.rs",
+    "Hash": "917D87A4A7DFB7214EEB85BEFEFE362A9955C0A0E51638B9D21CF5DD0A3BCED2"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\tests\\cadpilot\\test_policy.py",
+    "Hash": "A2B0D03577AD7A2068CB136060108ADC231D016B2ED41A479247A097CD9D336F"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\cadpilot-step-readback-2026-10-12\\cylinder\\Edited.FCStd",
+    "Hash": "31D2D190D99C9F2F9F75D6E9D19088B3E82691864378BE598E5AA46972766464"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\cadpilot-step-readback-2026-10-12\\cylinder\\Edited.step",
+    "Hash": "71D20722984330E903BF437B4407F1B07E455BEA318A5746C7545FE6B70CA85E"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\cadpilot-step-readback-2026-10-12\\cylinder\\result.json",
+    "Hash": "75158C0480F7116E709CE2FB019FA3F8D5D27D70D25148C490C23D5B34F5D4E1"
+  }
+]

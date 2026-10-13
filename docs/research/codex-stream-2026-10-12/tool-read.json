@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "text": "{\"components\":[{\"library\":\"Device:R\",\"reference\":\"R1\",\"value\":\"10k\"}],\"name\":\"Selected.kicad_sch\",\"read_only_references\":\"Identifiers starting with # cannot be edited by this adapter.\",\"scope\":\"selected_sheet_only\",\"selection\":\"50d48421-ff28-4628-8e64-9d5adbf9a66c\"}",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "components": [
+      {
+        "library": "Device:R",
+        "reference": "R1",
+        "value": "10k"
+      }
+    ],
+    "name": "Selected.kicad_sch",
+    "read_only_references": "Identifiers starting with # cannot be edited by this adapter.",
+    "scope": "selected_sheet_only",
+    "selection": "50d48421-ff28-4628-8e64-9d5adbf9a66c"
+  }
+}

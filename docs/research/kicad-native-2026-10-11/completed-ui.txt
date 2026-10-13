@@ -1,0 +1,141 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			2 pane Hazlo Mexa
+				3 pane (disabled)
+				4 region Hazlo Mexa - Web content
+					5 region
+						6 region
+							7 region
+								8 region
+								9 region
+									10 region
+										11 region
+											12 region
+												13 region
+												14 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													15 main ID: app
+														16 section header
+															17 heading Hazlo Mexa
+															18 text De una idea a un archivo que puedes editar.
+															19 text CAD y Arduino · v0.1
+														20 region Tu proyecto
+															21 heading Tu proyecto ID: project-heading
+															312 text C:/Users/USER\Documents\GitHub\HazloMX\target\kicad-probe\native-07263e47-b7e3-4bb9-91b1-f5058cc29bf0\project
+															23 button Crear en carpeta… ID: create-project
+															24 button Abrir proyecto… ID: open-project
+														25 region ¿Qué quieres crear?
+															26 text 01 / CONVERSA
+															27 heading ¿Qué quieres crear? ID: proposal-heading
+															313 text Describe el circuito y qué necesitas revisar. Seleccionaremos sus archivos y confirmaremos la operación antes de trabajar en una copia.
+															29 text ¿Qué vas a trabajar?
+															30 combo box (settable, string) ¿Qué vas a trabajar? Value: Revisión y exportación · KiCad ID: workflow
+															31 log Conversación de diseño ID: conversation
+																95 text Hazlo Mexa:
+																96 text ¿Quieres revisar un esquema o una PCB, y qué archivos necesitas? Reúne la hoja principal, su proyecto y las dependencias locales en una carpeta. Elige las unidades del informe; revisaremos los archivos capturados antes de aprobar.
+															37 text Tu idea o respuesta
+															38 edit (settable, string) Tu idea o respuesta Description: Quiero revisar este esquema o PCB y obtener sus archivos de intercambio ID: prompt
+															39 button Enviar ID: infer
+															40 button (disabled) Detener ID: cancel-inference
+															41 button Nueva conversación ID: new-conversation
+															42 status ID: inference-status
+															314 text La conversación reúne tu intención. Este flujo realiza ERC/DRC y exporta archivos; confirma la carpeta, hoja principal o PCB y unidades con los campos.
+															315 text C:/Users/USER\Documents\GitHub\HazloMX\target\kicad-probe\runtime\bin\kicad-cli.exe
+															99 button Seleccionar KiCad CLI 10.0.7… ID: select-kicad
+															100 text Unidades de las coordenadas del informe
+															101 combo box (settable, string) Unidades de las coordenadas del informe Value: Milésimas de pulgada · mils ID: kicad-unit
+															102 text Selecciona la carpeta que contiene el proyecto y sus dependencias locales, después la hoja principal o PCB. Se conserva el original. PDF y netlist para esquemas; Gerber y taladros en milímetros para PCB.
+															103 button Seleccionar proyecto y preparar revisión… ID: prepare-kicad
+														53 region Vista de la propuesta
+															54 text 02 / REVISA
+															55 heading Vista de la propuesta ID: preview-heading
+															316 text Revisa la lista de archivos capturados. Para cambiar el archivo o las unidades, cancela y prepara otra propuesta.
+															317 text basic_test.kicad_sch · 4 archivos capturados · ERC + PDF + netlist · informe mils · KiCad 10.0.7
+															318 text basic_test.kicad_pcb · 71304 bytes basic_test.kicad_pro · 13507 bytes basic_test.kicad_sch · 25307 bytes custom_ds.kicad_wks · 2516 bytes
+															58 button (disabled) Aprobar revisión y exportación ID: approve
+															59 button (disabled) Cancelar ID: cancel
+															319 text KiCad revisa una copia privada y rellena las zonas de esa PCB. Se publican original, copia revisada, informe y exportaciones sin reemplazar resultados. Los errores de diseño se conservan en el informe y requieren revisión.
+														61 region Resultados
+															62 text 03 / ABRE
+															63 heading Resultados ID: results-heading
+															64 status ID: status
+																320 text Revisión y exportación publicadas. Consulta los hallazgos: completar la operación no implica que el diseño esté libre de errores.
+															66 list
+																67 term Generación
+																	68 text Generación
+																321 text Completada
+																70 term Verificación
+																	71 text Verificación
+																322 text Archivos e informe verificados; consulta los errores, advertencias, exclusiones y comprobaciones desactivadas
+																73 term Publicación
+																	74 text Publicación
+																323 text Archivos disponibles en el proyecto
+															324 text basic_test.kicad_sch · 4 archivos capturados · ERC + PDF + netlist · informe mils · KiCad 10.0.7 · Código manual · 11/10/2026, 7:30:25 p.m.
+															325 button Mostrar copia revisada
+															326 button Mostrar exportaciones
+															327 button Ver informe ERC/DRC
+															328 button Ver hallazgos
+								76 region
+						77 region
+						78 region
+		79 title bar (settable, string) Value: Hazlo Mexa
+			80 menu bar System ID: MenuBar
+				81 menu item System
+			82 button Minimize
+			83 button Maximize
+			84 button Close
+
+Document text: ```
+Hazlo Mexa
+De una idea a un archivo que puedes editar.
+CAD y Arduino · v0.1
+Tu proyecto
+C:/Users/USER\Documents\GitHub\HazloMX\target\kicad-probe\native-07263e47-b7e3-4bb9-91b1-f5058cc29bf0\project
+Crear en carpeta…
+Abrir proyecto…
+01 / CONVERSA
+¿Qué quieres crear?
+Describe el circuito y qué necesitas revisar. Seleccionaremos sus archivos y confirmaremos la operación antes de trabajar en una copia.
+¿Qué vas a trabajar?
+￼
+Hazlo Mexa: ¿Quieres revisar un esquema o una PCB, y qué archivos necesitas? Reúne la hoja principal, su proyecto y las dependencias locales en una carpeta. Elige las unidades del informe; revisaremos los archivos capturados antes de aprobar.
+Tu idea o respuesta
+￼
+Enviar
+Detener
+Nueva conversación
+￼
+La conversación reúne tu intención. Este flujo realiza ERC/DRC y exporta archivos; confirma la carpeta, hoja principal o PCB y unidades con los campos.
+C:/Users/USER\Documents\GitHub\HazloMX\target\kicad-probe\runtime\bin\kicad-cli.exe
+Seleccionar KiCad CLI 10.0.7…
+Unidades de las coordenadas del informe
+￼
+Selecciona la carpeta que contiene el proyecto y sus dependencias locales, después la hoja principal o PCB. Se conserva el original. PDF y netlist para esquemas; Gerber y taladros en milímetros para PCB.
+Seleccionar proyecto y preparar revisión…
+02 / REVISA
+Vista de la propuesta
+Revisa la lista de archivos capturados. Para cambiar el archivo o las unidades, cancela y prepara otra propuesta.
+basic_test.kicad_sch · 4 archivos capturados · ERC + PDF + netlist · informe mils · KiCad 10.0.7
+basic_test.kicad_pcb · 71304 bytes
+basic_test.kicad_pro · 13507 bytes
+basic_test.kicad_sch · 25307 bytes
+custom_ds.kicad_wks · 2516 bytes
+Aprobar revisión y exportación
+Cancelar
+KiCad revisa una copia privada y rellena las zonas de esa PCB. Se publican original, copia revisada, informe y exportaciones sin reemplazar resultados. Los errores de diseño se conservan en el informe y requieren revisión.
+03 / ABRE
+Resultados
+Revisión y exportación publicadas. Consulta los hallazgos: completar la operación no implica que el diseño esté libre de errores.
+Generación
+Completada
+Verificación
+Archivos e informe verificados; consulta los errores, advertencias, exclusiones y comprobaciones desactivadas
+Publicación
+Archivos disponibles en el proyecto
+basic_test.kicad_sch · 4 archivos capturados · ERC + PDF + netlist · informe mils · KiCad 10.0.7 · Código manual · 11/10/2026, 7:30:25 p.m.
+Mostrar copia revisada
+Mostrar exportaciones
+Ver informe ERC/DRC
+Ver hallazgos
+￼
+```

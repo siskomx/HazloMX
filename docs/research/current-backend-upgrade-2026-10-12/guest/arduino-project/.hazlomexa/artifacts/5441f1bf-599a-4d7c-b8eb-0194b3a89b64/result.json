@@ -1,0 +1,1 @@
+{"schema_version":1,"job_id":"5441f1bf-599a-4d7c-b8eb-0194b3a89b64","cli_version":"1.5.1","core_version":"1.8.8","fqbn":"arduino:avr:uno","flash_bytes":726,"artifacts":["firmware.hex","firmware.elf","Sketch.ino"]}

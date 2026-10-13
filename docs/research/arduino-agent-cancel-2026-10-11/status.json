@@ -1,0 +1,17 @@
+{
+  "cancel_ms": 3.6597,
+  "client_stop_ms": 30.4035,
+  "hardware_mutations": false,
+  "job_id": "fb1ded67-c447-4d80-a863-49cf2d8eb361",
+  "late_reply_published": false,
+  "original_preserved": true,
+  "pass": true,
+  "real_upstream_write_confirmed": true,
+  "recovered_cancelled": true,
+  "root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Temp\\hazlomexa-workflow-9914a038-bc9f-45d3-ba1c-5d515d000505",
+  "write_requests": 1,
+  "sandbox_id": "1d58556e-1bb4-4952-ba58-ff4aa1aa0393",
+  "host_project_hashes_verified": 6,
+  "test_exe_sha256": "8e1554acfc44cd3e4652952a4f51ac07f4ceac0664f8011c1b5960cfd9530359",
+  "scope": "real Agent write, held reply, backend/client cancellation; not native UI latency or late server write"
+}

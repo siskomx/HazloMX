@@ -1,0 +1,26 @@
+[
+  {
+    "text": "",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "",
+    "complete": false,
+    "cancelled": false,
+    "error": null
+  },
+  {
+    "text": "",
+    "complete": true,
+    "cancelled": false,
+    "error": "Codex no completó la solicitud. Comprueba el inicio de sesión y el estado del cliente antes de reintentar."
+  }
+]

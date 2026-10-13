@@ -1,0 +1,26 @@
+﻿{
+    "input":  true,
+    "result":  true,
+    "user":  "WDAGUtilityAccount",
+    "processes":  [
+                      {
+                          "Id":  11240,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791851382869)\/",
+                          "CPU":  0.03125
+                      },
+                      {
+                          "Id":  11948,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791851382947)\/",
+                          "CPU":  1.03125
+                      },
+                      {
+                          "Id":  16192,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791851477331)\/",
+                          "CPU":  4.5
+                      }
+                  ],
+    "installed":  false
+}

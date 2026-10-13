@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "job_id": "430b38ad-c1bc-4879-ad97-dbfb3d114af6",
+  "konnect_version": "0.13.0",
+  "protocol_version": "2025-06-18",
+  "files": [
+    {
+      "path": "Edited/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Edited/basic_test.kicad_prl",
+      "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+    },
+    {
+      "path": "Edited/basic_test.kicad_pro",
+      "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+    },
+    {
+      "path": "Edited/basic_test.kicad_sch",
+      "sha256": "41d587735fe51de9bb723210eef912e72520233f7d8e748a7ad1f1c29ecb15f0"
+    },
+    {
+      "path": "Edited/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "Netlist.xml",
+      "sha256": "213f0760d8710c0bd4857d1ab68575742fc4fdaf11fa967b1ab7078d9a76f454"
+    },
+    {
+      "path": "Original/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Original/basic_test.kicad_pro",
+      "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+    },
+    {
+      "path": "Original/basic_test.kicad_sch",
+      "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+    },
+    {
+      "path": "Original/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "input.json",
+      "sha256": "f861ad3b16ce17c3be8f962ca0d6b3293012847d8871422d559cbeaa46fe6ff3"
+    }
+  ]
+}

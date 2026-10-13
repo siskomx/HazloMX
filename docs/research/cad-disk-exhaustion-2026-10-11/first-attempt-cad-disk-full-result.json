@@ -1,0 +1,16 @@
+{
+  "actual_generated_files_preserved": true,
+  "baseline_files_preserved": true,
+  "baseline_job_id": "7e0e647b-73fb-4d28-8dfb-421f94a1e3ea",
+  "disk_full_error": 112,
+  "filled_bytes": 53604352,
+  "finish_error": null,
+  "job_id": "d7c032f0-dca5-4a0d-9109-18536a894566",
+  "no_regeneration": true,
+  "original_preserved": true,
+  "pass": true,
+  "phase": "completed",
+  "published": true,
+  "recovered_phase": "completed",
+  "root": "T:\\HazloDiskPublication"
+}

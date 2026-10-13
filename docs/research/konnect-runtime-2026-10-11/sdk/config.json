@@ -1,0 +1,10 @@
+{
+  "auto_load_toolsets": false,
+  "eager_toolsets": false,
+  "ipc_address": "ipc://C:/Users/USER\\Documents\\GitHub\\HazloMX\\target/konnect-probe\\sdk-0f3775e9-5adc-4881-aff7-456c724fa0e4\\profile\\no-kicad-socket",
+  "kicad_binary": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target/kicad-probe/runtime/bin\\kicad.exe",
+  "kicad_cli": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target/kicad-probe/runtime/bin/kicad-cli.exe",
+  "log_level": "warn",
+  "project_dir": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target/konnect-probe\\sdk-0f3775e9-5adc-4881-aff7-456c724fa0e4",
+  "transport": "stdio"
+}

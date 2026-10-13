@@ -1,0 +1,106 @@
+[
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\fixture-scope.json",
+    "Hash": "821302BFC3D304B3FB7252D385B45D8CB57B7657ABBBD09B5CE4DE6DA217536B"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\installed-startup.mjs",
+    "Hash": "0A3F485EBD91D2CF70C82EF95EFAFF83B418C84A3AD4332D33903F396C6A661B"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\package-identity.json",
+    "Hash": "E152F889946C18446DDBE8D1C9C9A21A8053EB43FC01046325F457F95E01C827"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\probe.ps1",
+    "Hash": "02241174C6499B0970725F9FF1A25DFB9243E7AD64D1F2C5ACE200CB4445EC97"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\sandbox-webview-startup.ps1",
+    "Hash": "51D65336F53FAC50C74BE5A9F8859F1F44F809A9A471931ECD099979A9F83EAE"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\installed-tools-error.log",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\installed-tools.json",
+    "Hash": "2D2B3D51F737D1A8532DE6A76653A43B773B54657463CBAB33075A44E25535D3"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\package-result.json",
+    "Hash": "5338FDACC24D9A05BE32808C273D41BDFECB876A98C137DED4D404E46BB33FF2"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\startup-error.log",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\startup-log.json",
+    "Hash": "B874E467180DC83FFF5609116DA3807292E07D58C8BEDAAB2F90DEECBCAAB530"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\updated-tools-error.log",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\updated-tools.json",
+    "Hash": "2D2B3D51F737D1A8532DE6A76653A43B773B54657463CBAB33075A44E25535D3"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\webview-policy-receipt.json",
+    "Hash": "E7AA517747A9BE8DC91CA26C15CF13A9BDC506C553912C791A4758ED2A95AEA5"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\guest-state.json",
+    "Hash": "86FF21411E5B0654125B3B19EECDB8DF70C463935693443AB1F1182A23E30857"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\installed-tools-error.log",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\installed-tools.json",
+    "Hash": "2D2B3D51F737D1A8532DE6A76653A43B773B54657463CBAB33075A44E25535D3"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\package-result.json",
+    "Hash": "5338FDACC24D9A05BE32808C273D41BDFECB876A98C137DED4D404E46BB33FF2"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\startup-error.log",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\startup-log.json",
+    "Hash": "B874E467180DC83FFF5609116DA3807292E07D58C8BEDAAB2F90DEECBCAAB530"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\updated-tools-error.log",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\updated-tools.json",
+    "Hash": "2D2B3D51F737D1A8532DE6A76653A43B773B54657463CBAB33075A44E25535D3"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\webview-policy-receipt.json",
+    "Hash": "C66381CAD6817C07155B178FDE6F81627519D125FFC7F8D65CE72BAEED5470CF"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\startup\\result.json",
+    "Hash": "B717BF3A083E95D42FA8CA1B0DE69C1F25A5820E3D11ABCA51B338BEDA06C06B"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\first-attempt\\startup\\startup.png",
+    "Hash": "710758A6808545FC3E87E939992E7D3FB49AAF570BF99F46F79FECF2B80CCB0C"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\startup\\result.json",
+    "Hash": "B717BF3A083E95D42FA8CA1B0DE69C1F25A5820E3D11ABCA51B338BEDA06C06B"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\installed-native-ui-2026-10-12\\guest\\startup\\startup.png",
+    "Hash": "710758A6808545FC3E87E939992E7D3FB49AAF570BF99F46F79FECF2B80CCB0C"
+  }
+]

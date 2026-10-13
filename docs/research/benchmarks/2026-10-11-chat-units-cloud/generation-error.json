@@ -1,0 +1,5 @@
+{
+  "error": "Las dimensiones deben estar entre 1 y 200 mm.",
+  "generated_text": "{\"status\":\"proposal\",\"dimensions_mm\":{\"length\":203.2,\"width\":25.4,\"height\":25.4}}",
+  "id": "design_imperial_limit"
+}

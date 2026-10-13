@@ -1,0 +1,12 @@
+﻿{
+    "msvcp":  false,
+    "done":  true,
+    "vcruntime":  false,
+    "bin_files":  [
+                      {
+                          "Name":  "konnect.exe",
+                          "Length":  35495424
+                      }
+                  ],
+    "exit_code":  -1073741515
+}

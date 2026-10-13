@@ -1,0 +1,14 @@
+{
+  "acceptable": false,
+  "cold": true,
+  "expected": {
+    "height": 30,
+    "length": 10,
+    "width": 20
+  },
+  "id": "explicit",
+  "result": {
+    "error": "El modelo no admite la propuesta local requerida."
+  },
+  "seconds": 0.0213467
+}

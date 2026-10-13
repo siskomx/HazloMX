@@ -1,0 +1,16 @@
+{
+  "pass": true,
+  "sandbox_id": "f3a9bfe3-4017-4035-a5f0-103452cd8e99",
+  "installer_initial_sha256": "63c0c1d415f4f24fddba38c6a0247222f854881d9d856a916a0c13386324c8db",
+  "installer_update_sha256": "57c36bf4fa76ab1ddbb9f3cbaf3806f3b1a056a1867a9f90bd5b177b75360c0b",
+  "native_project_picker": true,
+  "native_runtime_pickers": true,
+  "actual_uno_compile": true,
+  "verified_sketch_view_after_update": true,
+  "preview_escape": true,
+  "hex_elf_explorer_selection": true,
+  "update_uninstall_preserved": true,
+  "host_export_hashes_verified": 9,
+  "models_run": 0,
+  "hardware_uploads": 0
+}

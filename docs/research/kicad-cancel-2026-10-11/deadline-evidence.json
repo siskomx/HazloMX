@@ -1,0 +1,12 @@
+{
+  "deadline_ms": 100,
+  "elapsed_ms": 146,
+  "observed_owned_pids": [
+    14872
+  ],
+  "passed": true,
+  "published": false,
+  "reason": "timed_out",
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-kicad-deadline-894bbba6-0a03-4686-bc42-a3a5d6a8abc2",
+  "scope": "real CLI startup/check under shortened supervisor deadline; production 120-second deadline not elapsed"
+}

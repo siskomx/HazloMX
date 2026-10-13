@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_changed_object",
+  "result": {
+    "proposal": {
+      "message": "¿Qué tipo de pieza rectangular quieres crear? ¿Largo, ancho o alto es la dimensión que necesitas definir primero?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 11.6702151
+}

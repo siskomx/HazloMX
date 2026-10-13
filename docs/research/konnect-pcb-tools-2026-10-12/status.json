@@ -1,0 +1,21 @@
+{
+  "actual_release_helper": true,
+  "catalog_tools": 12,
+  "native_konnect_version": "0.13.0",
+  "native_kicad_version": "10.0.7",
+  "approved_moves": 2,
+  "units": [
+    "in",
+    "mils"
+  ],
+  "followup_uses_final_saved_board": true,
+  "originals_and_first_result_unchanged": true,
+  "two_completed_mcp_jobs_recovered": true,
+  "bad_result_hash_refused": true,
+  "rust_regular_tests": 110,
+  "browser_workflows": 9,
+  "signed_in_model_turn": false,
+  "native_ui_acceptance": false,
+  "installed_acceptance": false,
+  "source_project": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\mcp-pcb-bdb34b36-82c8-420a-8b6a-328d38569498"
+}

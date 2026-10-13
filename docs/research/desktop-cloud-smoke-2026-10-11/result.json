@@ -1,0 +1,32 @@
+{
+  "pass": true,
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-RLLbQ5\\project",
+  "artifact": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-RLLbQ5\\project\\.hazlomexa\\artifacts\\35cfe561-a75f-4748-9e28-f04f08f9c15c",
+  "screenshot": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-RLLbQ5\\completed.png",
+  "unprivileged_denial": "get_snapshot not allowed on window \"unprivileged\", webview \"unprivileged\", URL: local\n\nallowed on: [webviews: \"main\", URL: local]\n\nreferenced by: capability: main, permission: allow-get-snapshot",
+  "job_id": "35cfe561-a75f-4748-9e28-f04f08f9c15c",
+  "inference_cancellation_ms": 117.96130000000085,
+  "cad_cancellation_ms": 44.09089999999924,
+  "observed_cad_pids": [
+    25828,
+    6912
+  ],
+  "checks": [
+    "cloud clarification creates no job",
+    "cloud cancellation creates no job",
+    "cloud reload restores streamed proposal",
+    "cloud proposal requires approval",
+    "native ACL denial",
+    "no staging before approval",
+    "edit invalidates approval",
+    "stale approval rejected",
+    "keyboard navigation with visible focus",
+    "keyboard approval and denial",
+    "reload during CAD",
+    "real CAD publication",
+    "persisted source, timestamps, edits and sequence match native snapshot",
+    "reload preserves one job",
+    "keyboard cancellation terminates observed real CAD processes without another published run",
+    "previous completed result remains openable after new jobs and reload"
+  ]
+}

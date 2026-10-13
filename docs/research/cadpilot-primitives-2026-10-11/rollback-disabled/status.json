@@ -1,0 +1,32 @@
+{
+  "passed": false,
+  "exit_code": 1,
+  "command": [
+    "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+    "--user-cfg",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-a5fef6ea-2a26-4948-9f8f-352226ffe19f\\profile\\user.cfg",
+    "--system-cfg",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-a5fef6ea-2a26-4948-9f8f-352226ffe19f\\profile\\system.cfg",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-a5fef6ea-2a26-4948-9f8f-352226ffe19f\\geometry-gate.FCMacro"
+  ],
+  "cadpilot_commit": "58bfee4d45061e55c158a5fd4786ab98a427f7f6",
+  "module_hashes": {
+    "__init__.py": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228",
+    "geometry_query.py": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773",
+    "object_factory.py": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893",
+    "property_mapper.py": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6",
+    "tip_policy.py": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  "executable_sha256": "b79c648edd6e40d6769b3096317ca2063d86a1d47412afd93d02c4047521b2dd",
+  "macro_sha256": "5b710f4e6d5fe98a0338f597de51838cfb09ffd599e0df0e329b1712aa90090b",
+  "artifact_hashes": {
+    "failure.txt": "caebd3f15eee5235930791651cef3ae4bf2bd89fc0c2ca01641aaba0303229d6",
+    "geometry-gate.FCMacro": "5b710f4e6d5fe98a0338f597de51838cfb09ffd599e0df0e329b1712aa90090b",
+    "input.json": "ee5a4b95cea6f9989bf4f841acfe4d858bdbd0e27b2cf8b1a4b6b8b448032ff6",
+    "Original.FCStd": "586076c2272d60ed3907fedb8c66aacbd966d0f8948e1cfdc72c7867cbece27f",
+    "stderr.log": "d2c45e5210e08399b62f2c383bcfd317ed4f1898306df85044dca65586ef5569",
+    "stdout.log": "bd9cc0aaee4bdde5bb281d4acf53a9c65c4b4c14db2a33d98f053299d5b6dca4",
+    "Unselected.FCStd": "c816d85010262a61d67b12f8a150b2dcfd00cbb7f376d72f11cb7599b7642ad1",
+    "Working.FCStd": "586076c2272d60ed3907fedb8c66aacbd966d0f8948e1cfdc72c7867cbece27f"
+  }
+}

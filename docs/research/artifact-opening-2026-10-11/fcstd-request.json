@@ -1,0 +1,11 @@
+{
+  "requested": true,
+  "format": "fcstd",
+  "directory": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-qii5lG\\project\\.hazlomexa\\artifacts\\4c7506a6-8e4a-4cf2-a248-a6a1f688a36e",
+  "project": "C:/Users/USER/AppData/Local/Temp/Hazlo Mexa á native-qii5lG/project",
+  "checks": [
+    "opening preserves completed phase",
+    "opening preserves artifact bytes"
+  ],
+  "note": "A successful request still requires separate GUI observation to prove the document loaded"
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "path": "apps/desktop/src/main.ts",
+    "sha256": "64e1ee85e4b41a3667ec4bbb71f7e63f398e682c400238bee1496fe7376903d3"
+  },
+  {
+    "path": "apps/desktop/tests/design-flow.mjs",
+    "sha256": "4058e9e4eb3384f814ce6caa885e03fa1d71c633286d8b3985cc031d70f6a4ac"
+  },
+  {
+    "path": "apps/desktop/src-tauri/src/jobs.rs",
+    "sha256": "d01c395c60209647a9d0b7a5a614468201988f23e92091a8b61fa6c9405f7042"
+  },
+  {
+    "path": "apps/desktop/src-tauri/src/host_tools.rs",
+    "sha256": "ded9f190d0d4b4dd7e25af805ab35447c79209ced4758143abc38a739d30d358"
+  }
+]

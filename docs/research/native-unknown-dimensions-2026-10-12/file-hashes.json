@@ -1,0 +1,82 @@
+[
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\completed.png",
+    "sha256": "5a16cbdc9910bb1f0f0e0d26320eeaf09a9af69d9c5fe0e197a306349d511c8c"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\first-failure.json",
+    "sha256": "d2dcf7b8d298c5fec32406389ef122602dcf96bc735c9bad8ef5bc7ed6c13c4b"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\result.json",
+    "sha256": "f013af762eaa77b517ace5c78e1b5a01b66470d2f4e15fcb3c54ee311f4426a2"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\source-identity.json",
+    "sha256": "7592f5b0971e5307667b8b97adcdcf12e57baf032de2e5c1c21f42be415a2111"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\unknown-dimensions.png",
+    "sha256": "cdd6586c00d62cf74c5ba8368f49c7ffc40714a0a5cefd7540441ff4df567ca0"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\hazlomx.json",
+    "sha256": "c807d30afbebeacd7fc44f15e51eda92caa259105ac009fd333e0f0b297f7d62"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\artifacts\\69092a1b-7a59-4371-89d7-83466175ab41\\input.json",
+    "sha256": "46046404e6b0494351c97a853b6d337bf551ff6e1f2631e725fdd9d1fb77ebf4"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\artifacts\\69092a1b-7a59-4371-89d7-83466175ab41\\result.json",
+    "sha256": "ad600f016c344941318a33ff3bf7f6a6c63dcda971d770bdc7afe92f5011664a"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\artifacts\\69092a1b-7a59-4371-89d7-83466175ab41\\solid.FCStd",
+    "sha256": "b696253e68f5f9f60f7e636ae538a78e940a2cf54636401601147322ea1d2e6c"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\artifacts\\69092a1b-7a59-4371-89d7-83466175ab41\\solid.step",
+    "sha256": "d06e5fa16eeb230135908f2d6e1e568a439cf5cc4a461f2a2919bcbf68620be6"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\runs\\008b03b3-e219-4924-93d4-0bbf293baade.json",
+    "sha256": "1fb409c385ca89b2c29a7fb974ac7a88fbb6565a2a3ef6eb9ccd848a8dd35257"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\runs\\50e0a924-4b25-4350-9a07-669cc9291f64.json",
+    "sha256": "88a9c434f961ec3134b77b4e90849505392d2b5d6731ddde50822ad24c3f248b"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\runs\\69092a1b-7a59-4371-89d7-83466175ab41.json",
+    "sha256": "c6b41ff0408ab81ebb0e644e3f0958da9c712edcd345645a9a5472ae7294bc40"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\runs\\c0442df9-77e5-4293-970a-5648db2fbd2d.json",
+    "sha256": "d7c716a9ccc829dd798580213739e77e8a8c8eafac53d59e45e30f0fdcdf2cdf"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\staging\\50e0a924-4b25-4350-9a07-669cc9291f64\\input.json",
+    "sha256": "53242942f53f6318aeca82fd9373a5c30ea14e6233afd2841336f15acbb3c43d"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\staging\\c0442df9-77e5-4293-970a-5648db2fbd2d\\input.json",
+    "sha256": "4663ba3026b477ff5f5ac875c2f73abb13bb179b2918c86d75e18b1cd97abf18"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\staging\\c0442df9-77e5-4293-970a-5648db2fbd2d\\result.json",
+    "sha256": "6a1ab4804070aa223638cf27f2a7888509c06ed74b5e99e2b610388301536864"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\staging\\c0442df9-77e5-4293-970a-5648db2fbd2d\\solid.FCStd",
+    "sha256": "04d549c61455c8361d05ee6d09f74aaec576e56aefcfd17318c72944a8e58468"
+  },
+  {
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\docs\\research\\native-unknown-dimensions-2026-10-12\\project\\.hazlomexa\\staging\\c0442df9-77e5-4293-970a-5648db2fbd2d\\solid.step",
+    "sha256": "078a504cc7fa75f71c082458b4b1a336b928e81158a629d12bbbb039acf30905"
+  }
+]

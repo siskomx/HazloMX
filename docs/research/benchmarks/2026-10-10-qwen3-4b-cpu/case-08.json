@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 30,
+    "length": 15,
+    "width": 20
+  },
+  "id": "correction",
+  "result": {
+    "proposal": {
+      "message": "El bloque sólido tiene las siguientes medidas: largo 15 mm, ancho 20 mm, alto 30 mm. ¿Estas medidas son correctas?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 7.2257384
+}

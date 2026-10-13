@@ -1,0 +1,105 @@
+{
+  "models": [
+    {
+      "capabilities": [
+        "completion",
+        "tools",
+        "thinking"
+      ],
+      "details": {
+        "context_length": 1048576,
+        "families": null,
+        "family": "",
+        "format": "",
+        "parameter_size": "",
+        "parent_model": "",
+        "quantization_level": ""
+      },
+      "digest": "22bfd5026abd64524341f1f90c4885c91a879767c39e3e39a4a3f000b3d0815f",
+      "model": "deepseek-v4-pro:cloud",
+      "modified_at": "2026-06-27T23:06:37.0529794-07:00",
+      "name": "deepseek-v4-pro:cloud",
+      "remote_host": "https://ollama.com:443",
+      "remote_model": "deepseek-v4-pro",
+      "size": 344
+    },
+    {
+      "capabilities": [
+        "completion",
+        "tools",
+        "thinking",
+        "vision"
+      ],
+      "details": {
+        "context_length": 524288,
+        "families": [
+          "minimax-m3"
+        ],
+        "family": "minimax-m3",
+        "format": "",
+        "parameter_size": "",
+        "parent_model": "",
+        "quantization_level": ""
+      },
+      "digest": "d03a959f45c04ab183e245922ecb46ebccfb9d5e55bdee5e9055271ee70195e3",
+      "model": "minimax-m3:cloud",
+      "modified_at": "2026-06-27T23:06:37.0550024-07:00",
+      "name": "minimax-m3:cloud",
+      "remote_host": "https://ollama.com:443",
+      "remote_model": "minimax-m3",
+      "size": 362
+    },
+    {
+      "capabilities": [
+        "vision",
+        "thinking",
+        "completion",
+        "tools"
+      ],
+      "details": {
+        "context_length": 262144,
+        "embedding_length": 2048,
+        "families": [
+          "kimi"
+        ],
+        "family": "kimi",
+        "format": "",
+        "parameter_size": "1t",
+        "parent_model": "",
+        "quantization_level": "int4"
+      },
+      "digest": "eda07a6592375dcbde7cf167b6d6b368cdd28e244f9d71559fb59919aca882fa",
+      "model": "kimi-k2.7-code:cloud",
+      "modified_at": "2026-06-27T15:01:13.5436305-07:00",
+      "name": "kimi-k2.7-code:cloud",
+      "remote_host": "https://ollama.com:443",
+      "remote_model": "kimi-k2.7-code",
+      "size": 388
+    },
+    {
+      "capabilities": [
+        "completion",
+        "tools",
+        "thinking"
+      ],
+      "details": {
+        "context_length": 1000000,
+        "families": [
+          "glm"
+        ],
+        "family": "glm",
+        "format": "",
+        "parameter_size": "756b",
+        "parent_model": "",
+        "quantization_level": ""
+      },
+      "digest": "ce8fd6f94793a6786f6858717b38067feba631861e3b35e8122cb6635004cd4a",
+      "model": "glm-5.2:cloud",
+      "modified_at": "2026-06-25T20:03:38.717573-07:00",
+      "name": "glm-5.2:cloud",
+      "remote_host": "https://ollama.com:443",
+      "remote_model": "glm-5.2",
+      "size": 338
+    }
+  ]
+}

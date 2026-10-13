@@ -1,0 +1,41 @@
+{
+  "regular_passed": 81,
+  "ignored": 26,
+  "release_helper_passed": true,
+  "pipe_native_edit_passed": true,
+  "clippy_passed": true,
+  "browser_passed": true,
+  "native_connection_ui_verified": false,
+  "actual_ai_clients_verified": false,
+  "helper_sha256": "54132c183a429557e17cfbbb672529f6201c3594accaf8b920cda7ccda3ea113",
+  "source_hashes": [
+    {
+      "path": "apps/desktop/src-tauri/src/tool_bridge.rs",
+      "sha256": "2737ff71500b58641a9458433eef098cac18157b47fefa88c3043e1a1aacf824"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tools_main.rs",
+      "sha256": "dd93517d782a85581f5c740a18410d82cff7b7ddf728dd92c2637bfebb780889"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/host_tools.rs",
+      "sha256": "69f70b3f8d6726648b226ad56174f83f80ca9afb41c58dacdf96367b4d613ae3"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/main.rs",
+      "sha256": "9add70e9f11e1a011bdfaaccca4fee422066e0d7f2c220fed0cbdbc27308f205"
+    },
+    {
+      "path": "apps/desktop/src/main.ts",
+      "sha256": "230266f3acd96783d7d8feb7489c45499ce001db75e6c5b5f12f78748246830e"
+    },
+    {
+      "path": "apps/desktop/src-tauri/tauri.conf.json",
+      "sha256": "5f8650844fef755ece9044e1e999d3914e351b65d29ca340fe5e28a813666930"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4"
+    }
+  ]
+}

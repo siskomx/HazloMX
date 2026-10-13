@@ -1,0 +1,38 @@
+{
+  "pass": true,
+  "full_acceptance": false,
+  "date": "2026-10-11",
+  "models_run": 0,
+  "guest_id": "622a4688-48f5-4dde-9d62-8deebcb8f61d",
+  "guest_left_running": false,
+  "backend_regular_tests": 40,
+  "backend_ignored": 5,
+  "backend_seconds": 2.44,
+  "frontend_ordering_checks_pass": true,
+  "native_actual_cad_smoke_pass": true,
+  "cad_cancel_ms": 45.3869,
+  "near_publication_cancel_outcome": "cancelled",
+  "near_publication_published": false,
+  "macro_sha256": "5abc79546b17926d0ecc8590bd013e373bdf73e8f00cf9dbd4f7930d98e47df1",
+  "exact_installed_commit_timing_proved": false,
+  "checks": [
+    "Current production backend binary passes forty regular tests in fresh offline build-26100 guest",
+    "Twenty-four concurrent cancel/commit iterations retain one authoritative persisted outcome",
+    "Current publication failure and occupied-destination recovery regressions pass in guest",
+    "Actual native CAD keyboard cancellation terminates independently observed owned processes",
+    "After actual fixed macro success result, native IPC cancellation returns Cancelled and no publication; reload agrees",
+    "Real frontend discards delayed Running events and older cancellation replies for both commit and cancel winners",
+    "Bounded 64 MiB guest NTFS snapshot I/O reaches actual error112 and preserves prior snapshot/input",
+    "Current macro hash matches earlier second-environment eight native geometry/failure tests"
+  ],
+  "harness_corrections": [
+    "First native attempt completed before keyboard cancellation; it is a failed early-cancellation test, not a production cancellation failure",
+    "Second native attempt passed CAD cancellation but accidentally collapsed the restored manual form; failed attempt retained",
+    "Pre-focus Cancel, limit CIM properties, and expand restored manual form only when closed; full native run passes"
+  ],
+  "remaining": [
+    "Exact installed UI cancellation inside atomic publication window is not directly observed",
+    "Full actual CAD publication under disk exhaustion is not covered by snapshot-I/O test",
+    "Final acceptance audit must keep local accuracy failure and unsupported profile paths explicit"
+  ]
+}

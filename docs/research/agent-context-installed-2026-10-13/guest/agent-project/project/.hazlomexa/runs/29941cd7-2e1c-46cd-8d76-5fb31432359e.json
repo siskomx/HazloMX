@@ -1,0 +1,26 @@
+{
+  "schema_version": 4,
+  "project_id": "fc6bca15-cfc0-4e17-8552-2281987d2aee",
+  "input": {
+    "schema_version": 1,
+    "job_id": "29941cd7-2e1c-46cd-8d76-5fb31432359e",
+    "agent_version": "0.7.1",
+    "source_name": "UserOriginal.ino",
+    "original_source": "void setup() {} void loop() {}",
+    "source": "void setup() {} void loop() { delay(250); }"
+  },
+  "phase": "cancelled",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/29941cd7-2e1c-46cd-8d76-5fb31432359e",
+    "created_unix_ms": 1791910383734,
+    "updated_unix_ms": 1791910383736,
+    "sequence": 2,
+    "error": null,
+    "files_verified": false
+  }
+}

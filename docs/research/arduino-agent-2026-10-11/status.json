@@ -1,0 +1,19 @@
+{
+  "pass": true,
+  "sandbox_id": "221428d7-6482-460b-82ad-dada171d824b",
+  "agent": "0.7.1",
+  "raw_protocol": "2025-03-26",
+  "sdk_protocol": "2025-11-25",
+  "sdk": "rmcp 3.5.1",
+  "sdk_exe_sha256": "bb37a023d0dfe384bf92236aba2b721988439c44f7d4acdac6c3b6ea170ae2d7",
+  "authenticated_router_read_write": true,
+  "stale_session_rejected_before_write": true,
+  "token_rotation": true,
+  "sdk_verified_source_read": true,
+  "gui_certified": false,
+  "blocked_gui_prompt": "Windows firewall; left untouched",
+  "offline_cli_daemon_ready": false,
+  "production_agent_workflow_implemented": false,
+  "models_run": 0,
+  "hardware_mutations": false
+}

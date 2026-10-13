@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 200,
+    "length": 200,
+    "width": 200
+  },
+  "id": "maximum",
+  "result": {
+    "proposal": {
+      "message": "Sólido rectangular: largo 200 mm, ancho 200 mm, alto 200 mm.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 6.5920579
+}

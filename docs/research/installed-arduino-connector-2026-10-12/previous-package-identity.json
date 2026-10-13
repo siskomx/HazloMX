@@ -1,0 +1,15 @@
+{
+  "installer_sha256": "e99018d27ef349257ed9b4bc66998f7556d5927315b205249a6782d1eddaa1f5",
+  "app_sha256": "46355f8b9b8af1074916af033619a667298354e4fb6d0df0c7178a0ba1272b0d",
+  "unbundled_app_sha256": "8d4d786d398ac25ef089b32c837c3fe4164ebd4976018517de3473d2b6ee4151",
+  "bundle_marker": "NSS",
+  "helper_sha256": "3e0aa52edf568e10baea887adc4be059a7f7b4491b9df37737c384443b5b5e69",
+  "harness_sha256": "bb93f2020feaf6e765adb65908f268d185977210c8e1ee3a54ee5bd2e4bb70c0",
+  "version": "0.1.0",
+  "tool_count": 15,
+  "networking": "enabled",
+  "cadcraft_cli_sha256": "d9517678cf9216a63ecb7f4adfe4ab485af9541849d465245251bba91845724f",
+  "drawing_harness_sha256": "6e4d52e74550d2ce8e6531c36e5d336eb251c1433df434ef5a68dcc8ebd052b1",
+  "cadpilot_harness_sha256": "aebf939cce7b6a15be004d2592d41441d043dee93c4aab073c91c7671413fd86",
+  "freecad_cmd_sha256": "b79c648edd6e40d6769b3096317ca2063d86a1d47412afd93d02c4047521b2dd"
+}

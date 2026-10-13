@@ -1,0 +1,93 @@
+{
+  "receipts": {
+    "cancellation": {
+      "approval_consumed": true,
+      "cancel_return_ms": 4,
+      "cancellation_ms": 3066,
+      "ceased_before_barrier_release": true,
+      "elapsed_ms": 15013,
+      "error": null,
+      "held_response_ms": 3066,
+      "integration": "pcb",
+      "job_id": "2b187bb3-a0b1-4158-b327-466316315707",
+      "mode": "cancellation",
+      "native_board_read_checkpoint": true,
+      "no_owned_server_remaining_before_release": true,
+      "owned_pids": [
+        27536
+      ],
+      "passed": true,
+      "phase": "cancelled",
+      "published": false,
+      "recovered_runs": 1,
+      "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-f7f0753e-6f56-4d68-90ef-be45d7b89a9d",
+      "scope": "actual approved workflow held staging-file access; exact SDK mutation phase and native UI not asserted",
+      "source_and_working_copy_preserved": true
+    },
+    "deadline": {
+      "approval_consumed": true,
+      "cancel_return_ms": null,
+      "cancellation_ms": null,
+      "ceased_before_barrier_release": true,
+      "elapsed_ms": 76427,
+      "error": "Konnect no confirm\u00f3 la edici\u00f3n a tiempo; la copia se conserva sin publicar.",
+      "held_response_ms": 62971,
+      "integration": "pcb",
+      "job_id": "f23e7833-ac48-44f6-a62e-7bde4fb7b69e",
+      "mode": "deadline",
+      "native_board_read_checkpoint": true,
+      "no_owned_server_remaining_before_release": true,
+      "owned_pids": [
+        29396
+      ],
+      "passed": true,
+      "phase": "failed",
+      "published": false,
+      "recovered_runs": 1,
+      "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-8330f84e-f89c-41f7-9fa6-5e70bf3fd6cd",
+      "scope": "actual approved workflow held staging-file access; exact SDK mutation phase and native UI not asserted",
+      "source_and_working_copy_preserved": true
+    }
+  },
+  "release_comparisons": {
+    "apps/desktop/src-tauri/src/jobs.rs": {
+      "release_code_unchanged_except_cfg_test_checkpoint": true,
+      "production_prefix_sha256": "390274765a5e7b69a66e995fdf20f40c4f37ad4a084c4d3452324ab32c72915b"
+    },
+    "apps/desktop/src-tauri/src/konnect_run.rs": {
+      "release_code_unchanged_except_cfg_test_checkpoint": true,
+      "production_prefix_sha256": "0d35ef3776aea271cd5b40d2c1f63b252a85d03e269babdf747d59702b90f22d"
+    }
+  },
+  "delivery_identities_unchanged": {
+    "target/release/bundle/nsis/Hazlo Mexa_0.1.0_x64-setup.exe": {
+      "sha256": "b61f94df1b20670eb0b0eff42b7d50a152818bc4cf2f1de654ad8658081c228c",
+      "bytes": 5357540
+    },
+    "target/release/hazlomexa.exe": {
+      "sha256": "3d5fdd752f35d51a6cc80a70ca15ce2689c252de4a60c3fa81078b0d6bbeea3c",
+      "bytes": 25057280
+    },
+    "target/release/hazlomexa-tools.exe": {
+      "sha256": "adaaa0b0fa945f6b71d87aa3825fb77444986ce7ffc8e45e42821978638bc47c",
+      "bytes": 591872
+    }
+  },
+  "regular_serial": {
+    "passed": 116,
+    "failed": 0,
+    "ignored": 41,
+    "seconds": 16.11
+  },
+  "initial_regular_parallel": {
+    "passed": 115,
+    "failed": 1,
+    "ignored": 41,
+    "failure": "process::tests::timeout_is_distinct_from_completion exceeded its unchanged five-second bound",
+    "scope": "observed tool output; not a captured command log"
+  },
+  "clippy_passed": true,
+  "native_ui_verified": false,
+  "mutation_phase_verified": false,
+  "installed_current_gate_verified": false
+}

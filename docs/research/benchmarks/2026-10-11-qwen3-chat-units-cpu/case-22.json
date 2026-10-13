@@ -1,0 +1,14 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 30,
+    "length": 10,
+    "width": 20
+  },
+  "id": "design_units_followup",
+  "result": {
+    "error": "Las dimensiones deben estar entre 1 y 200 mm."
+  },
+  "seconds": 5.9785437
+}

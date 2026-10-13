@@ -1,0 +1,6 @@
+
+thread 'main' (12296) panicked at apps\desktop\src-tauri\examples\installed_konnect_workflow.rs:139:13:
+assertion `left == right` failed: Some("Faltan dependencias de Windows para iniciar Konnect. Revisa el runtime de Microsoft Visual C++ y vuelve a revisar la operación.")
+  left: Failed
+ right: Completed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

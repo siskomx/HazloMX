@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "lid",
+  "result": {
+    "proposal": {
+      "message": "El usuario pide crear una caja hueca con tapa a presión, pero el esquema requiere solo medidas de longitud, ancho y alto en milímetros. La solicitud incluye unidades válidas (mm) y medidas dentro del rango (1-200 mm), pero menciona una geometría no soportada: 'caja hueca con tapa a presión'. Según las reglas, solo acepto medidas de caja sólida (no hueca ni con tapa). Por lo tanto, debo requerir clarificación sobre la geometría solicitada.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 17.2232357
+}

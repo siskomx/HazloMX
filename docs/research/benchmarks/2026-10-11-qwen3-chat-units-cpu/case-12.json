@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "ambiguous_order",
+  "result": {
+    "proposal": {
+      "message": "¿En qué unidad están las medidas? (Ej: mm, cm, pulgadas)",
+      "status": "clarification"
+    }
+  },
+  "seconds": 4.7801203
+}

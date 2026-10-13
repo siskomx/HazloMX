@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "inputs_unchanged": true,
+  "reply": {
+    "approval_driver": "shared_backend_test",
+    "cadcraft_version": "0.5.0",
+    "completed_jobs": 4,
+    "formats": [
+      "dwg",
+      "dxf"
+    ],
+    "installed_connector": true,
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "originals_and_first_results_preserved": true,
+    "pass": true,
+    "recovery_verified": true,
+    "units": [
+      "mm",
+      "in"
+    ]
+  },
+  "installer_sha256": "b37decdea5d15c82ce6e95c01034542de1cd305ccc668aedca2c2147703eff98",
+  "installed_verified": false,
+  "native_gui_verified": false,
+  "signed_in_agent_verified": false
+}

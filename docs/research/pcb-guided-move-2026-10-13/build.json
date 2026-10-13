@@ -1,0 +1,23 @@
+{
+  "package_command": "rtk proxy npm run package",
+  "package_exit_code": 0,
+  "files": {
+    "target/release/bundle/nsis/Hazlo Mexa_0.1.0_x64-setup.exe": {
+      "sha256": "9ab54cb80b3f8495833c19768658f4f3011849093dccae14bb2e185ede848eae",
+      "bytes": 5346954
+    },
+    "target/release/hazlomexa.exe": {
+      "sha256": "db55e95b53b2daa4745cc766ce306a06642cd5ad9096d1b91818600ffa74beab",
+      "bytes": 25011200
+    },
+    "target/release/hazlomexa-tools.exe": {
+      "sha256": "73223b389469a76967c4ed690c89c50698bc3e595892e7ec31c6dc44f2722f76",
+      "bytes": 591872
+    }
+  },
+  "frontend_source_verified_unchanged": true,
+  "native_ui_verified": false,
+  "installed_current_package_verified": false,
+  "signed_in_agent_verified": false,
+  "unsigned": true
+}

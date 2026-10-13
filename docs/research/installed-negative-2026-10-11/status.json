@@ -1,0 +1,34 @@
+{
+  "pass": true,
+  "full_acceptance_pass": false,
+  "installer_sha256": "4fede5cb05b32ac8eb8a72e0627345b06baa56dccb6e2b3502d17f68b495908e",
+  "cad_cancellation_checked": true,
+  "runtime_missing_checked": true,
+  "missing_gui_checked": true,
+  "checks": [
+    "Latest installed release creates project through native picker",
+    "Late Cancel preserves one completed publication",
+    "Early Cancel terminates two observed actual FreeCAD processes",
+    "Early Cancel persists Cancelled and publishes no additional set",
+    "Native screenshot shows Cancelled with prior results openable",
+    "Missing-runtime restart/native reopen preserves history",
+    "Missing GUI opening reports saved files remain available",
+    "Missing runtime disables approval; click leaves proposal AwaitingApproval",
+    "Denied blocked proposal publishes nothing",
+    "Original and completed artifact hashes preserved across restart/opening failure/denial",
+    "Entire closed project exported; every file hash verified on host"
+  ],
+  "cancel_click_started_host_unix_ms": 1791748567753,
+  "native_ui_refreshed_host_unix_ms": 1791748571005,
+  "observer_scope": "Independent guest process observation. Cross-clock timestamps are retained; no precise cancellation-latency claim.",
+  "models_run": 0,
+  "guest_id": "9fd7522d-6de9-4fba-badc-effe29a92040",
+  "guest_left_running": false,
+  "exported_files": 11,
+  "unchecked": [
+    "Installed-guest inference cancellation and offline selected model missing",
+    "Installed-GUI script-error/occupied-publication and precise commit cancellation event wiring",
+    "Seeded credential exclusion in the installed GUI workflow"
+  ],
+  "reason": "Native checks passed, evidence/project exported, and owned guest stopped; CLI reports no running Sandboxes."
+}

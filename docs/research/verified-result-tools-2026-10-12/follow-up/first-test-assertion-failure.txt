@@ -1,0 +1,20 @@
+
+running 1 test
+test host_tools::tests::actual_mcp_solid_and_compile_approval_recovery ... FAILED
+
+failures:
+
+failures:
+    host_tools::tests::actual_mcp_solid_and_compile_approval_recovery
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 113 filtered out; finished in 4.90s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running unittests src\lib.rs (target\debug\deps\hazlomexa-af07e57d7e34a273.exe)
+
+thread 'host_tools::tests::actual_mcp_solid_and_compile_approval_recovery' (27924) panicked at apps\desktop\src-tauri\src\host_tools.rs:985:13:
+assertion `left == right` failed
+  left: String("cancelled")
+ right: "completed"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `-p hazlomexa --lib`

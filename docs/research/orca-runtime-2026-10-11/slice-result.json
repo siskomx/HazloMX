@@ -1,0 +1,81 @@
+{
+  "command": [
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\runtime\\orca-slicer.exe",
+    "--datadir",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\slice-853d6682-1fd4-423e-b8e1-404138145904\\data",
+    "--debug",
+    "3",
+    "--load-settings",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\slice-853d6682-1fd4-423e-b8e1-404138145904\\machine.json;C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\slice-853d6682-1fd4-423e-b8e1-404138145904\\process.json",
+    "--load-filaments",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\slice-853d6682-1fd4-423e-b8e1-404138145904\\filament.json",
+    "--slice",
+    "0",
+    "--outputdir",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\slice-853d6682-1fd4-423e-b8e1-404138145904\\output",
+    "--export-3mf",
+    "Sliced.3mf",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\slice-853d6682-1fd4-423e-b8e1-404138145904\\Cube-mm.stl"
+  ],
+  "exit_code": 0,
+  "stock_profile_hashes": {
+    "resources\\profiles\\Prusa\\machine\\Prusa MK3S 0.4 nozzle.json": "532a5b004c3f49def83bc151481de48d52db9cef340da2abfb35c66eef3ce898",
+    "resources\\profiles\\Prusa\\machine\\fdm_machine_common.json": "de44aa2b3073eb1056c708cf38c60b61d91f939cbbfc6e555d8436b7020f47d3",
+    "resources\\profiles\\Prusa\\process\\0.20mm Standard @MK3S 0.4.json": "dfdd3261a378341663849303a25364f792684cb673ccb8b25aa22d7f83eac93c",
+    "resources\\profiles\\Prusa\\process\\fdm_process_common.json": "dc69dc8507f91afeffc9598d72b9cac8b2597d3a20236bd2167288baf8dd936b",
+    "resources\\profiles\\Prusa\\filament\\Prusa Generic PLA.json": "ae54cfcb0c2b9f49b30ae9026379051b602b9cbf505738646256571cd5b2c223",
+    "resources\\profiles\\Prusa\\filament\\fdm_filament_pla.json": "412073f0eaad84901f700f7cc3a672b9c9c39877800ebcb8db39b9fe950e5942",
+    "resources\\profiles\\Prusa\\filament\\fdm_filament_common.json": "7e9e2aab22308279f16ffdb84bea3b3a0016d1e305ab411db493c2eb9ef4ff0a"
+  },
+  "original_sha256": "c1c022788a012c7eb8f7ca9807b83fcf4a1ee6a3c5538a7669fe3779c117bf73",
+  "printer_connected": false,
+  "published": false,
+  "units": "mm",
+  "expected_bounds_mm": [
+    10,
+    10,
+    10
+  ],
+  "verified_model_bounds_mm": [
+    10.0,
+    10.0,
+    10.0
+  ],
+  "bed_type": "Textured PEI Plate",
+  "layers": 50,
+  "gcode_sha256": "90bbd13ab62039ad3a7724aaaa104d0e608d97b2dd7b23ff2eeef81e4e1eba7a",
+  "effective_settings": {
+    "printer_settings_id": "Prusa MK3S 0.4 nozzle",
+    "print_settings_id": "0.20mm Standard @MK3S 0.4",
+    "filament_settings_id": [
+      "Prusa Generic PLA"
+    ],
+    "curr_bed_type": "Textured PEI Plate",
+    "nozzle_diameter": [
+      "0.4"
+    ],
+    "layer_height": "0.2",
+    "nozzle_temperature_initial_layer": [
+      "220"
+    ],
+    "textured_plate_temp_initial_layer": [
+      "45"
+    ]
+  },
+  "archive_entries": [
+    "[Content_Types].xml",
+    "Metadata/plate_1.json",
+    "3D/3dmodel.model",
+    "3D/_rels/3dmodel.model.rels",
+    "3D/Objects/Cube-mm.stl_1.model",
+    "Metadata/project_settings.config",
+    "Metadata/plate_1.gcode.md5",
+    "Metadata/plate_1.gcode",
+    "Metadata/_rels/model_settings.config.rels",
+    "Metadata/model_settings.config",
+    "Metadata/slice_info.config",
+    "Metadata/filament_sequence.json",
+    "_rels/.rels"
+  ],
+  "output_sha256": "7c7855ada8b21c204d8dd2e2d5d163b6c199795c49536417e40479d14660d20b"
+}

@@ -1,0 +1,27 @@
+{
+  "regular_rust_tests": {
+    "passed": 115,
+    "failed": 0,
+    "ignored": 38
+  },
+  "native_cadpilot_tests": {
+    "passed": 3,
+    "failed": 0
+  },
+  "rotated_cases": 2,
+  "browser_workflows": 9,
+  "frontend_build": true,
+  "clippy": true,
+  "native_ui": false,
+  "installed_change_verified": false,
+  "release_mcp_followup_passed": true,
+  "release_mcp_test_command": "cargo test -p hazlomexa --lib host_tools::tests::actual_mcp_cadpilot_measured_followup -- --ignored --nocapture --test-threads=1",
+  "release_mcp_test_result": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0
+  },
+  "guest_preflight_free_mib": 2535,
+  "guest_minimum_mib": 3072,
+  "guest_started": false
+}

@@ -1,0 +1,1514 @@
+[
+  {
+    "path": "fixture-scope.json",
+    "sha256": "66393b2065844563c19251ccf03111f75aa0498bb6c5148b2c6d227cea6c30a5"
+  },
+  {
+    "path": "installed-startup.mjs",
+    "sha256": "0a3f485ebd91d2cf70c82ef95efaff83b418c84a3ad4332d33903f396c6a661b"
+  },
+  {
+    "path": "package-identity.json",
+    "sha256": "7b8919c9df24b33b9dae549d062d61dac39b1392e18e0f04b15175b40a023ba9"
+  },
+  {
+    "path": "previous-package-identity.json",
+    "sha256": "66595e2b4897c0c8d845fdfb81a812568eb2795f2940735889229e304f8ae6ae"
+  },
+  {
+    "path": "probe.ps1",
+    "sha256": "e8877051ffd4ae59a2a53d1619d98bc020c146cc159b3a42722ee7d65f1fd06d"
+  },
+  {
+    "path": "probe.wsb",
+    "sha256": "34197517cc16f36a12ab18d151099fd7c740d7b448dfeffc70420f2ae258879d"
+  },
+  {
+    "path": "release-inputs.json",
+    "sha256": "ad9938e8a4bd442446b6e2c2d8bca97438c482beb19f811ef488a31ee0eb71c7"
+  },
+  {
+    "path": "sandbox-webview-startup.ps1",
+    "sha256": "51d65336f53fac50c74be5a9f8859f1f44f809a9a471931ecd099979a9f83eae"
+  },
+  {
+    "path": "guest\\guest-state.json",
+    "sha256": "6e2b4127c4b43329ff445e8ef4b05bf4f4aca7539ee6649d48f70f74bd8a4553"
+  },
+  {
+    "path": "guest\\installed-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\installed-tools.json",
+    "sha256": "c4382e400557dcaadb576c78c4cab6953db8cb88cfff21add972728eed868255"
+  },
+  {
+    "path": "guest\\konnect-copy-state.json",
+    "sha256": "30b3f8c5150a6503f57353a800f22865001af9615ad78c430c376e578e944d74"
+  },
+  {
+    "path": "guest\\konnect-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-job-state.json",
+    "sha256": "7e46227ab3956618749a8d31223ed962cfa464aacc68f4a45d3c23a2e3573619"
+  },
+  {
+    "path": "guest\\konnect-missing-runtime.stderr",
+    "sha256": "0fb81840994405db679a98b3f9328806c134b508c2fb0ba0be6d35b83afa8f9f"
+  },
+  {
+    "path": "guest\\konnect-missing-runtime.stdout",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-result.json",
+    "sha256": "6b19f058799d0d6ab37c5ef6908bd42c607fdb1a60661e9253f4b192743cf08c"
+  },
+  {
+    "path": "guest\\package-result.json",
+    "sha256": "2156969ab5eed47ba2b2411ca112b08072013cbfd6b75bb2a8f9d285da31761c"
+  },
+  {
+    "path": "guest\\startup-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\startup-log.json",
+    "sha256": "b874e467180dc83fff5609116da3807292e07d58c8bedaab2f90deecbcaab530"
+  },
+  {
+    "path": "guest\\updated-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\updated-tools.json",
+    "sha256": "c4382e400557dcaadb576c78c4cab6953db8cb88cfff21add972728eed868255"
+  },
+  {
+    "path": "guest\\webview-policy-receipt.json",
+    "sha256": "4cd0a62a4b7063aa66c69fc90684ae10759fcc7aea71cd46021969478c8711cf"
+  },
+  {
+    "path": "host-preflight\\pcb\\calls.json",
+    "sha256": "fa74bb5252bef1e0ca83c620c422be86daeaf67b58cd2b9ae429c6f41abd6d41"
+  },
+  {
+    "path": "host-preflight\\pcb\\hazlomx.json",
+    "sha256": "de9ee888981213cfe9de4c5ff37f5b3ee004483b70fa08e0f7aaaf360fe9782c"
+  },
+  {
+    "path": "host-preflight\\schematic\\calls.json",
+    "sha256": "80249a1efe8707249decc8a91073e04a4d0eb1d453b296729e5402975f004ca4"
+  },
+  {
+    "path": "host-preflight\\schematic\\hazlomx.json",
+    "sha256": "302af4df099c4440a1e101bc9fae798c9e6fb907377e4d8029c08381a9660dba"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\konnect.json",
+    "sha256": "e210da7e119d42cae418e57c254d3c8bf48d6278abeca301b5655d0e55cce450"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\konnect.json",
+    "sha256": "b82e80622afaa5d4caa638ddbd7380a852cfd6901396b869ce301197300ca884"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\10.0\\kicad_common.json",
+    "sha256": "7f09974227614188560ba5b257e39fb5a4bda49890c82b42099cb8951d51f416"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\locks\\d638d72216bc4eabc67070831897749e88f609b9579707462461bac3691b7421.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\konnect\\logs\\calls.jsonl",
+    "sha256": "d6a74a2c99585743397d99d5cbff8da080dfa4670c23f76af8dc84288d82a335"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\f974d210-3779-491e-947d-4308c1cf02f4\\.cache\\fontconfig\\ef9c9ad8cc5857eb63cb3660bc8bd202-le64.cache-9",
+    "sha256": "7cd499b1c403a06ef0cbe763b65c92c073d185f1a02b919d52f63b98cbd66c28"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\10.0\\kicad_common.json",
+    "sha256": "2b2d8e8ba044ca38eae96bf53fe21b5584303cebf6c70341afaaaaf424c66913"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\locks\\4399fae4699baae1da4af19f71a058f74588f80c0543e5a0f69b4afdc81818b5.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\konnect\\logs\\calls.jsonl",
+    "sha256": "e713fbfa95cb00a7187f3bb7766574abeb46ff2ceb133ccb1716a2afaca76ba5"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "host-preflight\\schematic\\profiles\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\.cache\\fontconfig\\ef9c9ad8cc5857eb63cb3660bc8bd202-le64.cache-9",
+    "sha256": "7cd499b1c403a06ef0cbe763b65c92c073d185f1a02b919d52f63b98cbd66c28"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\2c59dd79-a974-42c5-bafd-659a6967f2c5.json",
+    "sha256": "4d81daa8d1f14015527d614060ee17004833d267e339bdda58b26da1f9c8bc89"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\f974d210-3779-491e-947d-4308c1cf02f4.json",
+    "sha256": "8f15be48f31716f5c1b2799b691d78c0ace908097be755e295b138471b2e80b9"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\2c59dd79-a974-42c5-bafd-659a6967f2c5.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\2c59dd79-a974-42c5-bafd-659a6967f2c5.sources\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\2c59dd79-a974-42c5-bafd-659a6967f2c5.sources\\basic_test.kicad_sch",
+    "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\2c59dd79-a974-42c5-bafd-659a6967f2c5.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\f974d210-3779-491e-947d-4308c1cf02f4.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\f974d210-3779-491e-947d-4308c1cf02f4.sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\f974d210-3779-491e-947d-4308c1cf02f4.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\runs\\f974d210-3779-491e-947d-4308c1cf02f4.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\input.json",
+    "sha256": "206c513e23ba1a7cb590d703a62dbb325dab3dc50cefbb28b7ba9bc290c0be06"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Netlist.xml",
+    "sha256": "7c63b1bdb3669149d2195f393cb58f6cdfd5f4a9b7b1ea44745d3351d6876bee"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\result.json",
+    "sha256": "6fc673fd54e5dcc689bb679917bdb27880004f69e34368fee5115d6d2485cbac"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\input.json",
+    "sha256": "1ccade8fe7f68c515ea5d8c05863eb7e674ecb89406db895d01e01e2c94f409e"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Netlist.xml",
+    "sha256": "52513ceff3639e3bb69c165136ffc8b1d190a9dbc85c5380ce431018eb4285b9"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\result.json",
+    "sha256": "0945fba2e2eb374e50c52f5a560893023048a6dde56b2eca5db3f8b0dfc9fe04"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Edited\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Edited\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Edited\\basic_test.kicad_sch",
+    "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Original\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\f974d210-3779-491e-947d-4308c1cf02f4\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Edited\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Edited\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Edited\\basic_test.kicad_sch",
+    "sha256": "41d587735fe51de9bb723210eef912e72520233f7d8e748a7ad1f1c29ecb15f0"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Original\\basic_test.kicad_sch",
+    "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+  },
+  {
+    "path": "host-preflight\\schematic\\.hazlomexa\\artifacts\\2c59dd79-a974-42c5-bafd-659a6967f2c5\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\konnect.json",
+    "sha256": "13d511d39ace46a540b05a5eb4ce1d3698e4adc173eed30e8969121c3e6f7fd3"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\konnect.json",
+    "sha256": "7a447aea28ca03f629ac0248887072f1e97b5015a8ac41ff24c0c9d4ca05dd8e"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\locks\\74563613b462c165588d814b263474d70a5cb3f029edca55e43d4c721594174d.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-import\\basic_test.kicad_pcb",
+    "sha256": "c3d29cd04ae7b703334eae89039c87b114b4524bd095006942c95a893f6ae892"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-import\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-import\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-import\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\working\\basic_test.kicad_pcb",
+    "sha256": "c6f5745c2dca64ffed10f5db20a8e563a341e332997ba9a9819a64ded358f7e5"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\3d_viewer.json",
+    "sha256": "7c95b3fdd72f837a3cc49248249c40bc24c07b75bafe02d0d091a0864746b6a9"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\fpedit.json",
+    "sha256": "4d824ab97688dcfc144494386c6991dc0a31f324228d6a85cea279a474f51bb0"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\kicad_common.json",
+    "sha256": "71aa239392c237d373e39124db64b542e0df0f4aa00deaa2f98b85691524f0ed"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\pcbnew.json",
+    "sha256": "412c1fe43f0db375147a9d25f5c7da6768ae054d94300cef57c9349bd3374e7a"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\verification-profile\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\konnect\\logs\\calls.jsonl",
+    "sha256": "e342636cbe937d571acff3c50a39d2e64e16d5d5c82eb289bd893649481433de"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\locks\\3be725f37a0682eda0d664a5794ade3549bc09a3d821832a524a6fb327c6c201.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-import\\basic_test.kicad_pcb",
+    "sha256": "f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-import\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-import\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-import\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\working\\basic_test.kicad_pcb",
+    "sha256": "a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\3d_viewer.json",
+    "sha256": "7c95b3fdd72f837a3cc49248249c40bc24c07b75bafe02d0d091a0864746b6a9"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\fpedit.json",
+    "sha256": "4d824ab97688dcfc144494386c6991dc0a31f324228d6a85cea279a474f51bb0"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\kicad_common.json",
+    "sha256": "25f2c6eb6683f81fca2d4a4de568129cec93dabea7d25f3f57fd60ab51220f06"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\pcbnew.json",
+    "sha256": "412c1fe43f0db375147a9d25f5c7da6768ae054d94300cef57c9349bd3374e7a"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\verification-profile\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "host-preflight\\pcb\\profiles\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\konnect\\logs\\calls.jsonl",
+    "sha256": "53ba871e008d3ac4fdf38e3892df16b517fdc18e3941699d5db1d5615bd2fc08"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36.json",
+    "sha256": "d720ea180765fbb01236ac03958d411da01b82f501d997c435ef215152825e98"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\cb37eb6b-abe4-4867-901a-8705dc0b34ce.json",
+    "sha256": "a5a7e236c4db0a68ac20e1cdc32764d65eec2b536f2f7eda0a1d27ebd048467b"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36.sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\cb37eb6b-abe4-4867-901a-8705dc0b34ce.sources\\basic_test.kicad_pcb",
+    "sha256": "a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\cb37eb6b-abe4-4867-901a-8705dc0b34ce.sources\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\cb37eb6b-abe4-4867-901a-8705dc0b34ce.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\runs\\cb37eb6b-abe4-4867-901a-8705dc0b34ce.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\input.json",
+    "sha256": "58375a4867a835a415b906864c0ddd01c0469bdf68e0655725a52bb4449cf0b6"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\result.json",
+    "sha256": "e23a267ffab5ebb16e86aa2e7ab6532c2d36fcd3663e5fe2dced8fbb344ccc49"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\input.json",
+    "sha256": "9de9befcd6eb3189f5f0adedc14c17c3c43bc25d9a0f4fb0dab7518d77502bc0"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\result.json",
+    "sha256": "11558cd5e312f18a20c615bff87e9dfc1e9e1d2e62462a5f7a8cdbfa457b34a5"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Edited\\basic_test.kicad_pcb",
+    "sha256": "c3d29cd04ae7b703334eae89039c87b114b4524bd095006942c95a893f6ae892"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Edited\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Original\\basic_test.kicad_pcb",
+    "sha256": "a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Check.json",
+    "sha256": "0f26d89b2b5667b684f10839fcbbaf73f1f31f1b356700cf7ecd1631814c9b0d"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\result.json",
+    "sha256": "0094e8dc0bc0dda2f7e37ee30ba35a1709aca627d661a4f2d9d9a2d8b7a35b6d"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Checked\\basic_test.kicad_pcb",
+    "sha256": "c6f5745c2dca64ffed10f5db20a8e563a341e332997ba9a9819a64ded358f7e5"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Original\\basic_test.kicad_pcb",
+    "sha256": "c3d29cd04ae7b703334eae89039c87b114b4524bd095006942c95a893f6ae892"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\drill\\basic_test.drl",
+    "sha256": "45ab59480566bd68c97aaf8365029a75d5472a286bcb0afa4c5ca0d3f625b59c"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-B_Cu.gbr",
+    "sha256": "8fe97387316703798ca1b57f87815b0052184fe523399f31be8932a41b8f305d"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-B_Mask.gbr",
+    "sha256": "416f6e9e62639307602df49f8d6edd4741c5857dde67a0f3969ab3349ae5335b"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-B_Silkscreen.gbr",
+    "sha256": "0008ff429f3669cfd300ce643f027248c23cbb61c7bc7429e14458ebdacb8c91"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-Edge_Cuts.gbr",
+    "sha256": "5ddf92cc39bb2f29e3c35822b47c3e486aa3445897c7869c6a79135413159f5a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-F_Cu.gbr",
+    "sha256": "ff3a34533b90836033c263b867e85f0b82244cb9bb040b8c55962be6c6e7d9dc"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-F_Mask.gbr",
+    "sha256": "b6e201d5283e782b3225cec35b9b9bce3bc50e2c5d3b777a70545221719621a4"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-F_Silkscreen.gbr",
+    "sha256": "64f53f0c7b65df0bc5e46ef9e0f5637b7751e385c1319d2b43696a72fa702e9d"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\cb37eb6b-abe4-4867-901a-8705dc0b34ce\\Verification\\Exports\\gerbers\\basic_test-job.gbrjob",
+    "sha256": "586e8982be215572b02872cf8c3c7cda02c21b774400a3e90616de0375eecb82"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Edited\\basic_test.kicad_pcb",
+    "sha256": "f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Edited\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Original\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Check.json",
+    "sha256": "9c07afb4117ece566d4cd0384db49adc8b75e28b99061dec2a981bdf4a1ba37e"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\result.json",
+    "sha256": "b3d5aa741f21bf0075dad300b27e9f5a8844de9467cc466979a7d659414bd2d5"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Checked\\basic_test.kicad_pcb",
+    "sha256": "a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Original\\basic_test.kicad_pcb",
+    "sha256": "f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\drill\\basic_test.drl",
+    "sha256": "c9c3a3425cf2f17f47cd1892b717d74c18d8b3aa3e1a39b654ff551fa7a54a9b"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-B_Cu.gbr",
+    "sha256": "46f187ef61094007d76f03edced5c2a5685285f8b4225db4965400d44917ff62"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-B_Mask.gbr",
+    "sha256": "8aa3822b8f2cb611a4051f8568e34ca5b54e27f1b512060eaf8b5f5ded0c42f9"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-B_Silkscreen.gbr",
+    "sha256": "bdbbed552c59fcffa8ff9dd45e56ae2bb175eda974902b31ca6449777dc4f56d"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-Edge_Cuts.gbr",
+    "sha256": "872544d664009d2bb8da472d36cc63046986aa1961e07f0fd2165c9217536a47"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-F_Cu.gbr",
+    "sha256": "895ce1ce085f3a94cdd86704208f47e42e29c2aebe5a5adfb1f3f6c9c3a292ce"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-F_Mask.gbr",
+    "sha256": "005489a504106dff0d76396faf3b490d36dff68ce903bab7ef9bccf6a94744cf"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-F_Silkscreen.gbr",
+    "sha256": "68340a9aaf15bbdba6cde8c78c2e299249e9a699c63b2a8a5ac4414d9a6febe6"
+  },
+  {
+    "path": "host-preflight\\pcb\\.hazlomexa\\artifacts\\c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\\Verification\\Exports\\gerbers\\basic_test-job.gbrjob",
+    "sha256": "0f8869010b0a7dd78581c55b70dbfaa8ac33eb8386cec0d099d3e41f01cb4908"
+  },
+  {
+    "path": "guest\\startup\\result.json",
+    "sha256": "b717bf3a083e95d42fa8ca1b0de69c1f25a5820e3d11abca51b338beda06c06b"
+  },
+  {
+    "path": "guest\\startup\\startup.png",
+    "sha256": "710758a6808545fc3e87e939992e7d3fb49aaf570bf99f46f79fecf2b80ccb0c"
+  },
+  {
+    "path": "guest\\konnect-projects\\sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\konnect-projects\\sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\calls.json",
+    "sha256": "0d57303dd78153971d8b831746b6c60f7c52de0138b52766c942e7ea43116088"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\hazlomx.json",
+    "sha256": "d2699a42414b57580a6c595a33e7bf1b387fd88d7961614d5db353aee417a537"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\calls.json",
+    "sha256": "182476b0471afae3ac97cb9455185acad7707a791f97dd128b064c7a970278c4"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\hazlomx.json",
+    "sha256": "c0ad614dee7e9a03a3a31a9158b0f9b3c96b3ed1ac68530106f3981b78cf96d2"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\konnect.json",
+    "sha256": "bc5818e585ad3b8c5a53a6dd4213d5313fb3e034ee4558172037f1e91351e871"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\konnect.json",
+    "sha256": "5219459ebf8c747e501a1a88e0c69543b9ba19b2c554750f7448cad90a155cac"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\10.0\\kicad_common.json",
+    "sha256": "b28e705832741bbe744cb126a62e27c26523993027bdfe740ef27fd213c6a9b9"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\locks\\3594a745de5f22f5f25b3faa17fb8831f751203cfffa243b78d0df66c631d2cc.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\konnect\\logs\\calls.jsonl",
+    "sha256": "d1667b858415ad0b1df8b9732bc2fedc3c8b00989ad6f7623b1eb62141b04d48"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9",
+    "sha256": "6b9d9e758a245d9c6cca3ea017c35eb5dfeef64349d75b4baadebc24b565e505"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\10.0\\kicad_common.json",
+    "sha256": "157a286591245d258cdf0c9d184800260ecb8ebff39c5c5a59de7cb8e09ba848"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\locks\\22cfd89908738629b143c745dc9929dc09a9aca7231b40cb1a569e1274b69a73.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\konnect\\logs\\calls.jsonl",
+    "sha256": "4d2c134728779c1abadb81ae9bcacff572f3fa704096074ecbf57b6073d8d64c"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\profiles\\86604dea-7bdc-4122-bea0-90ed0634f85b\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9",
+    "sha256": "6b9d9e758a245d9c6cca3ea017c35eb5dfeef64349d75b4baadebc24b565e505"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\86604dea-7bdc-4122-bea0-90ed0634f85b.json",
+    "sha256": "90b10354f272e3fc353a5a895f1e11a6d59def6bed25395652794a7b84db1f0e"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\b7291ed8-dfff-462d-a32b-2fde532a85e7.json",
+    "sha256": "d51d5c545667e67aa37e0634ebb1d88d28b628e17836e76cd5c7c90bf1c0351c"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\86604dea-7bdc-4122-bea0-90ed0634f85b.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\86604dea-7bdc-4122-bea0-90ed0634f85b.sources\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\86604dea-7bdc-4122-bea0-90ed0634f85b.sources\\basic_test.kicad_sch",
+    "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\86604dea-7bdc-4122-bea0-90ed0634f85b.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\b7291ed8-dfff-462d-a32b-2fde532a85e7.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\b7291ed8-dfff-462d-a32b-2fde532a85e7.sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\b7291ed8-dfff-462d-a32b-2fde532a85e7.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\runs\\b7291ed8-dfff-462d-a32b-2fde532a85e7.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\input.json",
+    "sha256": "eaf0c38eb6ef6ec7aa2bdb616635b6c406c7882cc1fefb0dcf607d6103d8611d"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Netlist.xml",
+    "sha256": "c9bdef75db55fad100b7974d0e16e044a775d94b0b027802ed9c72019610cf41"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\result.json",
+    "sha256": "49e1c72334ad1f312a81e3a370b0ed130762f6df73064313e265e8b2820a85e4"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\input.json",
+    "sha256": "16f325d2390b4aa0b21c625099800333cb0f844f77053b0a0324fc37912f2b65"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Netlist.xml",
+    "sha256": "0900e5d3b014f7fd94a2157fb2a6470670c1d0e1f690daa07ec5a27535ec8ae0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\result.json",
+    "sha256": "3e10d176b6b5786f28108dcfe235cb99b036ac27bae0ebb11cef7a54a99d0071"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Edited\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Edited\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Edited\\basic_test.kicad_sch",
+    "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Original\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\b7291ed8-dfff-462d-a32b-2fde532a85e7\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Edited\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Edited\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Edited\\basic_test.kicad_sch",
+    "sha256": "41d587735fe51de9bb723210eef912e72520233f7d8e748a7ad1f1c29ecb15f0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Original\\basic_test.kicad_sch",
+    "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\schematic\\.hazlomexa\\artifacts\\86604dea-7bdc-4122-bea0-90ed0634f85b\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\konnect.json",
+    "sha256": "dbea1258d69a75ec4aa42e2c323fa07037cdf37dabff1ad6878ce4710be0223c"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\konnect.json",
+    "sha256": "00e201d794a154a132437627d67db71db721a8035ee670d7053657fc86830fb9"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\locks\\95830f582e8a28aea6fe7a412c27668d6f1b677e5126abcb7abe7deb7940efe0.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-import\\basic_test.kicad_pcb",
+    "sha256": "f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-import\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-import\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-import\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\working\\basic_test.kicad_pcb",
+    "sha256": "acf8e1c1eae7aaa84eb84734a9ab632002615d75a91aafc55c1015d5807e20e0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\3d_viewer.json",
+    "sha256": "7c95b3fdd72f837a3cc49248249c40bc24c07b75bafe02d0d091a0864746b6a9"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\fpedit.json",
+    "sha256": "4d824ab97688dcfc144494386c6991dc0a31f324228d6a85cea279a474f51bb0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\kicad_common.json",
+    "sha256": "6192282490d190f66afb298cf95408722fa6c32aa2240a6457110bbb9eee182e"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\pcbnew.json",
+    "sha256": "412c1fe43f0db375147a9d25f5c7da6768ae054d94300cef57c9349bd3374e7a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\verification-profile\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\konnect\\logs\\calls.jsonl",
+    "sha256": "c574036ce8c5b4ca65842878cddcd22bd94a7310094ce939deff2b05211c8e78"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\locks\\4dc1267169723b9d437af583c44ee2b5268f563a3286d45b40035e1613dc59da.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-import\\basic_test.kicad_pcb",
+    "sha256": "d40af1c2f05c55c26d0720f2eec5b4007cbf93081fe541760a693d0c154663cc"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-import\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-import\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-import\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\working\\basic_test.kicad_pcb",
+    "sha256": "46de27d000f3e5cd043b354897def6b459f7e5951aab9de3ff8fc946569fdb9d"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\3d_viewer.json",
+    "sha256": "7c95b3fdd72f837a3cc49248249c40bc24c07b75bafe02d0d091a0864746b6a9"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\fpedit.json",
+    "sha256": "4d824ab97688dcfc144494386c6991dc0a31f324228d6a85cea279a474f51bb0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\kicad_common.json",
+    "sha256": "123b7c0007176be2955ca99a65acb4098a98f81457c0412cb75b3f63449c0500"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\pcbnew.json",
+    "sha256": "412c1fe43f0db375147a9d25f5c7da6768ae054d94300cef57c9349bd3374e7a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\verification-profile\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\profiles\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\konnect\\logs\\calls.jsonl",
+    "sha256": "149d1b82eccf38de182c983680ae85d845dcc6ea8397b8ebb1b10c0ff10d8a60"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\0a3f7504-60af-4251-b7d0-dcaafdd4c540.json",
+    "sha256": "06b01ce622b3ba38d0860bb1393434d6667461f1ccbd8dc32eb05ed4b924e550"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1.json",
+    "sha256": "79c0907b9cb0819354a6cbff8db7eb4826e205b2db2cac76d43c493815a7fff9"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\0a3f7504-60af-4251-b7d0-dcaafdd4c540.sources\\basic_test.kicad_pcb",
+    "sha256": "acf8e1c1eae7aaa84eb84734a9ab632002615d75a91aafc55c1015d5807e20e0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\0a3f7504-60af-4251-b7d0-dcaafdd4c540.sources\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\0a3f7504-60af-4251-b7d0-dcaafdd4c540.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\0a3f7504-60af-4251-b7d0-dcaafdd4c540.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1.sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\runs\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\input.json",
+    "sha256": "60c4ddcc74e5eb0bf619de00e71e6e23ab67721b326439bd531090977486cc57"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\result.json",
+    "sha256": "9404edcf4288a56f261e4a60fd0552cf9f31b8ad14b08730c793e6069d610cc4"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\input.json",
+    "sha256": "9cabf5a142b6d2db91580ec3b56fe55b07e4d75a5b510e7c4b9ac5abdf69c27b"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\result.json",
+    "sha256": "2fcca45d8945b4c6b575507af3116a56999a0ce9c5e8ab42eba4ec1dea17eff5"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Edited\\basic_test.kicad_pcb",
+    "sha256": "f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Edited\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Original\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Check.json",
+    "sha256": "0231decb7d40f1c546f2f5cafc020d6ca297f5ad8072be7ff167c8c9b3b3a787"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\result.json",
+    "sha256": "add078d16868346498eeec11527517e016fff5c4233e1d56fe61fd47cd0c9dfc"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Checked\\basic_test.kicad_pcb",
+    "sha256": "acf8e1c1eae7aaa84eb84734a9ab632002615d75a91aafc55c1015d5807e20e0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Original\\basic_test.kicad_pcb",
+    "sha256": "f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\drill\\basic_test.drl",
+    "sha256": "f1495c57c0cfea41d83182a55fb2177c3caff95e1004f19a7af98d11350f8c85"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-B_Cu.gbr",
+    "sha256": "d62db5d42f38a35c6d53cc25bb0af4cdab0ae7c1d33dc5b05b33db2cb4f8ea93"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-B_Mask.gbr",
+    "sha256": "bea479fda01f14ea3228740d5d88739c3f3791b5e36fc1580f322efd904ed7e8"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-B_Silkscreen.gbr",
+    "sha256": "41078969e8cd0c31af97a5c361696e50a342ddc37fd56d33f1c37ebc0283709d"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-Edge_Cuts.gbr",
+    "sha256": "5ef5201c111aba4ab75898ed623b8f820e0aba792b027c15c031e165a70699f6"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-F_Cu.gbr",
+    "sha256": "614e550c515894992450fa4102c9d6585bc7733c5e206f3492834791990335ce"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-F_Mask.gbr",
+    "sha256": "4abfe48fd2b540c6eb137fd7dc7e47992b579db0e31bcfdbe80e5c1964b392de"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-F_Silkscreen.gbr",
+    "sha256": "d2355b41e3ab61e37e863b99350b3a76ef31cede72cf6f65b0344682f8e79add"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\ce9a6403-2a4e-4486-870f-b9ffd7cfd6d1\\Verification\\Exports\\gerbers\\basic_test-job.gbrjob",
+    "sha256": "f608f8b2ebe9dad9c226bf3f2b31027d34cbba14a5b9fd794858d7c1f5873a40"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Edited\\basic_test.kicad_pcb",
+    "sha256": "d40af1c2f05c55c26d0720f2eec5b4007cbf93081fe541760a693d0c154663cc"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Edited\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Original\\basic_test.kicad_pcb",
+    "sha256": "acf8e1c1eae7aaa84eb84734a9ab632002615d75a91aafc55c1015d5807e20e0"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Check.json",
+    "sha256": "0bece3c249db2a9a0798c13557b8d9c93db6b4eb0e96a27574bc0edec292ac2f"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\result.json",
+    "sha256": "4aac70204b0ef12928e75c8229fc2735497b2ae74247666ec1ce60ba87680aeb"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Checked\\basic_test.kicad_pcb",
+    "sha256": "46de27d000f3e5cd043b354897def6b459f7e5951aab9de3ff8fc946569fdb9d"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Original\\basic_test.kicad_pcb",
+    "sha256": "d40af1c2f05c55c26d0720f2eec5b4007cbf93081fe541760a693d0c154663cc"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\drill\\basic_test.drl",
+    "sha256": "f6d25829444ec76f852a92e3d4facf12bf9e0828438920897f1b93877f325dc6"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-B_Cu.gbr",
+    "sha256": "e9cc8c323027ab08338d748f29ea7aaac682279bdb56c20f9e1c2b819e15566c"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-B_Mask.gbr",
+    "sha256": "64904edad6d564d7dc06e89a841ee70fe9136cc085c76a318138ce3ca2bfebda"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-B_Silkscreen.gbr",
+    "sha256": "ed57636eb261f92309649c62845bbc79cd5f7c1e2f3bbee0c131816cfdf5aba7"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-Edge_Cuts.gbr",
+    "sha256": "581887f844c337d55626c0605485fae242193abd3732ff5231982950ed36c60c"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-F_Cu.gbr",
+    "sha256": "8683a87b24caadf270171d48a93b767d3eac3383ae371a6036552e3be788ebdb"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-F_Mask.gbr",
+    "sha256": "0e7f88f3b24a14e14d9800b59281f1a92b7a88679dffb8a95c66d9c8d8bd1600"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-F_Silkscreen.gbr",
+    "sha256": "c7040145e6d9817e665a34ca89273bfb25da36706e24b0e370ef282899c072a3"
+  },
+  {
+    "path": "guest\\konnect-projects\\projects\\pcb\\.hazlomexa\\artifacts\\0a3f7504-60af-4251-b7d0-dcaafdd4c540\\Verification\\Exports\\gerbers\\basic_test-job.gbrjob",
+    "sha256": "6c53b100a666a9fef1849cab5206ec9a30ebf791b83e3fac2dbd666d8c6e9c55"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\hazlomx.json",
+    "sha256": "6c5ea1421171088a33246a79cdb1177603eee552f3d6405b8996577ad2047eea"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\profiles\\3bad9697-2c8c-40e2-b694-4842830862b3\\konnect.json",
+    "sha256": "35ace5c6117a2c01a42be9361064f652f3e9e0abe6e97d21ae1d6fcb461f2a02"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\runs\\3bad9697-2c8c-40e2-b694-4842830862b3.json",
+    "sha256": "cbdc14eafa966a11b9f2e1cc4d324d41fc8c9d76223f4da15c7dce088bd97fbb"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\input.json",
+    "sha256": "d0cd87749e6442fab33094c6f6da2c60f41c079cd17de574cc49de1f671265c7"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Edited\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Edited\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Edited\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Edited\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Original\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\staging\\3bad9697-2c8c-40e2-b694-4842830862b3\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\runs\\3bad9697-2c8c-40e2-b694-4842830862b3.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\runs\\3bad9697-2c8c-40e2-b694-4842830862b3.sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\runs\\3bad9697-2c8c-40e2-b694-4842830862b3.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\konnect-projects\\missing-runtime\\schematic\\.hazlomexa\\runs\\3bad9697-2c8c-40e2-b694-4842830862b3.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 4,
+    "length": 80,
+    "width": 50
+  },
+  "id": "shared_units",
+  "result": {
+    "proposal": {
+      "message": "El sólido rectangular tiene las siguientes medidas en milímetros: largo 80, ancho 50 y alto 4.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 5.3409057
+}

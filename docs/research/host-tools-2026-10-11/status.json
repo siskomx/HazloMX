@@ -1,0 +1,31 @@
+{
+  "regular_passed": 80,
+  "ignored": 25,
+  "mcp_actual_passed": 1,
+  "clippy_passed": true,
+  "browser_passed": true,
+  "authenticated_agent_verified": false,
+  "external_desktop_transport_verified": false,
+  "source_hashes": [
+    {
+      "path": "apps/desktop/src-tauri/src/host_tools.rs",
+      "sha256": "9d0e748adb1bfd4c444c672105e78eff5568317e296566d1223019500866d026"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/main.rs",
+      "sha256": "a6ca4e73693d2866daba19e3d2aff26b1808d8b7694ab9b8602bbac0769f7fe2"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/konnect.rs",
+      "sha256": "37893ac8e50aa56ea70f7ebddab44095b1b118ae525ada240b8becf64baa4ece"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/jobs.rs",
+      "sha256": "4d34e46b9dac7f9a3a2125a67c6ff4da6e443e11f794926b88741edada0146ab"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4"
+    }
+  ]
+}

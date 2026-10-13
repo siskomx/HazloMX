@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 12.7,
+    "length": 25.4,
+    "width": 20
+  },
+  "id": "design_followup",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 12.7,
+        "length": 25.4,
+        "width": 20.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 10.1613895
+}

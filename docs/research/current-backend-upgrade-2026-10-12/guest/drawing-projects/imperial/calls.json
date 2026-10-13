@@ -1,0 +1,76 @@
+{
+  "final_read": {
+    "checks": null,
+    "components": null,
+    "content": "{\n  \"schema_version\": 2,\n  \"job_id\": \"4bafe9d7-e543-471f-a103-647ab3a7dca9\",\n  \"cadcraft_version\": \"0.5.0\",\n  \"source_sha256\": \"3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad\",\n  \"output_sha256\": \"e83eacf249463230251c75ea44278caf53f8d7ab159b34fb1a06207af3ad6660\",\n  \"preview_sha256\": \"54e789beb08e2005b1e8b2f76efc3e48e66aaa07a226a122f9d149364a95a4a5\",\n  \"output_summary\": {\n    \"entity_count\": 3,\n    \"counts\": {\n      \"Circle\": 3\n    },\n    \"extents\": [\n      [\n        -10.0,\n        -10.0\n      ],\n      [\n        43.0,\n        10.0\n      ]\n    ]\n  },\n  \"warnings\": [],\n  \"circle_readback\": {\n    \"before_matches\": 0,\n    \"edited_matches\": 1,\n    \"final_matches\": 1\n  }\n}",
+    "drawing": {
+      "editable": true,
+      "original_summary": {
+        "counts": {
+          "Circle": 2
+        },
+        "entity_count": 2,
+        "extents": [
+          [
+            -10.0,
+            -10.0
+          ],
+          [
+            32.0,
+            10.0
+          ]
+        ]
+      },
+      "output_format": "dxf",
+      "units": "in"
+    },
+    "format": "drawing_report",
+    "job_id": "4bafe9d7-e543-471f-a103-647ab3a7dca9",
+    "project_id": "53af8d1e-297d-4e72-ab74-51c6eb9488f6",
+    "scope": "verified_published_result",
+    "sha256": "bab6a04b2e2ba2d1cb2ed4a51e7e473951c539a1ba20d648d533a1d50793f21b",
+    "slicing": null,
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "first_read": {
+    "checks": null,
+    "components": null,
+    "content": "{\n  \"schema_version\": 2,\n  \"job_id\": \"4438f6fe-9ed5-427c-b02e-64d57db63f9f\",\n  \"cadcraft_version\": \"0.5.0\",\n  \"source_sha256\": \"7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7\",\n  \"output_sha256\": \"3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad\",\n  \"preview_sha256\": \"46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4\",\n  \"output_summary\": {\n    \"entity_count\": 2,\n    \"counts\": {\n      \"Circle\": 2\n    },\n    \"extents\": [\n      [\n        -10.0,\n        -10.0\n      ],\n      [\n        32.0,\n        10.0\n      ]\n    ]\n  },\n  \"warnings\": [],\n  \"circle_readback\": {\n    \"before_matches\": 0,\n    \"edited_matches\": 1,\n    \"final_matches\": 1\n  }\n}",
+    "drawing": {
+      "editable": true,
+      "original_summary": {
+        "counts": {
+          "Circle": 1
+        },
+        "entity_count": 1,
+        "extents": [
+          [
+            -10.0,
+            -10.0
+          ],
+          [
+            10.0,
+            10.0
+          ]
+        ]
+      },
+      "output_format": "dwg",
+      "units": "in"
+    },
+    "format": "drawing_report",
+    "job_id": "4438f6fe-9ed5-427c-b02e-64d57db63f9f",
+    "project_id": "53af8d1e-297d-4e72-ab74-51c6eb9488f6",
+    "scope": "verified_published_result",
+    "sha256": "7870b2cdad90ae5f7bc83f8f86ffbe10bcb7496a863fff8494558c3325fbfacb",
+    "slicing": null,
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "proposal": {
+    "human_approval_required": true,
+    "job_id": "4bafe9d7-e543-471f-a103-647ab3a7dca9",
+    "operation": "drawing_copy_only",
+    "phase": "awaiting_approval"
+  }
+}

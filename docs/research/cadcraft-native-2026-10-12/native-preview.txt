@@ -1,0 +1,162 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			2 pane Hazlo Mexa
+				3 pane (disabled)
+				4 region Hazlo Mexa - Web content
+					5 region
+						6 region
+							7 region
+								8 region
+								9 region
+									10 region
+										11 region
+											12 region
+												13 region
+												14 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													15 main ID: app
+														16 section header
+															17 heading Hazlo Mexa
+															18 text De una idea a un archivo que puedes editar.
+															19 text CAD y Arduino · v0.1
+														20 region Tu proyecto
+															21 heading Tu proyecto ID: project-heading
+															200 text C:/Users/USER\Documents\GitHub\HazloMX\target\native-cadcraft-20261012-01\project
+															23 button Crear en carpeta… ID: create-project
+															24 button Abrir proyecto… ID: open-project
+														25 details ID: agent-tools-panel
+															26 disclosure triangle Usar las herramientas de Hazlo con Claude Code o Codex
+																27 text Usar las herramientas de Hazlo con Claude Code o Codex
+														28 region ¿Qué quieres crear?
+															29 text 01 / CONVERSA
+															30 heading ¿Qué quieres crear? ID: proposal-heading
+															201 text ¿Qué dibujo quieres recrear, convertir o modificar? Elige formato y unidades; el original se conserva.
+															32 text ¿Qué vas a trabajar?
+															33 combo box (disabled) ¿Qué vas a trabajar? Value: Dibujo y conversión · CADCraft ID: workflow
+															34 text ¿Con quién quieres conversar?
+															35 combo box (settable, string) ¿Con quién quieres conversar? Value: Guía actual / Ollama ID: assistant-provider
+															36 status ID: claude-chat-progress
+															37 log Conversación de diseño ID: conversation
+																127 text Hazlo Mexa:
+																128 text ¿Quieres convertir el dibujo o añadir un círculo? Elige DXF, DWG o PNG y las unidades originales, milímetros o pulgadas. Luego seleccionaremos el original y revisaremos la propuesta antes de aprobar.
+															43 text Tu idea o respuesta
+															44 edit (settable, string) Tu idea o respuesta Description: Quiero convertir este dibujo o añadir un círculo; todavía necesito confirmar sus unidades ID: prompt
+															45 button (disabled) Enviar ID: infer
+															46 button (disabled) Detener ID: cancel-inference
+															47 button (disabled) Nueva conversación ID: new-conversation
+															48 status ID: inference-status
+															202 text La conversación reúne tu intención. La operación admite DXF/DWG, conversión y adición de un círculo. Usa los campos para confirmar los parámetros.
+															203 text C:/Users/USER\Documents\GitHub\HazloMX\target\cadcraft-probe\runtime\cadcraft-0.5.0-windows-x64-portable\cadcraft-cli.exe
+															131 button (disabled) Seleccionar CADCraft CLI 0.5.0… ID: select-cadcraft
+															132 text Archivo de salida
+															133 combo box (disabled) Archivo de salida Value: DXF editable ID: drawing-format
+															134 text Unidades del dibujo original
+															135 combo box (disabled) Unidades del dibujo original Value: Milímetros · métrico ID: drawing-unit
+															136 text Se conserva la escala original. Si el archivo no declara unidades, confirma cómo deben interpretarse sus coordenadas.
+															137 check box (disabled) Añadir un círculo a la copia ID: drawing-add-circle
+															138 group Círculo en las unidades elegidas ID: drawing-circle
+																139 text Círculo en las unidades elegidas
+																140 text Centro X
+																141 spin button (disabled) Centro X Value: 30 ID: drawing-x
+																142 text Centro Y
+																143 spin button (disabled) Centro Y Value: 0 ID: drawing-y
+																144 text Radio
+																145 spin button (disabled) Radio Value: 2 ID: drawing-radius
+															146 check box (disabled) Acepto que CADCraft omita objetos incompatibles de la copia o de la imagen ID: drawing-loss
+															147 text Sin esta aceptación, una advertencia de pérdida impide publicar. El original importado siempre se conserva.
+															148 button (disabled) Seleccionar original y preparar propuesta… ID: prepare-drawing
+														59 region Vista de la propuesta
+															60 text 02 / REVISA
+															61 heading Vista de la propuesta ID: preview-heading
+															204 text Revisa las entidades importadas, unidades y cambios de la copia. Para cambiar la propuesta, cancélala y prepara otra.
+															205 text Selected.dxf · 1 entidades · milímetros · salida DXF · círculo (30, 0), radio 2 · sin aceptar pérdida
+															64 button Aprobar operación de dibujo ID: approve
+															65 button Cancelar ID: cancel
+															206 text La aprobación trabaja en una copia privada y publica el original importado, resultado, PNG e informe. CADCraft puede omitir propiedades u objetos incompatibles; revisa el informe antes de usar la copia.
+														67 region Resultados
+															68 text 03 / ABRE
+															69 heading Resultados ID: results-heading
+															70 status ID: status
+																207 text Revisa el original importado, las unidades y la operación de la copia antes de aprobar.
+															72 list
+																73 term Generación
+																	74 text Generación
+																208 text Sin archivos nuevos
+																76 term Verificación
+																	77 text Verificación
+																209 text Sin artefactos nuevos aceptados
+																79 term Publicación
+																	80 text Publicación
+																210 text Sin publicación nueva
+								82 region
+						83 region
+						84 region
+		85 title bar (settable, string) Value: Hazlo Mexa
+			86 menu bar System ID: MenuBar
+				91 menu item System
+			88 button Minimize
+			89 button Maximize
+			90 button Close
+
+Document text: ```
+Hazlo Mexa
+De una idea a un archivo que puedes editar.
+CAD y Arduino · v0.1
+Tu proyecto
+C:/Users/USER\Documents\GitHub\HazloMX\target\native-cadcraft-20261012-01\project
+Crear en carpeta…
+Abrir proyecto…
+Usar las herramientas de Hazlo con Claude Code o Codex
+01 / CONVERSA
+¿Qué quieres crear?
+¿Qué dibujo quieres recrear, convertir o modificar? Elige formato y unidades; el original se conserva.
+¿Qué vas a trabajar?
+￼
+¿Con quién quieres conversar?
+￼
+￼
+Hazlo Mexa: ¿Quieres convertir el dibujo o añadir un círculo? Elige DXF, DWG o PNG y las unidades originales, milímetros o pulgadas. Luego seleccionaremos el original y revisaremos la propuesta antes de aprobar.
+Tu idea o respuesta
+￼
+Enviar
+Detener
+Nueva conversación
+￼
+La conversación reúne tu intención. La operación admite DXF/DWG, conversión y adición de un círculo. Usa los campos para confirmar los parámetros.
+C:/Users/USER\Documents\GitHub\HazloMX\target\cadcraft-probe\runtime\cadcraft-0.5.0-windows-x64-portable\cadcraft-cli.exe
+Seleccionar CADCraft CLI 0.5.0…
+Archivo de salida
+￼
+Unidades del dibujo original
+￼
+Se conserva la escala original. Si el archivo no declara unidades, confirma cómo deben interpretarse sus coordenadas.
+￼
+Círculo en las unidades elegidas
+Centro X
+30
+Centro Y
+0
+Radio
+2
+￼
+Sin esta aceptación, una advertencia de pérdida impide publicar. El original importado siempre se conserva.
+Seleccionar original y preparar propuesta…
+02 / REVISA
+Vista de la propuesta
+Revisa las entidades importadas, unidades y cambios de la copia. Para cambiar la propuesta, cancélala y prepara otra.
+Selected.dxf · 1 entidades · milímetros · salida DXF · círculo (30, 0), radio 2 · sin aceptar pérdida
+Aprobar operación de dibujo
+Cancelar
+La aprobación trabaja en una copia privada y publica el original importado, resultado, PNG e informe. CADCraft puede omitir propiedades u objetos incompatibles; revisa el informe antes de usar la copia.
+03 / ABRE
+Resultados
+Revisa el original importado, las unidades y la operación de la copia antes de aprobar.
+Generación
+Sin archivos nuevos
+Verificación
+Sin artefactos nuevos aceptados
+Publicación
+Sin publicación nueva
+￼
+￼
+```

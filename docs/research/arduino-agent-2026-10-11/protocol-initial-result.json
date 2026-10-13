@@ -1,0 +1,121 @@
+{
+  "pass": true,
+  "hardware_mutations": false,
+  "steps": [
+    "auth/stale-session/origin rejected before write",
+    "authenticated router read/write round trip"
+  ],
+  "initialize": {
+    "protocolVersion": "2025-03-26",
+    "capabilities": {
+      "tools": {},
+      "prompts": {}
+    },
+    "serverInfo": {
+      "name": "arduino-agent",
+      "version": "0.7.1"
+    },
+    "instructions": "Arduino Agent - an Arduino IDE with this MCP server embedded. You share one editor, one board and one serial monitor with the user; prefer these tools over asking the user to click in the IDE.\n\nRecommended workflow:\n1. arduino_context for current state (open sketch, selected board/port, connected boards with USB vid/pid).\n2. If the board shows identified:false, run arduino_board suggest_fqbn (uses USB identity + name matching; tells you which core to install if missing). ALWAYS pass an explicit fqbn to compile/upload/serial connect for such boards - they can never be auto-identified.\n3. Write code with arduino_sketch (set_content writes to disk AND live-reloads the user's editor).\n4. Compile/upload with wait:true - one call returns the final result. A timed_out:true response is NOT an error: call arduino_task_status {task_id, wait:true} to keep waiting (first builds for a new core can take minutes).\n5. arduino_upload compiles first automatically - no separate compile needed.\n6. After upload, connect serial at the baud rate in the sketch's Serial.begin(). Reads are cursor-based: keep the returned cursor and pass it as since to page output losslessly. Use wait_for {pattern} to block until expected output arrives.\n7. Crash/reset detection is automatic: read/wait_for responses carry events (reset/panic/watchdog/brownout/abort, with reset reasons and backtraces). A crash ends a pending wait_for early. \"No output\" plus reset events means the board is crash-looping, not quiet.\n\nFailure handling:\n- Failed compile/upload tasks carry result.explained - read it before retrying; it names the cause and the fix (port busy, bootloader mode, wrong FQBN, power).\n- Native-USB boards (ESP32-S2/S3/C3) re-enumerate after reset: the port can change or vanish; re-run arduino_board list_connected. Uploads are far more reliable via a board's UART/bridge port; native-USB uploads can require holding BOOT while pressing RESET.\n- Serial port busy on upload usually means this server's own monitor is connected: arduino_serial disconnect first.\n\nFirmware rules of thumb:\n- Never busy-loop without delay()/vTaskDelay() on ESP32 - a starved idle task trips the task watchdog and reboots the chip.\n- Serial.begin(115200) is the conventional rate; after flashing over native USB, wait ~1s for CDC re-enumeration before expecting output."
+  },
+  "tools": [
+    {
+      "name": "list_tool_categories",
+      "description": "List all available Arduino IDE tool categories. Start here to discover what operations are available.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_category_tools",
+      "description": "Get detailed information about all tools in a specific category including parameters and examples.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "sketch",
+              "build",
+              "board",
+              "serial",
+              "library",
+              "ide"
+            ],
+            "description": "Category name from list_tool_categories"
+          }
+        },
+        "required": [
+          "category"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "execute_tool",
+      "description": "Execute an Arduino IDE tool by name with the specified parameters. Use get_category_tools first to see available tools and their parameters.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "description": "Tool name (e.g., arduino_sketch, arduino_compile)"
+          },
+          "params": {
+            "type": "object",
+            "description": "Tool parameters - see get_category_tools for schema"
+          }
+        },
+        "required": [
+          "tool_name",
+          "params"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "search_tools",
+      "description": "Search for Arduino IDE tools by keyword. Searches tool names, descriptions, and parameter names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search term (e.g., \"upload\", \"serial\", \"library\")"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    }
+  ],
+  "sketch_catalog": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"category\": \"sketch\",\n  \"tools\": [\n    {\n      \"name\": \"arduino_sketch\",\n      \"description\": \"Manage Arduino sketches - create, open, and edit sketch files. Use get_content to read code, set_content to write code (changes are written to disk immediately and shown in the IDE). Use list_examples to find built-in examples, from_example to create a sketch from an example. File access is restricted to the sketchbook, built-in examples, and temporary sketches.\",\n      \"parameters\": {\n        \"action\": {\n          \"type\": \"string\",\n          \"enum\": [\n            \"create\",\n            \"open\",\n            \"list\",\n            \"get_content\",\n            \"set_content\",\n            \"get_files\",\n            \"get_current\",\n            \"list_examples\",\n            \"from_example\"\n          ],\n          \"description\": \"The sketch operation to perform\"\n        },\n        \"path\": {\n          \"type\": \"string\",\n          \"description\": \"Path or file:// URI of a sketch folder or file (for open, get_content, set_content)\"\n        },\n        \"name\": {\n          \"type\": \"string\",\n          \"description\": \"Name for the new sketch (for create). Letters, digits, \\\"_\\\" and \\\"-\\\" only. Created in the sketchbook. Omit to create a temporary sketch.\"\n        },\n        \"content\": {\n          \"type\": \"string\",\n          \"description\": \"Sketch content (for set_content action)\"\n        },\n        \"example_path\": {\n          \"type\": \"string\",\n          \"description\": \"Path to example (for from_example). Use list_examples to find available examples.\"\n        },\n        \"category\": {\n          \"type\": \"string\",\n          \"description\": \"Filter examples by category: \\\"01.Basics\\\", \\\"02.Digital\\\", \\\"03.Analog\\\", etc. (for list_examples)\"\n        }\n      },\n      \"required\": [\n        \"action\"\n      ],\n      \"annotations\": {\n        \"title\": \"Arduino sketches\",\n        \"readOnlyHint\": false,\n        \"destructiveHint\": false\n      }\n    }\n  ],\n  \"hint\": \"Use execute_tool with tool_name and params to execute a tool\"\n}"
+      }
+    ]
+  },
+  "source_read": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"content\": \"void setup() {}\\nvoid loop() {}\\n\",\n  \"path\": \"C:\\\\AgentSketchbook\\\\ProbeSketch\\\\ProbeSketch.ino\"\n}"
+      }
+    ]
+  }
+}

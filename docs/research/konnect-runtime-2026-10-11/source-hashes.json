@@ -1,0 +1,10 @@
+{
+  "tests/fixtures/process_probe.rs": "b104a8aa8216fd34d4d7e7f6c146f25b582b1633311f2c97c738ca95e0ebce91",
+  "Cargo.lock": "1e48ac1c92513c8588c4978d25d28bda7ab73e4a05acc20171ccc7daa6f00725",
+  "apps/desktop/src-tauri/Cargo.toml": "739915440556a3e39c8e2fe8adeab0a7ceeca0367c69ec8c1a2572d0db3bb9e9",
+  "tests/konnect/test_verify_schematic.py": "f0957641e6cb167ac7d1ab52bc84a1ea33c8687a6cbe35cd16787d2398590fc6",
+  "apps/desktop/src-tauri/src/process.rs": "33ce7a77d0e792524dc776bce8ea7e68e4587717493fc31a345a7aea6bf0daf1",
+  "tests/konnect/runtime_probe.py": "1432352626d0036ac71da6952f770e5b0fc0ef2d9cce2e709312744600018a20",
+  "tests/konnect/verify_schematic.py": "f43343619330857b7193f8986c4231a4b1bdbd0861f3aced6a151a0e23e22600",
+  "apps/desktop/src-tauri/examples/konnect_protocol.rs": "2197b97b87b188d2d46f0ffb6c7c85bd2a937f04c6f6bdf061c64b0de1e7f994"
+}

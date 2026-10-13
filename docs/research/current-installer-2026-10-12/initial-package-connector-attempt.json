@@ -1,0 +1,11 @@
+﻿{
+    "installer_sha256":  "b4bce98f0ff0424f2851f2f380b6d22b02de9d345524e59ee4b5664a27febff6",
+    "pass":  false,
+    "resumed_after_identity_check":  true,
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "current_user_install":  true,
+    "error":  "Installed connector protocol failed.",
+    "binaries_match_package_build":  true,
+    "stage":  "failed",
+    "user":  "WDAGUtilityAccount"
+}

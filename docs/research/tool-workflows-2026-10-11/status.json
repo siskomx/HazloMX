@@ -1,0 +1,35 @@
+{
+  "regular_passed": 82,
+  "ignored": 27,
+  "native_solid_passed": true,
+  "native_compile_passed": true,
+  "native_konnect_passed": true,
+  "snapshot_schema": 10,
+  "clippy_passed": true,
+  "browser_passed": true,
+  "frontend_build_passed": true,
+  "model_generated_proposals_verified": false,
+  "native_ui_verified": false,
+  "source_hashes": [
+    {
+      "path": "apps/desktop/src-tauri/src/host_tools.rs",
+      "sha256": "665d8ec4ef551b9107d6711dca46224359024e921c6e989c0a4dda696e785e9c"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/jobs.rs",
+      "sha256": "b1c65feb1bfe7b910e3b97464a6d8dfe46a4087c4a0e36e507a06660e6c03184"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/project.rs",
+      "sha256": "4256a3b842a2ec3f9a316e0e59f16d07b245264f7a14fd11459b6c667693da52"
+    },
+    {
+      "path": "apps/desktop/src/main.ts",
+      "sha256": "7fae9ad8a2afe2891a8ad9f8a43cbea7076b89d44ad03dbbcb7336562f1f9197"
+    },
+    {
+      "path": "apps/desktop/src/contracts.ts",
+      "sha256": "8de70dc44a112c36c415ec710101c4c4aca94c3f557fc79276812b5aebb4c174"
+    }
+  ]
+}

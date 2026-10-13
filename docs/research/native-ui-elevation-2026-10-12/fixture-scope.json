@@ -1,0 +1,5 @@
+{
+  "launch": "Explorer-delegated UI driver with measured elevation",
+  "scope": "Installed native initial UI and lifecycle only",
+  "engineering": "omitted; separately retained"
+}

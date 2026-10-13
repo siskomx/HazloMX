@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "too_large",
+  "result": {
+    "proposal": {
+      "message": "El usuario proporcionó medidas para un sólido rectangular. Sin embargo, el valor de 'largo' es 201 mm, que supera el límite máximo de 200.0 mm. Según las reglas, las medidas deben estar entre 1.0 y 200.0 mm inclusive. Por lo tanto, la medida de largo es inválida.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 12.9340033
+}

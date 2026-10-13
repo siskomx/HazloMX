@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "jobs::tests::actual_konnect_blocked_workflow_",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "fixtures": {
+    "cancellation": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-d52f48cf-68dc-4b60-85e5-44d3d1994d5b",
+    "deadline": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-a2c483d1-efe5-4a62-b627-74bd4278307f"
+  },
+  "source_hashes": {
+    "Cargo.lock": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4",
+    "apps/desktop/src-tauri/src/konnect_run.rs": "ca2327f20857966e99927f761a52f1f77e9d3c0fe45f3f2901c05860cd0ccf70",
+    "apps/desktop/src-tauri/src/process.rs": "9746ef2e7b3281201791bc0c84dea0df6906b4e3c9e697ef744a424fe9479cf8",
+    "apps/desktop/src-tauri/src/kicad_project.rs": "4e4d003a2ed53d5fd6bdb5a6cbffc71aaca16b28e371fa21349322d2dacf61ea",
+    "apps/desktop/src-tauri/src/kicad_run.rs": "6a1ff028fae21b121291ae3294d5371a7ef7efc67ea2734681be79b027197551",
+    "tests/fixtures/publication_barrier.rs": "a9d08a6da255c532e21d1ceafd9f6e9815b334df6482edec280379dbd3debc38",
+    "tests/konnect/verify_blocked_read.py": "c0de3da43fa3360686bfe75212fcb30c36444d98a6e75ac1dd2d24a67fb9a873",
+    "apps/desktop/src-tauri/src/jobs.rs": "a1e11fb31051cdf689478b4e03c24adca3b8088ec3f65f2c47016940ec550fc1",
+    "apps/desktop/src-tauri/src/project.rs": "1d3629990c6f1889e6d0d308455382da7ac990a8be3f044c4e6427af76d4ae2d"
+  },
+  "runtime_hashes": {
+    "target/konnect-probe/runtime/konnect.exe": "09969ec5f05600039e206acedb0b6b785528f1bced2dbe2c7f426483013e4f2c",
+    "target/kicad-probe/runtime/bin/kicad-cli.exe": "cbd8197dd1f46b9a956f3d7973edc9a6a97960298731448ae9142dffe47abc7a"
+  },
+  "initialized_blocked_read_cancellation_verified": false,
+  "held_workflow_access_cancellation_verified": true,
+  "full_60s_tool_deadline_verified": true,
+  "mutation_phase_verified": false,
+  "workflow_recovery_verified": true,
+  "native_ui_verified": false
+}

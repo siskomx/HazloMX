@@ -1,0 +1,8 @@
+{
+  "browser_workflows": 9,
+  "native_cli_gate_passed": true,
+  "native_dwg_mismatch_and_confirmation": true,
+  "regular_tests_passed": 111,
+  "scope": "Source/backend and CLI; no installed/native picker/signed-in claim",
+  "all_target_desktop_clippy": true
+}

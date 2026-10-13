@@ -1,0 +1,21 @@
+﻿{
+    "processes":  [
+                      {
+                          "Id":  9928,
+                          "ProcessName":  "powershell",
+                          "CPU":  12.953125
+                      }
+                  ],
+    "copies":  [
+                   {
+                       "files":  35587,
+                       "folder":  "C:\\FreeCADOwned",
+                       "bytes":  2307824188
+                   },
+                   {
+                       "files":  15065,
+                       "folder":  "C:\\OrcaOwned",
+                       "bytes":  390329357
+                   }
+               ]
+}

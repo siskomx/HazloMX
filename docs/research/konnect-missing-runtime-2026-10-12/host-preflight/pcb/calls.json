@@ -1,0 +1,388 @@
+[
+  {
+    "initial_inspection": {
+      "components": [
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J1",
+          "rotation_deg": 0.0,
+          "uuid": "1390739f-0b91-4d50-b8ae-92acd725ec51",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 200.8,
+          "y_mm": 156.6
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Package_TO_SOT_SMD:SOT-23-5",
+          "reference": "U1",
+          "rotation_deg": 180.0,
+          "uuid": "46ee94d1-977a-45b0-a3f4-b6f45331a22d",
+          "value": "TLV2371DBV",
+          "x_mm": 201.9,
+          "y_mm": 145.3
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J3",
+          "rotation_deg": 0.0,
+          "uuid": "7cb3954f-ecbc-4d4a-948f-f385aacc2198",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 218.0,
+          "y_mm": 146.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R2",
+          "rotation_deg": -90.0,
+          "uuid": "84d75378-f03e-476c-badf-38e6fb8d9772",
+          "value": "10k",
+          "x_mm": 198.0,
+          "y_mm": 145.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R1",
+          "rotation_deg": 0.0,
+          "uuid": "9ba418c8-2eec-4809-8f5b-d46c1151991e",
+          "value": "10k",
+          "x_mm": 197.0,
+          "y_mm": 141.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J2",
+          "rotation_deg": 0.0,
+          "uuid": "9bcb01a9-2bff-45c9-bb09-f3c9476a6e17",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 193.0,
+          "y_mm": 147.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R3",
+          "rotation_deg": 0.0,
+          "uuid": "cfe1ba2c-d301-4a4b-b0fe-608ede2e0767",
+          "value": "10k",
+          "x_mm": 204.0,
+          "y_mm": 151.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Capacitor_SMD:C_1206_3216Metric",
+          "reference": "C1",
+          "rotation_deg": 0.0,
+          "uuid": "db9388ac-163d-40bc-be40-37f8cd7f2c2a",
+          "value": "10u",
+          "x_mm": 207.5,
+          "y_mm": 145.9
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J4",
+          "rotation_deg": 0.0,
+          "uuid": "f4673e4d-d9f7-4c2a-a854-c35665e7dbd9",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 209.0,
+          "y_mm": 156.6
+        }
+      ],
+      "name": "basic_test.kicad_pcb",
+      "next_offset": null,
+      "offset": 0,
+      "project_id": "409e9052-2989-41ed-8d55-d3736120cb35",
+      "scope": "saved_board_context",
+      "selection": "8edcdb19-46f6-4d14-aa3a-09a794412248",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a",
+      "source_is_untrusted_data": true,
+      "total": 9,
+      "units": "mm"
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "c0a625e6-15eb-4a7e-a3d2-15c64c3abb36",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": {
+        "check": "drc",
+        "errors": 1,
+        "excluded": 0,
+        "ignored_checks": [
+          "missing_courtyard",
+          "track_not_centered_on_via",
+          "tuning_profile_track_geometries",
+          "footprint_filters_mismatch",
+          "pth_inside_courtyard",
+          "npth_inside_courtyard",
+          "footprint_type_mismatch"
+        ],
+        "units": "in",
+        "warnings": 7
+      },
+      "components": null,
+      "content": "{\n  \"schema_version\": 1,\n  \"job_id\": \"c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\",\n  \"konnect_version\": \"0.13.0\",\n  \"protocol_version\": \"2025-06-18\",\n  \"verification_input\": {\n    \"schema_version\": 1,\n    \"job_id\": \"c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\",\n    \"kicad_version\": \"10.0.7\",\n    \"source_root\": \"C:/Users/USER/Documents/GitHub/HazloMX/target/konnect-connector-preflight-e3a74658-2800-4987-be3c-b771827870cf/pcb/.hazlomexa/staging/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/Edited\",\n    \"entry\": \"basic_test.kicad_pcb\",\n    \"files\": [\n      {\n        \"path\": \"basic_test.kicad_pcb\",\n        \"sha256\": \"f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863\",\n        \"bytes\": 71306\n      },\n      {\n        \"path\": \"basic_test.kicad_pro\",\n        \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\",\n        \"bytes\": 13394\n      },\n      {\n        \"path\": \"basic_test.kicad_sch\",\n        \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\",\n        \"bytes\": 25307\n      },\n      {\n        \"path\": \"custom_ds.kicad_wks\",\n        \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\",\n        \"bytes\": 2516\n      }\n    ],\n    \"units\": \"in\",\n    \"layers\": [\n      \"F.Cu\",\n      \"B.Cu\",\n      \"B.SilkS\",\n      \"F.SilkS\",\n      \"B.Mask\",\n      \"F.Mask\",\n      \"Edge.Cuts\"\n    ]\n  },\n  \"verification\": {\n    \"schema_version\": 1,\n    \"job_id\": \"c0a625e6-15eb-4a7e-a3d2-15c64c3abb36\",\n    \"kicad_version\": \"10.0.7\",\n    \"summary\": {\n      \"check\": \"drc\",\n      \"units\": \"in\",\n      \"errors\": 1,\n      \"warnings\": 7,\n      \"excluded\": 0,\n      \"ignored_checks\": [\n        \"missing_courtyard\",\n        \"track_not_centered_on_via\",\n        \"tuning_profile_track_geometries\",\n        \"footprint_filters_mismatch\",\n        \"pth_inside_courtyard\",\n        \"npth_inside_courtyard\",\n        \"footprint_type_mismatch\"\n      ]\n    },\n    \"files\": [\n      {\n        \"path\": \"Check.json\",\n        \"sha256\": \"9c07afb4117ece566d4cd0384db49adc8b75e28b99061dec2a981bdf4a1ba37e\"\n      },\n      {\n        \"path\": \"Checked/basic_test.kicad_pcb\",\n        \"sha256\": \"a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc\"\n      },\n      {\n        \"path\": \"Checked/basic_test.kicad_pro\",\n        \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n      },\n      {\n        \"path\": \"Checked/basic_test.kicad_sch\",\n        \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n      },\n      {\n        \"path\": \"Checked/custom_ds.kicad_wks\",\n        \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n      },\n      {\n        \"path\": \"Exports/drill/basic_test.drl\",\n        \"sha256\": \"c9c3a3425cf2f17f47cd1892b717d74c18d8b3aa3e1a39b654ff551fa7a54a9b\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-B_Cu.gbr\",\n        \"sha256\": \"46f187ef61094007d76f03edced5c2a5685285f8b4225db4965400d44917ff62\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-B_Mask.gbr\",\n        \"sha256\": \"8aa3822b8f2cb611a4051f8568e34ca5b54e27f1b512060eaf8b5f5ded0c42f9\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-B_Silkscreen.gbr\",\n        \"sha256\": \"bdbbed552c59fcffa8ff9dd45e56ae2bb175eda974902b31ca6449777dc4f56d\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-Edge_Cuts.gbr\",\n        \"sha256\": \"872544d664009d2bb8da472d36cc63046986aa1961e07f0fd2165c9217536a47\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-F_Cu.gbr\",\n        \"sha256\": \"895ce1ce085f3a94cdd86704208f47e42e29c2aebe5a5adfb1f3f6c9c3a292ce\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-F_Mask.gbr\",\n        \"sha256\": \"005489a504106dff0d76396faf3b490d36dff68ce903bab7ef9bccf6a94744cf\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-F_Silkscreen.gbr\",\n        \"sha256\": \"68340a9aaf15bbdba6cde8c78c2e299249e9a699c63b2a8a5ac4414d9a6febe6\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-job.gbrjob\",\n        \"sha256\": \"0f8869010b0a7dd78581c55b70dbfaa8ac33eb8386cec0d099d3e41f01cb4908\"\n      },\n      {\n        \"path\": \"Original/basic_test.kicad_pcb\",\n        \"sha256\": \"f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863\"\n      },\n      {\n        \"path\": \"Original/basic_test.kicad_pro\",\n        \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n      },\n      {\n        \"path\": \"Original/basic_test.kicad_sch\",\n        \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n      },\n      {\n        \"path\": \"Original/custom_ds.kicad_wks\",\n        \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n      }\n    ]\n  },\n  \"files\": [\n    {\n      \"path\": \"Edited/basic_test.kicad_pcb\",\n      \"sha256\": \"f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Edited/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pcb\",\n      \"sha256\": \"5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pro\",\n      \"sha256\": \"ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Original/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Verification/Check.json\",\n      \"sha256\": \"9c07afb4117ece566d4cd0384db49adc8b75e28b99061dec2a981bdf4a1ba37e\"\n    },\n    {\n      \"path\": \"Verification/Checked/basic_test.kicad_pcb\",\n      \"sha256\": \"a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc\"\n    },\n    {\n      \"path\": \"Verification/Checked/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Verification/Checked/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Verification/Checked/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Verification/Exports/drill/basic_test.drl\",\n      \"sha256\": \"c9c3a3425cf2f17f47cd1892b717d74c18d8b3aa3e1a39b654ff551fa7a54a9b\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-B_Cu.gbr\",\n      \"sha256\": \"46f187ef61094007d76f03edced5c2a5685285f8b4225db4965400d44917ff62\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-B_Mask.gbr\",\n      \"sha256\": \"8aa3822b8f2cb611a4051f8568e34ca5b54e27f1b512060eaf8b5f5ded0c42f9\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-B_Silkscreen.gbr\",\n      \"sha256\": \"bdbbed552c59fcffa8ff9dd45e56ae2bb175eda974902b31ca6449777dc4f56d\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-Edge_Cuts.gbr\",\n      \"sha256\": \"872544d664009d2bb8da472d36cc63046986aa1961e07f0fd2165c9217536a47\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-F_Cu.gbr\",\n      \"sha256\": \"895ce1ce085f3a94cdd86704208f47e42e29c2aebe5a5adfb1f3f6c9c3a292ce\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-F_Mask.gbr\",\n      \"sha256\": \"005489a504106dff0d76396faf3b490d36dff68ce903bab7ef9bccf6a94744cf\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-F_Silkscreen.gbr\",\n      \"sha256\": \"68340a9aaf15bbdba6cde8c78c2e299249e9a699c63b2a8a5ac4414d9a6febe6\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-job.gbrjob\",\n      \"sha256\": \"0f8869010b0a7dd78581c55b70dbfaa8ac33eb8386cec0d099d3e41f01cb4908\"\n    },\n    {\n      \"path\": \"Verification/Original/basic_test.kicad_pcb\",\n      \"sha256\": \"f1f47f8051494dbfbb4085b4cbed4b05505eb887d5d8e6fbc215f619f78a5863\"\n    },\n    {\n      \"path\": \"Verification/Original/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Verification/Original/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Verification/Original/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Verification/result.json\",\n      \"sha256\": \"b3d5aa741f21bf0075dad300b27e9f5a8844de9467cc466979a7d659414bd2d5\"\n    },\n    {\n      \"path\": \"input.json\",\n      \"sha256\": \"58375a4867a835a415b906864c0ddd01c0469bdf68e0655725a52bb4449cf0b6\"\n    }\n  ]\n}",
+      "drawing": null,
+      "format": "konnect_report",
+      "job_id": "c0a625e6-15eb-4a7e-a3d2-15c64c3abb36",
+      "project_id": "409e9052-2989-41ed-8d55-d3736120cb35",
+      "scope": "verified_published_result",
+      "sha256": "e23a267ffab5ebb16e86aa2e7ab6532c2d36fcd3663e5fe2dced8fbb344ccc49",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": null
+    },
+    "saved_components": {
+      "components": [
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J1",
+          "rotation_deg": 0.0,
+          "uuid": "1390739f-0b91-4d50-b8ae-92acd725ec51",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 203.34,
+          "y_mm": 155.33
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Package_TO_SOT_SMD:SOT-23-5",
+          "reference": "U1",
+          "rotation_deg": 180.0,
+          "uuid": "46ee94d1-977a-45b0-a3f4-b6f45331a22d",
+          "value": "TLV2371DBV",
+          "x_mm": 201.9,
+          "y_mm": 145.3
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J3",
+          "rotation_deg": 0.0,
+          "uuid": "7cb3954f-ecbc-4d4a-948f-f385aacc2198",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 218.0,
+          "y_mm": 146.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R2",
+          "rotation_deg": -90.0,
+          "uuid": "84d75378-f03e-476c-badf-38e6fb8d9772",
+          "value": "10k",
+          "x_mm": 198.0,
+          "y_mm": 145.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R1",
+          "rotation_deg": 0.0,
+          "uuid": "9ba418c8-2eec-4809-8f5b-d46c1151991e",
+          "value": "10k",
+          "x_mm": 197.0,
+          "y_mm": 141.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J2",
+          "rotation_deg": 0.0,
+          "uuid": "9bcb01a9-2bff-45c9-bb09-f3c9476a6e17",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 193.0,
+          "y_mm": 147.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R3",
+          "rotation_deg": 0.0,
+          "uuid": "cfe1ba2c-d301-4a4b-b0fe-608ede2e0767",
+          "value": "10k",
+          "x_mm": 204.0,
+          "y_mm": 151.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Capacitor_SMD:C_1206_3216Metric",
+          "reference": "C1",
+          "rotation_deg": 0.0,
+          "uuid": "db9388ac-163d-40bc-be40-37f8cd7f2c2a",
+          "value": "10u",
+          "x_mm": 207.5,
+          "y_mm": 145.9
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J4",
+          "rotation_deg": 0.0,
+          "uuid": "f4673e4d-d9f7-4c2a-a854-c35665e7dbd9",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 209.0,
+          "y_mm": 156.6
+        }
+      ],
+      "name": "basic_test.kicad_pcb",
+      "next_offset": null,
+      "offset": 0,
+      "project_id": "409e9052-2989-41ed-8d55-d3736120cb35",
+      "scope": "saved_board_context",
+      "selection": "8edcdb19-46f6-4d14-aa3a-09a794412248",
+      "sha256": "a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc",
+      "source_is_untrusted_data": true,
+      "total": 9,
+      "units": "mm"
+    }
+  },
+  {
+    "proposal": {
+      "human_approval_required": true,
+      "job_id": "cb37eb6b-abe4-4867-901a-8705dc0b34ce",
+      "phase": "awaiting_approval"
+    },
+    "readback": {
+      "checks": {
+        "check": "drc",
+        "errors": 1,
+        "excluded": 0,
+        "ignored_checks": [
+          "missing_courtyard",
+          "track_not_centered_on_via",
+          "tuning_profile_track_geometries",
+          "footprint_filters_mismatch",
+          "pth_inside_courtyard",
+          "npth_inside_courtyard",
+          "footprint_type_mismatch"
+        ],
+        "units": "mils",
+        "warnings": 7
+      },
+      "components": null,
+      "content": "{\n  \"schema_version\": 1,\n  \"job_id\": \"cb37eb6b-abe4-4867-901a-8705dc0b34ce\",\n  \"konnect_version\": \"0.13.0\",\n  \"protocol_version\": \"2025-06-18\",\n  \"verification_input\": {\n    \"schema_version\": 1,\n    \"job_id\": \"cb37eb6b-abe4-4867-901a-8705dc0b34ce\",\n    \"kicad_version\": \"10.0.7\",\n    \"source_root\": \"C:/Users/USER/Documents/GitHub/HazloMX/target/konnect-connector-preflight-e3a74658-2800-4987-be3c-b771827870cf/pcb/.hazlomexa/staging/cb37eb6b-abe4-4867-901a-8705dc0b34ce/Edited\",\n    \"entry\": \"basic_test.kicad_pcb\",\n    \"files\": [\n      {\n        \"path\": \"basic_test.kicad_pcb\",\n        \"sha256\": \"c3d29cd04ae7b703334eae89039c87b114b4524bd095006942c95a893f6ae892\",\n        \"bytes\": 79290\n      },\n      {\n        \"path\": \"basic_test.kicad_pro\",\n        \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\",\n        \"bytes\": 13394\n      },\n      {\n        \"path\": \"basic_test.kicad_sch\",\n        \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\",\n        \"bytes\": 25307\n      },\n      {\n        \"path\": \"custom_ds.kicad_wks\",\n        \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\",\n        \"bytes\": 2516\n      }\n    ],\n    \"units\": \"mils\",\n    \"layers\": [\n      \"F.Cu\",\n      \"B.Cu\",\n      \"F.SilkS\",\n      \"B.SilkS\",\n      \"F.Mask\",\n      \"B.Mask\",\n      \"Edge.Cuts\"\n    ]\n  },\n  \"verification\": {\n    \"schema_version\": 1,\n    \"job_id\": \"cb37eb6b-abe4-4867-901a-8705dc0b34ce\",\n    \"kicad_version\": \"10.0.7\",\n    \"summary\": {\n      \"check\": \"drc\",\n      \"units\": \"mils\",\n      \"errors\": 1,\n      \"warnings\": 7,\n      \"excluded\": 0,\n      \"ignored_checks\": [\n        \"missing_courtyard\",\n        \"track_not_centered_on_via\",\n        \"tuning_profile_track_geometries\",\n        \"footprint_filters_mismatch\",\n        \"pth_inside_courtyard\",\n        \"npth_inside_courtyard\",\n        \"footprint_type_mismatch\"\n      ]\n    },\n    \"files\": [\n      {\n        \"path\": \"Check.json\",\n        \"sha256\": \"0f26d89b2b5667b684f10839fcbbaf73f1f31f1b356700cf7ecd1631814c9b0d\"\n      },\n      {\n        \"path\": \"Checked/basic_test.kicad_pcb\",\n        \"sha256\": \"c6f5745c2dca64ffed10f5db20a8e563a341e332997ba9a9819a64ded358f7e5\"\n      },\n      {\n        \"path\": \"Checked/basic_test.kicad_pro\",\n        \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n      },\n      {\n        \"path\": \"Checked/basic_test.kicad_sch\",\n        \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n      },\n      {\n        \"path\": \"Checked/custom_ds.kicad_wks\",\n        \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n      },\n      {\n        \"path\": \"Exports/drill/basic_test.drl\",\n        \"sha256\": \"45ab59480566bd68c97aaf8365029a75d5472a286bcb0afa4c5ca0d3f625b59c\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-B_Cu.gbr\",\n        \"sha256\": \"8fe97387316703798ca1b57f87815b0052184fe523399f31be8932a41b8f305d\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-B_Mask.gbr\",\n        \"sha256\": \"416f6e9e62639307602df49f8d6edd4741c5857dde67a0f3969ab3349ae5335b\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-B_Silkscreen.gbr\",\n        \"sha256\": \"0008ff429f3669cfd300ce643f027248c23cbb61c7bc7429e14458ebdacb8c91\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-Edge_Cuts.gbr\",\n        \"sha256\": \"5ddf92cc39bb2f29e3c35822b47c3e486aa3445897c7869c6a79135413159f5a\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-F_Cu.gbr\",\n        \"sha256\": \"ff3a34533b90836033c263b867e85f0b82244cb9bb040b8c55962be6c6e7d9dc\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-F_Mask.gbr\",\n        \"sha256\": \"b6e201d5283e782b3225cec35b9b9bce3bc50e2c5d3b777a70545221719621a4\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-F_Silkscreen.gbr\",\n        \"sha256\": \"64f53f0c7b65df0bc5e46ef9e0f5637b7751e385c1319d2b43696a72fa702e9d\"\n      },\n      {\n        \"path\": \"Exports/gerbers/basic_test-job.gbrjob\",\n        \"sha256\": \"586e8982be215572b02872cf8c3c7cda02c21b774400a3e90616de0375eecb82\"\n      },\n      {\n        \"path\": \"Original/basic_test.kicad_pcb\",\n        \"sha256\": \"c3d29cd04ae7b703334eae89039c87b114b4524bd095006942c95a893f6ae892\"\n      },\n      {\n        \"path\": \"Original/basic_test.kicad_pro\",\n        \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n      },\n      {\n        \"path\": \"Original/basic_test.kicad_sch\",\n        \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n      },\n      {\n        \"path\": \"Original/custom_ds.kicad_wks\",\n        \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n      }\n    ]\n  },\n  \"files\": [\n    {\n      \"path\": \"Edited/basic_test.kicad_pcb\",\n      \"sha256\": \"c3d29cd04ae7b703334eae89039c87b114b4524bd095006942c95a893f6ae892\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Edited/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Edited/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pcb\",\n      \"sha256\": \"a8997d312a02a147810347ac6e6e22d16aa473abfe302a92ae8faf6e0ae753fc\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Original/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Original/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Verification/Check.json\",\n      \"sha256\": \"0f26d89b2b5667b684f10839fcbbaf73f1f31f1b356700cf7ecd1631814c9b0d\"\n    },\n    {\n      \"path\": \"Verification/Checked/basic_test.kicad_pcb\",\n      \"sha256\": \"c6f5745c2dca64ffed10f5db20a8e563a341e332997ba9a9819a64ded358f7e5\"\n    },\n    {\n      \"path\": \"Verification/Checked/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Verification/Checked/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Verification/Checked/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Verification/Exports/drill/basic_test.drl\",\n      \"sha256\": \"45ab59480566bd68c97aaf8365029a75d5472a286bcb0afa4c5ca0d3f625b59c\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-B_Cu.gbr\",\n      \"sha256\": \"8fe97387316703798ca1b57f87815b0052184fe523399f31be8932a41b8f305d\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-B_Mask.gbr\",\n      \"sha256\": \"416f6e9e62639307602df49f8d6edd4741c5857dde67a0f3969ab3349ae5335b\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-B_Silkscreen.gbr\",\n      \"sha256\": \"0008ff429f3669cfd300ce643f027248c23cbb61c7bc7429e14458ebdacb8c91\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-Edge_Cuts.gbr\",\n      \"sha256\": \"5ddf92cc39bb2f29e3c35822b47c3e486aa3445897c7869c6a79135413159f5a\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-F_Cu.gbr\",\n      \"sha256\": \"ff3a34533b90836033c263b867e85f0b82244cb9bb040b8c55962be6c6e7d9dc\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-F_Mask.gbr\",\n      \"sha256\": \"b6e201d5283e782b3225cec35b9b9bce3bc50e2c5d3b777a70545221719621a4\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-F_Silkscreen.gbr\",\n      \"sha256\": \"64f53f0c7b65df0bc5e46ef9e0f5637b7751e385c1319d2b43696a72fa702e9d\"\n    },\n    {\n      \"path\": \"Verification/Exports/gerbers/basic_test-job.gbrjob\",\n      \"sha256\": \"586e8982be215572b02872cf8c3c7cda02c21b774400a3e90616de0375eecb82\"\n    },\n    {\n      \"path\": \"Verification/Original/basic_test.kicad_pcb\",\n      \"sha256\": \"c3d29cd04ae7b703334eae89039c87b114b4524bd095006942c95a893f6ae892\"\n    },\n    {\n      \"path\": \"Verification/Original/basic_test.kicad_pro\",\n      \"sha256\": \"8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da\"\n    },\n    {\n      \"path\": \"Verification/Original/basic_test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"Verification/Original/custom_ds.kicad_wks\",\n      \"sha256\": \"45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077\"\n    },\n    {\n      \"path\": \"Verification/result.json\",\n      \"sha256\": \"0094e8dc0bc0dda2f7e37ee30ba35a1709aca627d661a4f2d9d9a2d8b7a35b6d\"\n    },\n    {\n      \"path\": \"input.json\",\n      \"sha256\": \"9de9befcd6eb3189f5f0adedc14c17c3c43bc25d9a0f4fb0dab7518d77502bc0\"\n    }\n  ]\n}",
+      "drawing": null,
+      "format": "konnect_report",
+      "job_id": "cb37eb6b-abe4-4867-901a-8705dc0b34ce",
+      "project_id": "409e9052-2989-41ed-8d55-d3736120cb35",
+      "scope": "verified_published_result",
+      "sha256": "11558cd5e312f18a20c615bff87e9dfc1e9e1d2e62462a5f7a8cdbfa457b34a5",
+      "slicing": null,
+      "source_is_untrusted_data": true,
+      "source_name": null
+    },
+    "saved_components": {
+      "components": [
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J1",
+          "rotation_deg": 0.0,
+          "uuid": "1390739f-0b91-4d50-b8ae-92acd725ec51",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 205.0,
+          "y_mm": 155.33
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Package_TO_SOT_SMD:SOT-23-5",
+          "reference": "U1",
+          "rotation_deg": 180.0,
+          "uuid": "46ee94d1-977a-45b0-a3f4-b6f45331a22d",
+          "value": "TLV2371DBV",
+          "x_mm": 201.9,
+          "y_mm": 145.3
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J3",
+          "rotation_deg": 0.0,
+          "uuid": "7cb3954f-ecbc-4d4a-948f-f385aacc2198",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 218.0,
+          "y_mm": 146.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R2",
+          "rotation_deg": -90.0,
+          "uuid": "84d75378-f03e-476c-badf-38e6fb8d9772",
+          "value": "10k",
+          "x_mm": 198.0,
+          "y_mm": 145.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R1",
+          "rotation_deg": 0.0,
+          "uuid": "9ba418c8-2eec-4809-8f5b-d46c1151991e",
+          "value": "10k",
+          "x_mm": 197.0,
+          "y_mm": 141.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J2",
+          "rotation_deg": 0.0,
+          "uuid": "9bcb01a9-2bff-45c9-bb09-f3c9476a6e17",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 193.0,
+          "y_mm": 147.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Resistor_SMD:R_1206_3216Metric",
+          "reference": "R3",
+          "rotation_deg": 0.0,
+          "uuid": "cfe1ba2c-d301-4a4b-b0fe-608ede2e0767",
+          "value": "10k",
+          "x_mm": 204.0,
+          "y_mm": 151.0
+        },
+        {
+          "layer": "F.Cu",
+          "library": "Capacitor_SMD:C_1206_3216Metric",
+          "reference": "C1",
+          "rotation_deg": 0.0,
+          "uuid": "db9388ac-163d-40bc-be40-37f8cd7f2c2a",
+          "value": "10u",
+          "x_mm": 207.5,
+          "y_mm": 145.9
+        },
+        {
+          "layer": "F.Cu",
+          "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+          "reference": "J4",
+          "rotation_deg": 0.0,
+          "uuid": "f4673e4d-d9f7-4c2a-a854-c35665e7dbd9",
+          "value": "Conn_01x01_Pin",
+          "x_mm": 209.0,
+          "y_mm": 156.6
+        }
+      ],
+      "name": "basic_test.kicad_pcb",
+      "next_offset": null,
+      "offset": 0,
+      "project_id": "409e9052-2989-41ed-8d55-d3736120cb35",
+      "scope": "saved_board_context",
+      "selection": "8edcdb19-46f6-4d14-aa3a-09a794412248",
+      "sha256": "c6f5745c2dca64ffed10f5db20a8e563a341e332997ba9a9819a64ded358f7e5",
+      "source_is_untrusted_data": true,
+      "total": 9,
+      "units": "mm"
+    }
+  }
+]

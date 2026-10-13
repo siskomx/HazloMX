@@ -1,0 +1,14 @@
+[
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\debug\\hazlomexa.exe",
+    "Hash": "2BE20E0F1D4B311CF5D3CC70E39826FEF12DA019996CACBD026EC72F2927746E"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src\\main.ts",
+    "Hash": "2220E117C8D93BF3706C4FE10EBFD0C7DFABF6F2442388DFCF2AFDCBBFE4B1F7"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\native-smoke.mjs",
+    "Hash": "E280E3475E1AE07AEB9724B3DCA676CE8B04AAE28216F2A23E475E70018CCC91"
+  }
+]

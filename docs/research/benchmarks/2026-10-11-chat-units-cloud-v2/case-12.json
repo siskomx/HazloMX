@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "ambiguous_order",
+  "result": {
+    "proposal": {
+      "message": "¿Cómo quieres asignar largo, ancho y alto a las medidas 10, 20 y 30 mm? Por ejemplo, ¿largo 30, ancho 20 y alto 10 mm?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 1.1271529
+}

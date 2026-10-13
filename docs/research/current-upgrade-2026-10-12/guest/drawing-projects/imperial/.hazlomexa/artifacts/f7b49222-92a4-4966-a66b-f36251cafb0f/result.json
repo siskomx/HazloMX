@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "job_id": "f7b49222-92a4-4966-a66b-f36251cafb0f",
+  "cadcraft_version": "0.5.0",
+  "source_sha256": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7",
+  "output_sha256": "3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad",
+  "preview_sha256": "46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4",
+  "output_summary": {
+    "entity_count": 2,
+    "counts": {
+      "Circle": 2
+    },
+    "extents": [
+      [
+        -10.0,
+        -10.0
+      ],
+      [
+        32.0,
+        10.0
+      ]
+    ]
+  },
+  "warnings": [],
+  "circle_readback": {
+    "before_matches": 0,
+    "edited_matches": 1,
+    "final_matches": 1
+  }
+}

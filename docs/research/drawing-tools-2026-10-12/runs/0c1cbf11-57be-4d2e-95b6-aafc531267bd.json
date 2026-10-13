@@ -1,0 +1,52 @@
+{
+  "schema_version": 5,
+  "project_id": "824e0bec-03d4-4127-9884-b6cd8ea5c004",
+  "input": {
+    "schema_version": 2,
+    "job_id": "0c1cbf11-57be-4d2e-95b6-aafc531267bd",
+    "cadcraft_version": "0.5.0",
+    "source_name": "metric.dxf",
+    "source_format": "dxf",
+    "source_sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982",
+    "output_format": "dxf",
+    "units": "mm",
+    "circle": {
+      "center": [
+        30.0,
+        0.0
+      ],
+      "radius": 2.0
+    },
+    "allow_loss": false,
+    "original_summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/0c1cbf11-57be-4d2e-95b6-aafc531267bd",
+    "created_unix_ms": 1791838105342,
+    "updated_unix_ms": 1791838109085,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

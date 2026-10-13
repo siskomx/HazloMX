@@ -1,0 +1,15 @@
+{
+  "runtime_gate_passed": true,
+  "application_implemented": false,
+  "authenticode_exe": "NotSigned",
+  "authenticode_dll": "NotSigned",
+  "version_resources_present": false,
+  "source_commit": "8500fcdccaa10b5099ac20d252af3a7c560046f1",
+  "source_sha256": "777ec1f25d37f535af30fa9a4c549ad4334ae9efae377502fa19a2cb4794b162",
+  "printer_connected": false,
+  "source_hashes": {
+    "tests\\orca\\provision_runtime.py": "bf860cf3a51b1b9aacfa431faa6099a02a9d94ad1b36db68b276eab2b25746e9",
+    "tests\\orca\\runtime_probe.py": "163003f153346f4677f1bb4072b45a3eb949827a6be6088c79f9eed4fe6d2f80",
+    "tests\\orca\\slice_probe.py": "049d41f66647fc98dbf52cd0b6aee702f947e4fc88699422c3d1442bc39e9cff"
+  }
+}

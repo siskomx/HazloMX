@@ -1,0 +1,305 @@
+[
+  {
+    "args": [
+      "version"
+    ],
+    "exit_code": 0,
+    "stdout": "10.0.7\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "sch",
+      "erc",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout": "Usage: sch erc [--help] [--output OUTPUT_FILE] [--define-var KEY=VALUE]... [--format VAR] [--units VAR] [--severity-all] [--severity-error] [--severity-warning] [--severity-exclusions] [--exit-code-violations] INPUT_FILE\r\n\r\nRuns the Electrical Rules Check (ERC) on the schematic and creates a report\r\n\r\nPositional arguments:\r\n  INPUT_FILE              Input file \r\n\r\nOptional arguments:\r\n  -h, --help              Shows help message and exits \r\n  -o, --output            Output file [nargs=0..1] [default: \"\"]\r\n  -D, --define-var        Overrides or adds project variables, can be used multiple times to declare multiple variables.\r\n                          Use in the format of '--define-var key=value' or '-D key=value' [nargs=0..1] [default: {}] [may be repeated]\r\n  --format                Output file format, options: json, report [nargs=0..1] [default: \"report\"]\r\n  --units                 Report units; valid options: in, mm, mils [nargs=0..1] [default: \"mm\"]\r\n  --severity-all          Report all ERC violations, this is equivalent to including all the other severity arguments \r\n  --severity-error        Report all ERC error level violations, this can be combined with the other severity arguments \r\n  --severity-warning      Report all ERC warning level violations, this can be combined with the other severity arguments \r\n  --severity-exclusions   Report all excluded ERC violations, this can be combined with the other severity arguments \r\n  --exit-code-violations  Return a nonzero exit code if ERC violations exist \r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "drc",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout": "Usage: pcb drc [--help] [--output OUTPUT_FILE] [--define-var KEY=VALUE]... [--format FORMAT] [--all-track-errors] [--schematic-parity] [--units UNITS] [--severity-all] [--severity-error] [--severity-warning] [--severity-exclusions] [--exit-code-violations] [--refill-zones] [--save-board] INPUT_FILE\r\n\r\nRuns the Design Rules Check (DRC) on the PCB and creates a report\r\n\r\nPositional arguments:\r\n  INPUT_FILE              Input file \r\n\r\nOptional arguments:\r\n  -h, --help              Shows help message and exits \r\n  -o, --output            Output file [nargs=0..1] [default: \"\"]\r\n  -D, --define-var        Overrides or adds project variables, can be used multiple times to declare multiple variables.\r\n                          Use in the format of '--define-var key=value' or '-D key=value' [nargs=0..1] [default: {}] [may be repeated]\r\n  --format                Output file format, options: json, report [nargs=0..1] [default: \"report\"]\r\n  --all-track-errors      Report all errors for each track \r\n  --schematic-parity      Test for parity between PCB and schematic \r\n  --units                 Report units; valid options: in, mm, mils [nargs=0..1] [default: \"mm\"]\r\n  --severity-all          Report all DRC violations, this is equivalent to including all the other severity arguments \r\n  --severity-error        Report all DRC error level violations, this can be combined with the other severity arguments \r\n  --severity-warning      Report all DRC warning level violations, this can be combined with the other severity arguments \r\n  --severity-exclusions   Report all excluded DRC violations, this can be combined with the other severity arguments \r\n  --exit-code-violations  Return a nonzero exit code if DRC violations exist \r\n  --refill-zones          Refill zones before running DRC \r\n  --save-board            Save the board after DRC, must be used with --refill-zones \r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "sch",
+      "export",
+      "pdf",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout": "Usage: export pdf [--help] [--output OUTPUT_FILE] [--drawing-sheet SHEET_PATH] [--define-var KEY=VALUE]... [--variant VAR]... [--theme THEME_NAME] [--black-and-white] [--exclude-drawing-sheet] [--default-font VAR] [--draw-hop-over] [--exclude-pdf-property-popups] [--exclude-pdf-hierarchical-links] [--exclude-pdf-metadata] [--no-background-color] [--pages PAGE_LIST] INPUT_FILE\r\n\r\nExport PDF\r\n\r\nPositional arguments:\r\n  INPUT_FILE                        Input file \r\n\r\nOptional arguments:\r\n  -h, --help                        Shows help message and exits \r\n  -o, --output                      Output file [nargs=0..1] [default: \"\"]\r\n  --drawing-sheet                   Path to drawing sheet, this overrides any existing project defined sheet when used [nargs=0..1] [default: \"\"]\r\n  -D, --define-var                  Overrides or adds project variables, can be used multiple times to declare multiple variables.\r\n                                    Use in the format of '--define-var key=value' or '-D key=value' [nargs=0..1] [default: {}] [may be repeated]\r\n  --variant                         The variant name(s) to output, can be used multiple times to specify multiple variants.\r\n                                    When specifying multiple variants, use ${VARIANT} in the output path to generate separate files for each variant.\r\n                                    When no --variant argument is provided, the default variant is output. [nargs=0..1] [default: {}] [may be repeated]\r\n  -t, --theme                       Color theme to use (will default to schematic settings) [nargs=0..1] [default: \"\"]\r\n  -b, --black-and-white             Black and white only \r\n  -e, --exclude-drawing-sheet       No drawing sheet \r\n  --default-font                    Default font name [nargs=0..1] [default: \"\"]\r\n  --draw-hop-over                   Draw hop over at wire crossings \r\n  --exclude-pdf-property-popups     Do not generate property popups in PDF \r\n  --exclude-pdf-hierarchical-links  Do not generate clickable links for hierarchical elements in PDF \r\n  --exclude-pdf-metadata            Do not generate PDF metadata from AUTHOR and SUBJECT variables \r\n  -n, --no-background-color         Avoid setting a background color (regardless of theme) \r\n  --pages                           List of page numbers separated by comma to print, blank or unspecified is equivalent to all pages [nargs=0..1] [default: \"\"]\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "sch",
+      "export",
+      "netlist",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout": "Usage: export netlist [--help] [--output OUTPUT_FILE] [--variant VAR]... [--format FORMAT] INPUT_FILE\r\n\r\nExport a netlist\r\n\r\nPositional arguments:\r\n  INPUT_FILE    Input file \r\n\r\nOptional arguments:\r\n  -h, --help    Shows help message and exits \r\n  -o, --output  Output file [nargs=0..1] [default: \"\"]\r\n  --variant     The variant name(s) to output, can be used multiple times to specify multiple variants.\r\n                When specifying multiple variants, use ${VARIANT} in the output path to generate separate files for each variant.\r\n                When no --variant argument is provided, the default variant is output. [nargs=0..1] [default: {}] [may be repeated]\r\n  --format      Netlist output format, valid options: kicadsexpr, kicadxml, cadstar, orcadpcb2, spice, spicemodel, pads, allegro [nargs=0..1] [default: \"kicadsexpr\"]\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "export",
+      "gerbers",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout": "Usage: export gerbers [--help] [--output OUTPUT_DIR] [--layers LAYER_LIST] [--common-layers COMMON_LAYER_LIST] [--drawing-sheet SHEET_PATH] [--define-var KEY=VALUE]... [--exclude-refdes] [--exclude-value] [--include-border-title] [--sketch-pads-on-fab-layers] [--hide-DNP-footprints-on-fab-layers] [--sketch-DNP-footprints-on-fab-layers] [--crossout-DNP-footprints-on-fab-layers] [--no-x2] [--no-netlist] [--subtract-soldermask] [--disable-aperture-macros] [--use-drill-file-origin] [--precision PRECISION] [--no-protel-ext] [--check-zones] [--variant VAR]... [--board-plot-params] INPUT_FILE\r\n\r\nPlot multiple Gerbers for a PCB, including the ability to use stored board plot settings\r\n\r\nPositional arguments:\r\n  INPUT_FILE                                       Input file \r\n\r\nOptional arguments:\r\n  -h, --help                                       Shows help message and exits \r\n  -o, --output                                     Output directory [nargs=0..1] [default: \"\"]\r\n  -l, --layers                                     Comma separated list of untranslated layer names to include such as F.Cu,B.Cu [nargs=0..1] [default: \"\"]\r\n  --cl, --common-layers                            Layers to include on each plot, comma separated list of untranslated layer names to include such as F.Cu,B.Cu [nargs=0..1] [default: \"\"]\r\n  --drawing-sheet                                  Path to drawing sheet, this overrides any existing project defined sheet when used [nargs=0..1] [default: \"\"]\r\n  -D, --define-var                                 Overrides or adds project variables, can be used multiple times to declare multiple variables.\r\n                                                   Use in the format of '--define-var key=value' or '-D key=value' [nargs=0..1] [default: {}] [may be repeated]\r\n  --erd, --exclude-refdes                          Exclude the reference designator text \r\n  --ev, --exclude-value                            Exclude the value text \r\n  --ibt, --include-border-title                    Include the border and title block \r\n  --sp, --sketch-pads-on-fab-layers                Draw pad outlines and their numbers on front and back fab layers \r\n  --hdnp, --hide-DNP-footprints-on-fab-layers      Don't plot text & graphics of DNP footprints on fab layers \r\n  --sdnp, --sketch-DNP-footprints-on-fab-layers    Plot graphics of DNP footprints in sketch mode on fab layers \r\n  --cdnp, --crossout-DNP-footprints-on-fab-layers  Plot an 'X' over the courtyard of DNP footprints on fab layers, and strikeout their reference designators \r\n  --no-x2                                          Do not use the extended X2 format \r\n  --no-netlist                                     Do not generate netlist attributes \r\n  --subtract-soldermask                            Subtract soldermask from silkscreen \r\n  --disable-aperture-macros                        Disable aperture macros \r\n  --use-drill-file-origin                          Use drill/place file origin \r\n  --precision                                      Precision of Gerber coordinates, valid options: 5 or 6 [nargs=0..1] [default: 6]\r\n  --no-protel-ext                                  Use KiCad Gerber file extension \r\n  --check-zones                                    Check and refill zones if required \r\n  --variant                                        The variant name(s) to output, can be used multiple times to specify multiple variants.\r\n                                                   When specifying multiple variants, use ${VARIANT} in the output path to generate separate files for each variant.\r\n                                                   When no --variant argument is provided, the default variant is output. [nargs=0..1] [default: {}] [may be repeated]\r\n  --board-plot-params                              Use the Gerber plot settings already configured in the board file \r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "export",
+      "drill",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout": "Usage: export drill [--help] [--output OUTPUT_DIR] [--format FORMAT] [--drill-origin DRILL_ORIGIN] [--excellon-zeros-format ZEROS_FORMAT] [--excellon-oval-format OVAL_FORMAT] [--excellon-units UNITS] [--excellon-mirror-y] [--excellon-min-header] [--excellon-separate-th] [--generate-map] [--generate-report] [--report-path REPORT_FILE] [--generate-tenting] [--map-format MAP_FORMAT] [--gerber-precision VAR] INPUT_FILE\r\n\r\nGenerate Drill Files\r\n\r\nPositional arguments:\r\n  INPUT_FILE               Input file \r\n\r\nOptional arguments:\r\n  -h, --help               Shows help message and exits \r\n  -o, --output             Output directory [nargs=0..1] [default: \"\"]\r\n  --format                 Valid options excellon, gerber. [nargs=0..1] [default: \"excellon\"]\r\n  --drill-origin           Valid options are: absolute, plot [nargs=0..1] [default: \"absolute\"]\r\n  --excellon-zeros-format  Valid options are: decimal, suppressleading, suppresstrailing, keep. [nargs=0..1] [default: \"decimal\"]\r\n  --excellon-oval-format   Valid options are: route, alternate. [nargs=0..1] [default: \"alternate\"]\r\n  -u, --excellon-units     Output units, valid options: in, mm [nargs=0..1] [default: \"mm\"]\r\n  --excellon-mirror-y      Mirror Y axis \r\n  --excellon-min-header    Minimal header \r\n  --excellon-separate-th   Generate independent files for NPTH and PTH holes \r\n  --generate-map           Generate map / summary of drill hits \r\n  --generate-report        Generate report of drill hits \r\n  --report-path            Report output file path [nargs=0..1] [default: \"\"]\r\n  --generate-tenting       Generate a file specifically for tenting \r\n  --map-format             Valid options: pdf, gerberx2, ps, dxf, svg [nargs=0..1] [default: \"pdf\"]\r\n  --gerber-precision       Precision of Gerber coordinates (5 or 6) [nargs=0..1] [default: 6]\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "sch",
+      "erc",
+      "--format",
+      "json",
+      "--units",
+      "mm",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\erc-mm.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_sch"
+    ],
+    "exit_code": 5,
+    "stdout": "Found 3 violations\r\nSaved ERC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/erc-mm.json\r\n",
+    "stderr": "Fontconfig error: Cannot load default config file: No such file: (null)\r\nFontconfig error: \"memory\", line 2: SHGetFolderPathA failed\r\nFontconfig error: \"memory\", line 3: SHGetFolderPathA failed\r\n"
+  },
+  {
+    "args": [
+      "sch",
+      "erc",
+      "--format",
+      "json",
+      "--units",
+      "in",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\erc-in.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_sch"
+    ],
+    "exit_code": 5,
+    "stdout": "Found 3 violations\r\nSaved ERC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/erc-in.json\r\n",
+    "stderr": "Fontconfig error: Cannot load default config file: No such file: (null)\r\nFontconfig error: \"memory\", line 2: SHGetFolderPathA failed\r\nFontconfig error: \"memory\", line 3: SHGetFolderPathA failed\r\n"
+  },
+  {
+    "args": [
+      "sch",
+      "erc",
+      "--format",
+      "json",
+      "--units",
+      "mils",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\erc-mils.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_sch"
+    ],
+    "exit_code": 5,
+    "stdout": "Found 3 violations\r\nSaved ERC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/erc-mils.json\r\n",
+    "stderr": "Fontconfig error: Cannot load default config file: No such file: (null)\r\nFontconfig error: \"memory\", line 2: SHGetFolderPathA failed\r\nFontconfig error: \"memory\", line 3: SHGetFolderPathA failed\r\n"
+  },
+  {
+    "args": [
+      "pcb",
+      "drc",
+      "--format",
+      "json",
+      "--units",
+      "mm",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\drc-mm.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_pcb"
+    ],
+    "exit_code": 5,
+    "stdout": "Found 5 violations\r\nFound 0 unconnected items\r\nSaved DRC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/drc-mm.json\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "drc",
+      "--format",
+      "json",
+      "--units",
+      "in",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\drc-in.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_pcb"
+    ],
+    "exit_code": 5,
+    "stdout": "Found 5 violations\r\nFound 0 unconnected items\r\nSaved DRC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/drc-in.json\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "drc",
+      "--format",
+      "json",
+      "--units",
+      "mils",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\drc-mils.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_pcb"
+    ],
+    "exit_code": 5,
+    "stdout": "Found 5 violations\r\nFound 0 unconnected items\r\nSaved DRC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/drc-mils.json\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "drc",
+      "--format",
+      "json",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\shorted.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\shorted.kicad_pcb"
+    ],
+    "exit_code": 5,
+    "stdout": "Found 9 violations\r\nFound 1 unconnected items\r\nSaved DRC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/shorted.json\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "sch",
+      "erc",
+      "--format",
+      "json",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\clean-erc.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\clean.kicad_sch"
+    ],
+    "exit_code": 0,
+    "stdout": "Found 0 violations\r\nSaved ERC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/clean-erc.json\r\n",
+    "stderr": "Fontconfig error: Cannot load default config file: No such file: (null)\r\nFontconfig error: \"memory\", line 2: SHGetFolderPathA failed\r\nFontconfig error: \"memory\", line 3: SHGetFolderPathA failed\r\n"
+  },
+  {
+    "args": [
+      "pcb",
+      "drc",
+      "--format",
+      "json",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\clean-drc.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\clean.kicad_pcb"
+    ],
+    "exit_code": 0,
+    "stdout": "Found 0 violations\r\nFound 0 unconnected items\r\nSaved DRC Report to C:/Users/USER/Documents/GitHub/HazloMX/target/kicad-probe/run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8/clean-drc.json\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "sch",
+      "export",
+      "pdf",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\schematic.pdf",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_sch"
+    ],
+    "exit_code": 0,
+    "stdout": "Plotted to 'C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\schematic.pdf'.\r\nDone.\r\n",
+    "stderr": "Fontconfig error: Cannot load default config file: No such file: (null)\r\nFontconfig error: \"memory\", line 2: SHGetFolderPathA failed\r\nFontconfig error: \"memory\", line 3: SHGetFolderPathA failed\r\n"
+  },
+  {
+    "args": [
+      "sch",
+      "export",
+      "netlist",
+      "--format",
+      "kicadxml",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\netlist.xml",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_sch"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "Fontconfig error: Cannot load default config file: No such file: (null)\r\nFontconfig error: \"memory\", line 2: SHGetFolderPathA failed\r\nFontconfig error: \"memory\", line 3: SHGetFolderPathA failed\r\n"
+  },
+  {
+    "args": [
+      "pcb",
+      "export",
+      "gerbers",
+      "--no-protel-ext",
+      "--layers",
+      "F.Cu,B.Cu,Edge.Cuts",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\gerbers\\",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_pcb"
+    ],
+    "exit_code": 0,
+    "stdout": "Plotted to 'C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\gerbers\\basic_test-F_Cu.gbr'.\r\nPlotted to 'C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\gerbers\\basic_test-B_Cu.gbr'.\r\nPlotted to 'C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\gerbers\\basic_test-Edge_Cuts.gbr'.\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "export",
+      "drill",
+      "--format",
+      "excellon",
+      "--excellon-units",
+      "mm",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\drill\\",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\basic_test.kicad_pcb"
+    ],
+    "exit_code": 0,
+    "stdout": "Created file 'C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\drill\\basic_test.drl'\r\nDone.\r\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "pcb",
+      "drc",
+      "--format",
+      "json",
+      "--output",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\bad-report.json",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\bad.kicad_pcb"
+    ],
+    "exit_code": 3,
+    "stdout": "",
+    "stderr": "Failed to load board: Expecting ''('' in 'C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\kicad-probe\\run-f28e8b1b-2bf3-4fa6-be3d-18133aa98ce8\\source\\bad.kicad_pcb', line 1, offset 1.\r\n"
+  }
+]

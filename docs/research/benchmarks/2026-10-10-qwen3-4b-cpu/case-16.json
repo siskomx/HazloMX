@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "too_large",
+  "result": {
+    "proposal": {
+      "message": "El largo proporcionado es 201 mm, que excede el límite máximo de 200 mm. Por favor, corrige la medida del largo.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 7.791876
+}

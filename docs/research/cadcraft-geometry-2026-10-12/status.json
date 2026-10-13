@@ -1,0 +1,22 @@
+{
+  "actual_runtime_gates_passed": 3,
+  "runtime_seconds": 44.51,
+  "regular_rust_tests_passed": 92,
+  "separately_ignored_runtime_gates": 30,
+  "clippy": "pass",
+  "desktop_helper_build": "pass",
+  "adapter_root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-cadcraft-ab1cc64b-ad25-41a1-92f4-bd1bfcce78d8",
+  "workflow_root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-drawing-workflow-7a1407b7-53b1-407f-8f25-82eee3b6be81\\project",
+  "published_schema2_jobs": [
+    "226a1dcd-fcab-48cb-9854-0de813ab50c2"
+  ],
+  "published_and_paginated_artifacts_hash_match": true,
+  "native_desktop_schema2_run": "not_checked",
+  "source_sha256": {
+    "apps/desktop/src-tauri/src/cadcraft.rs": "864cdde79306867a540d199e5df8442c9214b82da01011e472eec16c5835a7f7",
+    "tests/cadcraft/verify_app.py": "4b87a1118c83966d6651b3527581108c80f0a926cbd39f36f5850501974272f6",
+    "target/debug/hazlomexa.exe": "2f2c11a4b21965041d9b012557affd66381b19938bd530076ef98b814ab3b6b6",
+    "target/debug/hazlomexa-tools.exe": "0d43e5bfe91e3d088afd41c8e07cab832882886e8826994a7d51208a0d2392b2"
+  },
+  "scope": "requested circle center/radius multiplicity only; other geometry and complete property fidelity not certified"
+}

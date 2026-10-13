@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "actual_konnect_owned_process_cancellation",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "fixtures": [
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-a54d0f52-c653-41ec-b073-43b4b6b7719d",
+    "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-e1d05176-a05d-4f48-ad8f-7c1e836f533d"
+  ],
+  "source_hashes": {
+    "apps/desktop/src-tauri/src/jobs.rs": "210f0d25651eb6ab6273e1f2a2cdb2116e20c7b99c6a930ebecd919249990e7a",
+    "apps/desktop/src-tauri/src/process.rs": "9746ef2e7b3281201791bc0c84dea0df6906b4e3c9e697ef744a424fe9479cf8",
+    "apps/desktop/src-tauri/src/konnect_run.rs": "8efcd72ebe63c4aa0bc361c19b34b8b0d3d7034e2813fff3038e8d8b5ee02555",
+    "apps/desktop/src-tauri/src/konnect_pcb.rs": "5d0920ebe4f42dc00ec1697a7be8f6dce747d10101ca0c95fb8ba9d87195e779",
+    "apps/desktop/src-tauri/src/project.rs": "1d3629990c6f1889e6d0d308455382da7ac990a8be3f044c4e6427af76d4ae2d",
+    "Cargo.lock": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4",
+    "tests/konnect/verify_cancellation.py": "f9785e8b6fba923465c9d947a1ff3deed2500df8fcbfd0b3c12ad0ad8d6e1849"
+  },
+  "runtime_hashes": {
+    "target\\konnect-probe\\runtime\\konnect.exe": "09969ec5f05600039e206acedb0b6b785528f1bced2dbe2c7f426483013e4f2c",
+    "target\\kicad-probe\\runtime\\bin\\kicad-cli.exe": "cbd8197dd1f46b9a956f3d7973edc9a6a97960298731448ae9142dffe47abc7a"
+  },
+  "native_ui_verified": false,
+  "initialized_tool_call_cancellation_verified": false,
+  "full_deadlines_verified": false
+}

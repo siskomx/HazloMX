@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "job_id": "ca743823-db6d-4393-a983-bad73ba7fedc",
+  "kicad_version": "10.0.7",
+  "summary": {
+    "check": "erc",
+    "units": "in",
+    "errors": 2,
+    "warnings": 1,
+    "excluded": 0,
+    "ignored_checks": [
+      "single_global_label",
+      "four_way_junction",
+      "footprint_link_issues",
+      "footprint_filter"
+    ]
+  },
+  "files": [
+    {
+      "path": "Check.json",
+      "sha256": "d49a9f66bdcc0959711d55d4c11662dc2b2c6db76d9aac972ae11d91c91a48c2"
+    },
+    {
+      "path": "Checked/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Checked/basic_test.kicad_pro",
+      "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+    },
+    {
+      "path": "Checked/basic_test.kicad_sch",
+      "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+    },
+    {
+      "path": "Checked/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "Exports/Netlist.xml",
+      "sha256": "c437cc7f60e4186a32837edf3bc8cf8be3a2c8be77e67b31f5e4112c0a991fa4"
+    },
+    {
+      "path": "Exports/Schematic.pdf",
+      "sha256": "743ca226781ae16837bebc108895ce7121905d1ba680e9def44405f1dfbcf715"
+    },
+    {
+      "path": "Original/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Original/basic_test.kicad_pro",
+      "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+    },
+    {
+      "path": "Original/basic_test.kicad_sch",
+      "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+    },
+    {
+      "path": "Original/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    }
+  ]
+}

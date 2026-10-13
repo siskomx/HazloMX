@@ -1,0 +1,13 @@
+{
+  "installer_sha256": "d8c54f69d8aa508126c86b22ecc4d455b785834c83882817de83ab3c5a738782",
+  "app_sha256": "cceb1193de528ce8524ada982a6c668e685fe40e6e377faf7858e69dcd78a9c8",
+  "unbundled_app_sha256": "f79b6d4b6902c7ec04979cdff7fc69de60a7af78cbdd7020c191d536a01365a3",
+  "bundle_marker": "NSS",
+  "helper_sha256": "5606ee741f472986799db6cb69c57a96d38f77ce67fe95caa7f7cd90f53a7acc",
+  "harness_sha256": "bfbd6f96d0d7c37a7a9bcbe27a09cd81316b609c367a98d426529dcf1bb946e4",
+  "version": "0.1.0",
+  "tool_count": 15,
+  "networking": "enabled",
+  "cadcraft_cli_sha256": "d9517678cf9216a63ecb7f4adfe4ab485af9541849d465245251bba91845724f",
+  "drawing_harness_sha256": "450c66630ac7d3eb727708198d832bedf05e77aad9d11fd79eb1aaef36636d37"
+}

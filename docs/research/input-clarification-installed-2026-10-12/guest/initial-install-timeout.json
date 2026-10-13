@@ -1,0 +1,9 @@
+﻿{
+    "previous_installer_sha256":  "33e45402ad0c33b06b78a32ce7a1d50b755cdb3d5874fe4f629e1d4c0c9a5276",
+    "installer_sha256":  "ab43ac2a00ec0d231038dca58a3b0011e6fd77378117dbc047899b2b6a598c8e",
+    "pass":  false,
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "error":  "Owned process timed out: C:\\HazloProbe\\input\\previous-setup.exe",
+    "stage":  "failed",
+    "user":  "WDAGUtilityAccount"
+}

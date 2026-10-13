@@ -1,0 +1,22 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "8EFCD72EBE63C4AA0BC361C19B34B8B0D3D7034E2813FFF3038E8D8B5EE02555",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\src\\konnect_run.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "EC3388829702D1225B2B36AE2546D63440B861926FE5AE5AB6AF743B5261D363",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\examples\\installed_konnect_workflow.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C1DE71900F9379FADFD0F1689D487E5E27A71F925FC10B8583376497D7F2F7E7",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\prepare-current-package.py"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E8877051FFD4AE59A2A53D1619D98BC020C146CC159B3A42722EE7D65F1FD06D",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\sandbox-current-package.ps1"
+  }
+]

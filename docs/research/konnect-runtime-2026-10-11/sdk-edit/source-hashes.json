@@ -1,0 +1,7 @@
+{
+  "apps/desktop/src-tauri/src/lib.rs": "c1a2e73acce32b4b2eb6c8f17d8abd12f9792dec2cc9fb80a321de089a8edcdd",
+  "apps/desktop/src-tauri/examples/konnect_protocol.rs": "f99a5decf8c6c45d8ad9cb70ef399ede3bd2a6ef13fc1a0ea17b4164999f5cf1",
+  "apps/desktop/src-tauri/Cargo.toml": "739915440556a3e39c8e2fe8adeab0a7ceeca0367c69ec8c1a2572d0db3bb9e9",
+  "apps/desktop/src-tauri/src/konnect.rs": "34e119d9373a6be6fb44cb494b9d314b858e8d518e0c05318d9ea7d733c67ec4",
+  "Cargo.lock": "1e48ac1c92513c8588c4978d25d28bda7ab73e4a05acc20171ccc7daa6f00725"
+}

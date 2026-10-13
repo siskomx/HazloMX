@@ -1,0 +1,15 @@
+﻿{
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "installer_sha256":  "b4bce98f0ff0424f2851f2f380b6d22b02de9d345524e59ee4b5664a27febff6",
+    "app_alive":  true,
+    "uninstalled":  true,
+    "resumed_after_identity_check":  false,
+    "current_user_install":  true,
+    "user":  "WDAGUtilityAccount",
+    "pass":  true,
+    "stage":  "finished",
+    "same_version_update":  true,
+    "connector_exit":  0,
+    "binaries_match_package_build":  true,
+    "user_files_preserved":  true
+}

@@ -1,0 +1,390 @@
+[
+  {
+    "path": "apps\\desktop\\src-tauri\\examples\\installed_cadpilot_workflow.rs",
+    "sha256": "9b99d157f78135f97da33b135e0cd7d20cb93608dbbe792c658c7e0be6e7d97c"
+  },
+  {
+    "path": "apps\\desktop\\tests\\prepare-current-package.py",
+    "sha256": "4b33b5ddfbb877d924fbcc1471c7f2170487fad7c47a49e5196bd884c69749fb"
+  },
+  {
+    "path": "apps\\desktop\\tests\\sandbox-current-package.ps1",
+    "sha256": "b4f8419cf7de02b7c843abad979a8080f6ba0b68513ffa6d48a444caa4a97fa4"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\calls.json",
+    "sha256": "f04fbc155748b2ec5ccc18f42340038a47a3a546b88c43a67cbc6a1002fdf1dd"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\hazlomx.json",
+    "sha256": "1502d1647e71c6279fdc36440f7566482df2dc50c95cbff38415edbbcf412a47"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\06becc8c-40cd-422d-9e92-872f7faa2f89\\cadpilot-copy.FCMacro",
+    "sha256": "5327252be84572dbcd1f5d0165010968d60f09648be19be37697bfd89825b7b9"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\06becc8c-40cd-422d-9e92-872f7faa2f89\\cadpilot_policy.py",
+    "sha256": "5339ff6edf42f76adb91eb7daff0d532c05ec79cfc0b41dd7c4859c2f1860a5a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\cadpilot-copy.FCMacro",
+    "sha256": "5327252be84572dbcd1f5d0165010968d60f09648be19be37697bfd89825b7b9"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\cadpilot_policy.py",
+    "sha256": "5339ff6edf42f76adb91eb7daff0d532c05ec79cfc0b41dd7c4859c2f1860a5a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\5aefd516-6aa0-4c26-9e2a-725439d24299\\cadpilot-copy.FCMacro",
+    "sha256": "5327252be84572dbcd1f5d0165010968d60f09648be19be37697bfd89825b7b9"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\5aefd516-6aa0-4c26-9e2a-725439d24299\\cadpilot_policy.py",
+    "sha256": "5339ff6edf42f76adb91eb7daff0d532c05ec79cfc0b41dd7c4859c2f1860a5a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\cadpilot-copy.FCMacro",
+    "sha256": "5327252be84572dbcd1f5d0165010968d60f09648be19be37697bfd89825b7b9"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\cadpilot_policy.py",
+    "sha256": "5339ff6edf42f76adb91eb7daff0d532c05ec79cfc0b41dd7c4859c2f1860a5a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\cadpilot-copy.FCMacro",
+    "sha256": "5327252be84572dbcd1f5d0165010968d60f09648be19be37697bfd89825b7b9"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\cadpilot_policy.py",
+    "sha256": "5339ff6edf42f76adb91eb7daff0d532c05ec79cfc0b41dd7c4859c2f1860a5a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\cadpilot-copy.FCMacro",
+    "sha256": "5327252be84572dbcd1f5d0165010968d60f09648be19be37697bfd89825b7b9"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\profiles\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\cadpilot_policy.py",
+    "sha256": "5339ff6edf42f76adb91eb7daff0d532c05ec79cfc0b41dd7c4859c2f1860a5a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.json",
+    "sha256": "5416ca01f549bdb55cc9b29da0247b5eaf41b9fc1e1b0f215c754b54a7eea27f"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.json",
+    "sha256": "1f611f2dfcb8ae614a5f3f9403ef222735e455b46fe791124d35f25ecb1d3a8f"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.json",
+    "sha256": "d411508afe7a2f4ffa68572cc63be569b92716f60f8f9593d9a593a8ba7830bb"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\input.json",
+    "sha256": "ee0ff8e0a8c814f971fc33b77c1680116f140aab30da4686632cddc60daa71de"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\Original.FCStd",
+    "sha256": "7b7dd80b16cf3b39f899082ec1e7e6a9cb2b42ef576b4840373562aef98daef8"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\result.json",
+    "sha256": "b14135dd858199d9e983d611dc6933fa9e53d12dfc51dbd7a7824782e964d705"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\Working.FCStd",
+    "sha256": "7b7dd80b16cf3b39f899082ec1e7e6a9cb2b42ef576b4840373562aef98daef8"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.sources\\Original.FCStd",
+    "sha256": "7b7dd80b16cf3b39f899082ec1e7e6a9cb2b42ef576b4840373562aef98daef8"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\input.json",
+    "sha256": "fdd09a6d978f6f3148bb1826e7c5e8fdf6d3d81ba162a966eb4746256fb772ed"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\result.json",
+    "sha256": "f3db38978f83da1d7265606597d115039cf44b038a74aa38a0131c7fc7c05984"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.sources\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\input.json",
+    "sha256": "fb2cf9f863f51148a6e6690459c15a5bfdc294193961fd61baee4e2de9469b25"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\result.json",
+    "sha256": "9fbf63dbe758c3cd5fc42e33de70957b355b10103125a51c456bb3652da2e2bf"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.sources\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.sources\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.sources\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.sources\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.sources\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.sources\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\ad4f7986-245b-41bb-ac74-4d65d3d19c41.preview\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.sources\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.sources\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.sources\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.sources\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.sources\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\5aefd516-6aa0-4c26-9e2a-725439d24299.preview\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.sources\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.sources\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.sources\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.sources\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.sources\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\runs\\06becc8c-40cd-422d-9e92-872f7faa2f89.preview\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\Edited.FCStd",
+    "sha256": "22d0abd764db06ce87a01c033c53a2a8ff1566a796ead64092168366a9dea9e0"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\Edited.step",
+    "sha256": "22fb4db799230e75ad8158bf65f0238088436a4ce7115c60be843350b4a54e16"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\input.json",
+    "sha256": "850f804136e69cf65720719d4402ae1304fea5b4fc96a9ec54ccaf27c4da1ceb"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\Original.FCStd",
+    "sha256": "7b7dd80b16cf3b39f899082ec1e7e6a9cb2b42ef576b4840373562aef98daef8"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\result.json",
+    "sha256": "5b25dbccce770283f57767d016aad7d080c8c9101c7d65bc662fa4b8ca3f97bd"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\Working.FCStd",
+    "sha256": "7b7dd80b16cf3b39f899082ec1e7e6a9cb2b42ef576b4840373562aef98daef8"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\input.json",
+    "sha256": "fdd09a6d978f6f3148bb1826e7c5e8fdf6d3d81ba162a966eb4746256fb772ed"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\result.json",
+    "sha256": "f3db38978f83da1d7265606597d115039cf44b038a74aa38a0131c7fc7c05984"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\Edited.FCStd",
+    "sha256": "7b7dd80b16cf3b39f899082ec1e7e6a9cb2b42ef576b4840373562aef98daef8"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\Edited.step",
+    "sha256": "65ac57c40b95a3d737eeecb1241adb439448df3d08067c9907c313f64c5ddf68"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\input.json",
+    "sha256": "e9e38d16feb35675b6414bebba8c6470de36c83b46080c075855533954a772d1"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\result.json",
+    "sha256": "af0f43195c1baac75a0748199f0ba50b49c433cbf959739f7f80131413900603"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\ad4f7986-245b-41bb-ac74-4d65d3d19c41\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\5aefd516-6aa0-4c26-9e2a-725439d24299\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "docs\\research\\installed-cadpilot-2026-10-12\\project\\.hazlomexa\\artifacts\\06becc8c-40cd-422d-9e92-872f7faa2f89\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  }
+]

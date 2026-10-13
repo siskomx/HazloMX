@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "pre_post_source_hashes": {
+    "apps/desktop/src-tauri/src/host_tools.rs": "ded9f190d0d4b4dd7e25af805ab35447c79209ced4758143abc38a739d30d358",
+    "target/check-guided-pcb-mcp.cmd": "f0e84d62db6ec6408d2983530e3784a17b3dfa338fd9a050dab3bedb0a94b472"
+  },
+  "scope": "actual rebuilt helper measured PCB MCP/native follow-up; not signed-in or native UI interaction"
+}

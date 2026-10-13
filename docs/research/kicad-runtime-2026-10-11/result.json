@@ -1,0 +1,121 @@
+{
+  "passed": true,
+  "kicad_version": "10.0.7",
+  "cli_sha256": "cbd8197dd1f46b9a956f3d7973edc9a6a97960298731448ae9142dffe47abc7a",
+  "findings": [
+    {
+      "kind": "erc",
+      "exit_code": 5,
+      "findings": 3,
+      "ignored_checks": [
+        {
+          "description": "Global label only appears once in the schematic",
+          "key": "single_global_label"
+        },
+        {
+          "description": "Four connection points are joined together",
+          "key": "four_way_junction"
+        },
+        {
+          "description": "Footprint link issue",
+          "key": "footprint_link_issues"
+        },
+        {
+          "description": "Assigned footprint doesn't match footprint filters",
+          "key": "footprint_filter"
+        }
+      ],
+      "severity_counts": {
+        "error": 2,
+        "warning": 1,
+        "exclusion": 0
+      }
+    },
+    {
+      "kind": "drc",
+      "exit_code": 5,
+      "findings": 5,
+      "ignored_checks": [
+        {
+          "description": "Footprint has no courtyard defined",
+          "key": "missing_courtyard"
+        },
+        {
+          "description": "Track endpoint not centered on via",
+          "key": "track_not_centered_on_via"
+        },
+        {
+          "description": "Tuning profile track geometries",
+          "key": "tuning_profile_track_geometries"
+        },
+        {
+          "description": "Footprint doesn't match symbol's footprint filters",
+          "key": "footprint_filters_mismatch"
+        },
+        {
+          "description": "PTH inside courtyard",
+          "key": "pth_inside_courtyard"
+        },
+        {
+          "description": "NPTH inside courtyard",
+          "key": "npth_inside_courtyard"
+        },
+        {
+          "description": "Footprint component type doesn't match footprint pads",
+          "key": "footprint_type_mismatch"
+        }
+      ],
+      "severity_counts": {
+        "error": 0,
+        "warning": 5,
+        "exclusion": 0
+      }
+    }
+  ],
+  "clean_checks_exit_zero": true,
+  "actual_short_error_verified": true,
+  "native_ui_verified": false,
+  "files": {
+    "clean-drc.json": "865951ba96a3c3fff7ffc49b3979b6f9a7f0e8c535101348c5a163b5e2616233",
+    "clean-erc.json": "8f4d3f3e61169252fda5aa12b4a572133660934c1d63947d9a1953d29a989f63",
+    "drc-in.json": "4274eaabb460ab72ef3af0f0fadc754e075a80963f66a9302617adddff8204f0",
+    "drc-mils.json": "babb981021309c1c5684f5fb067a52b0afc7033105bc2ab7569fa4f224e5841c",
+    "drc-mm.json": "0ffee7fc842b23ff7e3100e1c10a18e49dc6c6f1a872aada1fb0ea1474ddd4d3",
+    "erc-in.json": "072cfd887bfc382b2e114e221dd0f277e8c601d81569f3ff714333f163ba9836",
+    "erc-mils.json": "f9296d68494f72d7fac0474ce85d196c9ccc61e84f7ade7e531cf9bc3a6f72da",
+    "erc-mm.json": "e87c28308db1970e749a24e0e48e2d7f10a1a65303bdce5c967e011a772aec54",
+    "netlist.xml": "6951debb09e15f76d712bd1f57ab6a5ac761c94c7c191077fded31518b4ee1b5",
+    "schematic.pdf": "24bd658510125f8a6fe772070250902a0ad250b683a66de80413ae1058b78178",
+    "shorted.json": "86607c666f252ae3c7d1c759de8af7c0507856fede4ec04f89fe44a73f3a9940",
+    "drill\\basic_test.drl": "ae8e3c67b8f28c07e85cad793d7612d49552e813770dbee15c74370e2db07813",
+    "gerbers\\basic_test-B_Cu.gbr": "c257242e1aeb05e6b190b4a46474753b48027128dc8c3e5d5bd466d7727443c4",
+    "gerbers\\basic_test-Edge_Cuts.gbr": "6279b5af7b2f196989cab6a36cac2fba3ea9b5535d930d0fb005b59068548589",
+    "gerbers\\basic_test-F_Cu.gbr": "79f2baa77ca4ff54e2be083406063b76d5d9a720b41476bf90c56568db7f5c27",
+    "gerbers\\basic_test-job.gbrjob": "fd15862060be996177adeb4335b41bd3728a94881678f9473937a4f1c82ab8a1",
+    "source\\bad.kicad_pcb": "ceef0aca423d94a9fa2bbfe7f53e5a9264788c8d1fd652c418e2d9a907552420",
+    "source\\bad.kicad_prl": "69f6bff175ea787b98f59895f7793235c1b19c5387bd7e64b823ad0f347f4507",
+    "source\\basic_test.kicad_pcb": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a",
+    "source\\basic_test.kicad_prl": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79",
+    "source\\basic_test.kicad_pro": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837",
+    "source\\basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+    "source\\clean.kicad_pcb": "110221d2eb7c6edd6513cdd22d7b142294496a1f8aa613353aa0f59da121e81c",
+    "source\\clean.kicad_prl": "f50a6285316ddef59eeb3cdded74607297e14be3a6bce77a18c0e09d71696cee",
+    "source\\clean.kicad_sch": "4b78c94c0ec4f185eb24f44acd1704dafcf48fe9adaed66eab60ed4595e7a3d3",
+    "source\\NoConnectOnPin.kicad_sch": "f621b1ee7d95905038fa1dbc0a47f93339dead5f238138dcea76c29ba039eb6f",
+    "source\\shorted.kicad_pcb": "4e2a00d80630ea13724cdbd40dec0987f3d6c218583282228e7a5eb22f86150d",
+    "source\\shorted.kicad_prl": "9043ab7f5bbc917f95c130e77ccfaae12c5beea8999a52d3097b461a086988a8",
+    "source\\shorted.kicad_pro": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837",
+    "profile\\10.0\\3d_viewer.json": "7c95b3fdd72f837a3cc49248249c40bc24c07b75bafe02d0d091a0864746b6a9",
+    "profile\\10.0\\cvpcb.json": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759",
+    "profile\\10.0\\eeschema.json": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb",
+    "profile\\10.0\\fp-lib-table": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff",
+    "profile\\10.0\\fpedit.json": "4d824ab97688dcfc144494386c6991dc0a31f324228d6a85cea279a474f51bb0",
+    "profile\\10.0\\kicad.json": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650",
+    "profile\\10.0\\kicad_common.json": "d021e9aa7947fa95c3610becc5bb3f95452a8aafbc79cbbd20c8d9996cfeb36d",
+    "profile\\10.0\\pcbnew.json": "412c1fe43f0db375147a9d25f5c7da6768ae054d94300cef57c9349bd3374e7a",
+    "profile\\10.0\\sym-lib-table": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d",
+    "profile\\10.0\\symbol_editor.json": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa",
+    "profile\\.cache\\fontconfig\\CACHEDIR.TAG": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b",
+    "profile\\.cache\\fontconfig\\ef9c9ad8cc5857eb63cb3660bc8bd202-le64.cache-9": "7cd499b1c403a06ef0cbe763b65c92c073d185f1a02b919d52f63b98cbd66c28"
+  }
+}

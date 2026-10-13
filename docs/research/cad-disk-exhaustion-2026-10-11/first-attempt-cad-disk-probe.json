@@ -1,0 +1,7 @@
+﻿{
+    "test_exit":  null,
+    "error":  "Actual CAD disk test failed; inspect logs",
+    "pass":  false,
+    "stage":  "failed",
+    "user":  "WDAGUtilityAccount"
+}

@@ -1,0 +1,60 @@
+{
+  "final_read": {
+    "checks": {
+      "check": "erc",
+      "errors": 2,
+      "excluded": 0,
+      "ignored_checks": [
+        "single_global_label",
+        "four_way_junction",
+        "footprint_link_issues",
+        "footprint_filter"
+      ],
+      "units": "mils",
+      "warnings": 1
+    },
+    "components": null,
+    "content": "{\r\n    \"$schema\": \"https://schemas.kicad.org/erc.v1.json\",\r\n    \"coordinate_units\": \"mils\",\r\n    \"date\": \"2026-10-12T14:43:24\",\r\n    \"ignored_checks\": [\r\n        {\r\n            \"description\": \"Global label only appears once in the schematic\",\r\n            \"key\": \"single_global_label\"\r\n        },\r\n        {\r\n            \"description\": \"Four connection points are joined together\",\r\n            \"key\": \"four_way_junction\"\r\n        },\r\n        {\r\n            \"description\": \"Footprint link issue\",\r\n            \"key\": \"footprint_link_issues\"\r\n        },\r\n        {\r\n            \"description\": \"Assigned footprint doesn't match footprint filters\",\r\n            \"key\": \"footprint_filter\"\r\n        }\r\n    ],\r\n    \"included_severities\": [\r\n        \"error\",\r\n        \"warning\",\r\n        \"exclusion\"\r\n    ],\r\n    \"kicad_version\": \"10.0.7\",\r\n    \"sheets\": [\r\n        {\r\n            \"path\": \"/\",\r\n            \"uuid_path\": \"/64c481bc-ea0a-4f9c-a176-3729f4987c58\",\r\n            \"violations\": [\r\n                {\r\n                    \"description\": \"Input Power pin not driven by any Output Power pins\",\r\n                    \"items\": [\r\n                        {\r\n                            \"description\": \"Symbol #PWR01 Hidden pin 1 [GND, Power input, Line]\",\r\n                            \"pos\": {\r\n                                \"x\": 4700.0,\r\n                                \"y\": 3800.0\r\n                            },\r\n                            \"uuid\": \"d244be40-4f72-4136-9d69-8cadcdfa193b\"\r\n                        }\r\n                    ],\r\n                    \"severity\": \"error\",\r\n                    \"type\": \"power_pin_not_driven\"\r\n                },\r\n                {\r\n                    \"description\": \"Input Power pin not driven by any Output Power pins\",\r\n                    \"items\": [\r\n                        {\r\n                            \"description\": \"Symbol U1 Pin 5 [V+, Power input, Line]\",\r\n                            \"pos\": {\r\n                                \"x\": 5550.0,\r\n                                \"y\": 2800.0\r\n                            },\r\n                            \"uuid\": \"0123f423-4b4c-467f-8b7d-43421b82330d\"\r\n                        }\r\n                    ],\r\n                    \"severity\": \"error\",\r\n                    \"type\": \"power_pin_not_driven\"\r\n                },\r\n                {\r\n                    \"description\": \"Symbol 'C_Small' doesn't match copy in library 'Device'\",\r\n                    \"items\": [\r\n                        {\r\n                            \"description\": \"Symbol C1 [C_Small]\",\r\n                            \"pos\": {\r\n                                \"x\": 4800.0,\r\n                                \"y\": 3150.0\r\n                            },\r\n                            \"uuid\": \"8a4f4d93-4e0c-474b-8535-68c4fef6e828\"\r\n                        }\r\n                    ],\r\n                    \"severity\": \"warning\",\r\n                    \"type\": \"lib_symbol_mismatch\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"source\": \"basic_test.kicad_sch\"\r\n}\r\n",
+    "drawing": null,
+    "format": "kicad_report",
+    "job_id": "8783fb13-b1b7-4865-b863-6537402f7a6a",
+    "project_id": "69cc2205-cc77-4427-a18a-9fa6bd270630",
+    "scope": "verified_published_result",
+    "sha256": "bb62b8d81fff4b6780305acf4b660e455e68ee62657a70cc781c52245de9d36d",
+    "slicing": null,
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "first_read": {
+    "checks": {
+      "check": "erc",
+      "errors": 2,
+      "excluded": 0,
+      "ignored_checks": [
+        "single_global_label",
+        "four_way_junction",
+        "footprint_link_issues",
+        "footprint_filter"
+      ],
+      "units": "in",
+      "warnings": 1
+    },
+    "components": null,
+    "content": "{\r\n    \"$schema\": \"https://schemas.kicad.org/erc.v1.json\",\r\n    \"coordinate_units\": \"in\",\r\n    \"date\": \"2026-10-12T14:42:52\",\r\n    \"ignored_checks\": [\r\n        {\r\n            \"description\": \"Global label only appears once in the schematic\",\r\n            \"key\": \"single_global_label\"\r\n        },\r\n        {\r\n            \"description\": \"Four connection points are joined together\",\r\n            \"key\": \"four_way_junction\"\r\n        },\r\n        {\r\n            \"description\": \"Footprint link issue\",\r\n            \"key\": \"footprint_link_issues\"\r\n        },\r\n        {\r\n            \"description\": \"Assigned footprint doesn't match footprint filters\",\r\n            \"key\": \"footprint_filter\"\r\n        }\r\n    ],\r\n    \"included_severities\": [\r\n        \"error\",\r\n        \"warning\",\r\n        \"exclusion\"\r\n    ],\r\n    \"kicad_version\": \"10.0.7\",\r\n    \"sheets\": [\r\n        {\r\n            \"path\": \"/\",\r\n            \"uuid_path\": \"/64c481bc-ea0a-4f9c-a176-3729f4987c58\",\r\n            \"violations\": [\r\n                {\r\n                    \"description\": \"Input Power pin not driven by any Output Power pins\",\r\n                    \"items\": [\r\n                        {\r\n                            \"description\": \"Symbol #PWR01 Hidden pin 1 [GND, Power input, Line]\",\r\n                            \"pos\": {\r\n                                \"x\": 4.7,\r\n                                \"y\": 3.8\r\n                            },\r\n                            \"uuid\": \"d244be40-4f72-4136-9d69-8cadcdfa193b\"\r\n                        }\r\n                    ],\r\n                    \"severity\": \"error\",\r\n                    \"type\": \"power_pin_not_driven\"\r\n                },\r\n                {\r\n                    \"description\": \"Input Power pin not driven by any Output Power pins\",\r\n                    \"items\": [\r\n                        {\r\n                            \"description\": \"Symbol U1 Pin 5 [V+, Power input, Line]\",\r\n                            \"pos\": {\r\n                                \"x\": 5.55,\r\n                                \"y\": 2.8\r\n                            },\r\n                            \"uuid\": \"0123f423-4b4c-467f-8b7d-43421b82330d\"\r\n                        }\r\n                    ],\r\n                    \"severity\": \"error\",\r\n                    \"type\": \"power_pin_not_driven\"\r\n                },\r\n                {\r\n                    \"description\": \"Symbol 'C_Small' doesn't match copy in library 'Device'\",\r\n                    \"items\": [\r\n                        {\r\n                            \"description\": \"Symbol C1 [C_Small]\",\r\n                            \"pos\": {\r\n                                \"x\": 4.8,\r\n                                \"y\": 3.15\r\n                            },\r\n                            \"uuid\": \"8a4f4d93-4e0c-474b-8535-68c4fef6e828\"\r\n                        }\r\n                    ],\r\n                    \"severity\": \"warning\",\r\n                    \"type\": \"lib_symbol_mismatch\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"source\": \"basic_test.kicad_sch\"\r\n}\r\n",
+    "drawing": null,
+    "format": "kicad_report",
+    "job_id": "6632175e-d0e1-44fb-b9ff-c3aac58b65e5",
+    "project_id": "69cc2205-cc77-4427-a18a-9fa6bd270630",
+    "scope": "verified_published_result",
+    "sha256": "ccee9924f146c54d59c81b343a4d8bffce7e181dbbc7d9eba6804883548dcfe2",
+    "slicing": null,
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "proposal": {
+    "human_approval_required": true,
+    "job_id": "8783fb13-b1b7-4865-b863-6537402f7a6a",
+    "operation": "check_export_copy_only",
+    "phase": "awaiting_approval"
+  }
+}

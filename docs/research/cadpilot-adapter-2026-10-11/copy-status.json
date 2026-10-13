@@ -1,0 +1,147 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "0",
+      "operation": "inspect",
+      "expected_success": true,
+      "exit_code": 0,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\0\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\0\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\0\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "1",
+      "operation": "edit_box",
+      "expected_success": true,
+      "exit_code": 0,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\1\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\1\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\1\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "2",
+      "operation": "add_box",
+      "expected_success": true,
+      "exit_code": 0,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\2\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\2\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\2\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "3",
+      "operation": "add_cylinder",
+      "expected_success": true,
+      "exit_code": 0,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\3\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\3\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\3\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "4",
+      "operation": "edit_box",
+      "expected_success": false,
+      "exit_code": 1,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\4\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\4\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\4\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "5",
+      "operation": "execute_code",
+      "expected_success": false,
+      "exit_code": 1,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\5\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\5\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\5\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "6",
+      "operation": "edit_box",
+      "expected_success": false,
+      "exit_code": 1,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\6\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\6\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\6\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "7",
+      "operation": "unsafe_archive",
+      "expected_success": false,
+      "exit_code": 1,
+      "source_sha256": "30b7d6a2516ebfaecf257d88a5e55925216c719b016dd333ee15b2607751ca7a",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\7\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\7\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\7\\cadpilot-copy.FCMacro"
+      ]
+    },
+    {
+      "case": "8",
+      "operation": "occupied_output",
+      "expected_success": false,
+      "exit_code": 1,
+      "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+      "command": [
+        "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+        "--user-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\8\\profile\\user.cfg",
+        "--system-cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\8\\profile\\system.cfg",
+        "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\\8\\cadpilot-copy.FCMacro"
+      ]
+    }
+  ],
+  "cadpilot_commit": "58bfee4d45061e55c158a5fd4786ab98a427f7f6",
+  "adapter_hashes": {
+    "cadpilot-copy.FCMacro": "cacf9679170b77d3fda1b5b912c4d7db18314e8068bebf31a104ee0d853753af",
+    "cadpilot_policy.py": "167fff576da46a8d41fc8144187e4bb25987a73742570fe88a6ea0a433076d20"
+  },
+  "application_workflow_verified": false,
+  "native_gui_verified": false
+}

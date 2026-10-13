@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "inputs_unchanged": true,
+  "tests": [
+    {
+      "test": "cadcraft::tests::actual_cli_discovers_units_and_bounds_without_edit_parameters",
+      "exit_code": 0
+    },
+    {
+      "test": "host_tools::tests::actual_selected_drawing_inspection_and_proposal_boundaries",
+      "exit_code": 0
+    },
+    {
+      "test": "cadcraft::tests::actual_cli_copies_converts_and_adds_circle",
+      "exit_code": 0
+    }
+  ],
+  "native_ui_verified": false,
+  "installed_package_verified": false
+}

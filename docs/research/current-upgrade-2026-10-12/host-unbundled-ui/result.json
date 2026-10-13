@@ -1,0 +1,14 @@
+{
+  "pass": true,
+  "scope": "installed release native initial UI and read-only IPC",
+  "empty_dimensions": true,
+  "no_implicit_proposal": true,
+  "workflows": 9,
+  "reload_preserves_unknown_inputs": true,
+  "webview_version": "155.0.4283.45",
+  "elevated_host": false,
+  "debugger_configuration": "environment",
+  "project_pickers_operated": false,
+  "engineering_ui_workflow": false,
+  "model_inference": false
+}

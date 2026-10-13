@@ -1,0 +1,16 @@
+{
+  "pass": false,
+  "classification": "native input prerequisite unavailable",
+  "app_launched_with_computer_use": true,
+  "controls_observed": [
+    "Crear en carpeta",
+    "Abrir proyecto"
+  ],
+  "input_errors": [
+    "coordinate input geometry is unavailable",
+    "failed to activate captured window"
+  ],
+  "project_created": false,
+  "outside_files_unchanged": true,
+  "owned_app_closed": true
+}

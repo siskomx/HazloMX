@@ -1,0 +1,11 @@
+   Compiling hazlomexa v0.1.0 (C:/Users/USER\Documents\GitHub\HazloMX\apps\desktop\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.42s
+     Running unittests src\lib.rs (target\debug\deps\hazlomexa-af07e57d7e34a273.exe)
+
+running 3 tests
+test codex::tests::final_messages_replace_deltas_without_duplicate_text ... ok
+test codex::tests::identity_actions_failures_and_limits_remain_separate ... ok
+test codex::tests::bounded_records_reject_incomplete_and_non_object_json ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 122 filtered out; finished in 0.01s
+

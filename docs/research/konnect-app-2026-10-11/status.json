@@ -1,0 +1,27 @@
+{
+  "general_agent_inputs_verified": false,
+  "browser_workflows_passed": 8,
+  "native_gui_verified": false,
+  "regular_tests_passed": 76,
+  "passed": true,
+  "installed_workflow_verified": false,
+  "live_native_editing_verified": false,
+  "actual_workflow_tests_passed": 1,
+  "desktop_clippy_passed": true,
+  "actual_fixture": "C:/Users/USER/AppData/Local/Temp/hazlomexa-workflow-5dea34b6-1d62-49d5-8015-4edbe504fc9e",
+  "source_sha256": {
+    "apps/desktop/src-tauri/src/konnect_run.rs": "9aff65bc49cc7c34fe7a9a6cafe811bb83cf91764fa5dc552412326b14375c4f",
+    "apps/desktop/tests/design-flow.mjs": "1e0cf447695334badf5074170adc8b6c71bfe72efc8ab689781ca87f17c504ea",
+    "apps/desktop/src-tauri/src/jobs.rs": "2cc4ef1e61d36bdca212467709ba2adca08201d3db7001a9cee8cf84951cbf39",
+    "apps/desktop/src-tauri/capabilities/main.json": "a571589d4dbe02e99332a6407141cd3ff9141aab172e7ad6152ca4226a1e02c7",
+    "apps/desktop/src-tauri/src/konnect.rs": "8328265885f9abd74942df3423b6c22bb0f1d312ebea712d42898a96572e69fd",
+    "apps/desktop/src/main.ts": "9ffdf5d82dbe8e3bba5f5f166fd248d9638b8d479af57ee7aef213e37d64cdee",
+    "apps/desktop/src-tauri/src/project.rs": "1ede2751e1539a9a34391093bed32c39f0d42f94acd2f2a89a452e49f3828e1d",
+    "apps/desktop/src/contracts.ts": "1abf24ec0e6c7bf55a5c4cb2d048912a30ff00cf44eed9909c4ba9365c16bb5e",
+    "apps/desktop/src-tauri/build.rs": "996c35620ba77146d5e8054f75067f2ca88e9011f3f2752a2d451a67fde25fe8",
+    "apps/desktop/src-tauri/src/main.rs": "25dfcabe8950b83842e319adcf56d5b96720f47341fee10125162d5f8aa706d4"
+  },
+  "separately_ignored_entries": 24,
+  "frontend_build_passed": true,
+  "project_directory": "final-project"
+}

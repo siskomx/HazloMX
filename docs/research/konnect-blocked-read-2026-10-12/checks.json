@@ -1,0 +1,11 @@
+{
+  "native_cases": 2,
+  "regular_rust_passed": 115,
+  "runtime_tests_ignored": 36,
+  "all_target_custom_protocol_clippy": "passed with warnings denied",
+  "standalone_barrier_self_check": "passed",
+  "host_os": "Windows 11 Pro 10.0.26200",
+  "native_ui_input_stopped": true,
+  "production_behavior_changed": false,
+  "verifier_reporting_guard": "isolated failed/partial/complete-pass checks passed; no native re-run after reporting-only change"
+}

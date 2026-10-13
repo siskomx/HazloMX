@@ -1,0 +1,112 @@
+[
+  {
+    "source_name": "metric.dxf",
+    "source_format": "dxf",
+    "source_sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982",
+    "insunits": 4,
+    "summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  },
+  {
+    "source_name": "imperial.dxf",
+    "source_format": "dxf",
+    "source_sha256": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7",
+    "insunits": 1,
+    "summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  },
+  {
+    "source_name": "unknown.dxf",
+    "source_format": "dxf",
+    "source_sha256": "358f7143418edeea3890c8d389b8e8a4cb40b77f0a9a27d935be2ffa0ebc8ac1",
+    "insunits": 0,
+    "summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  },
+  {
+    "source_name": "feet.dxf",
+    "source_format": "dxf",
+    "source_sha256": "93bd96b703ed1fad6925a6f4b131635c4ddd2a0ddb36a6a601ebe9f45c7f48f5",
+    "insunits": 2,
+    "summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  },
+  {
+    "source_name": "native-inch.dwg",
+    "source_format": "dwg",
+    "source_sha256": "3b2eb56e80cc6cdeaecc9a01df88f774782ed661d12dcc2ad458b3b173ee6190",
+    "insunits": 1,
+    "summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  }
+]

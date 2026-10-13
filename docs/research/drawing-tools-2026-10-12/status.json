@@ -1,0 +1,16 @@
+{
+  "actual_cadcraft_version": "0.5.0",
+  "direct_shared_tool_followup": true,
+  "final_output_used_as_next_source": true,
+  "native_circle_readback": true,
+  "mcp_provenance_schema": 10,
+  "original_and_previous_result_unchanged": true,
+  "hash_units_and_path_refusal": true,
+  "five_runs_recovered": true,
+  "regular_tests": 110,
+  "browser_workflows": 9,
+  "signed_in_chat": false,
+  "native_gui": false,
+  "installed_acceptance": false,
+  "source_project": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-drawing-workflow-181d8e94-1447-4109-8daf-4e8f91bee614\\project"
+}

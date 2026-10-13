@@ -1,0 +1,25 @@
+{
+  "frontend_native_verified": false,
+  "live_cancellation_verified": false,
+  "separately_ignored_entries": 24,
+  "actual_fixture": "C:/Users/USER/AppData/Local/Temp/hazlomexa-workflow-2ebcea02-4e44-402e-a32c-9bcb30b58e7e",
+  "passed": true,
+  "source_sha256": {
+    "apps/desktop/src-tauri/src/jobs.rs": "b70c84e8a949b54998731a52abe9615f79e3079a07be13fe5ca92e96c76a96a1",
+    "apps/desktop/src-tauri/Cargo.toml": "739915440556a3e39c8e2fe8adeab0a7ceeca0367c69ec8c1a2572d0db3bb9e9",
+    "apps/desktop/src-tauri/src/konnect.rs": "c64a1b95679840019f4897ec58aa2491f85e370412cd0314d08f2a8e8fd1fe59",
+    "apps/desktop/src-tauri/src/lib.rs": "f1c79abc2d60a5477e21d6a54bbc0128fae132ee496bc4461f7b9e2dd85776bb",
+    "apps/desktop/src-tauri/src/kicad_project.rs": "4e4d003a2ed53d5fd6bdb5a6cbffc71aaca16b28e371fa21349322d2dacf61ea",
+    "apps/desktop/src-tauri/src/konnect_run.rs": "9aff65bc49cc7c34fe7a9a6cafe811bb83cf91764fa5dc552412326b14375c4f",
+    "apps/desktop/src-tauri/src/project.rs": "1ede2751e1539a9a34391093bed32c39f0d42f94acd2f2a89a452e49f3828e1d",
+    "Cargo.lock": "1e48ac1c92513c8588c4978d25d28bda7ab73e4a05acc20171ccc7daa6f00725"
+  },
+  "recovered_runs": {
+    "completed": 1,
+    "cancelled": 2,
+    "failed_with_verified_staging": 1
+  },
+  "command": "rtk cargo test -p hazlomexa --lib actual_konnect_workflow_publication_and_recovery -- --ignored --nocapture",
+  "actual_tests_passed": 1,
+  "regular_tests_passed": 76
+}

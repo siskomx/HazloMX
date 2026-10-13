@@ -1,0 +1,12 @@
+﻿{
+    "pass":  true,
+    "project":  "C:\\HazloGuestProject",
+    "installer_exit":  0,
+    "webview_before":  [
+                           {
+                               "name":  "Microsoft Edge WebView2 Runtime",
+                               "pv":  "155.0.4283.45"
+                           }
+                       ],
+    "app_pid":  14872
+}

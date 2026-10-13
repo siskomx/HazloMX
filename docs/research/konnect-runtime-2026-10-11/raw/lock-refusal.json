@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "text": "{\"error\":{\"kind\":\"conflict\",\"paths\":[\"C:/Users/USER\\\\Documents\\\\GitHub\\\\HazloMX\\\\target\\\\konnect-probe\\\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\\\Edited\\\\basic_test.kicad_sch\"]},\"message\":\"Schematic 'C:/Users/USER\\\\Documents\\\\GitHub\\\\HazloMX\\\\target\\\\konnect-probe\\\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\\\Edited\\\\basic_test.kicad_sch' has a KiCad editor lock. Close Eeschema, or resolve a stale lock only after confirming no editor owns the file, then retry.\"}",
+      "type": "text"
+    }
+  ],
+  "isError": true
+}

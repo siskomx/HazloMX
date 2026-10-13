@@ -1,0 +1,8 @@
+{
+  "elapsed_ms": 29,
+  "no_new_proposal": true,
+  "owned_process_ceased": true,
+  "pid": 31236,
+  "published_history_preserved": true,
+  "scope": "actual MCP request cancellation during native measurement; UI latency unverified"
+}

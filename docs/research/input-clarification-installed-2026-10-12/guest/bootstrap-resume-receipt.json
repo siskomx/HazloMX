@@ -1,0 +1,9 @@
+﻿{
+    "baseline_installer_exit":  0,
+    "webview_version":  "155.0.4283.45",
+    "pass":  true,
+    "baseline_binaries_match":  true,
+    "initial_failure_retained":  true,
+    "previous_installer_sha256":  "33e45402ad0c33b06b78a32ce7a1d50b755cdb3d5874fe4f629e1d4c0c9a5276",
+    "webview_signature":  "Valid"
+}

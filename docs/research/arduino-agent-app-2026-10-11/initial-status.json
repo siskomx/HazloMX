@@ -1,0 +1,17 @@
+{
+  "pass": true,
+  "sandbox_id": "033f9b96-d3ae-47ec-846e-505d1657ae92",
+  "regular_tests": 51,
+  "ignored_standalone": 10,
+  "actual_agent_adapter": true,
+  "actual_agent_workflow": true,
+  "frontend_fixtures": true,
+  "desktop_clippy": true,
+  "native_agent_ui_verified": false,
+  "installed_agent_workflow_verified": false,
+  "in_flight_cancellation_verified": false,
+  "project_export_hashes_verified": 17,
+  "backend_test_exe_sha256": "f5735b25eb62b2232cf5e6951d727ede70e69ed831a675bc89b93fe8325d3869",
+  "models_run": 0,
+  "hardware_mutations": false
+}

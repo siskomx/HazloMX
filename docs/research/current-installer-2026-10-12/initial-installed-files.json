@@ -1,0 +1,24 @@
+﻿{
+    "app":  "87A2260098A64428A1B867F1D054092168DA823C50F79BF04C1334006C02419B",
+    "files":  [
+                  {
+                      "Name":  "hazlomexa-tools.exe",
+                      "Length":  591872
+                  },
+                  {
+                      "Name":  "hazlomexa.exe",
+                      "Length":  24729600
+                  },
+                  {
+                      "Name":  "uninstall.exe",
+                      "Length":  79910
+                  }
+              ],
+    "helper":  "D2FF60DF322FD7498A81133093A28E4AF8C95760655F56EF23E35B9329D5F6A0",
+    "webview":  [
+                    {
+                        "name":  "Microsoft Edge WebView2 Runtime",
+                        "pv":  "155.0.4283.45"
+                    }
+                ]
+}

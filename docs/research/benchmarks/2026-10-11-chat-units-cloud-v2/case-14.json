@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "lid",
+  "result": {
+    "proposal": {
+      "message": "Esta versión solo genera sólidos rectangulares y cubos, no cajas huecas ni tapas a presión. ¿Quieres que proponga un bloque rectangular sólido de referencia con esas medidas (80×50×25 mm)?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 2.0873782
+}

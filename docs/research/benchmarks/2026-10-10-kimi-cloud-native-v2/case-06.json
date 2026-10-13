@@ -1,0 +1,14 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 25,
+    "length": 25,
+    "width": 25
+  },
+  "id": "cube",
+  "result": {
+    "error": "Ollama no devolvió el flujo NDJSON requerido."
+  },
+  "seconds": 0.4974784
+}

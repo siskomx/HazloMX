@@ -1,0 +1,14 @@
+{
+  "package": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\release\\bundle\\nsis\\Hazlo Mexa_0.1.0_x64-setup.exe",
+  "sha256": "6484c18e6147b104b6abca47fcae8aef5e43b959c2a11f41dd1cb0919c055d3d",
+  "install": "C:/Users/USER\\AppData\\Local\\HazloMexa\\installer-tests\\794ebe7e-8a89-4d8a-b67d-fc7759f2a21e\\app",
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa \u00e1 native-cu0Els\\project",
+  "checks": [
+    "installation registered only for current user",
+    "same-version package update succeeds",
+    "installed application remains running after startup",
+    "uninstallation removes application and registration",
+    "app-data marker retained; external project files preserved byte-for-byte"
+  ],
+  "pass": true
+}

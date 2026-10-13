@@ -1,0 +1,20 @@
+﻿{
+    "processes":  [
+                      {
+                          "Id":  11912,
+                          "ProcessName":  "MicrosoftEdgeWebview2Setup",
+                          "CPU":  0.265625
+                      },
+                      {
+                          "Id":  15168,
+                          "ProcessName":  "powershell",
+                          "CPU":  15.171875
+                      },
+                      {
+                          "Id":  15988,
+                          "ProcessName":  "powershell",
+                          "CPU":  12.390625
+                      }
+                  ],
+    "input_present":  true
+}

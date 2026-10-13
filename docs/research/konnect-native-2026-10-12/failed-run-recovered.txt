@@ -1,0 +1,144 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			8 pane Hazlo Mexa
+				9 pane (disabled)
+				10 region Hazlo Mexa - Web content
+					11 region
+						12 region
+							13 region
+								14 region
+								15 region
+									16 region
+										17 region
+											18 region
+												19 region
+												20 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													21 main ID: app
+														22 section header
+															23 heading Hazlo Mexa
+															24 text De una idea a un archivo que puedes editar.
+															25 text CAD y Arduino · v0.1
+														26 region Tu proyecto
+															27 heading Tu proyecto ID: project-heading
+															113 text C:/Users/USER\Documents\GitHub\HazloMX\target\native-konnect-c42af480-0f36-4145-b7ff-3357d7e1cc71\project
+															29 button Crear en carpeta… ID: create-project
+															30 button Abrir proyecto… ID: open-project
+														31 details ID: agent-tools-panel
+															32 disclosure triangle Usar las herramientas de Hazlo con Claude Code o Codex
+																33 text Usar las herramientas de Hazlo con Claude Code o Codex
+														34 region ¿Qué quieres crear?
+															35 text 01 / CONVERSA
+															36 heading ¿Qué quieres crear? ID: proposal-heading
+															114 text Cuéntame tu idea o describe la pieza que quieres recrear. Podemos reunir las medidas paso a paso.
+															38 text ¿Qué vas a trabajar?
+															39 combo box (settable, string) ¿Qué vas a trabajar? Value: Pieza rectangular · FreeCAD ID: workflow
+															40 text ¿Con quién quieres conversar?
+															41 combo box (settable, string) ¿Con quién quieres conversar? Value: Guía actual / Ollama ID: assistant-provider
+															42 status ID: claude-chat-progress
+															43 log Conversación de diseño ID: conversation
+																44 text Hazlo Mexa:
+																45 text ¿Qué quieres construir o recrear, y para qué lo usarás? Si no sabes las medidas, empezamos por describir la forma. Puedo generar un sólido rectangular en esta versión.
+															46 text Modelo en Ollama
+															47 combo box (settable, string) Modelo en Ollama Value: Qwen3 4B local · experimental ID: model-profile
+															115 text Procesa en tu equipo. Este modelo todavía falla en algunas solicitudes ambiguas; revisa las medidas o usa la entrada manual.
+															49 text Tu idea o respuesta
+															50 edit (settable, string) Tu idea o respuesta Description: Quiero recrear una pieza rectangular, pero todavía no sé todas sus medidas ID: prompt
+															51 button Enviar ID: infer
+															52 button (disabled) Detener ID: cancel-inference
+															53 button Nueva conversación ID: new-conversation
+															54 status ID: inference-status
+															55 details ID: model-response
+																56 disclosure triangle Respuesta técnica del modelo
+																	57 text Respuesta técnica del modelo
+															116 text Requiere Ollama abierto y el modelo instalado. Esta versión genera sólidos rectangulares; no interpreta fotos ni archivos de referencia.
+															59 details ID: manual-dimensions
+																60 disclosure triangle Ya sé las medidas / ajustar propuesta
+																	61 text Ya sé las medidas / ajustar propuesta
+															62 details ID: runtime
+																63 disclosure triangle FreeCAD 1.1.4
+																	64 text FreeCAD 1.1.4
+														65 region Vista de la propuesta
+															66 text 02 / REVISA
+															67 heading Vista de la propuesta ID: preview-heading
+															117 text Confirma estas medidas antes de generar archivos.
+															118 text Todavía no hay una operación pendiente.
+															70 button (disabled) Aprobar y generar ID: approve
+															71 button (disabled) Cancelar ID: cancel
+															119 text La aprobación genera un archivo FCStd editable y su copia STEP. No se reemplazan resultados anteriores.
+														73 region Resultados
+															74 text 03 / ABRE
+															75 heading Resultados ID: results-heading
+															76 status ID: status
+																120 text Describe tu idea en el chat o ingresa las medidas manualmente.
+															78 list
+																79 term Generación
+																	80 text Generación
+																121 text Sin archivos nuevos
+																82 term Verificación
+																	83 text Verificación
+																122 text Sin artefactos nuevos aceptados
+																85 term Publicación
+																	86 text Publicación
+																123 text Sin publicación nueva
+															124 text La generación falló. Revisa el detalle y prepara otra propuesta. · Código manual · 12/10/2026, 8:25:26 a.m. · Los archivos de Konnect cambiaron o contienen una salida inesperada.
+								88 region
+						89 region
+						90 region
+		2 title bar (settable, string) Value: Hazlo Mexa
+			3 menu bar System ID: MenuBar
+				4 menu item System
+			5 button Minimize
+			6 button Maximize
+			7 button Close
+
+Document text: ```
+Hazlo Mexa
+De una idea a un archivo que puedes editar.
+CAD y Arduino · v0.1
+Tu proyecto
+C:/Users/USER\Documents\GitHub\HazloMX\target\native-konnect-c42af480-0f36-4145-b7ff-3357d7e1cc71\project
+Crear en carpeta…
+Abrir proyecto…
+Usar las herramientas de Hazlo con Claude Code o Codex
+01 / CONVERSA
+¿Qué quieres crear?
+Cuéntame tu idea o describe la pieza que quieres recrear. Podemos reunir las medidas paso a paso.
+¿Qué vas a trabajar?
+￼
+¿Con quién quieres conversar?
+￼
+￼
+Hazlo Mexa: ¿Qué quieres construir o recrear, y para qué lo usarás? Si no sabes las medidas, empezamos por describir la forma. Puedo generar un sólido rectangular en esta versión.
+Modelo en Ollama
+￼
+Procesa en tu equipo. Este modelo todavía falla en algunas solicitudes ambiguas; revisa las medidas o usa la entrada manual.
+Tu idea o respuesta
+￼
+Enviar
+Detener
+Nueva conversación
+￼
+Respuesta técnica del modelo
+Requiere Ollama abierto y el modelo instalado. Esta versión genera sólidos rectangulares; no interpreta fotos ni archivos de referencia.
+Ya sé las medidas / ajustar propuesta
+FreeCAD 1.1.4
+02 / REVISA
+Vista de la propuesta
+Confirma estas medidas antes de generar archivos.
+Todavía no hay una operación pendiente.
+Aprobar y generar
+Cancelar
+La aprobación genera un archivo FCStd editable y su copia STEP. No se reemplazan resultados anteriores.
+03 / ABRE
+Resultados
+Describe tu idea en el chat o ingresa las medidas manualmente.
+Generación
+Sin archivos nuevos
+Verificación
+Sin artefactos nuevos aceptados
+Publicación
+Sin publicación nueva
+￼
+La generación falló. Revisa el detalle y prepara otra propuesta. · Código manual · 12/10/2026, 8:25:26 a.m. · Los archivos de Konnect cambiaron o contienen una salida inesperada.
+```

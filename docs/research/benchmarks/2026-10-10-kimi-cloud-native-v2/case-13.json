@@ -1,0 +1,10 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": "clarification",
+  "id": "hollow_enclosure",
+  "result": {
+    "error": "Ollama no devolvió el flujo NDJSON requerido."
+  },
+  "seconds": 0.5641255
+}

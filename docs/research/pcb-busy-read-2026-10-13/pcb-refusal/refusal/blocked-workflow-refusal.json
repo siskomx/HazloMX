@@ -1,0 +1,21 @@
+{
+  "approval_consumed": true,
+  "cancel_return_ms": null,
+  "cancellation_ms": null,
+  "ceased_before_barrier_release": false,
+  "elapsed_ms": 11943,
+  "error": "El archivo está ocupado. Cierra su operación pendiente y vuelve a intentarlo; no se publicará ningún cambio.",
+  "held_response_ms": 3,
+  "integration": "pcb",
+  "job_id": "e9e28700-4a0b-4bb1-b987-1585474908ef",
+  "mode": "refusal",
+  "no_owned_server_remaining_before_release": true,
+  "owned_pids": [],
+  "passed": true,
+  "phase": "failed",
+  "published": false,
+  "recovered_runs": 1,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-fc6d6175-c904-4630-9cdc-f644c27bebd8",
+  "scope": "actual approved workflow held staging-file access; exact SDK mutation phase and native UI not asserted",
+  "source_and_working_copy_preserved": true
+}

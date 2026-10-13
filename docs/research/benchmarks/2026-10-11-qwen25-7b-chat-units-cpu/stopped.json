@@ -1,0 +1,9 @@
+{
+  "status": "stopped",
+  "reason": "User requested prioritizing app completion over further model evaluations",
+  "evaluation_complete": false,
+  "quality_claim": false,
+  "owned_benchmark_pids": [
+    20592
+  ]
+}

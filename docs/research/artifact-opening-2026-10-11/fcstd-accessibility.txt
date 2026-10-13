@@ -1,0 +1,175 @@
+Window: "solid - FreeCAD 1.1.4", App: freecad.exe.
+	0 window (settable, string) solid - FreeCAD 1.1.4 Secondary Actions: Raise ID: Gui::GUISingleApplication.Gui::MainWindow
+		1 title bar (settable, string) Value: solid - FreeCAD 1.1.4
+			2 menu bar System ID: MenuBar
+				3 menu item System
+			4 button Minimize
+			5 button Maximize
+			6 button Close
+		7 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QOpenGLWidget
+		8 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea
+			9 window (settable, string) Start Secondary Actions: Raise ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow
+				10 window (settable, string) Secondary Actions: Raise ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView
+					11 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget
+						12 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea
+							13 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport
+								14 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget
+									15 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget
+										16 text Welcome to FreeCAD ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.QLabel
+										17 text Set your basic configuration options below. These options (and many more) can be changed later in the preferences. ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.QLabel
+										18 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.ThemeSelectorWidget
+											19 text Theme ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.ThemeSelectorWidget.QLabel
+											20 text Looking for more themes? You can obtain them using Addon Manager. ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.ThemeSelectorWidget.QLabel
+											21 check box (settable, string) FreeCAD Light ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.ThemeSelectorWidget.QToolButton
+											22 check box (settable, string) FreeCAD Dark ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.ThemeSelectorWidget.QToolButton
+										23 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.GeneralSettingsWidget
+											24 text Language ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.GeneralSettingsWidget.QLabel
+											25 combo box (settable, string) Value: English ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.GeneralSettingsWidget.QComboBox
+											26 text Unit System ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.GeneralSettingsWidget.QLabel
+											27 combo box (settable, string) Value: Standard (mm, kg, s, °) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.GeneralSettingsWidget.QComboBox
+											28 text Navigation Style ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.GeneralSettingsWidget.QLabel
+											29 combo box (settable, string) Value: CAD ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.GeneralSettingsWidget.QComboBox
+										30 button (settable, string) Done ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_viewport.QWidget.FirstStartWidget.QPushButton
+							31 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_hcontainer
+								32 scroll bar (settable, float) Value: 0 ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_hcontainer.QScrollBar
+							33 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_vcontainer
+								34 scroll bar (settable, float) Value: 0 ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.StartView.QStackedWidget.QScrollArea.qt_scrollarea_vcontainer.QScrollBar
+			35 window (settable, string) solid : 1 Secondary Actions: Raise ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow
+				36 window (settable, string) Secondary Actions: Raise ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.Gui::View3DInventor
+					37 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.Gui::View3DInventor.QStackedWidget
+						38 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.Gui::View3DInventor.QStackedWidget.Gui::View3DInventorViewer
+							39 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMdiArea.QWidget.QMdiSubWindow.Gui::View3DInventor.QStackedWidget.Gui::View3DInventorViewer.QOpenGLWidget
+		40 status bar ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar
+			41 thumb (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.QSizeGrip
+			42 text ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.Gui::StatusBarLabel
+			43 button (settable, string) 7.47 mm x 4.14 mm ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.Gui::DimensionWidget
+			44 text ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.hintLabel
+			45 text ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.rightSideLabel
+			46 button (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.notificationArea
+			47 button (settable, string) CAD ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.NavigationIndicator
+			48 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.statusBar.StatusBarArea
+		49 menu bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar
+			50 menu item (settable, string) File ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&File
+			51 menu item (settable, string) Edit ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&Edit
+			52 menu item (settable, string) View ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&View
+			53 menu item (settable, string) Tools ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&Tools
+			54 menu item (settable, string) Macro ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&Macro
+			55 menu item (settable, string) Sketch ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&Sketch
+			56 menu item (settable, string) Part Design ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&Part Design
+			57 menu item (settable, string) Windows ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&Windows
+			58 separator (disabled, settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.Separator
+			59 menu item (settable, string) Help ID: Gui::GUISingleApplication.Gui::MainWindow.QMenuBar.&Help
+		60 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow._fc_action_widget_
+		61 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.File
+			62 check box (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.File.qt_toolbar_ext_button
+			63 button (settable, string) New Document Description: Std_New ID: Gui::GUISingleApplication.Gui::MainWindow.File.QToolButton
+			64 button (settable, string) Open… Description: Std_Open ID: Gui::GUISingleApplication.Gui::MainWindow.File.QToolButton
+			65 button (settable, string) Save Description: Std_Save ID: Gui::GUISingleApplication.Gui::MainWindow.File.QToolButton
+		66 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Edit
+			67 button (disabled, settable, string) Undo Description: Std_Undo ID: Gui::GUISingleApplication.Gui::MainWindow.Edit.QToolButton
+			68 button (disabled, settable, string) Redo Description: Std_Redo ID: Gui::GUISingleApplication.Gui::MainWindow.Edit.QToolButton
+			69 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Edit.QToolBarSeparator
+			70 button (disabled, settable, string) Recompute Description: Std_Refresh ID: Gui::GUISingleApplication.Gui::MainWindow.Edit.QToolButton
+		71 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Workbench
+			72 combo box (settable, string) Description: Std_Workbench Value: Part Design ID: Gui::GUISingleApplication.Gui::MainWindow.Workbench.Gui::WorkbenchComboBox
+		73 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.View
+			74 button (settable, string) Fit All Description: Std_ViewFitAll ID: Gui::GUISingleApplication.Gui::MainWindow.View.QToolButton
+			75 button (settable, string) Fit Selection Description: Std_ViewFitSelection ID: Gui::GUISingleApplication.Gui::MainWindow.View.QToolButton
+			76 button (settable, string) Standard Views Description: Std_ViewGroup ID: Gui::GUISingleApplication.Gui::MainWindow.View.qt_toolbutton_menubutton
+			77 button (settable, string) Align to Selection Description: Std_AlignToSelection ID: Gui::GUISingleApplication.Gui::MainWindow.View.QToolButton
+			78 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.View.QToolBarSeparator
+			79 button (settable, string) Draw Style Description: Std_DrawStyle ID: Gui::GUISingleApplication.Gui::MainWindow.View.qt_toolbutton_menubutton
+			80 button (settable, string) Selection Filter Description: Part_SelectFilter ID: Gui::GUISingleApplication.Gui::MainWindow.View.qt_toolbutton_menubutton
+			81 button (settable, string) Tree View Actions Description: Std_TreeViewActions ID: Gui::GUISingleApplication.Gui::MainWindow.View.qt_toolbutton_menubutton
+			82 button (settable, string) Measure Description: Std_Measure ID: Gui::GUISingleApplication.Gui::MainWindow.View.QToolButton
+		83 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Structure
+			84 button (settable, string) New Part Description: Std_Part ID: Gui::GUISingleApplication.Gui::MainWindow.Structure.QToolButton
+			85 button (settable, string) Datums Description: Part_Datums ID: Gui::GUISingleApplication.Gui::MainWindow.Structure.qt_toolbutton_menubutton
+			86 button (settable, string) New Group Description: Std_Group ID: Gui::GUISingleApplication.Gui::MainWindow.Structure.QToolButton
+			87 button (settable, string) Link Actions Description: Std_LinkActions ID: Gui::GUISingleApplication.Gui::MainWindow.Structure.qt_toolbutton_menubutton
+			88 button (settable, string) Variable Set Description: Std_VarSet ID: Gui::GUISingleApplication.Gui::MainWindow.Structure.QToolButton
+		89 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Help
+			90 button (settable, string) What's This? Description: Std_WhatsThis ID: Gui::GUISingleApplication.Gui::MainWindow.Help.QToolButton
+		91 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Helper Features
+			92 button (settable, string) New Body Description: PartDesign_Body ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Helper Features.QToolButton
+			93 button (settable, string) Create Datum Description: PartDesign_CompDatums ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Helper Features.qt_toolbutton_menubutton
+			94 button (disabled, settable, string) Validate Sketch Description: Sketcher_ValidateSketch ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Helper Features.QToolButton
+			95 button (disabled, settable, string) Check Geometry Description: Part_CheckGeometry ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Helper Features.QToolButton
+			96 button (settable, string) Sub-Shape Binder Description: PartDesign_SubShapeBinder ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Helper Features.QToolButton
+			97 button (disabled, settable, string) Clone Description: PartDesign_Clone ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Helper Features.QToolButton
+		98 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features
+			99 button (settable, string) Pad Description: PartDesign_Pad ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			100 button (settable, string) Revolve Description: PartDesign_Revolution ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			101 button (settable, string) Additive Loft Description: PartDesign_AdditiveLoft ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			102 button (settable, string) Additive Pipe Description: PartDesign_AdditivePipe ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			103 button (settable, string) Additive Helix Description: PartDesign_AdditiveHelix ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			104 button (settable, string) Additive Primitive Description: PartDesign_CompPrimitiveAdditive ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.qt_toolbutton_menubutton
+			105 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolBarSeparator
+			106 button (settable, string) Pocket Description: PartDesign_Pocket ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			107 button (settable, string) Hole Description: PartDesign_Hole ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			108 button (settable, string) Groove Description: PartDesign_Groove ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			109 button (settable, string) Subtractive Loft Description: PartDesign_SubtractiveLoft ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			110 button (settable, string) Subtractive Pipe Description: PartDesign_SubtractivePipe ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			111 button (settable, string) Subtractive Helix Description: PartDesign_SubtractiveHelix ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+			112 button (settable, string) Subtractive Primitive Description: PartDesign_CompPrimitiveSubtractive ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.qt_toolbutton_menubutton
+			113 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolBarSeparator
+			114 button (settable, string) Boolean Operation Description: PartDesign_Boolean ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Modeling Features.QToolButton
+		115 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Dress-Up Features
+			116 button (settable, string) Fillet Description: PartDesign_Fillet ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Dress-Up Features.QToolButton
+			117 button (settable, string) Chamfer Description: PartDesign_Chamfer ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Dress-Up Features.QToolButton
+			118 button (settable, string) Draft Description: PartDesign_Draft ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Dress-Up Features.QToolButton
+			119 button (settable, string) Thickness Description: PartDesign_Thickness ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Dress-Up Features.QToolButton
+		120 tool bar (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Transformation Features
+			121 button (settable, string) Mirror Description: PartDesign_Mirrored ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Transformation Features.QToolButton
+			122 button (settable, string) Linear Pattern Description: PartDesign_LinearPattern ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Transformation Features.QToolButton
+			123 button (settable, string) Polar Pattern Description: PartDesign_PolarPattern ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Transformation Features.QToolButton
+			124 button (settable, string) Multi-Transform Description: PartDesign_MultiTransform ID: Gui::GUISingleApplication.Gui::MainWindow.Part Design Transformation Features.QToolButton
+		125 window (settable, string) Model Secondary Actions: Raise ID: Gui::GUISingleApplication.Gui::MainWindow.Model
+			126 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model
+				127 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter
+					128 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::PropertyView
+						129 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::PropertyView.propertyTab
+							130 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::PropertyView.propertyTab.qt_tabwidget_stackedwidget
+								131 tree (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::PropertyView.propertyTab.qt_tabwidget_stackedwidget.propertyEditorData
+							132 tab (settable, string) Data ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::PropertyView.propertyTab.qt_tabwidget_tabbar
+								133 tab item (selectable, settable, string) View ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::PropertyView.propertyTab.qt_tabwidget_tabbar
+								134 tab item (selectable, settable, string) Data ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::PropertyView.propertyTab.qt_tabwidget_tabbar
+					135 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::TreePanel
+						136 tree (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::TreePanel.Gui::TreeWidget
+							137 tree item (selectable, settable, string) solid ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::TreePanel.Gui::TreeWidget
+							138 tree item (selectable, settable, string) Solid ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.Gui::TreePanel.Gui::TreeWidget
+					139 thumb (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.Model.QSplitter.qt_splithandle_
+			140 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.OverlayTitle
+				141 button (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.OverlayTitle.OBTN Overlay
+				142 button (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.OverlayTitle.OBTN Float
+				143 button (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.Model.OverlayTitle.OBTN Close
+		144 tab (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.QMainWindowTabBar
+		145 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight
+			146 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.qt_tabwidget_stackedwidget
+				147 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.qt_tabwidget_stackedwidget.QWidget
+			148 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter
+				149 window (settable, string) Tasks Secondary Actions: Raise ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks
+					150 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks
+						151 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea
+							152 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport
+								153 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel
+									154 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel.Gui::TaskView::TaskBox
+										155 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel.Gui::TaskView::TaskBox.QSint::TaskHeader
+											156 button (settable, string) Start Part ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel.Gui::TaskView::TaskBox.QSint::TaskHeader.QSint::ActionLabel
+											157 text ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel.Gui::TaskView::TaskBox.QSint::TaskHeader.QLabel
+										158 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel.Gui::TaskView::TaskBox.QFrame
+										159 custom (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel.Gui::TaskView::TaskBox.QFrame
+											160 button (settable, string) New Body Description: PartDesign_Body ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.Tasks.QScrollArea.qt_scrollarea_viewport.Gui::TaskView::TaskPanel.Gui::TaskView::TaskBox.QFrame.QSint::ActionLabel
+					161 group (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.OverlayTitle
+						162 button (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.OverlayTitle.OBTN Overlay
+						163 button (settable, string) ID: Gui::GUISingleApplication.Gui::MainWindow.OverlayRight.Gui::OverlaySplitter.Tasks.OverlayTitle.OBTN Close
+
+Document text: ```
+Welcome to FreeCAD
+Set your basic configuration options below. These options (and many more) can be changed later in the preferences.
+Theme
+Looking for more themes? You can obtain them using Addon Manager.
+Language
+Unit System
+Navigation Style
+```

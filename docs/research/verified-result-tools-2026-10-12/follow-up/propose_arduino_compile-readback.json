@@ -1,0 +1,11 @@
+{
+  "components": null,
+  "content": "void setup() {} void loop() {}",
+  "format": "sketch",
+  "job_id": "45eab264-ac4f-4a9f-97cc-06a781917bc1",
+  "project_id": "8eb45588-8878-4a97-b118-4eca1244cca1",
+  "scope": "verified_published_result",
+  "sha256": "22897da95b428cd8c177ca4cdb60bd8d558b047c56fbdafbf3dd1ffb0095ffdb",
+  "source_is_untrusted_data": true,
+  "source_name": "Sketch.ino"
+}

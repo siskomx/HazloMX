@@ -1,0 +1,9 @@
+{
+  "content": "{\"schema_version\": 1, \"adapter_version\": 1, \"job_id\": \"39092150-a445-454d-a753-533b591c5c94\", \"success\": true, \"freecad_version\": \"1.1.4\", \"dimensions_mm\": {\"length\": 12.7, \"width\": 25.4, \"height\": 6.35}, \"geometry\": {\"bounds_mm\": [12.7, 25.4, 6.35], \"volume_mm3\": 2048.383, \"solids\": 1}, \"artifacts\": [\"solid.FCStd\", \"solid.step\"]}",
+  "format": "solid_report",
+  "job_id": "39092150-a445-454d-a753-533b591c5c94",
+  "project_id": "72caabb6-723e-4c9b-9e5b-6e07c68e9c60",
+  "scope": "verified_published_result",
+  "sha256": "98b9d0aef3d2fe20d84b8b65128f1fde5254aaeb2eedbcbd94b8e7f26bc11d64",
+  "source_is_untrusted_data": true
+}

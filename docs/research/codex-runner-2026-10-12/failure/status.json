@@ -1,0 +1,8 @@
+{
+  "cloud_inference": false,
+  "credentials_present": false,
+  "loopback_only": true,
+  "success_fixture": false,
+  "tool_count": 5,
+  "turn_decoder_passed": true
+}

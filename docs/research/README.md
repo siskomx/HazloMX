@@ -1,0 +1,5 @@
+# Evidence archive
+
+Each research directory states the exact version, environment and scope of its result. Passing backend fixtures do not certify native GUI interaction or signed-in agent conversations. Current requirements and remaining work are in [the application goal](../application-goal.md).
+
+Git retains source snapshots, receipts, hash manifests and regression fixtures. Personal Windows profile paths are redacted; unreviewed screenshots stay private. Native drawing previews required by regression fixtures remain included. Installed runtimes, build outputs, object files, caches and writer locks remain local. The repository's existing log ignore rule also keeps raw logs local. Historical hash manifests describe their full captured local trees, so some referenced generated files are intentionally absent from Git; do not interpret those manifests as a complete downloadable archive. Publication redactions have separate hashes in publication-privacy.json and do not represent new native test runs. Preserve generated STEP, G-code and native project bytes.

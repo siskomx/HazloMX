@@ -1,0 +1,153 @@
+﻿{
+    "artifact_files":  [
+                           {
+                               "sha256":  "EA311BB1C1B831337439B48E94D5AE14492F718E7EB176FDCEC9E32070A2649C",
+                               "name":  "input.json",
+                               "bytes":  127
+                           },
+                           {
+                               "sha256":  "029EF14E86321169EE7254B3482F38F6235CF0DA9D1D34441910E6F4EF6EDDB8",
+                               "name":  "result.json",
+                               "bytes":  330
+                           },
+                           {
+                               "sha256":  "00A9433F04E41CFBB4CCF86CFD1B03D1F595D3C874329A645450669C8ADD420E",
+                               "name":  "solid.FCStd",
+                               "bytes":  2958
+                           },
+                           {
+                               "sha256":  "6B0DEAD91155140DD292CCBCBEF23CDDB0D467DA9CD79BD7C45146DECF088F22",
+                               "name":  "solid.step",
+                               "bytes":  6854
+                           },
+                           {
+                               "sha256":  "C5F6F9A431B0ABF2BA3F175A7020D23844934927F3DD501CAD271ED6D8AE6E3E",
+                               "name":  "input.json",
+                               "bytes":  127
+                           },
+                           {
+                               "sha256":  "4436274A7B54590DB438366DB76863947AECCF8C89AB6EFAFFE81D5258AC13E6",
+                               "name":  "result.json",
+                               "bytes":  330
+                           },
+                           {
+                               "sha256":  "F73F8F7AC04DB4D7BD3164B108F465368B09646F44F325A4BE04F25066B5B3E9",
+                               "name":  "solid.FCStd",
+                               "bytes":  2958
+                           },
+                           {
+                               "sha256":  "9A9BB83B5F237EF95AD743F4C5D059468D40B1347970AA64B6831E229F824CD4",
+                               "name":  "solid.step",
+                               "bytes":  6854
+                           },
+                           {
+                               "sha256":  "6EBB922EA73D1421D32D3CDD38BB8229BCCB3B57357B8245DF5F7103DDDACE39",
+                               "name":  "input.json",
+                               "bytes":  127
+                           },
+                           {
+                               "sha256":  "3055CD453BEFF8BCC3DA585BE12F97DAB6D1279A305040C965BE41344944689D",
+                               "name":  "result.json",
+                               "bytes":  330
+                           },
+                           {
+                               "sha256":  "72F0F1DAE2095ABF0B54828003BB19015F59FD45C9EA2FDE5ED550C0FB38F522",
+                               "name":  "solid.FCStd",
+                               "bytes":  2960
+                           },
+                           {
+                               "sha256":  "19AA4C0C7AE14F46ACB30640419942D5495D6E3B1F514231BDCD9C760670A207",
+                               "name":  "solid.step",
+                               "bytes":  6854
+                           }
+                       ],
+    "original_sha256":  "507625FF7D186B221854ECA518FC33B639AD3781BA08A0C7C832CE9E7FF488CC",
+    "published_count":  3,
+    "runs":  [
+                 {
+                     "schema_version":  2,
+                     "project_id":  "1c0dd7f9-bac2-4928-9f0f-0113021220e1",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "0e74f858-cfea-4d8f-a212-046e31799019",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "completed",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/0e74f858-cfea-4d8f-a212-046e31799019",
+                                   "created_unix_ms":  1791752339670,
+                                   "updated_unix_ms":  1791752346354,
+                                   "sequence":  3,
+                                   "error":  null,
+                                   "files_verified":  true
+                               }
+                 },
+                 {
+                     "schema_version":  2,
+                     "project_id":  "1c0dd7f9-bac2-4928-9f0f-0113021220e1",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "57d458cc-9d92-4455-97b2-936408dc5f8c",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "completed",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/57d458cc-9d92-4455-97b2-936408dc5f8c",
+                                   "created_unix_ms":  1791752346358,
+                                   "updated_unix_ms":  1791752352530,
+                                   "sequence":  3,
+                                   "error":  null,
+                                   "files_verified":  true
+                               }
+                 },
+                 {
+                     "schema_version":  2,
+                     "project_id":  "1c0dd7f9-bac2-4928-9f0f-0113021220e1",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "db891115-ad47-4df5-ae03-badca04a5ef9",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "completed",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/db891115-ad47-4df5-ae03-badca04a5ef9",
+                                   "created_unix_ms":  1791753368976,
+                                   "updated_unix_ms":  1791753441757,
+                                   "sequence":  3,
+                                   "error":  null,
+                                   "files_verified":  true
+                               }
+                 }
+             ],
+    "manifest":  {
+                     "schema_version":  1,
+                     "project_id":  "1c0dd7f9-bac2-4928-9f0f-0113021220e1"
+                 }
+}

@@ -1,0 +1,9 @@
+{
+  "pass": true,
+  "tag": "v0.7.1",
+  "archive_sha256": "sha256:a02ccf9fb97fa1e88b421ace4387bb5d912abe622152fcef2a9b89cae2603f58",
+  "executable": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\arduino-agent-probe\\runtime\\Arduino Agent.exe",
+  "executable_sha256": "d7c6e956ceecf5214867ff063e0ecf6bf0276946950ddb1f34946de31d2c5cd9",
+  "bridge_sha256": "54e7988b9f575afc9acbef763d16359c61086ebdc70e3f0563579c53f39c95e0",
+  "launched": false
+}

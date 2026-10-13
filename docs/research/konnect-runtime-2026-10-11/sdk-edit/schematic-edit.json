@@ -1,0 +1,144 @@
+{
+  "after": {
+    "footprint": "Resistor_SMD:R_1206_3216Metric",
+    "lib_id": "Device:R_US",
+    "mirror_x": false,
+    "mirror_y": false,
+    "properties": {
+      "Datasheet": "~",
+      "Footprint": "Resistor_SMD:R_1206_3216Metric",
+      "Reference": "R1",
+      "Value": "12.34k"
+    },
+    "reference": "R1",
+    "rotation": 90.0,
+    "unit_count": 1,
+    "units": [
+      {
+        "mirror_x": false,
+        "mirror_y": false,
+        "rotation": 90.0,
+        "unit": 1,
+        "uuid": "eaf8668d-aec7-4209-a3f9-fc7bfb5b931b",
+        "x": 127.0,
+        "y": 93.98
+      }
+    ],
+    "uuid": "eaf8668d-aec7-4209-a3f9-fc7bfb5b931b",
+    "value": "12.34k",
+    "x": 127.0,
+    "y": 93.98
+  },
+  "before": {
+    "footprint": "Resistor_SMD:R_1206_3216Metric",
+    "lib_id": "Device:R_US",
+    "mirror_x": false,
+    "mirror_y": false,
+    "properties": {
+      "Datasheet": "~",
+      "Footprint": "Resistor_SMD:R_1206_3216Metric",
+      "Reference": "R1",
+      "Value": "10k"
+    },
+    "reference": "R1",
+    "rotation": 90.0,
+    "unit_count": 1,
+    "units": [
+      {
+        "mirror_x": false,
+        "mirror_y": false,
+        "rotation": 90.0,
+        "unit": 1,
+        "uuid": "eaf8668d-aec7-4209-a3f9-fc7bfb5b931b",
+        "x": 127.0,
+        "y": 93.98
+      }
+    ],
+    "uuid": "eaf8668d-aec7-4209-a3f9-fc7bfb5b931b",
+    "value": "10k",
+    "x": 127.0,
+    "y": 93.98
+  },
+  "edit": {
+    "changes": [
+      "Value → 12.34k (1 unit(s))"
+    ],
+    "datasheet": "~",
+    "fields": {
+      "Datasheet": "~",
+      "Footprint": "Resistor_SMD:R_1206_3216Metric",
+      "Reference": "R1",
+      "Value": "12.34k"
+    },
+    "footprint": "Resistor_SMD:R_1206_3216Metric",
+    "lib_id": "Device:R_US",
+    "mirror_x": false,
+    "mirror_y": false,
+    "reference": "R1",
+    "rotation": 90.0,
+    "schematic": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target/konnect-probe\\sdk-5b075880-2e08-4b1e-a8d2-1d89484f287d\\Edited\\basic_test.kicad_sch",
+    "unit_count": 1,
+    "units": [
+      {
+        "field_placements": {
+          "Datasheet": {
+            "hide": false,
+            "rotation": 0.0,
+            "x": 127.0,
+            "y": 93.98
+          },
+          "Footprint": {
+            "hide": false,
+            "rotation": 90.0,
+            "x": 127.254,
+            "y": 92.964
+          },
+          "Reference": {
+            "hide": false,
+            "rotation": 90.0,
+            "x": 127.0,
+            "y": 88.9
+          },
+          "Value": {
+            "hide": false,
+            "rotation": 90.0,
+            "x": 127.0,
+            "y": 91.44
+          }
+        },
+        "fields": {
+          "Datasheet": "~",
+          "Footprint": "Resistor_SMD:R_1206_3216Metric",
+          "Reference": "R1",
+          "Value": "12.34k"
+        },
+        "instance_paths": [
+          [
+            "CliTest",
+            "/64c481bc-ea0a-4f9c-a176-3729f4987c58"
+          ]
+        ],
+        "instance_references": [
+          "R1"
+        ],
+        "lib_id": "Device:R_US",
+        "mirror_x": false,
+        "mirror_y": false,
+        "rotation": 90.0,
+        "unit": 1,
+        "uuid": "eaf8668d-aec7-4209-a3f9-fc7bfb5b931b",
+        "x": 127.0,
+        "y": 93.98
+      }
+    ],
+    "uuid": "eaf8668d-aec7-4209-a3f9-fc7bfb5b931b",
+    "value": "12.34k",
+    "x": 127.0,
+    "y": 93.98
+  },
+  "request": {
+    "expected_value": "10k",
+    "reference": "R1",
+    "value": "12.34k"
+  }
+}

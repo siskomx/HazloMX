@@ -1,0 +1,9 @@
+{
+  "installer_sha256": "4fede5cb05b32ac8eb8a72e0627345b06baa56dccb6e2b3502d17f68b495908e",
+  "installer_prerequisite_pass": true,
+  "cad_cancellation_checked": false,
+  "runtime_missing_checked": false,
+  "guest_id": "9fd7522d-6de9-4fba-badc-effe29a92040",
+  "guest_left_running": true,
+  "reason": "Computer Use repeatedly detected manual input; clarification requested before further guest UI actions. Owned installed app alive; no project or job created at last read."
+}

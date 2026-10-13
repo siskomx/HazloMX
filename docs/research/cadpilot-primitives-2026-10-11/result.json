@@ -1,0 +1,245 @@
+{
+  "passed": true,
+  "freecad_version": "1.1.4",
+  "cadpilot_version": "0.7.7",
+  "before": {
+    "success": true,
+    "shape_type": "Solid",
+    "is_valid": true,
+    "volume_mm3": 6000.0,
+    "area_mm2": 2200.0,
+    "center_of_mass": [
+      5.0,
+      10.0,
+      15.0
+    ],
+    "bbox": {
+      "xmin": 0.0,
+      "ymin": 0.0,
+      "zmin": 0.0,
+      "xmax": 10.0,
+      "ymax": 20.0,
+      "zmax": 30.0
+    },
+    "counts": {
+      "solids": 1,
+      "shells": 1,
+      "faces": 6,
+      "edges": 12,
+      "vertices": 8
+    },
+    "placement": {
+      "base": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": {
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "angle_deg": 0.0,
+        "yaw_pitch_roll": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "rollback": {
+    "success": true,
+    "shape_type": "Solid",
+    "is_valid": true,
+    "volume_mm3": 6000.0,
+    "area_mm2": 2200.0,
+    "center_of_mass": [
+      5.0,
+      10.0,
+      15.0
+    ],
+    "bbox": {
+      "xmin": 0.0,
+      "ymin": 0.0,
+      "zmin": 0.0,
+      "xmax": 10.0,
+      "ymax": 20.0,
+      "zmax": 30.0
+    },
+    "counts": {
+      "solids": 1,
+      "shells": 1,
+      "faces": 6,
+      "edges": 12,
+      "vertices": 8
+    },
+    "placement": {
+      "base": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": {
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "angle_deg": 0.0,
+        "yaw_pitch_roll": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "after": {
+    "success": true,
+    "shape_type": "Solid",
+    "is_valid": true,
+    "volume_mm3": 2458.06,
+    "area_mm2": 1225.8,
+    "center_of_mass": [
+      6.35,
+      12.7,
+      3.81
+    ],
+    "bbox": {
+      "xmin": 0.0,
+      "ymin": 0.0,
+      "zmin": 0.0,
+      "xmax": 12.7,
+      "ymax": 25.4,
+      "zmax": 7.62
+    },
+    "counts": {
+      "solids": 1,
+      "shells": 1,
+      "faces": 6,
+      "edges": 12,
+      "vertices": 8
+    },
+    "placement": {
+      "base": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": {
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "angle_deg": 0.0,
+        "yaw_pitch_roll": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "created": {
+    "success": true,
+    "shape_type": "Solid",
+    "is_valid": true,
+    "volume_mm3": 100.531,
+    "area_mm2": 125.664,
+    "center_of_mass": [
+      40.0,
+      3.26183e-17,
+      4.0
+    ],
+    "bbox": {
+      "xmin": 38.0,
+      "ymin": -2.0,
+      "zmin": 0.0,
+      "xmax": 42.0,
+      "ymax": 2.0,
+      "zmax": 8.0
+    },
+    "counts": {
+      "solids": 1,
+      "shells": 1,
+      "faces": 3,
+      "edges": 3,
+      "vertices": 2
+    },
+    "placement": {
+      "base": [
+        40.0,
+        0.0,
+        0.0
+      ],
+      "rotation": {
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "angle_deg": 0.0,
+        "yaw_pitch_roll": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "global_coordinates": {
+    "success": true,
+    "shape_type": "Solid",
+    "is_valid": true,
+    "volume_mm3": 60.0,
+    "area_mm2": 94.0,
+    "center_of_mass": [
+      101.5,
+      202.0,
+      302.5
+    ],
+    "bbox": {
+      "xmin": 100.0,
+      "ymin": 200.0,
+      "zmin": 300.0,
+      "xmax": 103.0,
+      "ymax": 204.0,
+      "zmax": 305.0
+    },
+    "counts": {
+      "solids": 1,
+      "shells": 1,
+      "faces": 6,
+      "edges": 12,
+      "vertices": 8
+    },
+    "placement": {
+      "base": [
+        100.0,
+        200.0,
+        300.0
+      ],
+      "rotation": {
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "angle_deg": 0.0,
+        "yaw_pitch_roll": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "original_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+  "unselected_sha256": "ac1bd0e36029f10a8bfabb4c9b2f099cd6b721854dd57c33508dc8c9c1295479",
+  "rpc_verified": false,
+  "native_gui_verified": false,
+  "application_workflow_verified": false
+}

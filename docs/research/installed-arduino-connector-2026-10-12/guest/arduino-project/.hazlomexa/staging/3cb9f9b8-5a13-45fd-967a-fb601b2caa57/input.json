@@ -1,0 +1,1 @@
+{"schema_version":1,"job_id":"3cb9f9b8-5a13-45fd-967a-fb601b2caa57","fqbn":"arduino:avr:uno","source":"void setup() { missing_symbol; } void loop() {}"}

@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "ambiguous_order",
+  "result": {
+    "proposal": {
+      "message": "¿En qué orden deseas asignar las medidas 10, 20 y 30 mm como largo, ancho y alto?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 1.0498110999999999
+}

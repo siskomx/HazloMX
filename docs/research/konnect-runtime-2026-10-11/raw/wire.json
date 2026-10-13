@@ -1,0 +1,2976 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "capabilities": {
+        "tools": {
+          "listChanged": true
+        }
+      },
+      "protocolVersion": "2025-06-18",
+      "serverInfo": {
+        "name": "konnect",
+        "version": "0.13.0"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "tools": [
+        {
+          "description": "List all available KiCAD toolsets with descriptions, categories, tool counts, and whether each is currently loaded. Only the starter kit (project, config) is loaded at startup \u2014 call load_toolset(name) to expose additional tools in subsequent tools/list responses. Always call this first to discover what tools are available for the task.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "list_toolboxes"
+        },
+        {
+          "description": "Load a toolset by name so its tools appear in tools/list and can be called. Returns the list of tools that were added. Use list_toolboxes() first to see valid names. Pass an array to load several toolsets in one call -- cheaper, one tools/list refresh.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "Toolset name (e.g. 'sch_components', 'pcb_routing'), or an array of names"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "load_toolset"
+        },
+        {
+          "description": "Unload a toolset to remove its tools from the active session. Use this to keep the tool list manageable when switching tasks. With auto_load_toolsets enabled, tools reload on use.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Toolset name to unload",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "unload_toolset"
+        },
+        {
+          "description": "Return the list of currently loaded toolsets and how many tools each provides.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_active_toolsets"
+        },
+        {
+          "description": "Return the most recent tool calls this session (newest first) with call_id, tool name, toolset, duration, status (ok/error/not_found), and error_kind when failed. Use this to self-diagnose \u2014 e.g. 'why did the last call fail?' or 'what tools have I been running?'",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 20,
+                "description": "Max number of calls to return (default 20, max 100). Pass 0 for all buffered calls.",
+                "type": "integer"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_recent_calls"
+        },
+        {
+          "description": "Return server uptime, total/error call counts, per-tool statistics, and the path to the JSONL call log. Good for 'what's my error rate today?' and 'which tool has been slowest?'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "server_stats"
+        },
+        {
+          "description": "Report read-only provenance for the Konnect process serving this call: build version and commit when available, executable path, conservatively detected install source, on-disk binary version, KiCad CLI version, redacted IPC endpoint, proven newer-binary state, platform-specific restart guidance, and whether installed skills, agents, and hooks match this build's bundle.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_installation_info"
+        },
+        {
+          "description": "Rename a KiCAD project: renames the .kicad_pro/.kicad_sch/.kicad_pcb/.kicad_prl files and rewrites the internal references that carry the old name. Renaming the files alone is NOT enough \u2014 every symbol instance stores (project \"name\"), and a mismatch there makes KiCAD treat the design as unannotated, losing every reference designator. Equivalent to eeschema's File > Save As. Use dry_run first.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dry_run": {
+                "default": false,
+                "description": "Report the planned changes without touching anything. Default false.",
+                "type": "boolean"
+              },
+              "new_name": {
+                "description": "New project name, without extension",
+                "type": "string"
+              },
+              "project": {
+                "description": "Path to the existing .kicad_pro file",
+                "type": "string"
+              },
+              "rename_directory": {
+                "default": false,
+                "description": "Also rename the containing folder when it matches the old project name. Default false.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "project",
+              "new_name"
+            ],
+            "type": "object"
+          },
+          "name": "rename_project"
+        },
+        {
+          "description": "List all active design rules (user-level + project-level).",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (optional)",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "list_design_rules"
+        },
+        {
+          "description": "Update a user preference. Use dot-notation for nested keys, e.g. 'fab_constraints.fab_house'. Call this when the user says things like 'always use JLCPCB' or 'I prefer 0402 passives'. Every other key is kept, and the response is the file as read back. Refuses with invalid_configuration, writing nothing, when the existing file cannot be parsed or read; a persistence failure is mutation_outcome_uncertain, so read the file before retrying.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "key_path": {
+                "description": "Dot-notation path to the config key, e.g. 'fab_constraints.fab_house' or 'default_passives.decoupling_cap'",
+                "type": "string"
+              },
+              "value": {
+                "description": "New value to set (string, number, array, or object)"
+              }
+            },
+            "required": [
+              "key_path",
+              "value"
+            ],
+            "type": "object"
+          },
+          "name": "save_user_config"
+        },
+        {
+          "description": "Save the currently open PCB board file via KiCAD IPC. Requires KiCAD to be running with IPC enabled.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "save_project"
+        },
+        {
+          "description": "List PCB documents open in the running KiCad UI and optionally check whether one specific KiCad project or board is open over IPC.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Optional path to a .kicad_pro project or .kicad_pcb board to check",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "open_project"
+        },
+        {
+          "description": "Read project metadata from a .kicad_pro file. Returns the project name, schematic and PCB paths, last modified time, project-file format version, and the generator versions recorded by the sibling design files. The compatibility kicad_version is null when those siblings disagree.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Path to the .kicad_pro project file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "type": "object"
+          },
+          "name": "get_project_info"
+        },
+        {
+          "description": "Save a project-specific rule or override. Same dot-notation as save_user_config but writes to the project's .konnect/project.json, with the same refusals: an unusable existing file is never overwritten.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "key_path": {
+                "description": "Dot-notation config key",
+                "type": "string"
+              },
+              "project_dir": {
+                "description": "Project directory (optional, uses configured default)",
+                "type": "string"
+              },
+              "value": {
+                "description": "New value to set"
+              }
+            },
+            "required": [
+              "key_path",
+              "value"
+            ],
+            "type": "object"
+          },
+          "name": "save_project_config"
+        },
+        {
+          "description": "Load the user's global Konnect preferences. Call this at the start of every session to get preferred manufacturers, fab constraints, default passives, and design rules. 'source' says whether the answer is the user's file or Konnect's defaults (no file existed; the defaults are then written for the user to edit and 'persisted' says whether that worked). A file that exists but cannot be parsed or read is refused with invalid_configuration and is never replaced by defaults.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "load_user_config"
+        },
+        {
+          "description": "Load project-specific configuration from <project_dir>/.konnect/project.json. Project config overrides user config where both exist. 'source' is 'file' or 'defaults' (no file; nothing is written). A file that cannot be parsed or read is refused with invalid_configuration.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Path to the KiCAD project directory. If omitted, uses the configured project_dir.",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "load_project_config"
+        },
+        {
+          "description": "Create a new KiCAD project at the given path. Creates the directory, a blank .kicad_pro file, an empty .kicad_sch schematic, and a blank .kicad_pcb board file. Refuses to replace any existing project file.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Project name (used as filename stem)",
+                "type": "string"
+              },
+              "path": {
+                "description": "Directory path where the project will be created",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "create_project"
+        },
+        {
+          "description": "Launch the live schematic viewer. The viewer shows the schematic as SVG and auto-refreshes when the file changes. Use this after placing components so the user can see the schematic in real-time as you edit it. For hierarchical designs, pass the root schematic \u2014 the viewer discovers every sheet reachable from it and shows a sheet selector.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "description": "Path to the root .kicad_sch file to view",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "open_schematic_viewer"
+        },
+        {
+          "description": "Return the merged configuration (user defaults + project overrides). This is the config Claude should use for all design decisions. 'sources' says where each half came from ('file', 'defaults', or 'not_configured' when there is no project directory). Refuses with invalid_configuration, naming which file, rather than merging defaults in place of a file that cannot be used.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (optional)",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_effective_config"
+        },
+        {
+          "description": "Export the schematic and PCB to PDF as a timestamped snapshot/checkpoint. Useful for saving progress before major edits.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "description": "Optional label to include in the filename",
+                "type": "string"
+              },
+              "output_dir": {
+                "description": "Directory to write snapshot PDFs",
+                "type": "string"
+              },
+              "pcb": {
+                "description": "Optional: path to .kicad_pcb file",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output_dir"
+            ],
+            "type": "object"
+          },
+          "name": "snapshot_project"
+        },
+        {
+          "description": "Add a natural-language design rule that Claude should follow in this project. Examples: 'Always use 100nF X7R for MCU decoupling within 3mm of power pin', 'Route USB D+/D- as 90-ohm differential pair'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (for project-scoped rules)",
+                "type": "string"
+              },
+              "rule": {
+                "description": "The design rule in plain English",
+                "type": "string"
+              },
+              "scope": {
+                "default": "project",
+                "description": "'user' (applies to all projects) or 'project' (this project only)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "rule"
+            ],
+            "type": "object"
+          },
+          "name": "add_design_rule"
+        }
+      ]
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "result": {
+      "content": [
+        {
+          "text": "{\"hint\":\"Only loaded toolsets contribute tools to tools/list. Call load_toolset(name) to expose a toolset's tools. Call unload_toolset(name) to prune tools you no longer need (keeps context small).\",\"loaded_count\":2,\"toolsets\":[{\"category\":\"project\",\"description\":\"Create, open, save, rename, snapshot KiCAD projects, and launch the live schematic viewer\",\"loaded\":true,\"name\":\"project\",\"tool_count\":7},{\"category\":\"project\",\"description\":\"Observe and semantically navigate exact KiCad editor, document, sheet, selection, and cross-probe context\",\"loaded\":false,\"name\":\"editor_navigation\",\"tool_count\":5},{\"category\":\"schematic\",\"description\":\"Add, edit, move, rotate, and delete schematic symbols\",\"loaded\":false,\"name\":\"sch_components\",\"tool_count\":18},{\"category\":\"schematic\",\"description\":\"Wires, net labels, power symbols, junctions, no-connects, pin-to-pin connections\",\"loaded\":false,\"name\":\"sch_wiring\",\"tool_count\":20},{\"category\":\"schematic\",\"description\":\"Buses, bus entries, and fanning a group of pins out onto a bus\",\"loaded\":false,\"name\":\"sch_bus\",\"tool_count\":4},{\"category\":\"schematic\",\"description\":\"Net connectivity, pin queries, trace paths, overlap/orphan detection\",\"loaded\":false,\"name\":\"sch_analysis\",\"tool_count\":15},{\"category\":\"schematic\",\"description\":\"Bulk add, edit, delete, and move schematic elements in one call\",\"loaded\":false,\"name\":\"sch_batch\",\"tool_count\":12},{\"category\":\"schematic\",\"description\":\"Export schematic to SVG/PDF/PNG/netlist, run ERC, and synchronize a live PCB\",\"loaded\":false,\"name\":\"sch_export\",\"tool_count\":10},{\"category\":\"schematic\",\"description\":\"Sheet files and hierarchical sheets: create a schematic file and set its page size, add/edit/move/delete/duplicate a sheet, hierarchy and page-numbering queries, import/add/edit/delete sheet pins, pin/label sync validation\",\"loaded\":false,\"name\":\"sch_hierarchy\",\"tool_count\":14},{\"category\":\"pcb\",\"description\":\"Board outline, layers, zones, mounting holes, board text, SVG logo import\",\"loaded\":false,\"name\":\"pcb_board\",\"tool_count\":13},{\"category\":\"pcb\",\"description\":\"Place, refresh, move, rotate, flip, align, duplicate and repair PCB footprints; inspect pads; inspect and edit a placed footprint's graphics\",\"loaded\":false,\"name\":\"pcb_components\",\"tool_count\":20},{\"category\":\"pcb\",\"description\":\"Traces, vias, copper pours, net classes, differential pairs, and strict Specctra SES import\",\"loaded\":false,\"name\":\"pcb_routing\",\"tool_count\":15},{\"category\":\"pcb\",\"description\":\"Placement quality and automation: score with named deductions, plan decoupling rows and BGA fanouts, first placement, force-directed refinement\",\"loaded\":false,\"name\":\"placement\",\"tool_count\":5},{\"category\":\"pcb\",\"description\":\"Gerber, PDF, SVG, 3D model, BOM, Specctra DSN, pick-and-place, DRC, DXF/GenCAD/IPC-2581/ODB++\",\"loaded\":false,\"name\":\"pcb_export\",\"tool_count\":14},{\"category\":\"library\",\"description\":\"Search, register, and author symbol and footprint libraries \u2014 create symbols and footprints, edit pads, graphics, metadata and 3D models\",\"loaded\":false,\"name\":\"library\",\"tool_count\":17},{\"category\":\"integration\",\"description\":\"JLCPCB parts database, local Freerouting MCP routing, datasheet URLs\",\"loaded\":false,\"name\":\"integration\",\"tool_count\":9},{\"category\":\"verification\",\"description\":\"DRC, design rules, layer constraints, clearance checks, KiCAD UI control (ERC is in sch_export)\",\"loaded\":false,\"name\":\"verification\",\"tool_count\":10},{\"category\":\"config\",\"description\":\"User preferences, project rules, design rules, fab constraints \u2014 call load_user_config at session start\",\"loaded\":true,\"name\":\"config\",\"tool_count\":7},{\"category\":\"review\",\"description\":\"AI-powered design audits: decoupling, connections, power rails, DFM, BOM health\",\"loaded\":false,\"name\":\"design_review\",\"tool_count\":6},{\"category\":\"templates\",\"description\":\"Reference circuit library: USB-C, LDO, buck converter, STM32, I2C, LED \u2014 verified component values\",\"loaded\":false,\"name\":\"templates\",\"tool_count\":4},{\"category\":\"manufacturing\",\"description\":\"Design-to-fab pipeline: export Gerber+BOM+positions package, validate for fab house, estimate cost\",\"loaded\":false,\"name\":\"manufacturing\",\"tool_count\":3}],\"total_tools\":228}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "result": {
+      "content": [
+        {
+          "text": "{\"errors\":[],\"loaded\":[\"sch_components\",\"sch_analysis\",\"sch_export\"],\"tools\":[{\"description\":\"Add a symbol from a KiCAD library to the schematic. The symbol is snapped to the 1.27mm schematic grid. Preserves every saved hierarchy instance, reports committed-file readback, copies the library Value and Footprint unless explicitly overridden, and refuses stale instance metadata before writing. Specify position in schematic mm coordinates.\",\"name\":\"add_schematic_component\"},{\"description\":\"Remove a component by reference designator, including every placed unit of a multi-unit symbol.\",\"name\":\"delete_schematic_component\"},{\"description\":\"Update fields (Reference, Value, Footprint, custom properties) consistently across every placed unit of a component, and move or hide the text of any of them.\",\"name\":\"edit_schematic_component\"},{\"description\":\"Get a component's shared properties and every placed unit's position. Use get_schematic_pin_locations for pins.\",\"name\":\"get_schematic_component\"},{\"description\":\"List all symbol instances in a schematic with their positions, values, footprints, and properties.\",\"name\":\"list_schematic_components\"},{\"description\":\"Move a component's lowest-numbered unit to a new position and translate every other placed unit by the same delta. Does NOT adjust connected wires. Junction dots are re-judged where the pins moved: a dot the pins leave unjustified is removed and a pin landing mid-span on a wire gains one, reported as junctions_pruned_count and junctions_added_count. A no-connect flag travels with the pin it protects, reported as no_connects_moved; the move is refused before writing when that pin cannot be followed one-to-one.\",\"name\":\"move_schematic_component\"},{\"description\":\"Set the lowest-numbered unit's absolute rotation and rotate every other placed unit by the same delta. Does NOT adjust connected wires. Each unit's Reference and Value text turns with its body, keeping any offset the caller gave it; use reset_schematic_field_positions to put fields back on their library anchors instead. Junction dots are re-judged where the pins turned, reported as junctions_pruned_count and junctions_added_count. A no-connect flag travels with the pin it protects, reported as no_connects_moved; the turn is refused before writing when that pin cannot be followed one-to-one.\",\"name\":\"rotate_schematic_component\"},{\"description\":\"REFUSED until implemented: moving a symbol while stretching its connected              wires is not built yet. Calling this returns an error naming              move_schematic_component as the working alternative \u2014 it moves the symbol              only, leaving wires where they are.\",\"name\":\"move_connected\"},{\"description\":\"Move all symbol units whose origins are within a bounding box by a given offset. Does NOT adjust connected wires. Junction dots are re-judged once for the whole region where its pins moved, reported as junctions_pruned_count and junctions_added_count. No-connect flags travel with the pins they protect, reported as no_connects_moved; the move is refused before writing when a pin cannot be followed one-to-one.\",\"name\":\"move_region\"},{\"description\":\"Assign reference designators in the saved schematic the way eeschema's Tools \u2192 Annotate does with its defaults: every '?' designator gets the first free number for its prefix in the project, in ascending X per sheet instance, numbers used on any sheet instance in the file are reserved, and numbered designators are kept. The units of one multi-unit part (same embedded definition and value, distinct units) share one designator; when which units belong together is not proven they are reported in 'unresolved', never guessed. Two separate parts sharing a designator are reported in 'unresolved' with a 'partial' outcome; they are renumbered only when resolve_duplicates is true (the first in ascending X keeps the number). Annotates one project's instance records \u2014 the schematic's owner by default, or 'project' \u2014 and never touches another project's. Writes both the Reference property and the instances block, then reads the file back; every count in the response comes from that readback. Numbers used on the project's other sheets are reserved through its sheet tree ('other_sheets_consulted'); duplicates already spread across sheets are not detected here. Konnect's own implementation \u2014 kicad-cli has no annotate command. dry_run returns the plan without writing.\",\"name\":\"annotate_schematic\"},{\"description\":\"Get the exact schematic-space (X,Y) coordinates of every pin on every placed unit of a component, accounting for rotation and mirroring. Uses the canonical pin transform. Each pin also reports 'orientation_degrees', the direction leading away from the symbol body (0 = east) \u2014 a net label at the pin must read that way or its text runs back over the symbol's pin names \u2014 and 'length_mm'.\",\"name\":\"get_schematic_pin_locations\"},{\"description\":\"Get pin locations for multiple components in a single file read. Reports the same per-pin fields as get_schematic_pin_locations, including 'orientation_degrees' and 'length_mm'.\",\"name\":\"batch_get_schematic_pin_locations\"},{\"description\":\"Add or update a custom property consistently across every placed unit of a component.\",\"name\":\"add_component_annotation\"},{\"description\":\"Add or update a group property on every placed unit of multiple components.\",\"name\":\"group_components\"},{\"description\":\"Replace every placed unit of a component with a new library symbol while preserving unit numbers. A unit override is accepted only for a single placement. Junction dots are re-judged once for the whole replacement, reported as junctions_pruned_count and junctions_added_count. A no-connect flag follows the same symbol UUID, unit, and pin number when that mapping is one-to-one; removed, renumbered, or duplicated protected pins refuse before writing.\",\"name\":\"replace_component\"},{\"description\":\"Re-embed placed symbols' definitions from their libraries, like KiCad's 'Update Symbols from Library'. A schematic carries its own copy of every symbol, so editing one in its library leaves the sheet drawing the old shape \u2014 this refreshes it. A symbol whose pins moved or disappeared in the library is refused (reported in pins_moved) unless allow_pin_moves is set, because wires and labels attach at pin coordinates.\",\"name\":\"update_symbols_from_library\"},{\"description\":\"Move each placed symbol's Reference and Value text back to the position its library definition anchors them at, carried through the symbol's own rotation \u2014 KiCad's 'Reset field text positions'. Use it on a sheet whose fields sit at a uniform offset instead of where the library puts them (labels inside a connector body, a rail's name below an up-pointing arrow). Fields a symbol's definition gives no anchor for are left alone.\",\"name\":\"reset_schematic_field_positions\"},{\"description\":\"Render a schematic sheet with kicad-cli and return the path to the SVG it wrote.              There is no PNG: KiCad ships no schematic rasteriser \u2014 `sch export` offers no bitmap              format and there is no `sch render` \u2014 so this is a vector file, not an image that can              be shown inline. It lands in a temporary directory and is overwritten by the next view              of the same sheet; use export_schematic_svg (toolset sch_export) to choose where it              goes. The SVG doubles as a geometry source: kicad-cli writes every string a second              time as an invisible <text opacity=\\\"0\\\"> element carrying x, y, textLength, font-size              and text-anchor, so text content, position and width can be checked without rendering              a pixel.\",\"name\":\"get_schematic_view\"},{\"description\":\"List all wire segments in a schematic with start/end coordinates and UUIDs.\",\"name\":\"list_schematic_wires\"},{\"description\":\"List all distinct net names derived from net labels, global labels, and power symbols.\",\"name\":\"list_schematic_nets\"},{\"description\":\"List all label instances (net_label, global_label, hierarchical_label) with their positions, net names, and types.\",\"name\":\"list_schematic_labels\"},{\"description\":\"Get all pins and labels connected to a named net.\",\"name\":\"get_net_connections\"},{\"description\":\"Build the full connectivity graph for a net using union-find. Returns all wire segments, labels, and T-junction locations.\",\"name\":\"get_net_connectivity\"},{\"description\":\"Get the net connected to a specific pin on a component by tracing wires from the pin endpoint.\",\"name\":\"get_pin_connections\"},{\"description\":\"Return just the net name for a specific pin on a component.\",\"name\":\"get_pin_net_name\"},{\"description\":\"Get all nets connected to every pin of a component.\",\"name\":\"get_component_nets\"},{\"description\":\"Get all components (and their pins) connected to a named net.\",\"name\":\"get_net_components\"},{\"description\":\"Trace connectivity from any (X,Y) point \u2014 returns the wires, labels, component pins and junction dots at that point, and the net it belongs to. Hierarchical sheet pins and no-connect flags are not reported, so an empty pins_here does not prove a wire dangles.\",\"name\":\"trace_from_point\"},{\"description\":\"Find dangling wire ends, floating labels, and unconnected pin endpoints. Pins, sheet pins, junctions, and no-connect flags all count as connections.\",\"name\":\"find_orphan_items\"},{\"description\":\"Detect accidentally merged nets \u2014 distinct net names that KiCad nets together, through a wire path they share or through a name that joins their segments.\",\"name\":\"find_shorted_nets\"},{\"description\":\"Find nets that reach at most one pin \u2014 often a missing counterpart, an orphan label, or a stub left by a deleted component. Component pins and hierarchical sheet pins count; a power symbol's own pin names the rail rather than consuming it and does not. Reports the pin and label counts, and every label kind that named the net. Read per sheet: a net a global, hierarchical or power label can carry off this one is flagged cross_sheet_unverified.\",\"name\":\"find_single_pin_nets\"},{\"description\":\"Get all wires, labels, and components connected to a given component reference by tracing net connectivity from each of its pins.\",\"name\":\"get_connected_items\"},{\"description\":\"Find overlapping symbols from their transformed drawing/pin bounds (excluding free text), plus conflicting labels at the same location. Reports any symbol whose embedded geometry could not be resolved and used the origin fallback instead.\",\"name\":\"check_schematic_overlaps\"},{\"description\":\"Export a schematic sheet to an SVG file using kicad-cli. The result doubles as a              machine-readable geometry source: kicad-cli writes every string twice \u2014 visibly as              stroke paths, and again as an invisible <text opacity=\\\"0\\\"> element carrying x, y,              textLength, font-size and text-anchor \u2014 so text content, position and width are              checkable without rendering a pixel.\",\"name\":\"export_schematic_svg\"},{\"description\":\"Render a schematic sheet to PNG: kicad-cli SVG export rasterized in-process (deterministic stroke-font rendering, no system fonts consulted). Returns the PNG path and its actual pixel dimensions; with 'inline' true the response also carries the image as base64 so the caller can inspect its own output. Width is capped at 4096 px.\",\"name\":\"render_schematic_png\"},{\"description\":\"Capture the current render of a schematic sheet as its visual baseline, stored under the project's .konnect/baselines/ keyed by sheet name, with the source file's hash and the renderer identity recorded so a later compare can tell design drift from a stale renderer.\",\"name\":\"set_visual_baseline\"},{\"description\":\"Re-render a sheet at its stored baseline's width and report pixel drift: changed-pixel percentage against a 2% threshold, the changed region's pixel bounding box, and whether the source file changed since the baseline. 'No baseline stored' is an explicit result, not an error; a baseline made by a different renderer version is flagged, never silently trusted.\",\"name\":\"compare_visual_baseline\"},{\"description\":\"Export a schematic sheet to a PDF file using kicad-cli.\",\"name\":\"export_schematic_pdf\"},{\"description\":\"Generate a KiCAD netlist file from the schematic using kicad-cli.\",\"name\":\"generate_netlist\"},{\"description\":\"Return a human-readable JSON summary of the schematic netlist: all components, their nets, pin counts. Nets come from labels and from power symbols. Does not require kicad-cli.\",\"name\":\"export_netlist_summary\"},{\"description\":\"Run the Electrical Rules Check (ERC) on the schematic via kicad-cli and return a list of violations filtered by severity. Violation positions are millimetres on the sheet; the response's `coordinates` object says whether they were corrected for the KiCad versions that report them 100x too small, passed through, or withheld because the KiCad version could not be classified. A report that is not in kicad-cli's ERC shape is an error, never zero violations.\",\"name\":\"run_erc\"},{\"description\":\"Scan the schematic for near-miss wire endpoints (within snap_tolerance of a pin or label but not exactly on it) and snap them into place. Use dry_run to preview fixes without writing.\",\"name\":\"fix_connectivity\"},{\"description\":\"Plan or atomically apply saved schematic hierarchy changes to the live KiCad PCB. Defaults to a non-mutating dry run; apply requires its exact plan revision. Preserves placement, routing, board-only footprints, and footprint artwork. A symbol with no footprint assigned is reported under `unassigned_footprints` and the sync proceeds for every other component. A library footprint that cannot be placed, or a connected pad its footprint does not have, makes the dry run a conflict whose diagnostics name the footprint and every part that needs it.\",\"name\":\"update_pcb_from_schematic\"}],\"tools_added\":43}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "method": "notifications/tools/list_changed"
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 5,
+    "result": {
+      "tools": [
+        {
+          "description": "List all available KiCAD toolsets with descriptions, categories, tool counts, and whether each is currently loaded. Only the starter kit (project, config) is loaded at startup \u2014 call load_toolset(name) to expose additional tools in subsequent tools/list responses. Always call this first to discover what tools are available for the task.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "list_toolboxes"
+        },
+        {
+          "description": "Load a toolset by name so its tools appear in tools/list and can be called. Returns the list of tools that were added. Use list_toolboxes() first to see valid names. Pass an array to load several toolsets in one call -- cheaper, one tools/list refresh.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "Toolset name (e.g. 'sch_components', 'pcb_routing'), or an array of names"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "load_toolset"
+        },
+        {
+          "description": "Unload a toolset to remove its tools from the active session. Use this to keep the tool list manageable when switching tasks. With auto_load_toolsets enabled, tools reload on use.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Toolset name to unload",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "unload_toolset"
+        },
+        {
+          "description": "Return the list of currently loaded toolsets and how many tools each provides.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_active_toolsets"
+        },
+        {
+          "description": "Return the most recent tool calls this session (newest first) with call_id, tool name, toolset, duration, status (ok/error/not_found), and error_kind when failed. Use this to self-diagnose \u2014 e.g. 'why did the last call fail?' or 'what tools have I been running?'",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 20,
+                "description": "Max number of calls to return (default 20, max 100). Pass 0 for all buffered calls.",
+                "type": "integer"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_recent_calls"
+        },
+        {
+          "description": "Return server uptime, total/error call counts, per-tool statistics, and the path to the JSONL call log. Good for 'what's my error rate today?' and 'which tool has been slowest?'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "server_stats"
+        },
+        {
+          "description": "Report read-only provenance for the Konnect process serving this call: build version and commit when available, executable path, conservatively detected install source, on-disk binary version, KiCad CLI version, redacted IPC endpoint, proven newer-binary state, platform-specific restart guidance, and whether installed skills, agents, and hooks match this build's bundle.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_installation_info"
+        },
+        {
+          "description": "Get a component's shared properties and every placed unit's position. Use get_schematic_pin_locations for pins.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "get_schematic_component"
+        },
+        {
+          "description": "Read project metadata from a .kicad_pro file. Returns the project name, schematic and PCB paths, last modified time, project-file format version, and the generator versions recorded by the sibling design files. The compatibility kicad_version is null when those siblings disagree.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Path to the .kicad_pro project file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "type": "object"
+          },
+          "name": "get_project_info"
+        },
+        {
+          "description": "Find overlapping symbols from their transformed drawing/pin bounds (excluding free text), plus conflicting labels at the same location. Reports any symbol whose embedded geometry could not be resolved and used the origin fallback instead.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              },
+              "tolerance": {
+                "default": 0.5,
+                "description": "Coordinate tolerance in mm for label collisions and the origin fallback when library geometry is unavailable",
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "check_schematic_overlaps"
+        },
+        {
+          "description": "Replace every placed unit of a component with a new library symbol while preserving unit numbers. A unit override is accepted only for a single placement. Junction dots are re-judged once for the whole replacement, reported as junctions_pruned_count and junctions_added_count. A no-connect flag follows the same symbol UUID, unit, and pin number when that mapping is one-to-one; removed, renumbered, or duplicated protected pins refuse before writing.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "new_lib_id": {
+                "description": "New Library:Symbol identifier (e.g. 'Device:C')",
+                "type": "string"
+              },
+              "reference": {
+                "description": "Component reference designator (e.g. 'U1')",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "unit": {
+                "description": "Optional unit number for a single placed unit; rejected as ambiguous when the reference has multiple placements. When omitted, every existing unit number is preserved and validated against the new symbol.",
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "new_lib_id"
+            ],
+            "type": "object"
+          },
+          "name": "replace_component"
+        },
+        {
+          "description": "Load project-specific configuration from <project_dir>/.konnect/project.json. Project config overrides user config where both exist. 'source' is 'file' or 'defaults' (no file; nothing is written). A file that cannot be parsed or read is refused with invalid_configuration.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Path to the KiCAD project directory. If omitted, uses the configured project_dir.",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "load_project_config"
+        },
+        {
+          "description": "List all active design rules (user-level + project-level).",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (optional)",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "list_design_rules"
+        },
+        {
+          "description": "Get the net connected to a specific pin on a component by tracing wires from the pin endpoint.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "pin_number": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "pin_number"
+            ],
+            "type": "object"
+          },
+          "name": "get_pin_connections"
+        },
+        {
+          "description": "Add or update a group property on every placed unit of multiple components.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "group_name": {
+                "description": "Group name to assign",
+                "type": "string"
+              },
+              "references": {
+                "description": "List of reference designators to group",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "references",
+              "group_name"
+            ],
+            "type": "object"
+          },
+          "name": "group_components"
+        },
+        {
+          "description": "Build the full connectivity graph for a net using union-find. Returns all wire segments, labels, and T-junction locations.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "net": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "net"
+            ],
+            "type": "object"
+          },
+          "name": "get_net_connectivity"
+        },
+        {
+          "description": "Run the Electrical Rules Check (ERC) on the schematic via kicad-cli and return a list of violations filtered by severity. Violation positions are millimetres on the sheet; the response's `coordinates` object says whether they were corrected for the KiCad versions that report them 100x too small, passed through, or withheld because the KiCad version could not be classified. A report that is not in kicad-cli's ERC shape is an error, never zero violations.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "output": {
+                "description": "Optional path to write this tool's response as JSON, violations and coordinate provenance together (not KiCad's own ERC report)",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "severity": {
+                "default": "warning",
+                "description": "Minimum severity to report: 'error', 'warning', 'info'",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "run_erc"
+        },
+        {
+          "description": "Get all nets connected to every pin of a component.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "get_component_nets"
+        },
+        {
+          "description": "Create a new KiCAD project at the given path. Creates the directory, a blank .kicad_pro file, an empty .kicad_sch schematic, and a blank .kicad_pcb board file. Refuses to replace any existing project file.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Project name (used as filename stem)",
+                "type": "string"
+              },
+              "path": {
+                "description": "Directory path where the project will be created",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "create_project"
+        },
+        {
+          "description": "Scan the schematic for near-miss wire endpoints (within snap_tolerance of a pin or label but not exactly on it) and snap them into place. Use dry_run to preview fixes without writing.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dry_run": {
+                "default": false,
+                "description": "Report fixes without applying them",
+                "type": "boolean"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "snap_tolerance": {
+                "default": 0.05,
+                "description": "Snap distance in mm",
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "fix_connectivity"
+        },
+        {
+          "description": "Capture the current render of a schematic sheet as its visual baseline, stored under the project's .konnect/baselines/ keyed by sheet name, with the source file's hash and the renderer identity recorded so a later compare can tell design drift from a stale renderer.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "width_px": {
+                "default": 1600,
+                "description": "Baseline render width in pixels",
+                "maximum": 4096,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "set_visual_baseline"
+        },
+        {
+          "description": "Export the schematic and PCB to PDF as a timestamped snapshot/checkpoint. Useful for saving progress before major edits.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "description": "Optional label to include in the filename",
+                "type": "string"
+              },
+              "output_dir": {
+                "description": "Directory to write snapshot PDFs",
+                "type": "string"
+              },
+              "pcb": {
+                "description": "Optional: path to .kicad_pcb file",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output_dir"
+            ],
+            "type": "object"
+          },
+          "name": "snapshot_project"
+        },
+        {
+          "description": "List all symbol instances in a schematic with their positions, values, footprints, and properties.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "list_schematic_components"
+        },
+        {
+          "description": "Get the exact schematic-space (X,Y) coordinates of every pin on every placed unit of a component, accounting for rotation and mirroring. Uses the canonical pin transform. Each pin also reports 'orientation_degrees', the direction leading away from the symbol body (0 = east) \u2014 a net label at the pin must read that way or its text runs back over the symbol's pin names \u2014 and 'length_mm'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "get_schematic_pin_locations"
+        },
+        {
+          "description": "Get all pins and labels connected to a named net.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "net": {
+                "description": "Net name to query",
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "net"
+            ],
+            "type": "object"
+          },
+          "name": "get_net_connections"
+        },
+        {
+          "description": "Get all components (and their pins) connected to a named net.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "net": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "net"
+            ],
+            "type": "object"
+          },
+          "name": "get_net_components"
+        },
+        {
+          "description": "Return the merged configuration (user defaults + project overrides). This is the config Claude should use for all design decisions. 'sources' says where each half came from ('file', 'defaults', or 'not_configured' when there is no project directory). Refuses with invalid_configuration, naming which file, rather than merging defaults in place of a file that cannot be used.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (optional)",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_effective_config"
+        },
+        {
+          "description": "Export a schematic sheet to a PDF file using kicad-cli.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "all_sheets": {
+                "default": true,
+                "description": "Include all hierarchical sheets; false exports page 1 only",
+                "type": "boolean"
+              },
+              "black_and_white": {
+                "default": false,
+                "description": "Render in black and white",
+                "type": "boolean"
+              },
+              "output": {
+                "description": "Output PDF file path",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output"
+            ],
+            "type": "object"
+          },
+          "name": "export_schematic_pdf"
+        },
+        {
+          "description": "Update a user preference. Use dot-notation for nested keys, e.g. 'fab_constraints.fab_house'. Call this when the user says things like 'always use JLCPCB' or 'I prefer 0402 passives'. Every other key is kept, and the response is the file as read back. Refuses with invalid_configuration, writing nothing, when the existing file cannot be parsed or read; a persistence failure is mutation_outcome_uncertain, so read the file before retrying.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "key_path": {
+                "description": "Dot-notation path to the config key, e.g. 'fab_constraints.fab_house' or 'default_passives.decoupling_cap'",
+                "type": "string"
+              },
+              "value": {
+                "description": "New value to set (string, number, array, or object)"
+              }
+            },
+            "required": [
+              "key_path",
+              "value"
+            ],
+            "type": "object"
+          },
+          "name": "save_user_config"
+        },
+        {
+          "description": "Set the lowest-numbered unit's absolute rotation and rotate every other placed unit by the same delta. Does NOT adjust connected wires. Each unit's Reference and Value text turns with its body, keeping any offset the caller gave it; use reset_schematic_field_positions to put fields back on their library anchors instead. Junction dots are re-judged where the pins turned, reported as junctions_pruned_count and junctions_added_count. A no-connect flag travels with the pin it protects, reported as no_connects_moved; the turn is refused before writing when that pin cannot be followed one-to-one.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "type": "string"
+              },
+              "rotation": {
+                "description": "Absolute rotation in degrees",
+                "type": "number"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "rotation"
+            ],
+            "type": "object"
+          },
+          "name": "rotate_schematic_component"
+        },
+        {
+          "description": "Get pin locations for multiple components in a single file read. Reports the same per-pin fields as get_schematic_pin_locations, including 'orientation_degrees' and 'length_mm'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "references": {
+                "description": "List of reference designators",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "references"
+            ],
+            "type": "object"
+          },
+          "name": "batch_get_schematic_pin_locations"
+        },
+        {
+          "description": "Add a symbol from a KiCAD library to the schematic. The symbol is snapped to the 1.27mm schematic grid. Preserves every saved hierarchy instance, reports committed-file readback, copies the library Value and Footprint unless explicitly overridden, and refuses stale instance metadata before writing. Specify position in schematic mm coordinates.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "footprint": {
+                "description": "Optional override for the library symbol's Footprint",
+                "type": "string"
+              },
+              "lib_id": {
+                "description": "Library:Symbol (e.g. 'Device:R')",
+                "type": "string"
+              },
+              "mirror": {
+                "description": "Reflect the placed symbol about an axis, using eeschema's own vocabulary: 'x' negates screen-Y, 'y' negates screen-X. Omit (or 'none') for an unmirrored symbol. Mirroring is applied after rotation, and is not interchangeable with rotation 180 for a symbol whose pins are not symmetric.",
+                "enum": [
+                  "x",
+                  "y",
+                  "none"
+                ],
+                "type": "string"
+              },
+              "reference": {
+                "description": "Optional reference designator. Default: the library prefix plus '?' (e.g. 'R?', '#FLG?'), which annotate_schematic numbers",
+                "type": "string"
+              },
+              "rotation": {
+                "default": 0,
+                "description": "Rotation in degrees (0/90/180/270)",
+                "type": "number"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "unit": {
+                "default": 1,
+                "description": "Unit number for multi-unit symbols (gate/part selection). Default 1.",
+                "minimum": 1,
+                "type": "integer"
+              },
+              "value": {
+                "description": "Optional override for the library symbol's Value",
+                "type": "string"
+              },
+              "x": {
+                "description": "X position in mm",
+                "type": "number"
+              },
+              "y": {
+                "description": "Y position in mm",
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic",
+              "lib_id",
+              "x",
+              "y"
+            ],
+            "type": "object"
+          },
+          "name": "add_schematic_component"
+        },
+        {
+          "description": "Export a schematic sheet to an SVG file using kicad-cli. The result doubles as a              machine-readable geometry source: kicad-cli writes every string twice \u2014 visibly as              stroke paths, and again as an invisible <text opacity=\"0\"> element carrying x, y,              textLength, font-size and text-anchor \u2014 so text content, position and width are              checkable without rendering a pixel.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "black_and_white": {
+                "default": false,
+                "description": "Render in black and white",
+                "type": "boolean"
+              },
+              "output": {
+                "description": "Output SVG file path (directory used as output dir)",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "theme": {
+                "description": "KiCad colour theme name (optional)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output"
+            ],
+            "type": "object"
+          },
+          "name": "export_schematic_svg"
+        },
+        {
+          "description": "Add or update a custom property consistently across every placed unit of a component.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "description": "Property name",
+                "type": "string"
+              },
+              "reference": {
+                "description": "Component reference designator (e.g. 'R1')",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "value": {
+                "description": "Property value",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "key",
+              "value"
+            ],
+            "type": "object"
+          },
+          "name": "add_component_annotation"
+        },
+        {
+          "description": "Move all symbol units whose origins are within a bounding box by a given offset. Does NOT adjust connected wires. Junction dots are re-judged once for the whole region where its pins moved, reported as junctions_pruned_count and junctions_added_count. No-connect flags travel with the pins they protect, reported as no_connects_moved; the move is refused before writing when a pin cannot be followed one-to-one.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dx": {
+                "description": "X offset to move by",
+                "type": "number"
+              },
+              "dy": {
+                "description": "Y offset to move by",
+                "type": "number"
+              },
+              "schematic": {
+                "type": "string"
+              },
+              "x1": {
+                "description": "Region bounding box min X",
+                "type": "number"
+              },
+              "x2": {
+                "description": "Region bounding box max X",
+                "type": "number"
+              },
+              "y1": {
+                "description": "Region bounding box min Y",
+                "type": "number"
+              },
+              "y2": {
+                "description": "Region bounding box max Y",
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic",
+              "x1",
+              "y1",
+              "x2",
+              "y2",
+              "dx",
+              "dy"
+            ],
+            "type": "object"
+          },
+          "name": "move_region"
+        },
+        {
+          "description": "Update fields (Reference, Value, Footprint, custom properties) consistently across every placed unit of a component, and move or hide the text of any of them.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "datasheet": {
+                "description": "New datasheet URL (optional)",
+                "type": "string"
+              },
+              "field_placements": {
+                "additionalProperties": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "hide": {
+                      "description": "true hides the field's text on the sheet; false shows it.",
+                      "type": "boolean"
+                    },
+                    "rotation": {
+                      "type": "number"
+                    },
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "description": "Move or hide a field's text, keyed by field name (Reference, Value, Footprint, or a custom property). Each entry may set x, y, rotation and hide; an omitted part is left as the file has it. Coordinates are absolute schematic millimetres, as KiCad stores them \u2014 not offsets from the body.",
+                "type": "object"
+              },
+              "fields": {
+                "additionalProperties": true,
+                "description": "Additional property fields to set as key:value pairs",
+                "type": "object"
+              },
+              "footprint": {
+                "description": "New footprint (optional)",
+                "type": "string"
+              },
+              "new_reference": {
+                "description": "New reference designator (optional)",
+                "type": "string"
+              },
+              "reference": {
+                "description": "Current reference designator",
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              },
+              "unit": {
+                "description": "Which placed unit field_placements applies to. Required when x or y is given and the component has more than one placed unit, because a field position is absolute and one coordinate cannot be right for several placements.",
+                "type": "integer"
+              },
+              "value": {
+                "description": "New value (optional)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "edit_schematic_component"
+        },
+        {
+          "description": "Add a natural-language design rule that Claude should follow in this project. Examples: 'Always use 100nF X7R for MCU decoupling within 3mm of power pin', 'Route USB D+/D- as 90-ohm differential pair'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (for project-scoped rules)",
+                "type": "string"
+              },
+              "rule": {
+                "description": "The design rule in plain English",
+                "type": "string"
+              },
+              "scope": {
+                "default": "project",
+                "description": "'user' (applies to all projects) or 'project' (this project only)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "rule"
+            ],
+            "type": "object"
+          },
+          "name": "add_design_rule"
+        },
+        {
+          "description": "REFUSED until implemented: moving a symbol while stretching its connected              wires is not built yet. Calling this returns an error naming              move_schematic_component as the working alternative \u2014 it moves the symbol              only, leaving wires where they are.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "move_connected"
+        },
+        {
+          "description": "Render a schematic sheet with kicad-cli and return the path to the SVG it wrote.              There is no PNG: KiCad ships no schematic rasteriser \u2014 `sch export` offers no bitmap              format and there is no `sch render` \u2014 so this is a vector file, not an image that can              be shown inline. It lands in a temporary directory and is overwritten by the next view              of the same sheet; use export_schematic_svg (toolset sch_export) to choose where it              goes. The SVG doubles as a geometry source: kicad-cli writes every string a second              time as an invisible <text opacity=\"0\"> element carrying x, y, textLength, font-size              and text-anchor, so text content, position and width can be checked without rendering              a pixel.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "get_schematic_view"
+        },
+        {
+          "description": "Assign reference designators in the saved schematic the way eeschema's Tools \u2192 Annotate does with its defaults: every '?' designator gets the first free number for its prefix in the project, in ascending X per sheet instance, numbers used on any sheet instance in the file are reserved, and numbered designators are kept. The units of one multi-unit part (same embedded definition and value, distinct units) share one designator; when which units belong together is not proven they are reported in 'unresolved', never guessed. Two separate parts sharing a designator are reported in 'unresolved' with a 'partial' outcome; they are renumbered only when resolve_duplicates is true (the first in ascending X keeps the number). Annotates one project's instance records \u2014 the schematic's owner by default, or 'project' \u2014 and never touches another project's. Writes both the Reference property and the instances block, then reads the file back; every count in the response comes from that readback. Numbers used on the project's other sheets are reserved through its sheet tree ('other_sheets_consulted'); duplicates already spread across sheets are not detected here. Konnect's own implementation \u2014 kicad-cli has no annotate command. dry_run returns the plan without writing.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dry_run": {
+                "default": false,
+                "description": "Report what would be assigned without writing. Default false.",
+                "type": "boolean"
+              },
+              "project": {
+                "description": "Project whose instance records to annotate, as named in the symbols' (instances (project \u2026)) blocks. Default: the project that owns the schematic (its .kicad_pro), else the only project the file names; refused with the candidates when that is ambiguous. Other projects' records are never edited.",
+                "type": "string"
+              },
+              "resolve_duplicates": {
+                "default": false,
+                "description": "Renumber separate single-unit parts that share a designator in the project: the first in ascending X keeps it, the rest get the first free number. Default false: duplicates are reported, not changed. A shared designator that could be the units of one multi-unit package is never renumbered either way.",
+                "type": "boolean"
+              },
+              "schematic": {
+                "description": "Path to the .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "annotate_schematic"
+        },
+        {
+          "description": "Re-embed placed symbols' definitions from their libraries, like KiCad's 'Update Symbols from Library'. A schematic carries its own copy of every symbol, so editing one in its library leaves the sheet drawing the old shape \u2014 this refreshes it. A symbol whose pins moved or disappeared in the library is refused (reported in pins_moved) unless allow_pin_moves is set, because wires and labels attach at pin coordinates.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "allow_pin_moves": {
+                "default": false,
+                "description": "Update symbols even when the library moved or removed pins. Wires and labels attached at the old pin positions are NOT moved with them \u2014 reconnect them afterwards.",
+                "type": "boolean"
+              },
+              "dry_run": {
+                "default": false,
+                "description": "Report what would change without writing.",
+                "type": "boolean"
+              },
+              "references": {
+                "description": "Component references to update (e.g. ['U1']). Omit to update every symbol in the schematic.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "update_symbols_from_library"
+        },
+        {
+          "description": "List PCB documents open in the running KiCad UI and optionally check whether one specific KiCad project or board is open over IPC.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Optional path to a .kicad_pro project or .kicad_pcb board to check",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "open_project"
+        },
+        {
+          "description": "Save a project-specific rule or override. Same dot-notation as save_user_config but writes to the project's .konnect/project.json, with the same refusals: an unusable existing file is never overwritten.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "key_path": {
+                "description": "Dot-notation config key",
+                "type": "string"
+              },
+              "project_dir": {
+                "description": "Project directory (optional, uses configured default)",
+                "type": "string"
+              },
+              "value": {
+                "description": "New value to set"
+              }
+            },
+            "required": [
+              "key_path",
+              "value"
+            ],
+            "type": "object"
+          },
+          "name": "save_project_config"
+        },
+        {
+          "description": "Move each placed symbol's Reference and Value text back to the position its library definition anchors them at, carried through the symbol's own rotation \u2014 KiCad's 'Reset field text positions'. Use it on a sheet whose fields sit at a uniform offset instead of where the library puts them (labels inside a connector body, a rail's name below an up-pointing arrow). Fields a symbol's definition gives no anchor for are left alone.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dry_run": {
+                "default": false,
+                "description": "Report what would move without writing.",
+                "type": "boolean"
+              },
+              "references": {
+                "description": "Component references to reset (e.g. ['U1']). Omit to reset every symbol in the schematic.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "reset_schematic_field_positions"
+        },
+        {
+          "description": "List all label instances (net_label, global_label, hierarchical_label) with their positions, net names, and types.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "list_schematic_labels"
+        },
+        {
+          "description": "Trace connectivity from any (X,Y) point \u2014 returns the wires, labels, component pins and junction dots at that point, and the net it belongs to. Hierarchical sheet pins and no-connect flags are not reported, so an empty pins_here does not prove a wire dangles.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              },
+              "tolerance": {
+                "default": 0.05,
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic",
+              "x",
+              "y"
+            ],
+            "type": "object"
+          },
+          "name": "trace_from_point"
+        },
+        {
+          "description": "Plan or atomically apply saved schematic hierarchy changes to the live KiCad PCB. Defaults to a non-mutating dry run; apply requires its exact plan revision. Preserves placement, routing, board-only footprints, and footprint artwork. A symbol with no footprint assigned is reported under `unassigned_footprints` and the sync proceeds for every other component. A library footprint that cannot be placed, or a connected pad its footprint does not have, makes the dry run a conflict whose diagnostics name the footprint and every part that needs it.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "board": {
+                "description": "Matching .kicad_pcb path currently open in KiCad",
+                "type": "string"
+              },
+              "dry_run": {
+                "default": true,
+                "description": "Plan without changing the board",
+                "type": "boolean"
+              },
+              "expected_plan_revision": {
+                "description": "Required for apply; exact revision returned by the latest dry run",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Saved root .kicad_sch path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "board"
+            ],
+            "type": "object"
+          },
+          "name": "update_pcb_from_schematic"
+        },
+        {
+          "description": "Launch the live schematic viewer. The viewer shows the schematic as SVG and auto-refreshes when the file changes. Use this after placing components so the user can see the schematic in real-time as you edit it. For hierarchical designs, pass the root schematic \u2014 the viewer discovers every sheet reachable from it and shows a sheet selector.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "description": "Path to the root .kicad_sch file to view",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "open_schematic_viewer"
+        },
+        {
+          "description": "Detect accidentally merged nets \u2014 distinct net names that KiCad nets together, through a wire path they share or through a name that joins their segments.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "find_shorted_nets"
+        },
+        {
+          "description": "Return a human-readable JSON summary of the schematic netlist: all components, their nets, pin counts. Nets come from labels and from power symbols. Does not require kicad-cli.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "export_netlist_summary"
+        },
+        {
+          "description": "Rename a KiCAD project: renames the .kicad_pro/.kicad_sch/.kicad_pcb/.kicad_prl files and rewrites the internal references that carry the old name. Renaming the files alone is NOT enough \u2014 every symbol instance stores (project \"name\"), and a mismatch there makes KiCAD treat the design as unannotated, losing every reference designator. Equivalent to eeschema's File > Save As. Use dry_run first.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dry_run": {
+                "default": false,
+                "description": "Report the planned changes without touching anything. Default false.",
+                "type": "boolean"
+              },
+              "new_name": {
+                "description": "New project name, without extension",
+                "type": "string"
+              },
+              "project": {
+                "description": "Path to the existing .kicad_pro file",
+                "type": "string"
+              },
+              "rename_directory": {
+                "default": false,
+                "description": "Also rename the containing folder when it matches the old project name. Default false.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "project",
+              "new_name"
+            ],
+            "type": "object"
+          },
+          "name": "rename_project"
+        },
+        {
+          "description": "Move a component's lowest-numbered unit to a new position and translate every other placed unit by the same delta. Does NOT adjust connected wires. Junction dots are re-judged where the pins moved: a dot the pins leave unjustified is removed and a pin landing mid-span on a wire gains one, reported as junctions_pruned_count and junctions_added_count. A no-connect flag travels with the pin it protects, reported as no_connects_moved; the move is refused before writing when that pin cannot be followed one-to-one.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              },
+              "x": {
+                "description": "New X position in mm",
+                "type": "number"
+              },
+              "y": {
+                "description": "New Y position in mm",
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "x",
+              "y"
+            ],
+            "type": "object"
+          },
+          "name": "move_schematic_component"
+        },
+        {
+          "description": "Save the currently open PCB board file via KiCAD IPC. Requires KiCAD to be running with IPC enabled.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "save_project"
+        },
+        {
+          "description": "List all wire segments in a schematic with start/end coordinates and UUIDs.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "list_schematic_wires"
+        },
+        {
+          "description": "Render a schematic sheet to PNG: kicad-cli SVG export rasterized in-process (deterministic stroke-font rendering, no system fonts consulted). Returns the PNG path and its actual pixel dimensions; with 'inline' true the response also carries the image as base64 so the caller can inspect its own output. Width is capped at 4096 px.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "inline": {
+                "default": false,
+                "description": "Also return the PNG as base64 content",
+                "type": "boolean"
+              },
+              "monochrome": {
+                "default": false,
+                "description": "Render in black and white",
+                "type": "boolean"
+              },
+              "output": {
+                "description": "Output PNG path (default: alongside the schematic)",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "width_px": {
+                "default": 1600,
+                "description": "Output width in pixels",
+                "maximum": 4096,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "render_schematic_png"
+        },
+        {
+          "description": "Re-render a sheet at its stored baseline's width and report pixel drift: changed-pixel percentage against a 2% threshold, the changed region's pixel bounding box, and whether the source file changed since the baseline. 'No baseline stored' is an explicit result, not an error; a baseline made by a different renderer version is flagged, never silently trusted.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "inline_diff": {
+                "default": false,
+                "description": "Also return the current render as base64 for inspection",
+                "type": "boolean"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "compare_visual_baseline"
+        },
+        {
+          "description": "Remove a component by reference designator, including every placed unit of a multi-unit symbol.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "description": "Reference designator (e.g. 'R1')",
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "delete_schematic_component"
+        },
+        {
+          "description": "Generate a KiCAD netlist file from the schematic using kicad-cli.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "format": {
+                "default": "kicad",
+                "description": "Netlist format: 'kicad', 'orcadpcb2', 'cadstar', 'spice'",
+                "type": "string"
+              },
+              "output": {
+                "description": "Output .net file path",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output"
+            ],
+            "type": "object"
+          },
+          "name": "generate_netlist"
+        },
+        {
+          "description": "Find nets that reach at most one pin \u2014 often a missing counterpart, an orphan label, or a stub left by a deleted component. Component pins and hierarchical sheet pins count; a power symbol's own pin names the rail rather than consuming it and does not. Reports the pin and label counts, and every label kind that named the net. Read per sheet: a net a global, hierarchical or power label can carry off this one is flagged cross_sheet_unverified.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "find_single_pin_nets"
+        },
+        {
+          "description": "Load the user's global Konnect preferences. Call this at the start of every session to get preferred manufacturers, fab constraints, default passives, and design rules. 'source' says whether the answer is the user's file or Konnect's defaults (no file existed; the defaults are then written for the user to edit and 'persisted' says whether that worked). A file that exists but cannot be parsed or read is refused with invalid_configuration and is never replaced by defaults.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "load_user_config"
+        },
+        {
+          "description": "List all distinct net names derived from net labels, global labels, and power symbols.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "list_schematic_nets"
+        },
+        {
+          "description": "Return just the net name for a specific pin on a component.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "pin_number": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "pin_number"
+            ],
+            "type": "object"
+          },
+          "name": "get_pin_net_name"
+        },
+        {
+          "description": "Get all wires, labels, and components connected to a given component reference by tracing net connectivity from each of its pins.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "description": "Component reference designator (e.g. 'R1')",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "get_connected_items"
+        },
+        {
+          "description": "Find dangling wire ends, floating labels, and unconnected pin endpoints. Pins, sheet pins, junctions, and no-connect flags all count as connections.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              },
+              "tolerance": {
+                "default": 0.05,
+                "exclusiveMinimum": 0,
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "find_orphan_items"
+        }
+      ]
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 6,
+    "result": {
+      "content": [
+        {
+          "text": "{\"components\":[{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR01\",\"Value\":\"GND\"},\"reference\":\"#PWR01\",\"rotation\":0.0,\"value\":\"GND\",\"x\":119.38,\"y\":96.52},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J1\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J1\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":105.41,\"y\":63.5},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J2\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J2\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":105.41,\"y\":76.2},{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR03\",\"Value\":\"GND\"},\"reference\":\"#PWR03\",\"rotation\":0.0,\"value\":\"GND\",\"x\":121.92,\"y\":83.82},{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR02\",\"Value\":\"GND\"},\"reference\":\"#PWR02\",\"rotation\":0.0,\"value\":\"GND\",\"x\":140.97,\"y\":87.63},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J4\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J4\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":105.41,\"y\":99.06},{\"footprint\":\"Capacitor_SMD:C_1206_3216Metric\",\"lib_id\":\"Device:C_Small\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Capacitor_SMD:C_1206_3216Metric\",\"Reference\":\"C1\",\"Value\":\"10u\"},\"reference\":\"C1\",\"rotation\":0.0,\"value\":\"10u\",\"x\":121.92,\"y\":80.01},{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R2\",\"Value\":\"10k\"},\"reference\":\"R2\",\"rotation\":90.0,\"value\":\"10k\",\"x\":149.86,\"y\":93.98},{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R3\",\"Value\":\"10k\"},\"reference\":\"R3\",\"rotation\":90.0,\"value\":\"10k\",\"x\":115.57,\"y\":76.2},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":true,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J3\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J3\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":177.8,\"y\":78.74},{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR04\",\"Value\":\"GND\"},\"reference\":\"#PWR04\",\"rotation\":0.0,\"value\":\"GND\",\"x\":111.76,\"y\":100.33},{\"footprint\":\"Package_TO_SOT_SMD:SOT-23-5\",\"lib_id\":\"Amplifier_Operational:TLV2371DBV\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"http://www.ti.com/lit/ds/symlink/tlv2375.pdf\",\"Footprint\":\"Package_TO_SOT_SMD:SOT-23-5\",\"Reference\":\"U1\",\"Value\":\"TLV2371DBV\"},\"reference\":\"U1\",\"rotation\":0.0,\"value\":\"TLV2371DBV\",\"x\":143.51,\"y\":78.74},{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R1\",\"Value\":\"10k\"},\"reference\":\"R1\",\"rotation\":90.0,\"value\":\"10k\",\"x\":127.0,\"y\":93.98}],\"count\":13}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 7,
+    "result": {
+      "content": [
+        {
+          "text": "{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R1\",\"Value\":\"10k\"},\"reference\":\"R1\",\"rotation\":90.0,\"unit_count\":1,\"units\":[{\"mirror_x\":false,\"mirror_y\":false,\"rotation\":90.0,\"unit\":1,\"uuid\":\"eaf8668d-aec7-4209-a3f9-fc7bfb5b931b\",\"x\":127.0,\"y\":93.98}],\"uuid\":\"eaf8668d-aec7-4209-a3f9-fc7bfb5b931b\",\"value\":\"10k\",\"x\":127.0,\"y\":93.98}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 8,
+    "result": {
+      "content": [
+        {
+          "text": "{\"changes\":[\"Value \u2192 12.34k (1 unit(s))\"],\"datasheet\":\"~\",\"fields\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R1\",\"Value\":\"12.34k\"},\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"reference\":\"R1\",\"rotation\":90.0,\"schematic\":\"C:/Users/USER\\\\Documents\\\\GitHub\\\\HazloMX\\\\target\\\\konnect-probe\\\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\\\Edited\\\\basic_test.kicad_sch\",\"unit_count\":1,\"units\":[{\"field_placements\":{\"Datasheet\":{\"hide\":false,\"rotation\":0.0,\"x\":127.0,\"y\":93.98},\"Footprint\":{\"hide\":false,\"rotation\":90.0,\"x\":127.254,\"y\":92.964},\"Reference\":{\"hide\":false,\"rotation\":90.0,\"x\":127.0,\"y\":88.9},\"Value\":{\"hide\":false,\"rotation\":90.0,\"x\":127.0,\"y\":91.44}},\"fields\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R1\",\"Value\":\"12.34k\"},\"instance_paths\":[[\"CliTest\",\"/64c481bc-ea0a-4f9c-a176-3729f4987c58\"]],\"instance_references\":[\"R1\"],\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"rotation\":90.0,\"unit\":1,\"uuid\":\"eaf8668d-aec7-4209-a3f9-fc7bfb5b931b\",\"x\":127.0,\"y\":93.98}],\"uuid\":\"eaf8668d-aec7-4209-a3f9-fc7bfb5b931b\",\"value\":\"12.34k\",\"x\":127.0,\"y\":93.98}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 9,
+    "result": {
+      "content": [
+        {
+          "text": "{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R1\",\"Value\":\"12.34k\"},\"reference\":\"R1\",\"rotation\":90.0,\"unit_count\":1,\"units\":[{\"mirror_x\":false,\"mirror_y\":false,\"rotation\":90.0,\"unit\":1,\"uuid\":\"eaf8668d-aec7-4209-a3f9-fc7bfb5b931b\",\"x\":127.0,\"y\":93.98}],\"uuid\":\"eaf8668d-aec7-4209-a3f9-fc7bfb5b931b\",\"value\":\"12.34k\",\"x\":127.0,\"y\":93.98}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 10,
+    "result": {
+      "content": [
+        {
+          "text": "{\"components\":[{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR01\",\"Value\":\"GND\"},\"reference\":\"#PWR01\",\"rotation\":0.0,\"value\":\"GND\",\"x\":119.38,\"y\":96.52},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J1\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J1\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":105.41,\"y\":63.5},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J2\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J2\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":105.41,\"y\":76.2},{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR03\",\"Value\":\"GND\"},\"reference\":\"#PWR03\",\"rotation\":0.0,\"value\":\"GND\",\"x\":121.92,\"y\":83.82},{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR02\",\"Value\":\"GND\"},\"reference\":\"#PWR02\",\"rotation\":0.0,\"value\":\"GND\",\"x\":140.97,\"y\":87.63},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J4\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J4\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":105.41,\"y\":99.06},{\"footprint\":\"Capacitor_SMD:C_1206_3216Metric\",\"lib_id\":\"Device:C_Small\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Capacitor_SMD:C_1206_3216Metric\",\"Reference\":\"C1\",\"Value\":\"10u\"},\"reference\":\"C1\",\"rotation\":0.0,\"value\":\"10u\",\"x\":121.92,\"y\":80.01},{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R2\",\"Value\":\"10k\"},\"reference\":\"R2\",\"rotation\":90.0,\"value\":\"10k\",\"x\":149.86,\"y\":93.98},{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R3\",\"Value\":\"10k\"},\"reference\":\"R3\",\"rotation\":90.0,\"value\":\"10k\",\"x\":115.57,\"y\":76.2},{\"footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"lib_id\":\"Connector:Conn_01x01_Pin\",\"mirror_x\":false,\"mirror_y\":true,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"TestPoint:TestPoint_Pad_3.0x3.0mm\",\"Reference\":\"J3\",\"Value\":\"Conn_01x01_Pin\"},\"reference\":\"J3\",\"rotation\":0.0,\"value\":\"Conn_01x01_Pin\",\"x\":177.8,\"y\":78.74},{\"footprint\":\"\",\"lib_id\":\"power:GND\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"\",\"Footprint\":\"\",\"Reference\":\"#PWR04\",\"Value\":\"GND\"},\"reference\":\"#PWR04\",\"rotation\":0.0,\"value\":\"GND\",\"x\":111.76,\"y\":100.33},{\"footprint\":\"Package_TO_SOT_SMD:SOT-23-5\",\"lib_id\":\"Amplifier_Operational:TLV2371DBV\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"http://www.ti.com/lit/ds/symlink/tlv2375.pdf\",\"Footprint\":\"Package_TO_SOT_SMD:SOT-23-5\",\"Reference\":\"U1\",\"Value\":\"TLV2371DBV\"},\"reference\":\"U1\",\"rotation\":0.0,\"value\":\"TLV2371DBV\",\"x\":143.51,\"y\":78.74},{\"footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"lib_id\":\"Device:R_US\",\"mirror_x\":false,\"mirror_y\":false,\"properties\":{\"Datasheet\":\"~\",\"Footprint\":\"Resistor_SMD:R_1206_3216Metric\",\"Reference\":\"R1\",\"Value\":\"12.34k\"},\"reference\":\"R1\",\"rotation\":90.0,\"value\":\"12.34k\",\"x\":127.0,\"y\":93.98}],\"count\":13}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 11,
+    "result": {
+      "content": [
+        {
+          "text": "{\"error\":{\"kind\":\"conflict\",\"paths\":[\"C:/Users/USER\\\\Documents\\\\GitHub\\\\HazloMX\\\\target\\\\konnect-probe\\\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\\\Edited\\\\basic_test.kicad_sch\"]},\"message\":\"Schematic 'C:/Users/USER\\\\Documents\\\\GitHub\\\\HazloMX\\\\target\\\\konnect-probe\\\\discovery-6efbf5c7-ed59-460a-aec1-184102920df9\\\\Edited\\\\basic_test.kicad_sch' has a KiCad editor lock. Close Eeschema, or resolve a stale lock only after confirming no editor owns the file, then retry.\"}",
+          "type": "text"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 12,
+    "result": {
+      "content": [
+        {
+          "text": "Toolset 'sch_components' unloaded.",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "method": "notifications/tools/list_changed"
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 13,
+    "result": {
+      "tools": [
+        {
+          "description": "List all available KiCAD toolsets with descriptions, categories, tool counts, and whether each is currently loaded. Only the starter kit (project, config) is loaded at startup \u2014 call load_toolset(name) to expose additional tools in subsequent tools/list responses. Always call this first to discover what tools are available for the task.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "list_toolboxes"
+        },
+        {
+          "description": "Load a toolset by name so its tools appear in tools/list and can be called. Returns the list of tools that were added. Use list_toolboxes() first to see valid names. Pass an array to load several toolsets in one call -- cheaper, one tools/list refresh.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "Toolset name (e.g. 'sch_components', 'pcb_routing'), or an array of names"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "load_toolset"
+        },
+        {
+          "description": "Unload a toolset to remove its tools from the active session. Use this to keep the tool list manageable when switching tasks. With auto_load_toolsets enabled, tools reload on use.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Toolset name to unload",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "unload_toolset"
+        },
+        {
+          "description": "Return the list of currently loaded toolsets and how many tools each provides.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_active_toolsets"
+        },
+        {
+          "description": "Return the most recent tool calls this session (newest first) with call_id, tool name, toolset, duration, status (ok/error/not_found), and error_kind when failed. Use this to self-diagnose \u2014 e.g. 'why did the last call fail?' or 'what tools have I been running?'",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 20,
+                "description": "Max number of calls to return (default 20, max 100). Pass 0 for all buffered calls.",
+                "type": "integer"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_recent_calls"
+        },
+        {
+          "description": "Return server uptime, total/error call counts, per-tool statistics, and the path to the JSONL call log. Good for 'what's my error rate today?' and 'which tool has been slowest?'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "server_stats"
+        },
+        {
+          "description": "Report read-only provenance for the Konnect process serving this call: build version and commit when available, executable path, conservatively detected install source, on-disk binary version, KiCad CLI version, redacted IPC endpoint, proven newer-binary state, platform-specific restart guidance, and whether installed skills, agents, and hooks match this build's bundle.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_installation_info"
+        },
+        {
+          "description": "Read project metadata from a .kicad_pro file. Returns the project name, schematic and PCB paths, last modified time, project-file format version, and the generator versions recorded by the sibling design files. The compatibility kicad_version is null when those siblings disagree.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Path to the .kicad_pro project file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "type": "object"
+          },
+          "name": "get_project_info"
+        },
+        {
+          "description": "Find overlapping symbols from their transformed drawing/pin bounds (excluding free text), plus conflicting labels at the same location. Reports any symbol whose embedded geometry could not be resolved and used the origin fallback instead.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              },
+              "tolerance": {
+                "default": 0.5,
+                "description": "Coordinate tolerance in mm for label collisions and the origin fallback when library geometry is unavailable",
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "check_schematic_overlaps"
+        },
+        {
+          "description": "Load project-specific configuration from <project_dir>/.konnect/project.json. Project config overrides user config where both exist. 'source' is 'file' or 'defaults' (no file; nothing is written). A file that cannot be parsed or read is refused with invalid_configuration.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Path to the KiCAD project directory. If omitted, uses the configured project_dir.",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "load_project_config"
+        },
+        {
+          "description": "List all active design rules (user-level + project-level).",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (optional)",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "list_design_rules"
+        },
+        {
+          "description": "Get the net connected to a specific pin on a component by tracing wires from the pin endpoint.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "pin_number": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "pin_number"
+            ],
+            "type": "object"
+          },
+          "name": "get_pin_connections"
+        },
+        {
+          "description": "Build the full connectivity graph for a net using union-find. Returns all wire segments, labels, and T-junction locations.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "net": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "net"
+            ],
+            "type": "object"
+          },
+          "name": "get_net_connectivity"
+        },
+        {
+          "description": "Run the Electrical Rules Check (ERC) on the schematic via kicad-cli and return a list of violations filtered by severity. Violation positions are millimetres on the sheet; the response's `coordinates` object says whether they were corrected for the KiCad versions that report them 100x too small, passed through, or withheld because the KiCad version could not be classified. A report that is not in kicad-cli's ERC shape is an error, never zero violations.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "output": {
+                "description": "Optional path to write this tool's response as JSON, violations and coordinate provenance together (not KiCad's own ERC report)",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "severity": {
+                "default": "warning",
+                "description": "Minimum severity to report: 'error', 'warning', 'info'",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "run_erc"
+        },
+        {
+          "description": "Get all nets connected to every pin of a component.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "get_component_nets"
+        },
+        {
+          "description": "Create a new KiCAD project at the given path. Creates the directory, a blank .kicad_pro file, an empty .kicad_sch schematic, and a blank .kicad_pcb board file. Refuses to replace any existing project file.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Project name (used as filename stem)",
+                "type": "string"
+              },
+              "path": {
+                "description": "Directory path where the project will be created",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "create_project"
+        },
+        {
+          "description": "Scan the schematic for near-miss wire endpoints (within snap_tolerance of a pin or label but not exactly on it) and snap them into place. Use dry_run to preview fixes without writing.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dry_run": {
+                "default": false,
+                "description": "Report fixes without applying them",
+                "type": "boolean"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "snap_tolerance": {
+                "default": 0.05,
+                "description": "Snap distance in mm",
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "fix_connectivity"
+        },
+        {
+          "description": "Capture the current render of a schematic sheet as its visual baseline, stored under the project's .konnect/baselines/ keyed by sheet name, with the source file's hash and the renderer identity recorded so a later compare can tell design drift from a stale renderer.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "width_px": {
+                "default": 1600,
+                "description": "Baseline render width in pixels",
+                "maximum": 4096,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "set_visual_baseline"
+        },
+        {
+          "description": "Export the schematic and PCB to PDF as a timestamped snapshot/checkpoint. Useful for saving progress before major edits.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "description": "Optional label to include in the filename",
+                "type": "string"
+              },
+              "output_dir": {
+                "description": "Directory to write snapshot PDFs",
+                "type": "string"
+              },
+              "pcb": {
+                "description": "Optional: path to .kicad_pcb file",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output_dir"
+            ],
+            "type": "object"
+          },
+          "name": "snapshot_project"
+        },
+        {
+          "description": "Get all pins and labels connected to a named net.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "net": {
+                "description": "Net name to query",
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "net"
+            ],
+            "type": "object"
+          },
+          "name": "get_net_connections"
+        },
+        {
+          "description": "Get all components (and their pins) connected to a named net.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "net": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "net"
+            ],
+            "type": "object"
+          },
+          "name": "get_net_components"
+        },
+        {
+          "description": "Return the merged configuration (user defaults + project overrides). This is the config Claude should use for all design decisions. 'sources' says where each half came from ('file', 'defaults', or 'not_configured' when there is no project directory). Refuses with invalid_configuration, naming which file, rather than merging defaults in place of a file that cannot be used.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (optional)",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_effective_config"
+        },
+        {
+          "description": "Export a schematic sheet to a PDF file using kicad-cli.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "all_sheets": {
+                "default": true,
+                "description": "Include all hierarchical sheets; false exports page 1 only",
+                "type": "boolean"
+              },
+              "black_and_white": {
+                "default": false,
+                "description": "Render in black and white",
+                "type": "boolean"
+              },
+              "output": {
+                "description": "Output PDF file path",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output"
+            ],
+            "type": "object"
+          },
+          "name": "export_schematic_pdf"
+        },
+        {
+          "description": "Update a user preference. Use dot-notation for nested keys, e.g. 'fab_constraints.fab_house'. Call this when the user says things like 'always use JLCPCB' or 'I prefer 0402 passives'. Every other key is kept, and the response is the file as read back. Refuses with invalid_configuration, writing nothing, when the existing file cannot be parsed or read; a persistence failure is mutation_outcome_uncertain, so read the file before retrying.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "key_path": {
+                "description": "Dot-notation path to the config key, e.g. 'fab_constraints.fab_house' or 'default_passives.decoupling_cap'",
+                "type": "string"
+              },
+              "value": {
+                "description": "New value to set (string, number, array, or object)"
+              }
+            },
+            "required": [
+              "key_path",
+              "value"
+            ],
+            "type": "object"
+          },
+          "name": "save_user_config"
+        },
+        {
+          "description": "Export a schematic sheet to an SVG file using kicad-cli. The result doubles as a              machine-readable geometry source: kicad-cli writes every string twice \u2014 visibly as              stroke paths, and again as an invisible <text opacity=\"0\"> element carrying x, y,              textLength, font-size and text-anchor \u2014 so text content, position and width are              checkable without rendering a pixel.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "black_and_white": {
+                "default": false,
+                "description": "Render in black and white",
+                "type": "boolean"
+              },
+              "output": {
+                "description": "Output SVG file path (directory used as output dir)",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "theme": {
+                "description": "KiCad colour theme name (optional)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output"
+            ],
+            "type": "object"
+          },
+          "name": "export_schematic_svg"
+        },
+        {
+          "description": "Add a natural-language design rule that Claude should follow in this project. Examples: 'Always use 100nF X7R for MCU decoupling within 3mm of power pin', 'Route USB D+/D- as 90-ohm differential pair'.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "project_dir": {
+                "description": "Project directory (for project-scoped rules)",
+                "type": "string"
+              },
+              "rule": {
+                "description": "The design rule in plain English",
+                "type": "string"
+              },
+              "scope": {
+                "default": "project",
+                "description": "'user' (applies to all projects) or 'project' (this project only)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "rule"
+            ],
+            "type": "object"
+          },
+          "name": "add_design_rule"
+        },
+        {
+          "description": "List PCB documents open in the running KiCad UI and optionally check whether one specific KiCad project or board is open over IPC.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Optional path to a .kicad_pro project or .kicad_pcb board to check",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "name": "open_project"
+        },
+        {
+          "description": "Save a project-specific rule or override. Same dot-notation as save_user_config but writes to the project's .konnect/project.json, with the same refusals: an unusable existing file is never overwritten.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "key_path": {
+                "description": "Dot-notation config key",
+                "type": "string"
+              },
+              "project_dir": {
+                "description": "Project directory (optional, uses configured default)",
+                "type": "string"
+              },
+              "value": {
+                "description": "New value to set"
+              }
+            },
+            "required": [
+              "key_path",
+              "value"
+            ],
+            "type": "object"
+          },
+          "name": "save_project_config"
+        },
+        {
+          "description": "List all label instances (net_label, global_label, hierarchical_label) with their positions, net names, and types.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "list_schematic_labels"
+        },
+        {
+          "description": "Trace connectivity from any (X,Y) point \u2014 returns the wires, labels, component pins and junction dots at that point, and the net it belongs to. Hierarchical sheet pins and no-connect flags are not reported, so an empty pins_here does not prove a wire dangles.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              },
+              "tolerance": {
+                "default": 0.05,
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic",
+              "x",
+              "y"
+            ],
+            "type": "object"
+          },
+          "name": "trace_from_point"
+        },
+        {
+          "description": "Plan or atomically apply saved schematic hierarchy changes to the live KiCad PCB. Defaults to a non-mutating dry run; apply requires its exact plan revision. Preserves placement, routing, board-only footprints, and footprint artwork. A symbol with no footprint assigned is reported under `unassigned_footprints` and the sync proceeds for every other component. A library footprint that cannot be placed, or a connected pad its footprint does not have, makes the dry run a conflict whose diagnostics name the footprint and every part that needs it.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "board": {
+                "description": "Matching .kicad_pcb path currently open in KiCad",
+                "type": "string"
+              },
+              "dry_run": {
+                "default": true,
+                "description": "Plan without changing the board",
+                "type": "boolean"
+              },
+              "expected_plan_revision": {
+                "description": "Required for apply; exact revision returned by the latest dry run",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Saved root .kicad_sch path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "board"
+            ],
+            "type": "object"
+          },
+          "name": "update_pcb_from_schematic"
+        },
+        {
+          "description": "Launch the live schematic viewer. The viewer shows the schematic as SVG and auto-refreshes when the file changes. Use this after placing components so the user can see the schematic in real-time as you edit it. For hierarchical designs, pass the root schematic \u2014 the viewer discovers every sheet reachable from it and shows a sheet selector.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "description": "Path to the root .kicad_sch file to view",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "open_schematic_viewer"
+        },
+        {
+          "description": "Detect accidentally merged nets \u2014 distinct net names that KiCad nets together, through a wire path they share or through a name that joins their segments.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "find_shorted_nets"
+        },
+        {
+          "description": "Return a human-readable JSON summary of the schematic netlist: all components, their nets, pin counts. Nets come from labels and from power symbols. Does not require kicad-cli.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "export_netlist_summary"
+        },
+        {
+          "description": "Rename a KiCAD project: renames the .kicad_pro/.kicad_sch/.kicad_pcb/.kicad_prl files and rewrites the internal references that carry the old name. Renaming the files alone is NOT enough \u2014 every symbol instance stores (project \"name\"), and a mismatch there makes KiCAD treat the design as unannotated, losing every reference designator. Equivalent to eeschema's File > Save As. Use dry_run first.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "dry_run": {
+                "default": false,
+                "description": "Report the planned changes without touching anything. Default false.",
+                "type": "boolean"
+              },
+              "new_name": {
+                "description": "New project name, without extension",
+                "type": "string"
+              },
+              "project": {
+                "description": "Path to the existing .kicad_pro file",
+                "type": "string"
+              },
+              "rename_directory": {
+                "default": false,
+                "description": "Also rename the containing folder when it matches the old project name. Default false.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "project",
+              "new_name"
+            ],
+            "type": "object"
+          },
+          "name": "rename_project"
+        },
+        {
+          "description": "Save the currently open PCB board file via KiCAD IPC. Requires KiCAD to be running with IPC enabled.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "save_project"
+        },
+        {
+          "description": "List all wire segments in a schematic with start/end coordinates and UUIDs.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "list_schematic_wires"
+        },
+        {
+          "description": "Render a schematic sheet to PNG: kicad-cli SVG export rasterized in-process (deterministic stroke-font rendering, no system fonts consulted). Returns the PNG path and its actual pixel dimensions; with 'inline' true the response also carries the image as base64 so the caller can inspect its own output. Width is capped at 4096 px.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "inline": {
+                "default": false,
+                "description": "Also return the PNG as base64 content",
+                "type": "boolean"
+              },
+              "monochrome": {
+                "default": false,
+                "description": "Render in black and white",
+                "type": "boolean"
+              },
+              "output": {
+                "description": "Output PNG path (default: alongside the schematic)",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              },
+              "width_px": {
+                "default": 1600,
+                "description": "Output width in pixels",
+                "maximum": 4096,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "render_schematic_png"
+        },
+        {
+          "description": "Re-render a sheet at its stored baseline's width and report pixel drift: changed-pixel percentage against a 2% threshold, the changed region's pixel bounding box, and whether the source file changed since the baseline. 'No baseline stored' is an explicit result, not an error; a baseline made by a different renderer version is flagged, never silently trusted.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "inline_diff": {
+                "default": false,
+                "description": "Also return the current render as base64 for inspection",
+                "type": "boolean"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "compare_visual_baseline"
+        },
+        {
+          "description": "Generate a KiCAD netlist file from the schematic using kicad-cli.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "format": {
+                "default": "kicad",
+                "description": "Netlist format: 'kicad', 'orcadpcb2', 'cadstar', 'spice'",
+                "type": "string"
+              },
+              "output": {
+                "description": "Output .net file path",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "output"
+            ],
+            "type": "object"
+          },
+          "name": "generate_netlist"
+        },
+        {
+          "description": "Find nets that reach at most one pin \u2014 often a missing counterpart, an orphan label, or a stub left by a deleted component. Component pins and hierarchical sheet pins count; a power symbol's own pin names the rail rather than consuming it and does not. Reports the pin and label counts, and every label kind that named the net. Read per sheet: a net a global, hierarchical or power label can carry off this one is flagged cross_sheet_unverified.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "find_single_pin_nets"
+        },
+        {
+          "description": "Load the user's global Konnect preferences. Call this at the start of every session to get preferred manufacturers, fab constraints, default passives, and design rules. 'source' says whether the answer is the user's file or Konnect's defaults (no file existed; the defaults are then written for the user to edit and 'persisted' says whether that worked). A file that exists but cannot be parsed or read is refused with invalid_configuration and is never replaced by defaults.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "load_user_config"
+        },
+        {
+          "description": "List all distinct net names derived from net labels, global labels, and power symbols.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "list_schematic_nets"
+        },
+        {
+          "description": "Return just the net name for a specific pin on a component.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "pin_number": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "schematic": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference",
+              "pin_number"
+            ],
+            "type": "object"
+          },
+          "name": "get_pin_net_name"
+        },
+        {
+          "description": "Get all wires, labels, and components connected to a given component reference by tracing net connectivity from each of its pins.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "reference": {
+                "description": "Component reference designator (e.g. 'R1')",
+                "type": "string"
+              },
+              "schematic": {
+                "description": "Path to .kicad_sch file",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schematic",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "name": "get_connected_items"
+        },
+        {
+          "description": "Find dangling wire ends, floating labels, and unconnected pin endpoints. Pins, sheet pins, junctions, and no-connect flags all count as connections.",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "schematic": {
+                "type": "string"
+              },
+              "tolerance": {
+                "default": 0.05,
+                "exclusiveMinimum": 0,
+                "type": "number"
+              }
+            },
+            "required": [
+              "schematic"
+            ],
+            "type": "object"
+          },
+          "name": "find_orphan_items"
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "schema_version": 4,
+  "project_id": "fc6bca15-cfc0-4e17-8552-2281987d2aee",
+  "input": {
+    "schema_version": 1,
+    "job_id": "d5406f5c-6800-4e61-a30a-0615becdd25a",
+    "agent_version": "0.7.1",
+    "source_name": "UserOriginal.ino",
+    "original_source": "void setup() {} void loop() {}",
+    "source": "void setup() {} void loop() { delay(750); }"
+  },
+  "phase": "failed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/d5406f5c-6800-4e61-a30a-0615becdd25a",
+    "created_unix_ms": 1791910383738,
+    "updated_unix_ms": 1791910384262,
+    "sequence": 3,
+    "error": "No se pudieron publicar los archivos. Cierre las aplicaciones que los estén usando y revise los permisos y el espacio libre del proyecto. La entrada y los archivos de trabajo se conservan: Cannot create a file when that file already exists. (os error 183)",
+    "files_verified": true
+  }
+}

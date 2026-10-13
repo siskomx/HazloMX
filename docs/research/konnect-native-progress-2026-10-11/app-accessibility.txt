@@ -1,0 +1,89 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			2 pane Hazlo Mexa
+				3 pane (disabled)
+				4 region Hazlo Mexa - Web content
+					5 region
+						6 region
+							7 region
+								8 region
+								9 region
+									10 region
+										11 region
+											12 region
+												13 region
+												14 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													15 main ID: app
+														16 section header
+															17 heading Hazlo Mexa
+															18 text De una idea a un archivo que puedes editar.
+															19 text CAD y Arduino · v0.1
+														20 region Tu proyecto
+															21 heading Tu proyecto ID: project-heading
+															193 text C:/Users/USER\Documents\GitHub\HazloMX\target\native-konnect-13612374-04cf-45ce-bf04-8d0c5bb42fe0\project
+															23 button Crear en carpeta… ID: create-project
+															24 button Abrir proyecto… ID: open-project
+														25 region ¿Qué quieres crear?
+															26 text 01 / CONVERSA
+															27 heading ¿Qué quieres crear? ID: proposal-heading
+															194 text Describe el componente que quieres modificar en una copia del esquema.
+															29 text ¿Qué vas a trabajar?
+															30 combo box (settable, string) ¿Qué vas a trabajar? Value: Editar esquema · Konnect ID: workflow
+															31 log Conversación de diseño ID: conversation
+																165 text Tú:
+																166 text cambia R1 a 12.34k
+																167 text Hazlo Mexa:
+																168 text Anoté R1 → 12.34k. Selecciona el esquema para leer su valor actual y revisar la propuesta antes de aprobar.
+															37 text Tu idea o respuesta
+															38 edit (settable, string) Tu idea o respuesta Description: Cambia R1 a 12.34k ID: prompt
+															39 button Enviar ID: infer
+															40 button (disabled) Detener ID: cancel-inference
+															41 button Nueva conversación ID: new-conversation
+															42 status ID: inference-status
+															195 text Confirma la referencia y el nuevo valor; el valor actual se lee del esquema antes de preparar la propuesta.
+															196 text C:/Users/USER\Documents\GitHub\HazloMX\target\konnect-probe\runtime\konnect.exe · Selecciona KiCad CLI 10.0.7
+															148 button Seleccionar Konnect 0.13.0… ID: select-konnect
+															149 button Seleccionar KiCad CLI 10.0.7… ID: select-konnect-kicad
+															150 text Referencia del componente
+															151 edit (settable, string) Referencia del componente Description: Por ejemplo: R1 Value: R1 ID: konnect-reference
+															152 text Nuevo valor
+															153 edit (settable, string) Nuevo valor Description: Por ejemplo: 12.34k Value: 12.34k ID: konnect-value
+															154 text El valor actual se obtiene del esquema seleccionado. Revisa el cambio antes de aprobar. El original se conserva; se publica una copia editada.
+															155 button (disabled) Seleccionar esquema y preparar cambio… ID: prepare-konnect
+														53 region Vista de la propuesta
+															54 text 02 / REVISA
+															55 heading Vista de la propuesta ID: preview-heading
+															197 text Revisa el valor actual y el nuevo. Para cambiar la propuesta, cancélala y prepara otra.
+															198 text Selecciona el esquema después de confirmar referencia y nuevo valor.
+															58 button (disabled) Aprobar edición del esquema ID: approve
+															59 button (disabled) Cancelar ID: cancel
+															199 text Se conserva el original y se verifica que solo cambie el valor aprobado. No se controla hardware.
+														61 region Resultados
+															62 text 03 / ABRE
+															63 heading Resultados ID: results-heading
+															64 status ID: status
+																200 text Describe tu idea en el chat o ingresa las medidas manualmente.
+															66 list
+																67 term Generación
+																	68 text Generación
+																201 text Sin archivos nuevos
+																70 term Verificación
+																	71 text Verificación
+																202 text Sin artefactos nuevos aceptados
+																73 term Publicación
+																	74 text Publicación
+																203 text Sin publicación nueva
+								76 region
+						77 region
+						78 region
+		79 title bar (settable, string) Value: Hazlo Mexa
+			80 menu bar System ID: MenuBar
+				85 menu item System
+			82 button Minimize
+			83 button Maximize
+			84 button Close
+
+Document text: ```
+12.34k
+```

@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "zero",
+  "result": {
+    "proposal": {
+      "message": "El usuario proporcionó medidas de largo, ancho y altura. Sin embargo, la altura es 0 mm, que está fuera del rango mínimo de 1.0 mm. Por lo tanto, necesito solicitar una corrección en la altura.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 11.1022557
+}

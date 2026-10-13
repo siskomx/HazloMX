@@ -1,0 +1,32 @@
+{
+  "passed": false,
+  "commands": [
+    {
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "node",
+        "tests/design-flow.mjs"
+      ],
+      "exit_code": 1
+    }
+  ],
+  "source_hashes": {
+    "apps/desktop/src/main.ts": "c735874a1d893ae1bec8fdee151ed81e8c88f6ca5f0a57c89e96056f17d6b1b8",
+    "apps/desktop/src/design.ts": "2be76b12eeeaeb867c1698b9f894e22442bc4f311612f9cf93079efe8b64655b",
+    "apps/desktop/src/contracts.ts": "2ccffef6130fabf0b197f6a86ef158e3d16da2f63d3f1e1f3a89f2fe68eb8756",
+    "apps/desktop/tests/design-flow.mjs": "4d5e300b009f11c83728eff30e5bc11f2d302508506af4cda99f0011980cc612",
+    "apps/desktop/tests/verify-agent-context.py": "efcddf1f4e731504d7117a293b53cee8398fcd4781536c6935a0d360a2def2a2",
+    "apps/desktop/package.json": "3cdb1eb23756036b06759765780bcd4f498dc68ac439d6a431b827d249ddef06",
+    "apps/desktop/package-lock.json": "3a7ce8ea71b570842cd95563de708cb1915b25672f37cc6dee82dbbd5428d87d"
+  },
+  "cases": 0,
+  "native_ui_verified": false,
+  "signed_in_agent_verified": false
+}

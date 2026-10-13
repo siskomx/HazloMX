@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "job_id": "632311a3-d2a5-4a78-aef1-101b26e84661",
+  "success": true,
+  "cadpilot_version": "0.7.7",
+  "freecad_version": "1.1.4",
+  "operation": "add_box",
+  "object": "AddedBox",
+  "parameters_mm": {
+    "length": 10,
+    "width": 20,
+    "height": 30,
+    "x": 50,
+    "y": 0,
+    "z": 0
+  },
+  "source_sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+  "catalog": {
+    "Target": "Part::Box"
+  },
+  "before": {
+    "Target": {
+      "success": true,
+      "shape_type": "Solid",
+      "is_valid": true,
+      "volume_mm3": 6000.0,
+      "area_mm2": 2200.0,
+      "center_of_mass": [
+        5.0,
+        10.0,
+        15.0
+      ],
+      "bbox": {
+        "xmin": 0.0,
+        "ymin": 0.0,
+        "zmin": 0.0,
+        "xmax": 10.0,
+        "ymax": 20.0,
+        "zmax": 30.0
+      },
+      "counts": {
+        "solids": 1,
+        "shells": 1,
+        "faces": 6,
+        "edges": 12,
+        "vertices": 8
+      },
+      "placement": {
+        "base": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": {
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "angle_deg": 0.0,
+          "yaw_pitch_roll": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    }
+  },
+  "after": {
+    "Target": {
+      "success": true,
+      "shape_type": "Solid",
+      "is_valid": true,
+      "volume_mm3": 6000.0,
+      "area_mm2": 2200.0,
+      "center_of_mass": [
+        5.0,
+        10.0,
+        15.0
+      ],
+      "bbox": {
+        "xmin": 0.0,
+        "ymin": 0.0,
+        "zmin": 0.0,
+        "xmax": 10.0,
+        "ymax": 20.0,
+        "zmax": 30.0
+      },
+      "counts": {
+        "solids": 1,
+        "shells": 1,
+        "faces": 6,
+        "edges": 12,
+        "vertices": 8
+      },
+      "placement": {
+        "base": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": {
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "angle_deg": 0.0,
+          "yaw_pitch_roll": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    },
+    "AddedBox": {
+      "success": true,
+      "shape_type": "Solid",
+      "is_valid": true,
+      "volume_mm3": 6000.0,
+      "area_mm2": 2200.0,
+      "center_of_mass": [
+        55.0,
+        10.0,
+        15.0
+      ],
+      "bbox": {
+        "xmin": 50.0,
+        "ymin": 0.0,
+        "zmin": 0.0,
+        "xmax": 60.0,
+        "ymax": 20.0,
+        "zmax": 30.0
+      },
+      "counts": {
+        "solids": 1,
+        "shells": 1,
+        "faces": 6,
+        "edges": 12,
+        "vertices": 8
+      },
+      "placement": {
+        "base": [
+          50.0,
+          0.0,
+          0.0
+        ],
+        "rotation": {
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "angle_deg": 0.0,
+          "yaw_pitch_roll": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    }
+  },
+  "sha256": {
+    "Edited.FCStd": "10726be0b38bcfaf921c5eb6554f2a00d49ba0b0cc060ee602871e10f553e2c7",
+    "Edited.step": "83f052780dab20a47d2f40416fd4f326054fdb274ac3b9a3099523a0379a3fdf"
+  }
+}

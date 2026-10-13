@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "missing_height",
+  "result": {
+    "proposal": {
+      "message": "El usuario pidió crear un bloque con largo 10 mm y ancho 20 mm. Pero no especificó la altura. Para un sólido rectangular, necesitamos tres dimensiones: largo, ancho y alto. Como no se proporcionó la altura, no puedo completar las medidas. ¿Cuál es la altura del bloque?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 11.4083565
+}

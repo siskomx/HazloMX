@@ -1,0 +1,22 @@
+﻿{
+    "actual_freecad_runs_inside_owned_job_with_private_configuration":  false,
+    "errors":  [
+                   "Actual native test failed: actual_freecad_runs_inside_owned_job_with_private_configuration",
+                   "Actual native test failed: actual_approved_workflow_publishes_and_recovers"
+               ],
+    "backend":  {
+                    "exit":  0,
+                    "pass":  true,
+                    "ignored":  5,
+                    "os":  "Microsoft Windows NT 10.0.26100.0",
+                    "passed":  38,
+                    "seeded_credential_absent":  true,
+                    "user":  "WDAGUtilityAccount"
+                },
+    "pass":  false,
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "geometry_tests":  8,
+    "actual_approved_workflow_publishes_and_recovers":  false,
+    "stage":  "finished",
+    "user":  "WDAGUtilityAccount"
+}

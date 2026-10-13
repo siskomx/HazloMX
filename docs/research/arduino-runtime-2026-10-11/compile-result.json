@@ -1,0 +1,50 @@
+{
+  "pass": true,
+  "cli_version": "1.5.1",
+  "core": "arduino:avr@1.8.8",
+  "fqbn": "arduino:avr:uno",
+  "hardware_mutations": false,
+  "models_run": 0,
+  "runs": [
+    {
+      "name": "Blink",
+      "exit_code": 0,
+      "source_sha256": "9274b7f22cec1b3ff22a1d62e533ee1e9dcb0ff4ce4da9e554849f747110439e",
+      "artifacts": [
+        {
+          "name": "Blink.ino.eep",
+          "bytes": 13,
+          "sha256": "788e5ffc44ae4ee912fe01f495951f96b0accd5705e184dcaea197d8b64856a6"
+        },
+        {
+          "name": "Blink.ino.elf",
+          "bytes": 14432,
+          "sha256": "bfad8a785e959d8cdb1a2e8d73191d65a19baff439693c8ddf72e7ae5192526e"
+        },
+        {
+          "name": "Blink.ino.hex",
+          "bytes": 2615,
+          "sha256": "fca1d74f3e16ea45d3e7aaf7d3b89f0dabb462a645d241aa5cf74dce11fb84c3"
+        },
+        {
+          "name": "Blink.ino.with_bootloader.bin",
+          "bytes": 32768,
+          "sha256": "2fb0357b1ccd7d2cc5ee531a386286035d6fc4903e03db5dbb6af2d8e9d4954b"
+        },
+        {
+          "name": "Blink.ino.with_bootloader.hex",
+          "bytes": 3972,
+          "sha256": "edbdc2e13b230e25eb129b483df6914572b2748fb34f103d830d69cb453691b5"
+        }
+      ],
+      "hex_data_bytes": 924
+    },
+    {
+      "name": "Invalid",
+      "exit_code": 1,
+      "source_sha256": "fc175fffff5bb727b41176fabdcc0187d5574b6aebfbdad4a7989425eb0e7af0",
+      "artifacts": []
+    }
+  ],
+  "evidence_directory": "compilations\\ebf1ec60-f552-46e9-a584-06bc1c3e5ea6"
+}

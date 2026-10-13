@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"error\":{\"field\":\"reference\",\"kind\":\"invalid_argument\",\"reason\":\"no footprint 'MISSING' on this board\"},\"message\":\"Footprint 'MISSING' is not on this board, so there was nothing to update. The board file was not modified.\"}"
+    }
+  ],
+  "isError": true
+}

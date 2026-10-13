@@ -1,0 +1,11 @@
+# Schematic chat selects inspected components by description
+
+Guided schematic chat now accepts an inspected type and value, such as “cambia la resistencia de 10k a 22k”, without requiring the user to know R1. It matches the component list returned for the explicitly selected sheet. A unique match selects that component and fills its literal new-value draft. “Cámbiala a …” or “change it to …” uses the current explicit selection. The component labels used for discovery and chat share the same mapping.
+
+Multiple matches ask the user to choose a component; they do not reuse an old selection to resolve an ambiguous description. Missing matches, missing selection, explicit refusals, read-only power symbols and oversized values leave the draft unchanged. Pending review or running work also preserves the draft, including when a form submission bypasses the disabled Send button. A request before sheet discovery asks the user to open the sheet first. These replies do not prepare, approve or execute a job, call inference or infer an electrical value.
+
+The helper supports bounded explicit change phrases in Spanish and English; open-ended circuit reasoning still uses the connected provider workflow and remains subject to its separate acceptance gates. No electronics equivalence, unsaved native-document editing or signed-in provider turn is claimed.
+
+The TypeScript/Vite production build and all nine workflow browser fixtures pass. Regressions cover natural component descriptions, exact references, selected-component follow-ups, literal case preservation, ambiguous duplicate values, unknown references, negation, read-only symbols and value limits. Browser checks verify discovery → descriptive request → clarification → reviewed proposal, no implicit backend preparation, unchanged reviewed inputs and the existing approval/result UI. [Browser fixture](browser-fixture.png) and [source hashes](source-inputs.json) identify this frontend gate; native KiCad behavior continues to rely on separately retained backend evidence.
+
+The installer still predates these frontend changes. Its rebuild requires closing the open native Hazlo test window, which holds `target/release/hazlomexa.exe`; that user response is pending. Native input remains stopped following Escape. Installed/native chat acceptance and the full application goal remain unfinished.

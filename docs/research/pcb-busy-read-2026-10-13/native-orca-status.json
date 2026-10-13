@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "pre_post_source_hashes": {
+    "Cargo.lock": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4",
+    "apps/desktop/src-tauri/Cargo.toml": "a7dea800baba8aa6b7698513e429342dd8bcbff01b66958ccf56825ad8092b19",
+    "apps/desktop/src-tauri/src/kicad_project.rs": "363f3de652ea22d11fd8bc97cbf7f0630c38f7452632019568d968a7aed9b5d1",
+    "apps/desktop/src-tauri/src/orca.rs": "6152c95aabb0f603c2ae65c2eafb09e21a49462ff6cbeb9c7ea580a39387b1a6",
+    "apps/desktop/src-tauri/src/orca_run.rs": "668b2ed7c64d11cde1efc49bbff0b5350f4de00454d2211fb4d9912b1c89069f",
+    "apps/desktop/src-tauri/src/process.rs": "9746ef2e7b3281201791bc0c84dea0df6906b4e3c9e697ef744a424fe9479cf8",
+    "target/check-pcb-busy-orca.cmd": "d28c604aa9cd9ec7f322e53579c7e90f719465f8dac0c3af9457559d394045ef",
+    "target/check-pcb-busy-orca.py": "d41bc16c466e38313d291b64e4a8919b2105e71599b735987c6ea4a47e1b61b8",
+    "docs/research/orca-runtime-2026-10-11/Cube-mm.stl": "c1c022788a012c7eb8f7ca9807b83fcf4a1ee6a3c5538a7669fe3779c117bf73"
+  },
+  "scope": "actual OrcaSlicer captured profiles, units and verified file slicing; not hardware or native UI"
+}

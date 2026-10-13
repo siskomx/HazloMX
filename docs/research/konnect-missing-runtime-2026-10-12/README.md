@@ -1,0 +1,15 @@
+# Fresh Windows exposes a missing Konnect runtime prerequisite
+
+Installer `705532b4…` passes upgrade and fifteen-tool checks in fresh Windows build-26100 guest `27323543-b16c-4485-9c7c-ca2044ab1390`, then [fails its first Konnect schematic execution](guest/package-result.json). The failed job, source captures, private profiles and logs are retained under `guest/failed-konnect-projects/`. This is a failed installed engineering gate; UI/uninstall acceptance did not run. The owned guest was stopped after exporting the failure.
+
+The [independent runtime diagnostic](guest/konnect-runtime-diagnostic.json) runs the exact captured Konnect executable with `--version`: Windows returns `-1073741515` (`0xC0000135`, missing DLL), with no output. Neither `vcruntime140.dll` nor `msvcp140.dll` is present in guest System32. The identified upstream package contains only `konnect.exe`; the host already had its Visual C++ runtime. Thus a host preflight was insufficient to prove the fresh-machine prerequisite.
+
+The host preflight in `target/konnect-connector-preflight-e3a74658-2800-4987-be3c-b771827870cf` did complete four actual connector jobs: R1 10k→12.34k→22k and J1 moves using inch/mils proposals with independent native saved-state reads, stale-hash refusal, one-use approval, original/prior-result preservation and two-job recovery per project. Its PCB readback retains one DRC error, seven warnings and ignored checks. Those are design findings, separate from edit/export success.
+
+Hazlo's shared schematic/PCB Konnect dispatcher now queries its owned process's exit status after startup failure. A missing-DLL status gives a Spanish Visual C++ prerequisite explanation; other errors, cancellations and timeouts keep their existing messages. The new regression and all **114 regular Rust tests** pass. The application source changed, so the delivery installer still predates this diagnostic improvement until rebuilt.
+
+The revised guest fixture supplies the already identified Microsoft `vcruntime140.dll` beside the owned Konnect executable, binding its SHA-256, file version and valid Microsoft signature in the package identity. This is test-only app-local deployment, which Microsoft documents as a supported deployment method; it does not change host system configuration. [Microsoft deployment guidance](https://learn.microsoft.com/en-us/cpp/windows/choosing-a-deployment-method?view=msvc-170). Python syntax and PowerShell parsing pass. **The corrected installed workflow has not passed yet**; prerequisite sufficiency and the rebuilt package require an actual fresh-guest rerun.
+
+Full native GUI/picker/approval/cancellation/opening, signed-in interaction and the remaining application gates stay required. No model inference or hardware operation runs. The full goal remains active.
+
+The rebuilt package subsequently passes [the actual missing-runtime regression and all four installed edits plus lifecycle](../installed-konnect-2026-10-12/README.md). This earlier failed run remains unchanged and is not promoted to success.

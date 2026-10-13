@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+    "--user-cfg",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-070de9bd-f87b-40fa-ba52-67a0c3d9482e\\profile\\user.cfg",
+    "--system-cfg",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-070de9bd-f87b-40fa-ba52-67a0c3d9482e\\profile\\system.cfg",
+    "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-070de9bd-f87b-40fa-ba52-67a0c3d9482e\\geometry-gate.FCMacro"
+  ],
+  "cadpilot_commit": "58bfee4d45061e55c158a5fd4786ab98a427f7f6",
+  "roundtrip": {
+    "exit_code": 0,
+    "command": [
+      "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+      "--user-cfg",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-070de9bd-f87b-40fa-ba52-67a0c3d9482e\\profile\\check-user.cfg",
+      "--system-cfg",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-070de9bd-f87b-40fa-ba52-67a0c3d9482e\\profile\\check-system.cfg",
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\cadpilot-probe\\geometry-070de9bd-f87b-40fa-ba52-67a0c3d9482e\\verify-roundtrip.FCMacro"
+    ],
+    "passed": true,
+    "files_unchanged": true
+  },
+  "module_hashes": {
+    "__init__.py": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228",
+    "geometry_query.py": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773",
+    "object_factory.py": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893",
+    "property_mapper.py": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6",
+    "tip_policy.py": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  "executable_sha256": "b79c648edd6e40d6769b3096317ca2063d86a1d47412afd93d02c4047521b2dd",
+  "macro_sha256": "1f086af8f3cd1824139ee32d9871950a6a16b9e042b4d161da641cff6679b3c9",
+  "artifact_hashes": {
+    "Edited.FCStd": "e48364a8669b214ebf5934b538442612c7ddf79c9e7c0545c2f9f9ff250436f0",
+    "Edited.step": "95bd2a48c47717bf57e3c787327814f511e812758651853f42e1d840d0b512e8",
+    "geometry-gate.FCMacro": "1f086af8f3cd1824139ee32d9871950a6a16b9e042b4d161da641cff6679b3c9",
+    "input.json": "ee5a4b95cea6f9989bf4f841acfe4d858bdbd0e27b2cf8b1a4b6b8b448032ff6",
+    "Original.FCStd": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6",
+    "result.json": "ef3650726c2d6478963c8b09d0af3232bb1b3189bb9a018801d6631b90404b6d",
+    "roundtrip-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "roundtrip-stdout.log": "2024c05e5b5de9b2a46609e9c7c5ce7dbad4fa2cfb7a7a79aed7ffc56ad65736",
+    "roundtrip.json": "62b05063525d2f1d22ddb21cd15cbac1bdd3f6f728e159b45680a48a946504c2",
+    "stderr.log": "d2c45e5210e08399b62f2c383bcfd317ed4f1898306df85044dca65586ef5569",
+    "stdout.log": "b054822d2638aa3375ef23a8b50ee9f4704edc6e08c1a650892104987790c47e",
+    "Unselected.FCStd": "ac1bd0e36029f10a8bfabb4c9b2f099cd6b721854dd57c33508dc8c9c1295479",
+    "verify-roundtrip.FCMacro": "8c265935d707294ba4ff7f51648a35d5eee17c4b7f5bb71c468478bbdd698173",
+    "Working.FCStd": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  }
+}

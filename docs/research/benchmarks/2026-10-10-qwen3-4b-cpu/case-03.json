@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 3.5,
+    "length": 12.5,
+    "width": 7.25
+  },
+  "id": "decimal",
+  "result": {
+    "proposal": {
+      "message": "El bloque sólido se ha creado con éxito. Las medidas son: largo 12.5 mm, ancho 7.25 mm y altura 3.5 mm.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 10.7041818
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1675F80736E97CE2BF99F475ACB188FD75FF4E0661FBEA258E058AA94442FCB0",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\examples\\installed_agent_workflow.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "29D5D53FA673013992BAA4934E96B0492E05A559E2797F88B5B05EB659099E97",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\prepare-current-package.py"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "559928F1F96767F6CDE2CB14B246FA663A4453DAAC00037043E90D7E5DBEE73F",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\sandbox-current-package.ps1"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A431145FFE2B29F5BE26188E3B2F88FEF71D4977E659F12A71AEBE730F158279",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\sandbox-agent-workflow.ps1"
+  }
+]

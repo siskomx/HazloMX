@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 8,
+    "length": 40,
+    "width": 15
+  },
+  "id": "reordered",
+  "result": {
+    "proposal": {
+      "message": "El usuario proporcionó medidas específicas: alto 8 mm, largo 40 mm, ancho 15 mm. Estas medidas están dentro del rango permitido (1-200 mm) y corresponden a un sólido rectangular. No hay ambigüedad ni falta de datos. Las medidas son explícitas y en milímetros.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 10.9117615
+}

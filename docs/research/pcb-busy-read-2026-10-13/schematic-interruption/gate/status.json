@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "jobs::tests::actual_konnect_blocked_workflow_",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "fixtures": {
+    "cancellation": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-f1eba113-6f72-42b6-b137-e9d76e4a7cad",
+    "deadline": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-4ebdd54c-c342-4b6c-9ecd-ed2779776e4f"
+  },
+  "integration": "schematic",
+  "held_host_read_refusal_verified": false,
+  "source_hashes": {
+    "Cargo.lock": "f33f856da496189c5fbee001eda313a3b29421140544126a7c744a8b476021f4",
+    "apps/desktop/src-tauri/src/konnect_run.rs": "ca2327f20857966e99927f761a52f1f77e9d3c0fe45f3f2901c05860cd0ccf70",
+    "apps/desktop/src-tauri/src/process.rs": "9746ef2e7b3281201791bc0c84dea0df6906b4e3c9e697ef744a424fe9479cf8",
+    "apps/desktop/src-tauri/src/kicad_project.rs": "363f3de652ea22d11fd8bc97cbf7f0630c38f7452632019568d968a7aed9b5d1",
+    "apps/desktop/src-tauri/src/kicad_run.rs": "6a1ff028fae21b121291ae3294d5371a7ef7efc67ea2734681be79b027197551",
+    "tests/fixtures/publication_barrier.rs": "a9d08a6da255c532e21d1ceafd9f6e9815b334df6482edec280379dbd3debc38",
+    "tests/konnect/verify_blocked_read.py": "d4beb71c8989b4d1a14fa026f21f61fd3304cc6fd00fd228852c331a22ffd347",
+    "apps/desktop/src-tauri/src/jobs.rs": "230ae6e1eabb3f6bbdd0376286d8ca2b62a62bb91a4dda2adfc8ea35b7bff079",
+    "apps/desktop/src-tauri/src/project.rs": "1d3629990c6f1889e6d0d308455382da7ac990a8be3f044c4e6427af76d4ae2d",
+    "apps/desktop/src-tauri/Cargo.toml": "a7dea800baba8aa6b7698513e429342dd8bcbff01b66958ccf56825ad8092b19"
+  },
+  "runtime_hashes": {
+    "target/konnect-probe/runtime/konnect.exe": "09969ec5f05600039e206acedb0b6b785528f1bced2dbe2c7f426483013e4f2c",
+    "target/kicad-probe/runtime/bin/kicad-cli.exe": "cbd8197dd1f46b9a956f3d7973edc9a6a97960298731448ae9142dffe47abc7a",
+    "target/kicad-probe/fixtures/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+    "target/kicad-probe/fixtures/basic_test.kicad_pcb": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a",
+    "target/kicad-probe/fixtures/basic_test.kicad_pro": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837",
+    "target/kicad-probe/fixtures/custom_ds.kicad_wks": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  "initialized_blocked_read_cancellation_verified": false,
+  "held_workflow_access_cancellation_verified": true,
+  "full_60s_tool_deadline_verified": true,
+  "mutation_phase_verified": false,
+  "workflow_recovery_verified": true,
+  "native_ui_verified": false
+}

@@ -1,0 +1,82 @@
+[
+  {
+    "sha256": "B67BC7F82D58C78218498637F994A7DEFBD551347AEB0EC98DD888264B61C286",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\input.json"
+  },
+  {
+    "sha256": "2F526E0F37F074B2F316382FD03B24BB56197B73F619CE70CC062F85354715F6",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\Original.FCStd"
+  },
+  {
+    "sha256": "C04E371100B9A14FFDF6C36C2DBA4759F6516F9179663C1BE64C88AB03AB6653",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\result.json"
+  },
+  {
+    "sha256": "2F526E0F37F074B2F316382FD03B24BB56197B73F619CE70CC062F85354715F6",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\Working.FCStd"
+  },
+  {
+    "sha256": "1B7786FA2055D10A04F9E20EBF1E75AF21C736935A132CE9E9CC940382DBE228",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\addon\\rpc_server\\__init__.py"
+  },
+  {
+    "sha256": "CCBD26A7EEAB36FB067A16497AA4D02C3F47D1762A3E610C239AA62B1FD3A773",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\addon\\rpc_server\\geometry_query.py"
+  },
+  {
+    "sha256": "955C898A616FA5C398E3C40B5491FD5A6825E95658DB9106689C1A8CE8AA1893",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\addon\\rpc_server\\object_factory.py"
+  },
+  {
+    "sha256": "45884B4B1043B99D913883B3E3FF46C6134865A159275B8C5F603D1396C0DDA6",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\addon\\rpc_server\\property_mapper.py"
+  },
+  {
+    "sha256": "C429ED49413ACFC09A0AF58C7376B3EDCCB4901C76A799E0EA82395F1071364A",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\553690f9-e044-45c0-8ff9-1da1d5146b86\\addon\\rpc_server\\tip_policy.py"
+  },
+  {
+    "sha256": "EBA422BD0EAD751F9B8802A0954D37817B1853808589AD9D5E32D07934CAA8B0",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\Edited.FCStd"
+  },
+  {
+    "sha256": "B87570C8F8809DBACAE23C768087D02ED8C40793FF2EBBF5B62D7B5954A99EDB",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\Edited.step"
+  },
+  {
+    "sha256": "61716B889F3010E5443D292B5C57021F418DBBFB45C39C1125D9C93368F5F6EB",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\input.json"
+  },
+  {
+    "sha256": "2F526E0F37F074B2F316382FD03B24BB56197B73F619CE70CC062F85354715F6",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\Original.FCStd"
+  },
+  {
+    "sha256": "51F53C8C14E21C672FC89710CCD10DE2289B0E94CC2959FD3BB8F4503D686624",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\result.json"
+  },
+  {
+    "sha256": "2F526E0F37F074B2F316382FD03B24BB56197B73F619CE70CC062F85354715F6",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\Working.FCStd"
+  },
+  {
+    "sha256": "1B7786FA2055D10A04F9E20EBF1E75AF21C736935A132CE9E9CC940382DBE228",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\addon\\rpc_server\\__init__.py"
+  },
+  {
+    "sha256": "CCBD26A7EEAB36FB067A16497AA4D02C3F47D1762A3E610C239AA62B1FD3A773",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\addon\\rpc_server\\geometry_query.py"
+  },
+  {
+    "sha256": "955C898A616FA5C398E3C40B5491FD5A6825E95658DB9106689C1A8CE8AA1893",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\addon\\rpc_server\\object_factory.py"
+  },
+  {
+    "sha256": "45884B4B1043B99D913883B3E3FF46C6134865A159275B8C5F603D1396C0DDA6",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\addon\\rpc_server\\property_mapper.py"
+  },
+  {
+    "sha256": "C429ED49413ACFC09A0AF58C7376B3EDCCB4901C76A799E0EA82395F1071364A",
+    "path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadpilot-20261012-01\\project\\.hazlomexa\\artifacts\\5a0ee5c0-f667-41e1-bffd-55f44354b307\\addon\\rpc_server\\tip_policy.py"
+  }
+]

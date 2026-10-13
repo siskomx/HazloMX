@@ -1,0 +1,50 @@
+{
+  "app": 15624,
+  "descendants": [
+    {
+      "ProcessId": 15624,
+      "ParentProcessId": 14496,
+      "Name": "hazlomexa.exe",
+      "SessionId": 1
+    },
+    {
+      "ProcessId": 15640,
+      "ParentProcessId": 15624,
+      "Name": "msedgewebview2.exe",
+      "SessionId": 1
+    },
+    {
+      "ProcessId": 10460,
+      "ParentProcessId": 15640,
+      "Name": "msedgewebview2.exe",
+      "SessionId": 1
+    },
+    {
+      "ProcessId": 13672,
+      "ParentProcessId": 15640,
+      "Name": "msedgewebview2.exe",
+      "SessionId": 1
+    },
+    {
+      "ProcessId": 1136,
+      "ParentProcessId": 15640,
+      "Name": "msedgewebview2.exe",
+      "SessionId": 1
+    },
+    {
+      "ProcessId": 14916,
+      "ParentProcessId": 15640,
+      "Name": "msedgewebview2.exe",
+      "SessionId": 1
+    },
+    {
+      "ProcessId": 12088,
+      "ParentProcessId": 15640,
+      "Name": "msedgewebview2.exe",
+      "SessionId": 1
+    }
+  ],
+  "window": "Hazlo Mexa",
+  "endpoint": "The operation has timed out.",
+  "session": 1
+}

@@ -1,0 +1,19 @@
+{
+  "command": "rtk cargo test -p hazlomexa --lib actual_konnect_captured_copy_adapter -- --ignored --nocapture",
+  "source_sha256": {
+    "apps/desktop/src-tauri/src/lib.rs": "f1c79abc2d60a5477e21d6a54bbc0128fae132ee496bc4461f7b9e2dd85776bb",
+    "apps/desktop/src-tauri/src/konnect.rs": "34e119d9373a6be6fb44cb494b9d314b858e8d518e0c05318d9ea7d733c67ec4",
+    "Cargo.lock": "1e48ac1c92513c8588c4978d25d28bda7ab73e4a05acc20171ccc7daa6f00725",
+    "apps/desktop/src-tauri/src/konnect_run.rs": "9aff65bc49cc7c34fe7a9a6cafe811bb83cf91764fa5dc552412326b14375c4f",
+    "apps/desktop/src-tauri/src/kicad_project.rs": "4e4d003a2ed53d5fd6bdb5a6cbffc71aaca16b28e371fa21349322d2dacf61ea",
+    "apps/desktop/src-tauri/Cargo.toml": "739915440556a3e39c8e2fe8adeab0a7ceeca0367c69ec8c1a2572d0db3bb9e9"
+  },
+  "separately_ignored_entries": 23,
+  "native_gui_verified": false,
+  "live_cancellation_verified": false,
+  "passed": true,
+  "actual_tests_passed": 1,
+  "shared_approval_publication_recovery_verified": false,
+  "regular_tests_passed": 75,
+  "actual_fixture": "C:/Users/USER/AppData/Local/Temp/hazlomexa-konnect-adapter-11b4bf22-db29-4ca3-9a6f-aca52bd9ca13"
+}

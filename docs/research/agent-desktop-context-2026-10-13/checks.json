@@ -1,0 +1,19 @@
+{
+  "release_mcp_test": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "scope": "actual current rebuilt helper CADPilot native inspection and follow-up; not signed-in chat"
+  },
+  "fixture_build": {
+    "passed": true,
+    "initial_failure": "LNK1181: kernel32.lib unavailable with empty LIB environment",
+    "retry": "temporary vcvars64 environment; cargo build -p hazlomexa --examples --jobs 1",
+    "host_global_configuration_changed": false
+  },
+  "guest_prepared": "1a9e5e76-252e-46d5-b410-2a71726c40fd",
+  "installed_acceptance": true,
+  "native_ui_automation_stopped": true,
+  "installed_acceptance_scope": "shared backend/installed connector/lifecycle only; not native engineering UI or signed-in chat",
+  "guest_stopped": true
+}

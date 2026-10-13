@@ -1,0 +1,22 @@
+[
+  {
+    "name": "list_mcp_resources",
+    "type": "function"
+  },
+  {
+    "name": "list_mcp_resource_templates",
+    "type": "function"
+  },
+  {
+    "name": "read_mcp_resource",
+    "type": "function"
+  },
+  {
+    "name": "request_user_input",
+    "type": "function"
+  },
+  {
+    "name": "mcp__hazlomexa",
+    "type": "namespace"
+  }
+]

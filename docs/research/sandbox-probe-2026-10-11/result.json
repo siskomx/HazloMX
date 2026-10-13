@@ -1,0 +1,17 @@
+{
+  "pass": false,
+  "classification": "unverified prerequisite",
+  "sandbox_installed": true,
+  "guest_output_received": false,
+  "owned_session_stopped": true,
+  "wsb_list_after_stop": [],
+  "host_available_memory_mb": 333,
+  "attempt_memory_mb": 4096,
+  "future_probe_memory_mb": 2048,
+  "future_minimum_available_host_memory_mb": 3072,
+  "notes": [
+    "VM inventory and feature-state queries require elevation",
+    "No host Windows feature was changed",
+    "The attempted sandbox was stopped after host memory exhaustion; no clean-environment pass is claimed"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 31.75,
+    "length": 31.75,
+    "width": 31.75
+  },
+  "id": "design_fraction",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 31.75,
+        "length": 31.75,
+        "width": 31.75
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 5.8449648
+}

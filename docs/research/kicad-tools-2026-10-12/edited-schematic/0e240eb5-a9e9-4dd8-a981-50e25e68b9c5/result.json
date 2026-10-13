@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "job_id": "0e240eb5-a9e9-4dd8-a981-50e25e68b9c5",
+  "kicad_version": "10.0.7",
+  "summary": {
+    "check": "erc",
+    "units": "mm",
+    "errors": 2,
+    "warnings": 1,
+    "excluded": 0,
+    "ignored_checks": [
+      "single_global_label",
+      "four_way_junction",
+      "simulation_model_issue",
+      "footprint_filter"
+    ]
+  },
+  "files": [
+    {
+      "path": "Check.json",
+      "sha256": "7f710df154d7b0cd24c97d75b9d8695b2bde9b6bbd32e5bb1621207957f6fe43"
+    },
+    {
+      "path": "Checked/basic_test.kicad_sch",
+      "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+    },
+    {
+      "path": "Exports/Netlist.xml",
+      "sha256": "3a941cd1253c4076570e3c80fc04340f4dc2b0d0f8af1fef40468a0868ae6003"
+    },
+    {
+      "path": "Exports/Schematic.pdf",
+      "sha256": "587f5d417f34e1628c8553df4e09fb010d4227e4f1042f0e2b4c0bbe34ec96ff"
+    },
+    {
+      "path": "Original/basic_test.kicad_sch",
+      "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+    }
+  ]
+}

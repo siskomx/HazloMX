@@ -1,0 +1,59 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			2 pane Hazlo Mexa
+				3 pane (disabled)
+				4 region Hazlo Mexa - Web content
+					5 region
+						6 region
+							7 region
+								8 region
+								9 region
+									10 region
+										11 region
+											12 region
+												13 region
+												14 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													260 dialog Informe de CADCraft · solo lectura Secondary Actions: Raise ID: artifact-preview
+														261 heading Informe de CADCraft · solo lectura ID: artifact-preview-heading
+														262 text { "schema_version": 1, "job_id": "e907ee66-c637-4eb0-9951-688fe74e76fc", "cadcraft_version": "0.5.0", "source_sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982", "output_sha256": "c6d2b4fb34741042f9fb7334cf5d6c1492232d13a635a61a909ad4163660f232", "preview_sha256": "46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4", "output_summary": { "entity_count": 2, "counts": { "Circle": 2 }, "extents": [ [ -10.0, -10.0 ], [ 32.0, 10.0 ] ] }, "warnings": [] }
+														263 button Cerrar
+								82 region
+						83 region
+						84 region
+		85 title bar (settable, string) Value: Hazlo Mexa
+			86 menu bar System ID: MenuBar
+				91 menu item System
+			88 button Minimize
+			89 button Maximize
+			90 button Close
+
+Document text: ```
+Informe de CADCraft · solo lectura
+{
+  "schema_version": 1,
+  "job_id": "e907ee66-c637-4eb0-9951-688fe74e76fc",
+  "cadcraft_version": "0.5.0",
+  "source_sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982",
+  "output_sha256": "c6d2b4fb34741042f9fb7334cf5d6c1492232d13a635a61a909ad4163660f232",
+  "preview_sha256": "46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4",
+  "output_summary": {
+    "entity_count": 2,
+    "counts": {
+      "Circle": 2
+    },
+    "extents": [
+      [
+        -10.0,
+        -10.0
+      ],
+      [
+        32.0,
+        10.0
+      ]
+    ]
+  },
+  "warnings": []
+}
+Cerrar
+```

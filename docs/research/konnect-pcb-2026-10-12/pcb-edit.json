@@ -1,0 +1,195 @@
+{
+  "after": {
+    "company": "KiCad",
+    "copper_layer_count": 2,
+    "date": "2023-04-28",
+    "file": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target/konnect-probe\\pcb-sdk-c66d6599-332b-4807-b99e-726be425bb35\\Edited\\basic_test.kicad_pcb",
+    "layer_count": 29,
+    "net_count": 6,
+    "paper": "A4",
+    "paper_size_mm": null,
+    "revision": "1",
+    "source": "file",
+    "title": "Awesome LPF"
+  },
+  "before": {
+    "company": "KiCad",
+    "copper_layer_count": 2,
+    "date": "2023-04-28",
+    "file": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target/konnect-probe\\pcb-sdk-c66d6599-332b-4807-b99e-726be425bb35\\Edited\\basic_test.kicad_pcb",
+    "layer_count": 29,
+    "net_count": 6,
+    "paper": "A4",
+    "paper_size_mm": null,
+    "revision": "1",
+    "source": "file",
+    "title": "Awesome LPF"
+  },
+  "effect": {
+    "fallback_reason": {
+      "kind": "transport_unreachable",
+      "message": "KiCad IPC is unreachable and no exact-board sibling lock was present."
+    },
+    "moved": "J1",
+    "source": "file",
+    "warning": "KiCad IPC was unreachable, so Konnect could not contact a live editor; no exact-board sibling lock was present. This board has not been observed live during the current Konnect server session, so Konnect edited the saved board file directly. If KiCad crashed or was force-quit before this server started, reconcile any unsaved work before relying on this change. Reload the file in KiCad before editing it there.",
+    "x": 203.34,
+    "y": 155.32999999999998
+  },
+  "inventory_after": [
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J1",
+      "rotation_deg": 0.0,
+      "uuid": "1390739f-0b91-4d50-b8ae-92acd725ec51",
+      "x_mm": 203.34,
+      "y_mm": 155.33
+    },
+    {
+      "library": "Package_TO_SOT_SMD:SOT-23-5",
+      "reference": "U1",
+      "rotation_deg": 180.0,
+      "uuid": "46ee94d1-977a-45b0-a3f4-b6f45331a22d",
+      "x_mm": 201.9,
+      "y_mm": 145.3
+    },
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J3",
+      "rotation_deg": 0.0,
+      "uuid": "7cb3954f-ecbc-4d4a-948f-f385aacc2198",
+      "x_mm": 218.0,
+      "y_mm": 146.0
+    },
+    {
+      "library": "Resistor_SMD:R_1206_3216Metric",
+      "reference": "R2",
+      "rotation_deg": -90.0,
+      "uuid": "84d75378-f03e-476c-badf-38e6fb8d9772",
+      "x_mm": 198.0,
+      "y_mm": 145.0
+    },
+    {
+      "library": "Resistor_SMD:R_1206_3216Metric",
+      "reference": "R1",
+      "rotation_deg": 0.0,
+      "uuid": "9ba418c8-2eec-4809-8f5b-d46c1151991e",
+      "x_mm": 197.0,
+      "y_mm": 141.0
+    },
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J2",
+      "rotation_deg": 0.0,
+      "uuid": "9bcb01a9-2bff-45c9-bb09-f3c9476a6e17",
+      "x_mm": 193.0,
+      "y_mm": 147.0
+    },
+    {
+      "library": "Resistor_SMD:R_1206_3216Metric",
+      "reference": "R3",
+      "rotation_deg": 0.0,
+      "uuid": "cfe1ba2c-d301-4a4b-b0fe-608ede2e0767",
+      "x_mm": 204.0,
+      "y_mm": 151.0
+    },
+    {
+      "library": "Capacitor_SMD:C_1206_3216Metric",
+      "reference": "C1",
+      "rotation_deg": 0.0,
+      "uuid": "db9388ac-163d-40bc-be40-37f8cd7f2c2a",
+      "x_mm": 207.5,
+      "y_mm": 145.9
+    },
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J4",
+      "rotation_deg": 0.0,
+      "uuid": "f4673e4d-d9f7-4c2a-a854-c35665e7dbd9",
+      "x_mm": 209.0,
+      "y_mm": 156.6
+    }
+  ],
+  "inventory_before": [
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J1",
+      "rotation_deg": 0.0,
+      "uuid": "1390739f-0b91-4d50-b8ae-92acd725ec51",
+      "x_mm": 200.8,
+      "y_mm": 156.6
+    },
+    {
+      "library": "Package_TO_SOT_SMD:SOT-23-5",
+      "reference": "U1",
+      "rotation_deg": 180.0,
+      "uuid": "46ee94d1-977a-45b0-a3f4-b6f45331a22d",
+      "x_mm": 201.9,
+      "y_mm": 145.3
+    },
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J3",
+      "rotation_deg": 0.0,
+      "uuid": "7cb3954f-ecbc-4d4a-948f-f385aacc2198",
+      "x_mm": 218.0,
+      "y_mm": 146.0
+    },
+    {
+      "library": "Resistor_SMD:R_1206_3216Metric",
+      "reference": "R2",
+      "rotation_deg": -90.0,
+      "uuid": "84d75378-f03e-476c-badf-38e6fb8d9772",
+      "x_mm": 198.0,
+      "y_mm": 145.0
+    },
+    {
+      "library": "Resistor_SMD:R_1206_3216Metric",
+      "reference": "R1",
+      "rotation_deg": 0.0,
+      "uuid": "9ba418c8-2eec-4809-8f5b-d46c1151991e",
+      "x_mm": 197.0,
+      "y_mm": 141.0
+    },
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J2",
+      "rotation_deg": 0.0,
+      "uuid": "9bcb01a9-2bff-45c9-bb09-f3c9476a6e17",
+      "x_mm": 193.0,
+      "y_mm": 147.0
+    },
+    {
+      "library": "Resistor_SMD:R_1206_3216Metric",
+      "reference": "R3",
+      "rotation_deg": 0.0,
+      "uuid": "cfe1ba2c-d301-4a4b-b0fe-608ede2e0767",
+      "x_mm": 204.0,
+      "y_mm": 151.0
+    },
+    {
+      "library": "Capacitor_SMD:C_1206_3216Metric",
+      "reference": "C1",
+      "rotation_deg": 0.0,
+      "uuid": "db9388ac-163d-40bc-be40-37f8cd7f2c2a",
+      "x_mm": 207.5,
+      "y_mm": 145.9
+    },
+    {
+      "library": "TestPoint:TestPoint_Pad_3.0x3.0mm",
+      "reference": "J4",
+      "rotation_deg": 0.0,
+      "uuid": "f4673e4d-d9f7-4c2a-a854-c35665e7dbd9",
+      "x_mm": 209.0,
+      "y_mm": 156.6
+    }
+  ],
+  "request": {
+    "expected_x_mm": 200.8,
+    "expected_y_mm": 156.6,
+    "reference": "J1",
+    "uuid": "1390739f-0b91-4d50-b8ae-92acd725ec51",
+    "x_mm": 203.34,
+    "y_mm": 155.32999999999998
+  }
+}

@@ -1,0 +1,20 @@
+﻿{
+    "auth_token_absent_from_export":  true,
+    "authenticated_health":  true,
+    "service_stopped":  true,
+    "pass":  true,
+    "owned_agent_root_stopped":  true,
+    "model_inference":  false,
+    "upstream_console_redactions":  [
+                                        {
+                                            "occurrences":  1,
+                                            "stream":  "stdout"
+                                        },
+                                        {
+                                            "occurrences":  0,
+                                            "stream":  "stderr"
+                                        }
+                                    ],
+    "hardware_mutations":  false,
+    "raw_console_logs_private":  true
+}

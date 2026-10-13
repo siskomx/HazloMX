@@ -1,0 +1,18 @@
+[
+  {
+    "path": "apps/desktop/src-tauri/src/jobs.rs",
+    "sha256": "E4F79E4B2658D0FC31D052D8349970588B0F093E2CBB97C8571CB97904AFB144"
+  },
+  {
+    "path": "apps/desktop/src-tauri/src/host_tools.rs",
+    "sha256": "573997B5C0071C701BCCB42AAAE1C2EEB5F14876D3CF5EC1AC418BD75348F4B0"
+  },
+  {
+    "path": "apps/desktop/src-tauri/examples/codex_protocol.rs",
+    "sha256": "A7DDA717E8BC22C3CBD70E5346D2BF27AD66C0A00A64FCA5D9D6ACE4D5339373"
+  },
+  {
+    "path": "apps/desktop/src/main.ts",
+    "sha256": "FDBC0C2A3A56963636EBAD3C884189EDD86FB737CDA1A87432611436DDFF13A1"
+  }
+]

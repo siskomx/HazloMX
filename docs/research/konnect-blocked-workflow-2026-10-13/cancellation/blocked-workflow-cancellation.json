@@ -1,0 +1,20 @@
+{
+  "approval_consumed": true,
+  "cancel_return_ms": 4,
+  "cancellation_ms": 3062,
+  "ceased_before_barrier_release": true,
+  "elapsed_ms": 13431,
+  "error": null,
+  "job_id": "68206025-1ae1-4ca1-a442-6cdcd1e2650a",
+  "mode": "cancellation",
+  "owned_pids": [
+    26404
+  ],
+  "passed": true,
+  "phase": "cancelled",
+  "published": false,
+  "recovered_runs": 1,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-d52f48cf-68dc-4b60-85e5-44d3d1994d5b",
+  "scope": "actual approved schematic workflow held staging-file access; exact SDK mutation phase and native UI not asserted",
+  "source_and_working_copy_preserved": true
+}

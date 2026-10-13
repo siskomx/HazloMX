@@ -1,0 +1,24 @@
+{
+  "schema_version": 10,
+  "project_id": "9496c62d-3bfa-47aa-bb35-b7ade5e40aed",
+  "input": {
+    "schema_version": 1,
+    "job_id": "5441f1bf-599a-4d7c-b8eb-0194b3a89b64",
+    "fqbn": "arduino:avr:uno",
+    "source": "void setup() { pinMode(LED_BUILTIN, OUTPUT); } void loop() { digitalWrite(LED_BUILTIN, LOW); }"
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "mcp"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/5441f1bf-599a-4d7c-b8eb-0194b3a89b64",
+    "created_unix_ms": 1791864118955,
+    "updated_unix_ms": 1791864121351,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

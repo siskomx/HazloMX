@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "pre_post_source_hashes": {
+    "apps/desktop/src-tauri/src/host_tools.rs": "ded9f190d0d4b4dd7e25af805ab35447c79209ced4758143abc38a739d30d358",
+    "target/check-pcb-busy-cadpilot.cmd": "bb30bc7714ec3dfcdb2b972b2b883ed3f744c9becfb447a97bb5655cf6b42621"
+  },
+  "scope": "actual rebuilt helper measured cadpilot MCP/native follow-up; not signed-in or native UI interaction"
+}

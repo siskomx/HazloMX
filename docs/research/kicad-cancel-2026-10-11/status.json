@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "actual_kicad",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "expected_tests": [
+    "kicad_run::tests::actual_kicad_captured_project_checks_and_exports",
+    "jobs::tests::actual_kicad_workflow_publication_and_recovery",
+    "jobs::tests::actual_kicad_owned_process_cancellation",
+    "kicad_run::tests::actual_kicad_process_short_deadline"
+  ],
+  "native_ui_verified": false,
+  "installed_workflow_verified": false,
+  "source_hashes": {
+    "Cargo.lock": "d9f6da06d7165e75de025c34a939e6e1572a2604750588553c02c5da8ac7cc08",
+    "apps\\desktop\\src-tauri\\src\\agent.rs": "a70dc3e4e86854556e969712ae08f4bdf1042ee868f9fb14dee6c2e67e1c887e",
+    "apps\\desktop\\src-tauri\\src\\arduino.rs": "28aed7203e544ba49e2c73ab9ab23d0b8dcb42510582e9bc0339a2f74dcc24a1",
+    "apps\\desktop\\src-tauri\\src\\cadcraft.rs": "1ad7a784bfceabfb4bc6cbe68466f08b708dcadf8abdddcceb3c73e39f4e7c26",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "68850ccaca24a948a50dd330c8742b3945eac8b2364a1462532a05478beb0a06",
+    "apps\\desktop\\src-tauri\\src\\jobs.rs": "d2f6434d49ac99f1b79b6408e572516363883ecd66a21af32c74740057b09872",
+    "apps\\desktop\\src-tauri\\src\\kicad.rs": "87c0c98b8135f09c27ad2fdd4eb75fbe37d8168161bdadb7a095912c0f225f65",
+    "apps\\desktop\\src-tauri\\src\\kicad_project.rs": "af97e470e590af40b9a61328dcb62b143a7cfc7e0cd3f77ec307583693bff46c",
+    "apps\\desktop\\src-tauri\\src\\kicad_run.rs": "105dec0da7b2e5c69373e255fcdb9590ea775cab039d5b3a8d6b33159818862c",
+    "apps\\desktop\\src-tauri\\src\\lib.rs": "4f0095546c9ea297c2366098396383be33b586ba7d8c79fe41bf462daa11c360",
+    "apps\\desktop\\src-tauri\\src\\main.rs": "8c97891a91787ea70e06f300a5b9517d1e74ed7b98d3075eac0886520c93486d",
+    "apps\\desktop\\src-tauri\\src\\ollama.rs": "5a19f9ba85135059589c6275da695a5b24fd19c06f69300bca0f88211702f90a",
+    "apps\\desktop\\src-tauri\\src\\process.rs": "b566194604f1af8ccd7486ae17b57b445b084b297c98f6f6bb7a17927aac885f",
+    "apps\\desktop\\src-tauri\\src\\project.rs": "b534130ff4c98f17c6724bf2f4eae5225cce0e5bde1025d7000b99c883a236dd",
+    "apps\\desktop\\src\\main.ts": "c08f303729038daa82f3ff0757e01ffbf71cf0602354933659ffa06a536a102c",
+    "apps\\desktop\\src\\contracts.ts": "aece5fbbc81456d1ba8250399fa542c64de854934ff47a5bff6323605a98561c",
+    "apps\\desktop\\tests\\design-flow.mjs": "45e6888c007c8033e353a58b15b328ebe7d12db912b0523f8712a8513c32b029"
+  }
+}

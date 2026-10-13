@@ -1,0 +1,15 @@
+﻿{
+    "hardware_mutations":  false,
+    "pass":  true,
+    "logging_redirected":  true,
+    "stage":  "finished",
+    "token_rotation_verified":  true,
+    "health":  {
+                   "status":  "ok",
+                   "server":  "arduino-agent",
+                   "version":  "0.7.1",
+                   "uptime":  0,
+                   "auth":  true
+               },
+    "app_pid":  12368
+}

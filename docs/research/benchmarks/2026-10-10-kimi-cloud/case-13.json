@@ -1,0 +1,10 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": "clarification",
+  "id": "hollow_enclosure",
+  "result": {
+    "error": "El modelo no admite la propuesta local requerida."
+  },
+  "seconds": 0.0242228
+}

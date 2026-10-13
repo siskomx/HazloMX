@@ -1,0 +1,33 @@
+{
+  "followup_pass_seconds": 4.97,
+  "source_hashes": [
+    {
+      "sha256": "3613B140BC690131326865FA5C2C0FB1ADB3BC845710BC8871EEB22B39FEB9B7",
+      "path": "apps/desktop/src-tauri/src/jobs.rs"
+    },
+    {
+      "sha256": "D9C33F240D29DDD6302E574A7C9FCA459EEE85A1AD807F17CB3ABA331F4459BF",
+      "path": "apps/desktop/src-tauri/src/host_tools.rs"
+    }
+  ],
+  "followup_root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-e6c655d7-74f8-49d3-a53c-7d3d8aa9c728",
+  "scope": "native runtime/backend reports and typed MCP follow-up proposal; authenticated execution/native UI pending",
+  "runtime_roots": [
+    {
+      "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-drawing-workflow-fed06513-d1ef-4726-89e7-9a648b157041",
+      "kind": "drawing"
+    },
+    {
+      "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-kicad-workflow-03ecd73d-0c22-4f92-a3ab-fadf32d4e458",
+      "kind": "kicad"
+    },
+    {
+      "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-orca-workflow-c263893d-bae3-4d03-a8b7-08849f257510",
+      "kind": "orca"
+    },
+    {
+      "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-cadpilot-workflow-bd219a5e-2765-406c-9f35-0963d4a1818e",
+      "kind": "cadpilot"
+    }
+  ]
+}

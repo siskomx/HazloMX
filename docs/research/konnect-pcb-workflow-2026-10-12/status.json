@@ -1,0 +1,28 @@
+{
+  "project_root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-fcb86974-250c-4f56-9f3a-a8af2fe3313c",
+  "completed_job": "9842e8ec-5a4f-4d9a-9fa9-0a8c3c48efca",
+  "failed_job": "bb5ada99-8577-47d7-a0f9-3e4b4a5bf088",
+  "four_run_recovery": true,
+  "originals_preserved": true,
+  "occupied_destination_preserved": true,
+  "edited_artifact": "Verification/Checked/basic_test.kicad_pcb",
+  "actual_drc": {
+    "check": "drc",
+    "units": "mils",
+    "errors": 1,
+    "warnings": 7,
+    "excluded": 0,
+    "ignored_checks": [
+      "missing_courtyard",
+      "track_not_centered_on_via",
+      "tuning_profile_track_geometries",
+      "footprint_filters_mismatch",
+      "pth_inside_courtyard",
+      "npth_inside_courtyard",
+      "footprint_type_mismatch"
+    ]
+  },
+  "schema_version": 11,
+  "app_ui_picker_verified": false,
+  "live_native_ipc_verified": false
+}

@@ -1,0 +1,61 @@
+﻿{
+    "test_pid":  15408,
+    "project_files":  [
+                          {
+                              "sha256":  "D10F62E97C31A3A0C72A2CE20198E879742DCB35AA5607470A10C4FC19DADCFD",
+                              "path":  "hazlomx.json"
+                          },
+                          {
+                              "sha256":  "507625FF7D186B221854ECA518FC33B639AD3781BA08A0C7C832CE9E7FF488CC",
+                              "path":  "original.txt"
+                          },
+                          {
+                              "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                              "path":  ".hazlomexa\\writer.lock"
+                          },
+                          {
+                              "sha256":  "EA311BB1C1B831337439B48E94D5AE14492F718E7EB176FDCEC9E32070A2649C",
+                              "path":  ".hazlomexa\\artifacts\\0e74f858-cfea-4d8f-a212-046e31799019\\input.json"
+                          },
+                          {
+                              "sha256":  "029EF14E86321169EE7254B3482F38F6235CF0DA9D1D34441910E6F4EF6EDDB8",
+                              "path":  ".hazlomexa\\artifacts\\0e74f858-cfea-4d8f-a212-046e31799019\\result.json"
+                          },
+                          {
+                              "sha256":  "00A9433F04E41CFBB4CCF86CFD1B03D1F595D3C874329A645450669C8ADD420E",
+                              "path":  ".hazlomexa\\artifacts\\0e74f858-cfea-4d8f-a212-046e31799019\\solid.FCStd"
+                          },
+                          {
+                              "sha256":  "6B0DEAD91155140DD292CCBCBEF23CDDB0D467DA9CD79BD7C45146DECF088F22",
+                              "path":  ".hazlomexa\\artifacts\\0e74f858-cfea-4d8f-a212-046e31799019\\solid.step"
+                          },
+                          {
+                              "sha256":  "C5F6F9A431B0ABF2BA3F175A7020D23844934927F3DD501CAD271ED6D8AE6E3E",
+                              "path":  ".hazlomexa\\artifacts\\57d458cc-9d92-4455-97b2-936408dc5f8c\\input.json"
+                          },
+                          {
+                              "sha256":  "4436274A7B54590DB438366DB76863947AECCF8C89AB6EFAFFE81D5258AC13E6",
+                              "path":  ".hazlomexa\\artifacts\\57d458cc-9d92-4455-97b2-936408dc5f8c\\result.json"
+                          },
+                          {
+                              "sha256":  "F73F8F7AC04DB4D7BD3164B108F465368B09646F44F325A4BE04F25066B5B3E9",
+                              "path":  ".hazlomexa\\artifacts\\57d458cc-9d92-4455-97b2-936408dc5f8c\\solid.FCStd"
+                          },
+                          {
+                              "sha256":  "9A9BB83B5F237EF95AD743F4C5D059468D40B1347970AA64B6831E229F824CD4",
+                              "path":  ".hazlomexa\\artifacts\\57d458cc-9d92-4455-97b2-936408dc5f8c\\solid.step"
+                          },
+                          {
+                              "sha256":  "38DFC401CC662E638F17A200C9B3D4B5F5B77FB3D7D1315D5CDE908C7D4404E7",
+                              "path":  ".hazlomexa\\runs\\0e74f858-cfea-4d8f-a212-046e31799019.json"
+                          },
+                          {
+                              "sha256":  "31749F1C1E4CB33C8ACA4A10123693F9C7491F3E1CC78F9B140777FB43E873BD",
+                              "path":  ".hazlomexa\\runs\\57d458cc-9d92-4455-97b2-936408dc5f8c.json"
+                          }
+                      ],
+    "test_exit":  0,
+    "pass":  true,
+    "stage":  "finished",
+    "user":  "WDAGUtilityAccount"
+}

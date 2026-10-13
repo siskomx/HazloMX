@@ -1,0 +1,28 @@
+{
+  "solid_compile_pass_seconds": 4.72,
+  "konnect_pass_seconds": 11.7,
+  "konnect_probe": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-33abe4fd-78d6-4ab5-a4e6-fac0867b5d3e",
+  "claude_missing_login_pass_seconds": 9.53,
+  "model_inference": null,
+  "source_hashes": [
+    {
+      "path": "apps/desktop/src-tauri/src/host_tools.rs",
+      "sha256": "20CB7CC5A3D701EBFE788F6D5CAA2F739431751DABF1211CA9B1561A7B816B1E"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/project.rs",
+      "sha256": "61115DD22805DDCEFCFF08BA469C8D14B03701964B4A647CB6EC71AF0B0FA5F1"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/main.rs",
+      "sha256": "D5B78C039B7C4AD30E502D153A98F8914397A9C472C7883A664675601C2E3D14"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/claude.rs",
+      "sha256": "2CE86DA3A3435CB90A732C6CF4CE8A324126E4AB0398F61B5FC11CE2FEB8358F"
+    }
+  ],
+  "scope": "actual backend/runtime readback; native UI and authenticated conversation pending",
+  "claude_probe": "target/claude-stream-probe/a9f87e4c-c710-472f-b639-539e491822c7",
+  "solid_compile_probe": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-e7451049-7657-4d76-9225-30c9636b03d8"
+}

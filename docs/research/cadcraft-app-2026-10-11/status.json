@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "cadcraft",
+    "--",
+    "--ignored",
+    "--nocapture"
+  ],
+  "expected_tests": [
+    "cadcraft::tests::actual_cli_copies_converts_and_adds_circle",
+    "jobs::tests::actual_cadcraft_workflow_publication_and_recovery"
+  ],
+  "native_ui_verified": false,
+  "installed_workflow_verified": false,
+  "source_hashes": {
+    "Cargo.lock": "d9f6da06d7165e75de025c34a939e6e1572a2604750588553c02c5da8ac7cc08",
+    "apps\\desktop\\src-tauri\\src\\agent.rs": "a70dc3e4e86854556e969712ae08f4bdf1042ee868f9fb14dee6c2e67e1c887e",
+    "apps\\desktop\\src-tauri\\src\\arduino.rs": "28aed7203e544ba49e2c73ab9ab23d0b8dcb42510582e9bc0339a2f74dcc24a1",
+    "apps\\desktop\\src-tauri\\src\\cadcraft.rs": "1ad7a784bfceabfb4bc6cbe68466f08b708dcadf8abdddcceb3c73e39f4e7c26",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "68850ccaca24a948a50dd330c8742b3945eac8b2364a1462532a05478beb0a06",
+    "apps\\desktop\\src-tauri\\src\\jobs.rs": "6471c3f34d15d1bfbb0554844d13cde9c687d19733c439a61d2f8fca2d852f92",
+    "apps\\desktop\\src-tauri\\src\\lib.rs": "9cf99e7b2747266ea1807a2e405318577d787a913f26ae535c0dad3fcf880477",
+    "apps\\desktop\\src-tauri\\src\\main.rs": "9151a8630f4a57102a595ed9ce4f731a5b0a8d6f972ecb5fdba31d4aed70dfbb",
+    "apps\\desktop\\src-tauri\\src\\ollama.rs": "5a19f9ba85135059589c6275da695a5b24fd19c06f69300bca0f88211702f90a",
+    "apps\\desktop\\src-tauri\\src\\process.rs": "1f7d37fdd7fa6df72da1d4dde77caa84af27a48d8b6473a62e3918e3983c5d6e",
+    "apps\\desktop\\src-tauri\\src\\project.rs": "91ea0f788bfc50aaaf352c9ec32d209f927c516f47b4d2dede8bdfcd49d273cc",
+    "apps\\desktop\\src\\main.ts": "d6e9df71ce22a6a9bc6bef92c65f26357f4cf2b4df04f9b8a717f2e152199be5",
+    "apps\\desktop\\src\\contracts.ts": "70afd6e9cb22e20e61d640bf96c4ce959e23d3cf8c29d1e1eb0e798e7a0e2202"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 200,
+    "length": 200,
+    "width": 200
+  },
+  "id": "maximum",
+  "result": {
+    "proposal": {
+      "message": "El sólido rectangular tiene las medidas: largo 200 mm, ancho 200 mm, alto 200 mm. ¿Es un cubo? (Un cubo tiene las tres medidas iguales).",
+      "status": "clarification"
+    }
+  },
+  "seconds": 9.8871276
+}

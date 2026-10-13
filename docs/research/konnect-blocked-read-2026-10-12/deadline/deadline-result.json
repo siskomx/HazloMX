@@ -1,0 +1,15 @@
+{
+  "cancellation_ms": null,
+  "ceased_before_barrier_release": true,
+  "elapsed_ms": 63190,
+  "error": "Konnect no confirmó la edición a tiempo; la copia se conserva sin publicar.",
+  "mode": "deadline",
+  "model_inference": false,
+  "native_ui": false,
+  "owned_pids": [
+    13344
+  ],
+  "pass": true,
+  "scope": "actual native dispatcher blocked component read before mutation",
+  "source_and_copy_preserved": true
+}

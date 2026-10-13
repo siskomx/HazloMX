@@ -1,0 +1,14 @@
+[
+  {
+    "path": "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\FreeCADCmd.exe",
+    "bytes": 129208,
+    "sha256": "b79c648edd6e40d6769b3096317ca2063d86a1d47412afd93d02c4047521b2dd",
+    "product_version": "1.0.0"
+  },
+  {
+    "path": "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\bin\\FreeCADCmd.exe",
+    "bytes": 233144,
+    "sha256": "1692e54224b48989974e8b91d3ac7a38d1d502d3db4dee1d4cf79ba91356e42d",
+    "product_version": ""
+  }
+]

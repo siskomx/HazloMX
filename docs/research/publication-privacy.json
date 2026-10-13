@@ -1,0 +1,2137 @@
+{
+  "redacted_text_files": 425,
+  "screenshots_kept_private": 66,
+  "changes": [
+    {
+      "file": "docs/research/agent-bridge-2026-10-11/Artifacts/Netlist.xml",
+      "original_sha256": "b77169d4dbf565a753dce5bc9d2d10ab4dd5acbb408c1035b1676c6a1fb2d1b1",
+      "published_sha256": "046499eb8e2de8d29fc981ddb7055bb4351e2af009e3661257a7b4f7a66bbe7b"
+    },
+    {
+      "file": "docs/research/agent-bridge-2026-10-11/Artifacts/input.json",
+      "original_sha256": "a966cf426dbfe19d7964d4d0ccd8b7534f894a2ec367103ab2f43082d8e25d2c",
+      "published_sha256": "dd8e2479500e279af375280ac60c508cb1e9c886e200e3874a4c65ea7b8aca73"
+    },
+    {
+      "file": "docs/research/agent-bridge-2026-10-11/README.md",
+      "original_sha256": "52239a565f302bbd34e09d0aa48431ccfbc40dfe9acfdc405f43afb4c0aab202",
+      "published_sha256": "4f790052a20db0baaa1a6706d596c4778dfaece3b3c207bfcab2eab51a5ab3be"
+    },
+    {
+      "file": "docs/research/agent-bridge-2026-10-11/run.json",
+      "original_sha256": "841e0e16e3943e3114a2d0dc14506b7282e09b15adbfab9bff7b8606ebd7484a",
+      "published_sha256": "0d42d7f7e6398d99dde49567dc77f1df3dc15473f7f43247063582b26c7ed5ae"
+    },
+    {
+      "file": "docs/research/agent-client-protocol-2026-10-11/claude-mcp-list.txt",
+      "original_sha256": "d964be2a0068682534476e8460e4be904830f01c726e7cd9eb83fdd821bab2e9",
+      "published_sha256": "b0c5f36497310dcd5d543127a00a6cdabd2107e9551d54db06bb2b77c4af3821"
+    },
+    {
+      "file": "docs/research/agent-client-protocol-2026-10-11/identity.json",
+      "original_sha256": "5fa1652839633a113a0372f1aa449a42259a3ecbcee1d9f7ea8b703bb77a5256",
+      "published_sha256": "087112b23a175cf31c84eb6e80fb34d592b7bdfb640205b9efbb64210128c987"
+    },
+    {
+      "file": "docs/research/agent-client-protocol-2026-10-11/initialize.json",
+      "original_sha256": "29141692db18b6e77388d3e64ee6b5c0da0ebc08603d927b0eb27a29cff5b26b",
+      "published_sha256": "f4c0f912b63cde234a5d0e7624005d2a38a10b6ee7edfadf3a21efb481243e5d"
+    },
+    {
+      "file": "docs/research/agent-context-installed-2026-10-13/probe.wsb",
+      "original_sha256": "84e19bf6cc743307abac65e495c243394fee1d7b280e709137b86bc4c1567fc2",
+      "published_sha256": "57d98d9e3b953d9eaf39fcfcee448ed581f84ae9e09e706e1c531e6cc5447760"
+    },
+    {
+      "file": "docs/research/agent-log-redaction-2026-10-12/source-inputs.json",
+      "original_sha256": "5f823eb499b0b04926c9129b3f71573d839b17bdbc4b850872cdc3ec316864f4",
+      "published_sha256": "d6f0124f2c32fe0b387295294de010cc5cfa5d9690127af6aca36a90c5dc9f77"
+    },
+    {
+      "file": "docs/research/app-first-2026-10-11/installer-result.json",
+      "original_sha256": "b1d462feba3bd7322230b4419b7c7f9cbce95199835dec54e62a536d403f691c",
+      "published_sha256": "ef26a48b234767e88040aaa19f4cad6a759106826b1d629c78db5af79093e341"
+    },
+    {
+      "file": "docs/research/app-first-2026-10-11/native-result.json",
+      "original_sha256": "743a1dd70530822558081027a87d37cc49d47cb7b199229facfeaadb81b12378",
+      "published_sha256": "9b245405ab91ecf83962aa4ce043f91a20d00c16ec8d98e8518612347b778371"
+    },
+    {
+      "file": "docs/research/arduino-agent-2026-10-11/package-result.json",
+      "original_sha256": "49db8c7ed7512c0a0e4399866cbc08d0783dec4c00e462d8eff166d044c2f399",
+      "published_sha256": "4b2491f9eb24e52aec99c9e515e693305d4cbaa78bc12745a92d43e7570258d3"
+    },
+    {
+      "file": "docs/research/arduino-connector-2026-10-12/host-preflight/.hazlomexa/runs/74e352e0-8703-416a-a96e-e018e31aa194.json",
+      "original_sha256": "ff76b62a6e00ae4a77249868ea793aa82d9f1bbcf277ac1c4a01bf18c094c232",
+      "published_sha256": "05e9dd0268e43eff5bf9710aa38cc912f1e976ecf31fcf12082432db4f7bc72f"
+    },
+    {
+      "file": "docs/research/arduino-connector-2026-10-12/host-preflight/profiles/28cb87e4-7a99-43db-b8c9-d69ad4296d12/build/build.options.json",
+      "original_sha256": "3dff788f5c8009d09761d1618ab326cd903bb1726397701feda1e8408c5890f9",
+      "published_sha256": "8ff5c4ed3a01a65252362d78514387c6c1714e15cda94445e5e3b009522b69c0"
+    },
+    {
+      "file": "docs/research/arduino-connector-2026-10-12/host-preflight/profiles/28cb87e4-7a99-43db-b8c9-d69ad4296d12/build/compile_commands.json",
+      "original_sha256": "0315701ea4a6c09589b0ecd5333a567b2b8c39fd3a145168532bbe98ea28302f",
+      "published_sha256": "25ad2c3235d9e29374b8695309767d0be8a386d68e6ad5231843af4f8d9098c2"
+    },
+    {
+      "file": "docs/research/arduino-connector-2026-10-12/host-preflight/profiles/74e352e0-8703-416a-a96e-e018e31aa194/build/build.options.json",
+      "original_sha256": "c2f11db755ffa2ec0a8ebe2d3132ee4db972a0eaff410a51b342e4e7fc26b367",
+      "published_sha256": "6ae91dd25c06d23701103ee6b30de5802112ccf1eb63f9fa89ddad0bb329984e"
+    },
+    {
+      "file": "docs/research/arduino-connector-2026-10-12/host-preflight/profiles/f21f677c-cbdc-406a-b7ca-5ed3bb45fa54/build/build.options.json",
+      "original_sha256": "454d8221154264d3fe4dfa88e83a87b637f9a02502da47a5ec9296cbbf08ab1e",
+      "published_sha256": "f8942683a8730024e2719da0fa40098e827eac9f40c8780f61812d5e5c8b4357"
+    },
+    {
+      "file": "docs/research/arduino-connector-2026-10-12/host-preflight/profiles/f21f677c-cbdc-406a-b7ca-5ed3bb45fa54/build/compile_commands.json",
+      "original_sha256": "a07c26b61749a29034065b26c2ecf404286a6389e2f027015cbb17aa8bb14b50",
+      "published_sha256": "46e50e9f3a2dd3516fc3f89c7eee63121d2381d4ace6979d665fff4745d375bc"
+    },
+    {
+      "file": "docs/research/arduino-native-2026-10-11/freecad-regression.json",
+      "original_sha256": "9c9c3dea666383421e93f7858aef34327e11ab308c7b9113828bbbcc6f2d9f32",
+      "published_sha256": "effd19d50d8f073dbc66f67385cee5c2fe8622c0ac0266fc9a1038850f47800a"
+    },
+    {
+      "file": "docs/research/arduino-native-2026-10-11/result.json",
+      "original_sha256": "85981c70232d929d9de6882c2cc70499bf174f3b106f326d658a4e7d35ec045c",
+      "published_sha256": "5ef504048e1f963e23ca05b7e6334bed61aab038f6167d3e3a131d7d0ea300d8"
+    },
+    {
+      "file": "docs/research/arduino-runtime-2026-10-11/Blink.stdout.json",
+      "original_sha256": "3bd09baf42ae031add2a477f173f5690174aa1f951da9443fa920158e398a069",
+      "published_sha256": "2b1c711422dd048a5892a362f87556666ea1e7db0a88c9231bef3b8c4bac86f6"
+    },
+    {
+      "file": "docs/research/arduino-runtime-2026-10-11/Invalid.stdout.json",
+      "original_sha256": "a3feed0286a8aa6633d9e387b778907b45eb8fba4b20ccaaf005af01153e6e5e",
+      "published_sha256": "6e06f348d22e2e7f9282403c3f7143feb30e365511795f33017c6b3e48f86740"
+    },
+    {
+      "file": "docs/research/artifact-opening-2026-10-11/fcstd-request.json",
+      "original_sha256": "0f316ce594703b632e4a37aae017c230557ca0df681f8b27dc9a1f75eebb97db",
+      "published_sha256": "d401c6294a6f27b17880e162c64a2af2a22a57c0ccf9d1b0daf67f2500d19a64"
+    },
+    {
+      "file": "docs/research/artifact-opening-2026-10-11/fcstd-visible-request.json",
+      "original_sha256": "92b36b4942251a75c6426ce739be32314d4f98a06cdecc7acf3a4bb4f39ef214",
+      "published_sha256": "3250c754f8544082c2e178b9076f25ea297832dbf36683732ef31e6821c3811a"
+    },
+    {
+      "file": "docs/research/artifact-opening-2026-10-11/missing-gui.json",
+      "original_sha256": "b081d4780c5a47b0f1119389157dbafbf179ab0cbc60f864ea29d41514ba3f00",
+      "published_sha256": "4db4308eb7ce117c5243eeecf96492cb422b4b81057f8aee54df6a17fefabd93"
+    },
+    {
+      "file": "docs/research/artifact-opening-2026-10-11/step-rendered-request.json",
+      "original_sha256": "e0780f73d0a82dc3fb7161995c0a18d613d0fff9ce50a2eee8da6c6518967a44",
+      "published_sha256": "c05f2d6b4d1e67b6e83d4e21f0ef2bbbe5b0652022a9a8eb695fe5e930f96769"
+    },
+    {
+      "file": "docs/research/artifact-opening-2026-10-11/step-request.json",
+      "original_sha256": "d13150d0500b6e3342011e1367ccaa59e00491e698728fb49315d626acf92955",
+      "published_sha256": "5a2c1ab5df207ffb65db4d8730d5a85232c7422fd6b5f509274a6d2c68839da0"
+    },
+    {
+      "file": "docs/research/artifact-opening-2026-10-11/viewport-result.json",
+      "original_sha256": "f69f51cd843e84ea043f0ac393472891e1852ff678fd310d9c681575eadd2f2a",
+      "published_sha256": "c26c3e6b8dc942c2844900cba6a13da0a0e583c3b1bba1424553eda90c46bb0f"
+    },
+    {
+      "file": "docs/research/benchmarks/2026-10-11-qwen3-4b-cpu-json/show.json",
+      "original_sha256": "667dcf01a04450f388b68555a2d302bb2595e349dec746f89d8e4911df375b4a",
+      "published_sha256": "3198b073821cdd143fd6b6fb02620cdc41705063a91da74d3325833ae52b57a6"
+    },
+    {
+      "file": "docs/research/benchmarks/2026-10-11-qwen3-chat-units-cpu/show.json",
+      "original_sha256": "0d6369c1ac3723f8acd373a06d72416e818e629ede7dea20b2a0a1270f2090b9",
+      "published_sha256": "3d9bb804099ea9413c25dd778a04621bef5aa3d8cf40bfc1f44e06148765a550"
+    },
+    {
+      "file": "docs/research/benchmarks/2026-10-11-qwen3-missing-height-diagnostic/show.json",
+      "original_sha256": "9e21ef8705bb93de5d28ab940669bb33afc5e4ab3ac028005cdcd80df055fc73",
+      "published_sha256": "2592403d8f85e17d9c5a8c46524971b12106c67f09486a2eb830e3ea372ab1e3"
+    },
+    {
+      "file": "docs/research/benchmarks/2026-10-11-qwen35-2b-chat-units-cpu/show.json",
+      "original_sha256": "d07821e6aa81bb40d7d561a613baf5d18c82349812ebd84ff32d303dc8dc24a5",
+      "published_sha256": "6aa87a2642dbcc0d760727b25805c41fdc271c42e21498de8566460f2ddd1769"
+    },
+    {
+      "file": "docs/research/cadcraft-geometry-2026-10-12/cancel-evidence.json",
+      "original_sha256": "e73772028de32da2027f5b926f35b379586e4a5218e5dc9e9ebe8bc3f7e8d141",
+      "published_sha256": "fa819c70fbbe41165a4bc53c7b93315b7935418c8cce626449bda285da9a0903"
+    },
+    {
+      "file": "docs/research/cadcraft-geometry-2026-10-12/status.json",
+      "original_sha256": "f030713a15e5ef60c1f30d38cf38497383228dae6153feeef1089abd9c0e9695",
+      "published_sha256": "84880b77943a5e8b6af6b2865867248a9de5a601e7b1743fd40e28738fccc49a"
+    },
+    {
+      "file": "docs/research/cadcraft-native-2026-10-12/before-reopen-hashes.json",
+      "original_sha256": "8dd0fd55efaac7aeb831c262f4affced136fd2be4ef4828bd52552841ee13331",
+      "published_sha256": "20bc4fa6c4e9ef830142b826688129892afaa030fa9ae8a707211740970742d5"
+    },
+    {
+      "file": "docs/research/cadcraft-native-2026-10-12/cancel-evidence.json",
+      "original_sha256": "a8fb23d1597b50cc3d3d1373ac4b6c5da9152129d55def5e60f824536cbe83d6",
+      "published_sha256": "8b729938cd562cd1519b79626724ee2ec3a0593f725709436a12142aed153c5a"
+    },
+    {
+      "file": "docs/research/cadcraft-native-2026-10-12/native-completed.txt",
+      "original_sha256": "5b086c424b60dddbe5dc1e219bbfbd73cc4197d067603a7d8998b4aadcdb278f",
+      "published_sha256": "9dcd5ab5da8ea5cc80c6ad3891c9aa1e6df6d5c193c9389157812af5bca3c32f"
+    },
+    {
+      "file": "docs/research/cadcraft-native-2026-10-12/native-preview.txt",
+      "original_sha256": "2ef429a3825e872db7cff2751dc78c1f3a50627d6e74d4f5f91715b39b70446f",
+      "published_sha256": "1c8a97f2190187134ee5818640d3bb796a974ebc066e541db28c50ca57ee27b8"
+    },
+    {
+      "file": "docs/research/cadcraft-native-2026-10-12/native-recovered-history.txt",
+      "original_sha256": "c29f74fae5e539840c8617b9000af5049585ec00784883b1d64a79dc92665cda",
+      "published_sha256": "3d977346287de26012c736adfcadf1c9442d6969dd8e4914bcc1878098ad7fba"
+    },
+    {
+      "file": "docs/research/cadcraft-native-2026-10-12/status.json",
+      "original_sha256": "67d219fc68b15efc1ca4c58fa0c07c6a4254d0a7808147a1653b00ff56f355b7",
+      "published_sha256": "2eea5ba592628a235a9dcdb03da4103857a236b8e01bb4b9409e0f4a8083c248"
+    },
+    {
+      "file": "docs/research/cadcraft-runtime-2026-10-11/calls.json",
+      "original_sha256": "0b445b2ca113e55aa6dc66daaf36579279854a32eb1831c16730b5c9c4e769da",
+      "published_sha256": "08cb22167225e3b52f4a5e9c1c6a2235eba32194a86d092ff5f9a0b8a6de38f1"
+    },
+    {
+      "file": "docs/research/cadcraft-runtime-2026-10-11/signatures.json",
+      "original_sha256": "225df291b661c6609290c4d27cfea6be7ce9fef54d5a61e1bdbab0b853c5568d",
+      "published_sha256": "16623e07e6c3abe52928de7c93c2061fda92a80eee0626e5fe6c883314d842d7"
+    },
+    {
+      "file": "docs/research/cadpilot-adapter-2026-10-11/cases/4/failure.txt",
+      "original_sha256": "d6dabe6bdfb23ee8ce734ea3364ec833f4591b7183428abff7f3437b0527921f",
+      "published_sha256": "97b0eaf95749f949d25d2944446025cb51ca3dbf3b5eb4b83b03815748d92bba"
+    },
+    {
+      "file": "docs/research/cadpilot-adapter-2026-10-11/cases/5/failure.txt",
+      "original_sha256": "d9c296c122eb44ea883854fca2926f2b3a6917e83aed79c526b08bd4172db626",
+      "published_sha256": "1e6504c37f130fb8afe7680445a86118688841f8755f6f7aadf2427bee4e503a"
+    },
+    {
+      "file": "docs/research/cadpilot-adapter-2026-10-11/cases/6/failure.txt",
+      "original_sha256": "42cc3c617a0d3ee0288da85dea563ea5a2e6cd004b68ee7724d9a93a512be2fb",
+      "published_sha256": "96ebbed805693b1d127efe577b585bff93ef283a7e91e0f2f0fa5a2cef1abee4"
+    },
+    {
+      "file": "docs/research/cadpilot-adapter-2026-10-11/cases/7/failure.txt",
+      "original_sha256": "a10db48da36192e20b87bd93e3fc93f7cf710003b5fa08ace9fda06e4ef427ff",
+      "published_sha256": "3a3902f27df946aa1972aa19a265aeccc54498dce411ea49afeb2909919dfb81"
+    },
+    {
+      "file": "docs/research/cadpilot-adapter-2026-10-11/cases/8/failure.txt",
+      "original_sha256": "195d03aa7d92b5ca5e6ff8be59b2cfc7b7ee0a3566b43f46f854808b899d6864",
+      "published_sha256": "cf4416160143894e302f4ecaf06f1870305073878db48064cb01d24eddcd8815"
+    },
+    {
+      "file": "docs/research/cadpilot-adapter-2026-10-11/copy-status.json",
+      "original_sha256": "7b8e587471eb337de20546530e449e7e517035b5c3eab46ffc21e93652da1c38",
+      "published_sha256": "1c940ceb7088e95951f005db0c24a0584fee06cd24de66fd6bbb2b5a44b0a29a"
+    },
+    {
+      "file": "docs/research/cadpilot-app-2026-10-11/project-hashes.json",
+      "original_sha256": "bd922f1126c0b89eaec9651deb1979975b086a55f104bc40c0873669b188c36a",
+      "published_sha256": "f0d555cae3e4b1896738a08267aebd7c326c4f418f13d6ee53d755331be1b989"
+    },
+    {
+      "file": "docs/research/cadpilot-cancel-2026-10-12/fixture/cancel-evidence.json",
+      "original_sha256": "a7cfcdcf2a9d66ca687e8f0fc794eaa56c44067523ba42e727e67d21413aea64",
+      "published_sha256": "24c671590dcc6be7c7cebdc3fb3e048b01d6d0be8fc42ef0f0f8208ad509d8c5"
+    },
+    {
+      "file": "docs/research/cadpilot-cancel-2026-10-12/runtime-identity.json",
+      "original_sha256": "b0d88c97754f2ada4f3003f0c3e2af85dd84b40b755e8541e89e419124cd7c90",
+      "published_sha256": "43ab8a96308af929893d18917ddc6a5069abb76f30be38a588135958a0a1215a"
+    },
+    {
+      "file": "docs/research/cadpilot-cylinder-inputs-2026-10-12/file-hashes.json",
+      "original_sha256": "7c1312ab4734c319fc975b0cd9f168571688fa40b53703a7ea86fad88be6a79b",
+      "published_sha256": "2e28dcd09121dc20a508661750a17e4397cb5346d2fed05672269d8f53a1a360"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/before-reopen-hashes.json",
+      "original_sha256": "3ae08dede8f1ec42c616fa9cdf162acf64f8118b970009cb2a0d3e2203e167c8",
+      "published_sha256": "93c6074260724703f94aaa771c942e736196c485c812604cbc7da8288f750944"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/edit-completed.txt",
+      "original_sha256": "6e74d1cd918a263ed2c863d575e6504ddc79396bdf9d4b77b017db9be735fb8e",
+      "published_sha256": "460d99c7142db44600ecb8b8bfcf34bf6f97d41e8935126ddfcf32df32269d69"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/first-package-folder-failure.txt",
+      "original_sha256": "bc8936e865c76d22e9d32b865d1839fbdfa41ed8c30698353cad28d72cdcdf3c",
+      "published_sha256": "790bbb9180cd0f73b8844620a7104c4c403fe319641d4a623a8a4c52cf1a14c1"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/imperial-inputs.txt",
+      "original_sha256": "3f859dde0f3d434377ae5d5005fe560b9802bb8c096d4721bb685d5bce631c87",
+      "published_sha256": "af0f8b259cb4a3b729523b0d2d326655d58f30925fdb682baf18ef125e5a1ab5"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/imperial-preview.txt",
+      "original_sha256": "59d214dc6ec821b129ca8d8f16323e8bb0a0c37158e75fdfeed7e75db32da5f5",
+      "published_sha256": "13c4be4bfed6ccd403306d0a54cd04093227cfbbedc2e6b189c05a3cf9c7087c"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/inspection-completed.txt",
+      "original_sha256": "866464312aec665c8557da9b6e427d3d934f1ea6bfc67b37545a9919de6e48e2",
+      "published_sha256": "84ab2d6e8efd5fc6aaf26b39e5dd4395f123425a6f9935f681a69b8782798d6a"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/inspection-preview.txt",
+      "original_sha256": "0654d258885be88e56d46f1b527d627333793889471cc1d10565909725b137ab",
+      "published_sha256": "d720bef76ac6f541eff4c77f0ddc8564dcf351ff82850894a15fb3cff80f018b"
+    },
+    {
+      "file": "docs/research/cadpilot-native-2026-10-12/reopened-history.txt",
+      "original_sha256": "76e44b211886c72b05d13f276ae14524da13bac28cb874743c2c3cb28d965610",
+      "published_sha256": "a963bbed5aacadf0c02764950f40e73074deef2273faf2c35ee3911df7471dec"
+    },
+    {
+      "file": "docs/research/cadpilot-native-dimensions-2026-10-13/cancellation/cancel-evidence.json",
+      "original_sha256": "c59b7ade1262b3f20b2b53e617f5f520f89c9929f4e3a4a37ed54913b4f17e75",
+      "published_sha256": "0110cfc7149a4ef84b79729609e8c14b8fdc92705b4fff7daf05487da12084ea"
+    },
+    {
+      "file": "docs/research/cadpilot-native-dimensions-2026-10-13/rotated/status.json",
+      "original_sha256": "af744e2c4200b3c10ac71b74358ba8967dd7646fa2d13935c0879e7a1046a046",
+      "published_sha256": "e7446bbf5f87356c0d6338f6b1da800e3acba15873c60117149badf1fa4d788a"
+    },
+    {
+      "file": "docs/research/cadpilot-primitives-2026-10-11/rollback-disabled/failure.txt",
+      "original_sha256": "caebd3f15eee5235930791651cef3ae4bf2bd89fc0c2ca01641aaba0303229d6",
+      "published_sha256": "2876ffe37b232bd30b63a25500ad268c5bfc0094eb2cef9d7f58f8856d90f937"
+    },
+    {
+      "file": "docs/research/cadpilot-primitives-2026-10-11/rollback-disabled/status.json",
+      "original_sha256": "c29748229082ae07f1492b5af6cc6b1c9efddd2230ec6d3b6caef845facdccaf",
+      "published_sha256": "4d21aaec38489c2df7d6e84be4618db202f7820fdbba569bcb22a178962a8bfb"
+    },
+    {
+      "file": "docs/research/cadpilot-primitives-2026-10-11/status.json",
+      "original_sha256": "2af3d302347e81a5563382a9d17fb319cc20d772a3027e0659acb9d93ace5664",
+      "published_sha256": "d0d1ef46e07acddb02ecc244c49ce7bde327da0124aa168deaf7146c77ab2393"
+    },
+    {
+      "file": "docs/research/cadpilot-result-ui-2026-10-12/first-command-registration-failure.txt",
+      "original_sha256": "18e10b2e2e4d8f215bab4724e6ec382df45d47914bab413e64205adf4d872ae9",
+      "published_sha256": "586d6b2afd45eecd590bc71bec5b3bc0a146e6ac4dfb4d1fca990565a6a2e667"
+    },
+    {
+      "file": "docs/research/cadpilot-result-ui-2026-10-12/native-followup-completed.txt",
+      "original_sha256": "f6e1333b55b7cf2ae0810f5c86ebac001aeb5fa575617bee4e41019c1fea150b",
+      "published_sha256": "44f5efe5032223320222252fd7a79ef05d2ab8f050b065d147ecd2d6e434ac4e"
+    },
+    {
+      "file": "docs/research/cadpilot-result-ui-2026-10-12/native-followup-preview.txt",
+      "original_sha256": "2403e17e81d781b72fff83578e790a7819ef51b105aece1b7453a4b265335ad6",
+      "published_sha256": "e09456f6a57d58fa5a3c9b7a9e6907936abd67efe97f24c195620cc0228f3016"
+    },
+    {
+      "file": "docs/research/cadpilot-result-ui-2026-10-12/native-selected-box.txt",
+      "original_sha256": "1addd4b72ca3a6ff0abacb773eac2d9b9491efa40fded5459c796bd07e2ca215",
+      "published_sha256": "157ec7e1b756018fb40e54e465c769f889d8f994b9fa0925ea6e22d5220e3156"
+    },
+    {
+      "file": "docs/research/cadpilot-result-ui-2026-10-12/status.json",
+      "original_sha256": "065fdb248e5f4112d5c9033e594c290b3c880d9c61b0922df791b5f248282e9c",
+      "published_sha256": "c498f5240cad4795df350cfd9991665813c301df49f865799241194e3250e46b"
+    },
+    {
+      "file": "docs/research/cadpilot-step-readback-2026-10-12/file-hashes.json",
+      "original_sha256": "d577e9343dd70b785cb961d037c61cc44afa588d22e02675499fb2b06e556edd",
+      "published_sha256": "ddb8bffdf167017e322962e7449e84bd65629bd4dd30543b53a5d45cf45592d2"
+    },
+    {
+      "file": "docs/research/cadpilot-visible-2026-10-12/status.json",
+      "original_sha256": "d24eee75e32dbeb29c7e04a48d5e3bd8c8eb6e1d98c85cd3d0988546f3a883a2",
+      "published_sha256": "629ab046904085decf3360ad751f7d5b12eaedaed567905f6df87deebfe99bb0"
+    },
+    {
+      "file": "docs/research/chat-units-2026-10-11/installer-result.json",
+      "original_sha256": "d07a4ef206074562d957a526b6ab49142d31cc75d9503052416e6cf4457bf82c",
+      "published_sha256": "b9dbf31e409a5d4a2730e46e020167d2f607581b6726dfda6ca1959e4596026e"
+    },
+    {
+      "file": "docs/research/chat-units-2026-10-11/native-result.json",
+      "original_sha256": "ca065dda7c0c2c6a4bd6d06c7fdb2929101ebc82508336f033cb69a19d259b36",
+      "published_sha256": "2fad3e1a4823073c2b489061cca4f4bfde1cb723b71575ddd0cb20a6a76c69a8"
+    },
+    {
+      "file": "docs/research/claude-stream-2026-10-12/README.md",
+      "original_sha256": "81d25ef44cb86db35e6fa744c24e375142b04319db7b6a2c0e99bddb5086ee61",
+      "published_sha256": "7afd46b6e246872f23fd02418ea16e420c2c737f34620b4e8b3d79fe1b8109c9"
+    },
+    {
+      "file": "docs/research/codex-desktop-2026-10-12/README.md",
+      "original_sha256": "24843c97ba9ea4d0d7635baa77c87514d55cf806d4cdadf66695e815f17b6d51",
+      "published_sha256": "9eedfbdb80c19b0ff902c97aa0944be92738e562f9792003c27b0631611abaef"
+    },
+    {
+      "file": "docs/research/codex-questions-2026-10-12/answer/request-inputs.json",
+      "original_sha256": "c7f4519b333393befc4dc6373af6e59dee4aa91dff1473f3850bc69f38e2f6b1",
+      "published_sha256": "3676d2619c7f1f68297a3ef4e9b0dd969f099c407eae48e8f17057202f6e5474"
+    },
+    {
+      "file": "docs/research/codex-questions-2026-10-12/cancel/request-inputs.json",
+      "original_sha256": "1d29d251eefa3f16f115962518845e92f00ae97bab9d8713eb6a30ef540c29e4",
+      "published_sha256": "1f1abbddfa657cb05f995a53ba461508b861179bc70297ad7c274f0adc35dd5d"
+    },
+    {
+      "file": "docs/research/codex-readback-2026-10-12/identity.json",
+      "original_sha256": "9dd75e427cb9b3898cca1a2632e72f747636299822fb21937682f9e2a7ac914d",
+      "published_sha256": "956908be4d0e1f8a7d7182008c85eed00e49e6e5d68607066cb81b4ef4ea39db"
+    },
+    {
+      "file": "docs/research/codex-readback-2026-10-12/initialize.json",
+      "original_sha256": "768d5ac3389ff01ce445fdea0ae4d9de4140b4b0f8ba6e1257d1cfd72fcc1127",
+      "published_sha256": "d40ecf413fb99772d1c4c73d958ac24d0a1271385fb507915ef5ebac40f82acf"
+    },
+    {
+      "file": "docs/research/codex-resume-login-2026-10-12/resume-request-inputs.json",
+      "original_sha256": "7080a16e0a158fc78dc6cc06db16be749546021f414e6eec337855513e8a9ca5",
+      "published_sha256": "5e40188d306bcc6b530792b71fbd5b359f3ae0d404853cb95259e24b898fe6be"
+    },
+    {
+      "file": "docs/research/codex-runner-2026-10-12/actual-completed-events.json",
+      "original_sha256": "82cee8d1b4454909fadee581e518491eac7c0387f693b136b1e695c210cf8ca3",
+      "published_sha256": "1b94f5746165ddaa5579d79e21951cba8addd692843367362abf2d860669a924"
+    },
+    {
+      "file": "docs/research/codex-runner-2026-10-12/actual-failed-events.json",
+      "original_sha256": "83d449cd4c46ff9cf174d8508629b7ce0554b8909f71492ae827b9186a9d4833",
+      "published_sha256": "5a050d6f9b3edfd35845817fa884b9f0675b2979d22aeb5fdc3c9b763d17d804"
+    },
+    {
+      "file": "docs/research/codex-runner-2026-10-12/clippy.txt",
+      "original_sha256": "555dac387ac9fee8c8b17a01ef8ededfa4e5b70ee42a31535642d6c5e9ab15d4",
+      "published_sha256": "c4352570669895aa2af9971da3e2f1a08aae01c220c61a8e1ed684ec2fc0a82b"
+    },
+    {
+      "file": "docs/research/codex-stream-2026-10-12/initialize.json",
+      "original_sha256": "9adcb5c78c96854583f3a1f898c8b1dd267da20542b95f12ab5d3b1bab5b5a91",
+      "published_sha256": "4d2531840cca65b75710d79468901357d86716d50191215972f46b43e9d42ac4"
+    },
+    {
+      "file": "docs/research/codex-stream-2026-10-12/tests.txt",
+      "original_sha256": "3b551b3b21fd1cce043dc11c7b4ea448ee1724ee5e7898ada8034aa4394819f9",
+      "published_sha256": "9c31f76d61316a87d5bc6377fd58018145223e0988b4129b5be6d4b44db7ebdd"
+    },
+    {
+      "file": "docs/research/current-backend-upgrade-2026-10-12/probe.wsb",
+      "original_sha256": "60b09b4fcc686cecd39d7cfdec6302216ca29d027a66788515ffe233719aadd5",
+      "published_sha256": "f152f9126fe6035aefdbfe6e1541dee91b651bccfc3ce658cc3424529fd82d59"
+    },
+    {
+      "file": "docs/research/current-upgrade-2026-10-12/probe.wsb",
+      "original_sha256": "e999f865852a4dbd9ba7e4119a5b8ab49ea511eaaed7fd75fc2957dcef7a79e6",
+      "published_sha256": "1dd836771e3315480455a0251eee1511e001400c9bd02c574ea71390d63bba21"
+    },
+    {
+      "file": "docs/research/current-upgrade-2026-10-12/release-inputs.json",
+      "original_sha256": "d1a60a089cddb2465b6838b58be54d2f604d0c2af22c5ffdb025c019bb144ee1",
+      "published_sha256": "3fc622b66940d5d95d77b8b296b13846a3f157544cb1fa3d2054ff46e6366316"
+    },
+    {
+      "file": "docs/research/desktop-cloud-smoke-2026-10-11/result.json",
+      "original_sha256": "f09ac7f05e36afdeb84a43698caadcaa29dc895862dbf6b2f5fe47a9abcfb3c8",
+      "published_sha256": "7115371ae74cb091263f2ce5f339142001f2a15f06b0eee717ea1a9b0bdb2842"
+    },
+    {
+      "file": "docs/research/desktop-smoke-2026-10-11/result.json",
+      "original_sha256": "81c96963a8f57d73dbfa224a04559b1128081d76c0ec2cf873d58081d6befe83",
+      "published_sha256": "48fff47a8d90954f03fafa73afe4699ac9fc8c49d100fa0693e932d5b7f1e71b"
+    },
+    {
+      "file": "docs/research/disk-exhaustion-2026-10-11/fresh-guest/probe.wsb",
+      "original_sha256": "23a0bdd25a959479805e15153a49ba6717bce4eb18dbf7e57145ba4082772dee",
+      "published_sha256": "f05374c7cdafe3d8e20369384d19aa73df026097d37261ef04133e90a2528677"
+    },
+    {
+      "file": "docs/research/document-context-reset-2026-10-12/file-hashes.json",
+      "original_sha256": "d8b7b6c26898085ad6a22e5bfbbb53f3361ff734d04531494140a2919c74ed92",
+      "published_sha256": "a91b1aaa71e6c8913c152d819c06fc44753a8e32d1f4a00fe6178f6994f755af"
+    },
+    {
+      "file": "docs/research/drawing-inputs-2026-10-12/file-hashes.json",
+      "original_sha256": "2a18cdaf098da144555b28257c049733cd62d6f3a70e29c4bb1a08bfb06193ab",
+      "published_sha256": "4e0ebe0e621b150349271e717b00d3b42a1316467bc5ec71e284b93e93e5c7ad"
+    },
+    {
+      "file": "docs/research/drawing-tools-2026-10-12/status.json",
+      "original_sha256": "d89656fb813569f4e9a111c527dec079101df71e8fbb68c999c33517eb5676bf",
+      "published_sha256": "a87a753226c84b3623e1f259b853a3d72b4f660ddb0c922a2738115e5d9c8a3d"
+    },
+    {
+      "file": "docs/research/drawing-unit-guidance-2026-10-12/file-hashes.json",
+      "original_sha256": "2453b8951bed075bc5174658463b27c1178bf0aa4fee4f386039cb58812553de",
+      "published_sha256": "5e7d257976d278e400c8b80cee19b14037b0291fe6c7ba92641e7e8cb3bd487c"
+    },
+    {
+      "file": "docs/research/folder-dialog-probe-2026-10-11/reopened-accessibility.txt",
+      "original_sha256": "2f3676bba57f81aea98adaef057c95663f618d3dc6be78aa49029f0c04590768",
+      "published_sha256": "116820ecb5f928560025fd72e918cd070df559726ab308467c7c68d7afdaa936"
+    },
+    {
+      "file": "docs/research/folder-dialog-probe-2026-10-11/result-v2.json",
+      "original_sha256": "d3eaf9e52bf3a7507622ffcdaad3affe5d523aa01738c6c0b224280133730a6c",
+      "published_sha256": "c44068db4e5391596232a67735108bd979897b9ed3c19513a210c1c860a76eb6"
+    },
+    {
+      "file": "docs/research/guest-backend-cad-2026-10-11/probe.wsb",
+      "original_sha256": "9e014cbe2cfb15fa133b2a328a235ab7e87fe768259f573df42ad1708cf26bdd",
+      "published_sha256": "d4c1250f90f6a6894ba1e72fb07c086cb1b2f64580ff94274018522ca9520add"
+    },
+    {
+      "file": "docs/research/guest-native-harness-2026-10-11/host-native-result.json",
+      "original_sha256": "cd5ce1b856c0ecc2e047e3b970963e0df638d832056d819da982a44e3fbee010",
+      "published_sha256": "22b9360c11bdbc8b23f7c704c4053ce0489a77255ce51c394b1a705f9cd573ca"
+    },
+    {
+      "file": "docs/research/guest-native-harness-2026-10-11/probe.wsb",
+      "original_sha256": "3669fbf0a3e21811402da9392a9de243c63ea0298647db9de8b9a2bb0efa8d16",
+      "published_sha256": "733a14052a7b5d675f908defdaafc1e81fde68a66404260b50b708ed11d065d0"
+    },
+    {
+      "file": "docs/research/guided-arduino-inputs-2026-10-12/source-inputs.json",
+      "original_sha256": "0d751d148b51862f91ca648abd37ed8ce2cfea25bf3c4bd8ad9ac6f5398fa401",
+      "published_sha256": "46b442e75c0b08597527ebc888ca1ef615854fb6f6759d1eba6c1b289cc444cf"
+    },
+    {
+      "file": "docs/research/host-tools-2026-10-11/Artifacts/Netlist.xml",
+      "original_sha256": "4e766fe5ce526068dd5c91fca50baf0c93adfb0eae42b30ac01a813d8cfe3402",
+      "published_sha256": "d9fb4c781ea6e061c017c99051f19d1f835ab1d5eb9bafdc15b7e77c7c77835d"
+    },
+    {
+      "file": "docs/research/host-tools-2026-10-11/Artifacts/input.json",
+      "original_sha256": "d91e415e44a3150470cace8f304a77fd1094e47a55a6e5ca9bf6894adb22e6d7",
+      "published_sha256": "7dac5dbbc5f3b878959bcf4108b0687ee9e448be5d4955dc74881aca0af17469"
+    },
+    {
+      "file": "docs/research/host-tools-2026-10-11/README.md",
+      "original_sha256": "4b2a83e0a3b7cc47452ff72b05071501e81a4a9c196ce636a40bdec34ead077b",
+      "published_sha256": "6dc094e524f2a738195807f1428ceac575c5da6842d50bd4d125b38fe2464063"
+    },
+    {
+      "file": "docs/research/host-tools-2026-10-11/run.json",
+      "original_sha256": "b704e90323a6af4bce1e61a28673b002b47ceca06dc2d338af766d9fa5353ff2",
+      "published_sha256": "5ea75dad847f3ce84f1efcb81b0b1a333cdf2f78382f2ce590d8c7e7492e5c2d"
+    },
+    {
+      "file": "docs/research/input-clarification-installed-2026-10-12/probe.wsb",
+      "original_sha256": "32523d09efb7d3496d2e4ef2f5bede823da6dd1eb4d6f99be0585c37aa5bb5e7",
+      "published_sha256": "57c60752a5cb05fc83907b76dd53f8eef153cc62d63076683f0228bc945e6654"
+    },
+    {
+      "file": "docs/research/installed-agent-2026-10-12/probe.wsb",
+      "original_sha256": "220e839e438d2f57b04e96e8e3cb1c18ecdecc3125ab81b0a8e1a587fe390f04",
+      "published_sha256": "187695dbceca252c6f8fff21dab5ef415ee7cf807a4fd06ba9049716a9f5f8fe"
+    },
+    {
+      "file": "docs/research/installed-agent-2026-10-12/release-inputs.json",
+      "original_sha256": "c0d0ca6bf1f1812c02af69a424911e0250b174b70dc6ce302155b5524abeaf98",
+      "published_sha256": "5418831d80febbcc6a790044a419f2065cbedc9aff765c3ca6c6c509d48cf828"
+    },
+    {
+      "file": "docs/research/installed-arduino-connector-2026-10-12/probe.wsb",
+      "original_sha256": "ec846fd2fccb53e3a1c1eb94d7a50c870f81088935b300bff789813b599057c8",
+      "published_sha256": "d6576a41e4187c65a2f5a13669a5d7134b08492dc68296689183bc9e9d008a1d"
+    },
+    {
+      "file": "docs/research/installed-arduino-connector-2026-10-12/release-inputs.json",
+      "original_sha256": "d6a528e0a44026012fdfef9887d0608328fdd61285dc49b2dba5fce38782dc51",
+      "published_sha256": "e3508c881123ff15ed47c07f1fefca716dd660e66ae59bd03d3f1da166434614"
+    },
+    {
+      "file": "docs/research/installed-cadpilot-2026-10-12/probe.wsb",
+      "original_sha256": "15a83dbd10988ee679c6d7ed5b353b40931c6630f05b7f57ce04005e2a23bf75",
+      "published_sha256": "bb975d58b2aaee679675103df7728700999393ced7f27f0debcf1ced05459fdd"
+    },
+    {
+      "file": "docs/research/installed-drawing-2026-10-12/source-hashes.json",
+      "original_sha256": "6e92bd78c6c70d3b86a5b9f8e27806e362947e6520a5107fc1ed39569f46422b",
+      "published_sha256": "cdbd4dda8d403e8ed07ff9b2b3d7730fc56c02892652af9907e335d3b89693d2"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/input.json",
+      "original_sha256": "58375a4867a835a415b906864c0ddd01c0469bdf68e0655725a52bb4449cf0b6",
+      "published_sha256": "bd265295b4f7769beefb697a94220f01c1838605a3d3ee0fa5574b7ebc805a2c"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/result.json",
+      "original_sha256": "e23a267ffab5ebb16e86aa2e7ab6532c2d36fcd3663e5fe2dced8fbb344ccc49",
+      "published_sha256": "b080f0d11b33a73b80eea31c9680062c65397dfaf1ae7b4f6d39eeabd3746d63"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/cb37eb6b-abe4-4867-901a-8705dc0b34ce/input.json",
+      "original_sha256": "9de9befcd6eb3189f5f0adedc14c17c3c43bc25d9a0f4fb0dab7518d77502bc0",
+      "published_sha256": "5c78f39994c2064e600e96f6e033f1200261408b3c1f7f05cee8decbde50208b"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/cb37eb6b-abe4-4867-901a-8705dc0b34ce/result.json",
+      "original_sha256": "11558cd5e312f18a20c615bff87e9dfc1e9e1d2e62462a5f7a8cdbfa457b34a5",
+      "published_sha256": "6083b145e984a9dac5b4366406fe51f494da58020850d34040d309a6b104718c"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/.hazlomexa/runs/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36.json",
+      "original_sha256": "d720ea180765fbb01236ac03958d411da01b82f501d997c435ef215152825e98",
+      "published_sha256": "1903912187072677a4c9881e7a9692dfbddcf1f7e6c6f5e81dfdc815ec2c84ec"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/.hazlomexa/runs/cb37eb6b-abe4-4867-901a-8705dc0b34ce.json",
+      "original_sha256": "a5a7e236c4db0a68ac20e1cdc32764d65eec2b536f2f7eda0a1d27ebd048467b",
+      "published_sha256": "2ce8b39e32804d534265279ec1825328b171ad4820033e5a6ac846d40c56089d"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/calls.json",
+      "original_sha256": "fa74bb5252bef1e0ca83c620c422be86daeaf67b58cd2b9ae429c6f41abd6d41",
+      "published_sha256": "9d501c3a0c071ad326a7d9a034fe9c1788c2698d0de6ddc780283b41f38bcb0c"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/profiles/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/konnect.json",
+      "original_sha256": "13d511d39ace46a540b05a5eb4ce1d3698e4adc173eed30e8969121c3e6f7fd3",
+      "published_sha256": "eccc98fc0cca02a3ef0c25095d1cf28bf1182eca9e695a136b7f43508b6cf4f9"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/profiles/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "25f2c6eb6683f81fca2d4a4de568129cec93dabea7d25f3f57fd60ab51220f06",
+      "published_sha256": "444bef8f44c464c6e2ecb1a1e82e97a033f44e987065fdab9da3d3cddeb447d0"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/profiles/cb37eb6b-abe4-4867-901a-8705dc0b34ce/konnect.json",
+      "original_sha256": "7a447aea28ca03f629ac0248887072f1e97b5015a8ac41ff24c0c9d4ca05dd8e",
+      "published_sha256": "0d20b50569e80f5b9dd75c207b67e530d88ef4a505747375de358396f0749f13"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/pcb/profiles/cb37eb6b-abe4-4867-901a-8705dc0b34ce/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "71aa239392c237d373e39124db64b542e0df0f4aa00deaa2f98b85691524f0ed",
+      "published_sha256": "c8003aa28f3ae3cf983d4edb7f3f2da97c17066e055ec16cf21bfe9858e89814"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/2c59dd79-a974-42c5-bafd-659a6967f2c5/Netlist.xml",
+      "original_sha256": "7c63b1bdb3669149d2195f393cb58f6cdfd5f4a9b7b1ea44745d3351d6876bee",
+      "published_sha256": "f201977f10e947a86f8c518206613735308bfe176857d286673e296ab0be2209"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/2c59dd79-a974-42c5-bafd-659a6967f2c5/input.json",
+      "original_sha256": "206c513e23ba1a7cb590d703a62dbb325dab3dc50cefbb28b7ba9bc290c0be06",
+      "published_sha256": "3b13a2e486a4d053d0e6ccb09796af220625bda86180f03de790e5866d7cbff6"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/f974d210-3779-491e-947d-4308c1cf02f4/Netlist.xml",
+      "original_sha256": "52513ceff3639e3bb69c165136ffc8b1d190a9dbc85c5380ce431018eb4285b9",
+      "published_sha256": "e5ffd06c25c394bc5321f6ee5e64ebf0ccd60e527d3fdf88af5c1a08b4880826"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/f974d210-3779-491e-947d-4308c1cf02f4/input.json",
+      "original_sha256": "1ccade8fe7f68c515ea5d8c05863eb7e674ecb89406db895d01e01e2c94f409e",
+      "published_sha256": "5b21936d5cbca947824f8de572863c08583c54b100060e532d0481de0617f657"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/.hazlomexa/runs/2c59dd79-a974-42c5-bafd-659a6967f2c5.json",
+      "original_sha256": "4d81daa8d1f14015527d614060ee17004833d267e339bdda58b26da1f9c8bc89",
+      "published_sha256": "a6e885f9969506dd4919e3a2dac15615d3fcbd93833c00826de3e8b8c63eeb58"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/.hazlomexa/runs/f974d210-3779-491e-947d-4308c1cf02f4.json",
+      "original_sha256": "8f15be48f31716f5c1b2799b691d78c0ace908097be755e295b138471b2e80b9",
+      "published_sha256": "ca89145a8e576d6f1c63e31ce7edb6a0234ee7a79c644018865f56cdce83b25f"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/profiles/2c59dd79-a974-42c5-bafd-659a6967f2c5/10.0/kicad_common.json",
+      "original_sha256": "2b2d8e8ba044ca38eae96bf53fe21b5584303cebf6c70341afaaaaf424c66913",
+      "published_sha256": "932e1dd64b7b846fc053b35a463221e4e61a931af17384e138fa21fd1f186445"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/profiles/2c59dd79-a974-42c5-bafd-659a6967f2c5/konnect.json",
+      "original_sha256": "e210da7e119d42cae418e57c254d3c8bf48d6278abeca301b5655d0e55cce450",
+      "published_sha256": "e789bd6bce8896e18dd57f92d264a2cb41b48dc59263a6500b8734ef2da1e317"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/profiles/f974d210-3779-491e-947d-4308c1cf02f4/10.0/kicad_common.json",
+      "original_sha256": "7f09974227614188560ba5b257e39fb5a4bda49890c82b42099cb8951d51f416",
+      "published_sha256": "43187a9c41e48ae57ee778c1231de8d63f5c88bae85353589e59003205d1e435"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/host-preflight/schematic/profiles/f974d210-3779-491e-947d-4308c1cf02f4/konnect.json",
+      "original_sha256": "b82e80622afaa5d4caa638ddbd7380a852cfd6901396b869ce301197300ca884",
+      "published_sha256": "f38481111e74bc2f35a845a699cf2579e3dd654f1d54ff28fdc289b0c432dd1f"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/probe.wsb",
+      "original_sha256": "34197517cc16f36a12ab18d151099fd7c740d7b448dfeffc70420f2ae258879d",
+      "published_sha256": "499bd4b12aee30a049b76866c0a796da27f10f85833a5dc4a3d25c50a62976f6"
+    },
+    {
+      "file": "docs/research/installed-konnect-2026-10-12/release-inputs.json",
+      "original_sha256": "ad9938e8a4bd442446b6e2c2d8bca97438c482beb19f811ef488a31ee0eb71c7",
+      "published_sha256": "d6ad3a4c61ef665c6c884f56eecaa394a6784318cdac9640752cab2e4cff9487"
+    },
+    {
+      "file": "docs/research/installed-native-ui-2026-10-12/file-hashes.json",
+      "original_sha256": "d2a295945a109c00c3696ba59441924f14024dc8746d05370563fdbd8e50246f",
+      "published_sha256": "e74bb9772f9158b4a354a0195600c70a459b3f8941e06b598f42a0a454b4069c"
+    },
+    {
+      "file": "docs/research/installed-negative-2026-10-11/probe.wsb",
+      "original_sha256": "ad0fd72e16209842b7dabfc5b4d05166473b97cd258caf1b53ecb50d9c25c520",
+      "published_sha256": "aa30ecf40060ed83fc3d46d6f6a65edecbc66e405772b96c57e4c5c931b70d71"
+    },
+    {
+      "file": "docs/research/installed-orca-2026-10-12/probe.wsb",
+      "original_sha256": "e8f73b3173d2746032442032850f8f5ff174c39088f31bf835e77426cddbaf8d",
+      "published_sha256": "b6d651c5ad35ce2c84725c619a9114728e0518836b17017466b7df2230d01bcf"
+    },
+    {
+      "file": "docs/research/installed-orca-2026-10-12/release-inputs.json",
+      "original_sha256": "a551d188841a9e7bf5df2e0e2dfb3b6f419a3b538cfd49a183cfc19a73cbcb19",
+      "published_sha256": "34e94be56bd5bdf3950feeb2e7bc89bbba00f1b91732329619eead4c2b1cd6d2"
+    },
+    {
+      "file": "docs/research/installed-release-2026-10-11/probe.wsb",
+      "original_sha256": "2ae01ccef939d049213c8d10a53fc5dbd640b7cb06d90c62ca0485741b1fc023",
+      "published_sha256": "82dd81cafb46603c7d517dc1ae254143415fb89a753c8f27210fffa5e9d6d1be"
+    },
+    {
+      "file": "docs/research/installer-smoke-2026-10-11/result.json",
+      "original_sha256": "7532dfde261bc9d8c5df77c3498dfc1d416921bd65fca2e14491f44865e0668d",
+      "published_sha256": "77a01c8e9a6380e008aec69d39ee1427e85b4568ab9ef9d942b4b007608f6000"
+    },
+    {
+      "file": "docs/research/kicad-app-2026-10-11/closed-project-hashes.json",
+      "original_sha256": "4781c8fe76e8514e28529d5053ca758738719c58b0642a6a8a9debddb70644a4",
+      "published_sha256": "f9afc5beb118e01bd5da120d93f9cca15c90745cd683dc65d02dfcc83596e859"
+    },
+    {
+      "file": "docs/research/kicad-app-2026-10-11/completed-snapshot.json",
+      "original_sha256": "03d7043da2c3925b7f0f2751aa67b8d84e147e39c0d749a89b19ccbdfd44a187",
+      "published_sha256": "554b49810c65339ce40149aae0da88e55c68e8558b13845ce41cb504a2687223"
+    },
+    {
+      "file": "docs/research/kicad-cancel-2026-10-11/cancel-evidence.json",
+      "original_sha256": "4181da80f726c4b476e5d000c73b7bd919ee90e91133c4cf580986db0ff99527",
+      "published_sha256": "7b40b289514cca6f6726ca82e2ce147ebbf1920c9c041b70118ed298f895ce36"
+    },
+    {
+      "file": "docs/research/kicad-cancel-2026-10-11/deadline-evidence.json",
+      "original_sha256": "e5e2a4879aa9565183d79879348ee2c2db1818bc62e3b21daa34f4dbc10ad3f6",
+      "published_sha256": "d4410570ad31a8fc523803186d3edd22733fff8755584b52020bc64622698430"
+    },
+    {
+      "file": "docs/research/kicad-native-2026-10-11/completed-ui.txt",
+      "original_sha256": "e059e528bdedad9db9108f348df14668da4dad6d7b76e24896108d9f36ea8fd3",
+      "published_sha256": "7c0c425a81df48312466fff059026d30d3e59d06ea3b317a3e928bacf182b06d"
+    },
+    {
+      "file": "docs/research/kicad-native-2026-10-11/exports-ui.txt",
+      "original_sha256": "d1aa619aa20004d48f4b9e426a77a08a9de56aa11d53d0b3fb4ce1a6bca7fbd5",
+      "published_sha256": "1ba3693733a644aee7fa982a20b9021283ddde5dbbf695e92a10011e1733db44"
+    },
+    {
+      "file": "docs/research/kicad-native-2026-10-11/proposal-ui.txt",
+      "original_sha256": "68c15bf57ca74dad6dacfab48287ed54c57542a364690dc2dc95b0b3c60c133a",
+      "published_sha256": "8d1ffd691e53fd64a29f763b0d774af78522d4aeae3e656bffa29deac9127531"
+    },
+    {
+      "file": "docs/research/kicad-native-2026-10-11/report-ui.txt",
+      "original_sha256": "e093c7132da58c739c7fe350d242e7b24204008ad015b7cdf29d1a2dcda980cd",
+      "published_sha256": "e4b41edbfdccd01b50f6a3ebb69366684494a55bc4d7d4d4356b0780f92cc84d"
+    },
+    {
+      "file": "docs/research/kicad-native-2026-10-11/restarted-ui.txt",
+      "original_sha256": "ac66ca345cb03aa7e06091eb3c252d420e9ea5b1eeec74adb8cb3898e017b9a9",
+      "published_sha256": "662c166742668fc7b02369648830c62dae0d9e921e8871b3f2f6574faac16308"
+    },
+    {
+      "file": "docs/research/kicad-native-2026-10-11/verified-evidence.json",
+      "original_sha256": "511d6ff74c8a3dd8f2d817ff3bdb3d18024d119d8f64f215ef19af8ffd7505b2",
+      "published_sha256": "080570ef13c9887924436b0b0e3b01fcd87784f2170a6ebcf8d762e57ed7f2f3"
+    },
+    {
+      "file": "docs/research/kicad-runtime-2026-10-11/calls.json",
+      "original_sha256": "72cbd619021e1662e28222271f62bee1b7752ab93fb3d21b78ca34f85c44363a",
+      "published_sha256": "209202e1b9d6e0cdb5c0ede185656817a807e2548d1c37850e24f0263b31c5d1"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/0e240eb5-a9e9-4dd8-a981-50e25e68b9c5/Exports/Netlist.xml",
+      "original_sha256": "3a941cd1253c4076570e3c80fc04340f4dc2b0d0f8af1fef40468a0868ae6003",
+      "published_sha256": "83e40adf408489776a44714ffc278caee65eb0b9b8509e5e2972fa612936d88e"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/b1d2c216-6a7a-41d6-b988-3ef948a40643/Netlist.xml",
+      "original_sha256": "1af74f1f9c03b34a6d85975df89f2e8265ce76d6ad0d32b8c33ab5cf8a018442",
+      "published_sha256": "6e7a1c8692b889854ea6974e3860a971c65ce2e5021f3bf148f8e5317e8c7c4e"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/b1d2c216-6a7a-41d6-b988-3ef948a40643/input.json",
+      "original_sha256": "6c2bd47d26362529236568c8848c86d496f76263357c2edc622884b20e5d6380",
+      "published_sha256": "6c9c01dabd41043cf3562a086d0a73152426ea8c2531fc7b7fd700f6a5922ea8"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/runs/0e240eb5-a9e9-4dd8-a981-50e25e68b9c5.json",
+      "original_sha256": "814c827b5184364d145133da4e7052f6d3a69d4a43cbf4dd8ab276dc2e264560",
+      "published_sha256": "ef7d0a8a2b20f19267d6120cb23c7fcdb15131ac88f160e09b280258d929a256"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/runs/7f13e757-96d3-4807-b678-c79949d08acf.json",
+      "original_sha256": "ec7843b322ceeb5d5749a6c41ac0a6e325d9a1230ea40213a658fd5f4b3590c2",
+      "published_sha256": "2603c0e6c26b60514d91389decc9d07f8ea1614114d3b4fa6ba3d63f699df955"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/runs/ad88c5f6-84d4-48b6-abb4-ffcc05bd6af9.json",
+      "original_sha256": "80eba7180b513e025485ca4f368e9c742ae8885886ea6c8364a177a31c6b8b2d",
+      "published_sha256": "beb5bc8df16b55b3483da3476442915fb43bc13c1e17ccd78bc6401085b41cb0"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/runs/b1d2c216-6a7a-41d6-b988-3ef948a40643.json",
+      "original_sha256": "26b9dfbb9b05598d03f170dba1cb38d4b8067732eb6348fd18201728c503039d",
+      "published_sha256": "7caabb9e8a1db0cee355c3c77f9379de5c84f34d4dbf38a2829148d223e635e1"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/edited-schematic/runs/cbfe708d-6e31-4eb1-974e-694348071b47.json",
+      "original_sha256": "0bb3a0974be2f99e13121578fe7fd056a99b9d33ab9ff4e51ef7315438fee40a",
+      "published_sha256": "9202e309398e8bf63dc6fad22015fa43a7efd44585a7c67250211d7b1c56916e"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/8045a28e-cf9e-4b15-a093-b402fcda0cf5/input.json",
+      "original_sha256": "c815e51101f9b0ab5dc6986f2e054a279a999b5e57793fdf1340a967e0b20d3b",
+      "published_sha256": "072c8452990bab434a53eb7b73cea395e55eeef2a46cbaa321e77a4619bf0360"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/8045a28e-cf9e-4b15-a093-b402fcda0cf5/result.json",
+      "original_sha256": "1e284e6c9f73682baef01c80bb13b9457d80ff2ddf6e7938590cb8de54e08c35",
+      "published_sha256": "3c164b7404d03177360ffe3982beeaf660b2e579076e4073f3530c10be8496c1"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/calls.json",
+      "original_sha256": "1a1ebe533095fe814c481860c77797a50392231a14a55661523528a0f1b3f3a3",
+      "published_sha256": "5a4167fbfd7f3fd9f42e87aa4bc1da53538eeff6b7b0625eb5eab0398961ab32"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/f84f6661-d405-4e9f-9cd5-84c4096b7cc0/input.json",
+      "original_sha256": "469b2252f21a48ec30cc7722de489ae2889a7ff7073ddf40204b892a33e4e38f",
+      "published_sha256": "e3cb796c699bd4e9ad2d60202fc7e2893c7d4b398362f6c65f2ef29f6219264d"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/f84f6661-d405-4e9f-9cd5-84c4096b7cc0/result.json",
+      "original_sha256": "38db14b12f7c7a437990bf9ca6968936e1d492ccda4ef9bc382d6b60ee124c51",
+      "published_sha256": "78383de43dd6aca64658419501e9839c91dc7452218cb8937f002837f0ce9785"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/runs/451688fc-34b5-4ba6-b7db-b0eeca4d240a.json",
+      "original_sha256": "4403a402af771c56d91605b21c00e802897743c9e8297124aa98637659fa66c5",
+      "published_sha256": "c3a9b3fa9ddd3b40751e8fd9102ca823cee4df7e3edce2b9da4192e0cb63865b"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/runs/8045a28e-cf9e-4b15-a093-b402fcda0cf5.json",
+      "original_sha256": "ea3799ddf6e29555ec2544e008fecd3efee9a0352198c97bed9f32e48922b9f9",
+      "published_sha256": "5ff2c12f9605fc2b646dbb5d695c206e3fe1d97f385e2c69114569f8696eed45"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/pcb/runs/f84f6661-d405-4e9f-9cd5-84c4096b7cc0.json",
+      "original_sha256": "8addef40a376ad38a6cb9d22d198ef9bef51145f5fc8a3bdbfa3932594899763",
+      "published_sha256": "49ed5de2c4c56b8f47435d5c1d81db0658a29cd373a88d491488740f953cf3d6"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/schematic/1f892b34-c28c-4c7e-a94e-947e9196f2b5/Exports/Netlist.xml",
+      "original_sha256": "4e6656470f1ccd8c8faaaa60ca520dfad227d2e50f0733c96f8a4e29e20541ab",
+      "published_sha256": "8de8be61fba1cf1cda37a038e427fdc97efd063c51d4a7db74bf4f05e77d881f"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/schematic/c57f7b0c-82ea-4f3b-9475-bf153667a6fc/Exports/Netlist.xml",
+      "original_sha256": "219e01e1f2c3133b7904cfc244c7f47b319aec5ebf0345a39c23f8030fb65346",
+      "published_sha256": "1f1ffe141d5aaef449547354e00428b416bbca56c06936c824328bc8b15998e9"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/schematic/runs/1f892b34-c28c-4c7e-a94e-947e9196f2b5.json",
+      "original_sha256": "59edd46707d463a090b2c39acd5435e372bf045e9b4b8307137bed40d07a6bdf",
+      "published_sha256": "81244b47807372274ed910b7bdbbd993f34ec9696bf73bf75c90c5106b8fb359"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/schematic/runs/59221245-e150-4f08-8838-307ae2b8522d.json",
+      "original_sha256": "ac422a8273bd462fd53b53546764ffa450b757de2bf9c76f5cec984395ee59e8",
+      "published_sha256": "1a722f9a80346a17523d6fbe8c20e649359de6003bb79560898c83a047d9c9b5"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/schematic/runs/9c5d0e41-6836-4d4c-8fe6-e0bbe887e298.json",
+      "original_sha256": "dc96469cd89ac962ed4cc7469e879bfbc3f6a8eefb1ba06fce665656884fca78",
+      "published_sha256": "ff046fe9ae5a3f674665cc05d4c904882fd31711862262dcfb0a1be928885073"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/schematic/runs/c57f7b0c-82ea-4f3b-9475-bf153667a6fc.json",
+      "original_sha256": "1132d194be7740067d0d95d5b75ba50809a9061059a5a2db33ab587e082cb86e",
+      "published_sha256": "f0703995e683ca0d88455b6d463f4c60bc362d1ca4e14c74f7bed7dc573e8df0"
+    },
+    {
+      "file": "docs/research/kicad-tools-2026-10-12/schematic/runs/faab475b-dba7-43fa-b6d3-f7cdebe0c00e.json",
+      "original_sha256": "8ee37663644eedb3545aac0a8388dbea13af89335dfb7e165f0eec6da929a263",
+      "published_sha256": "b9fadfaaf3315e943fa6237775aac4300510bc80079f3014a1438161aa4cc312"
+    },
+    {
+      "file": "docs/research/konnect-adapter-2026-10-11/Final/Stage/input.json",
+      "original_sha256": "155bb749e80a3772f6fdfa3cb1aa8ce97a18009478fa5fc8b6e36ea762d7c18f",
+      "published_sha256": "5e9a52d9fd240927232663be8dd09560072d132807ab679d7b1b29fd0fa79d1b"
+    },
+    {
+      "file": "docs/research/konnect-adapter-2026-10-11/Stage/input.json",
+      "original_sha256": "d0263cc655011684dd6c689a7c63c51b92ea86e58245bf95da2ad8d23f0861e9",
+      "published_sha256": "9350e3718ae9fdcaf37fcbd6b7f7376848d737d8be78356cdfc39183d7a3d9c6"
+    },
+    {
+      "file": "docs/research/konnect-adapter-2026-10-11/status.json",
+      "original_sha256": "143c368eccca06672007c58c5bc6fd224524e27b3bae6a9e1bb62204219e1acb",
+      "published_sha256": "f5fae2eb8d9d4ff71280ccfb78f73c41d647dc20d47bb0c4520088f5d1d77ebb"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/final-project/.hazlomexa/artifacts/c47b747f-e9d1-4139-b728-4b751f6568bb/input.json",
+      "original_sha256": "f01e99143f9c876f0e831bda56363f2aec4c6dabf0e25ac125a05e118423f561",
+      "published_sha256": "3440a223f6fb61c46d4019022bf6850342367dd112d5a6555d5dda941f18a167"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/final-project/.hazlomexa/runs/0823bd4c-263d-4808-a2ad-73f884b1d1d1.json",
+      "original_sha256": "759c415b4c0013bc00f8b2df1b21017a2303023288eefef01272f076779f7d4e",
+      "published_sha256": "2e4543f889fdc3248b5cfc2478d716941731ecc1965c4467a2023b03175d74d6"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/final-project/.hazlomexa/runs/461f3f80-b391-425c-86dd-cb04b61becea.json",
+      "original_sha256": "4ad38ff6f6827b8e03efeaa4b1ddc8f3825eae69bb329f874e11a21a4be2b404",
+      "published_sha256": "497ae362b8a4487239f8103f4e1cb213c1d7f6b45622bcd0d72242281e05d25e"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/final-project/.hazlomexa/runs/5033b08e-6810-4913-a33f-2a468241f18c.json",
+      "original_sha256": "9ee8e2e26fd19c2713933a4aecfa6b8131b93d2e6d44eb405252b3271bd34710",
+      "published_sha256": "e72793a23b397276fd09920a22b8967c5956114ae35fca343c917a83321dbb9b"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/final-project/.hazlomexa/runs/c47b747f-e9d1-4139-b728-4b751f6568bb.json",
+      "original_sha256": "77925f457358f905aed3083449e205451d0d96d7d3bb7f9a852ba29733e2cc0e",
+      "published_sha256": "ec99bb63e4a8fdf718b10dd0b68684c1ded8e174f973b4ab1c68be50a53a0180"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/final-project/.hazlomexa/staging/0823bd4c-263d-4808-a2ad-73f884b1d1d1/input.json",
+      "original_sha256": "ffbaf5da121782b3a5b81e69eb95fe84a3295625aa5fb1a2daf30038ae953077",
+      "published_sha256": "d8f41f78fc6422f149e9abf0a1b1d20a13beb7fd7358981d1ae613dadfc65e8d"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/project/.hazlomexa/artifacts/e29d5b90-aa6a-4b9b-a2de-f111d6d2629d/input.json",
+      "original_sha256": "8dd64ce8be9852adbbb4d4dfe34d5598693c69b1c3cc3293298ba987e5a5fd7f",
+      "published_sha256": "6b9785ee06422eaff385be8d983dbbd7e727bd9bd53465ae2233b0e0609a2ace"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/project/.hazlomexa/runs/2cf8197c-b079-4c80-98f9-d61f66b55bf6.json",
+      "original_sha256": "4f8c1a7afea67b8fc9177d428cc0ae304d51aca3659479ea727f1cec5b73b821",
+      "published_sha256": "e81aa7d41660c72cb9e72362cfbc2e427f235ca1e567ccc9959e58974d8afc75"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/project/.hazlomexa/runs/4f9af4d4-7cd6-44c1-b00b-fa7d8f205a00.json",
+      "original_sha256": "c6868c4af52c3105ba2bbd5fbf76511fb19adba4f50baf8a40503c412d319818",
+      "published_sha256": "5b5fb7e1d6025d0701d5b50278acb3239acb085319f43b4188394b8ed6f9baf0"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/project/.hazlomexa/runs/e29d5b90-aa6a-4b9b-a2de-f111d6d2629d.json",
+      "original_sha256": "12fad393e58c895d9dcf70f773421eec3675dabfcf32960766562be316a82668",
+      "published_sha256": "8b17c961edb9a2ee17cbee284de751005148511baba8b0da1d4c5d5f8eb0b997"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/project/.hazlomexa/runs/e8cca879-7f69-406d-aef7-bef66f7ab553.json",
+      "original_sha256": "92f5516434b661ef8df909a3e9ea48378f430d88871cee73286f6bf017343619",
+      "published_sha256": "bd6c2223aca11de29f2932006fae91a53c05b2f2e9478af8ad472f0d3c8641a6"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/project/.hazlomexa/staging/e8cca879-7f69-406d-aef7-bef66f7ab553/input.json",
+      "original_sha256": "8f1c97f922a44ad42ccc488be5a63e0f2a1c9465670a1fb7ccf351c2e431a3a4",
+      "published_sha256": "7591e94de25fa2357512707dda2afd9def2ce0d1e1b17f7aadd53bb1d058a39f"
+    },
+    {
+      "file": "docs/research/konnect-app-2026-10-11/status.json",
+      "original_sha256": "18abe4613e1bb4eb80454c5e7e9dc689c6a7b454ae0126411f404fff87f713c4",
+      "published_sha256": "8a8ab65b4b860ee65b8b3196741dd2f7a3c35b80e643c855427fd7603ea5bcf0"
+    },
+    {
+      "file": "docs/research/konnect-blocked-read-2026-10-12/cancellation/Profile/konnect.json",
+      "original_sha256": "269c9def7a41620d793e707c7598552d2ce16697c5568b2124f97fae52b1bef8",
+      "published_sha256": "d27dacd82d6dc2c485e26ee7aa819c1d665a4bd605e4f712e59fb643d6cf880a"
+    },
+    {
+      "file": "docs/research/konnect-blocked-read-2026-10-12/cancellation/Profile/konnect/run/12104.json",
+      "original_sha256": "019e9f4aa8e0d26b3bf83114b80b0bcbc1bb34606935f5fb5fee0c212bec9ee3",
+      "published_sha256": "aeda340a41e1ca183d39027a177fbae226412e2373cf0da75c4c0cc47f9f9a26"
+    },
+    {
+      "file": "docs/research/konnect-blocked-read-2026-10-12/deadline/Profile/konnect.json",
+      "original_sha256": "9c76b4a95a9584be40030ffb58f17802856a285cbab6abe601c1921ad6f4d7c9",
+      "published_sha256": "329783f2e4358319edd2bf0f0cad5860e699f1661ca3918931d40d26927e09b0"
+    },
+    {
+      "file": "docs/research/konnect-blocked-read-2026-10-12/deadline/Profile/konnect/run/13344.json",
+      "original_sha256": "f1d9b4adcd9c448bace7e16dd141c96b6fe77ccf0ca131f31c360c245186cb0e",
+      "published_sha256": "0a852ce337bfbd9b86b2afe0f6e7e03a9fd289849e24b3768e4fb1554c1d85f2"
+    },
+    {
+      "file": "docs/research/konnect-blocked-read-2026-10-12/status.json",
+      "original_sha256": "c69b9765a1cb271311cb72cd173dcbd383523ecccef0851f562ea2fb6f1357ed",
+      "published_sha256": "06061b89338d036f32a757f1dd6c65f6e3be86a6003bf2fb9e4a62c99aa87202"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/cancellation/.hazlomexa/runs/68206025-1ae1-4ca1-a442-6cdcd1e2650a.json",
+      "original_sha256": "71ce9786ab6cede4f37b00874d94cffcc6a2626f933be34dab86a5c3ed40fa05",
+      "published_sha256": "fb6b3c93c9d14079d81a3af61f2f3bc78cc36716af046a7978636d0bd323db9b"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/cancellation/.hazlomexa/staging/68206025-1ae1-4ca1-a442-6cdcd1e2650a/input.json",
+      "original_sha256": "7c07d5b76963f40a4f6d2cde870301dd47958d0693a7a6bd3e1f210031cb5e92",
+      "published_sha256": "7bc4fedd9c8a2364a9280c501a4770b920bd137b38c5a4ce16f4414ae9e2833a"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/cancellation/blocked-workflow-cancellation.json",
+      "original_sha256": "7d535d30c6cbaa6b160e2d875fe200fca23b9a4888781ac8d5f49a05dd5d36e5",
+      "published_sha256": "ab404824ee1e211e0751ffcbbd6c1a9d9425b1b3cc2b525c39e0fdf5baf33e15"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/cancellation/profiles/68206025-1ae1-4ca1-a442-6cdcd1e2650a/konnect.json",
+      "original_sha256": "4ed6a1147a79bc3fe8414dcdc0cda8a3842bb17634c663040838f49cdf253945",
+      "published_sha256": "89c2a6e23f95b6aa6699ce552304e2deeca449e3e5c3b259afb15834b22bcd43"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/cancellation/profiles/68206025-1ae1-4ca1-a442-6cdcd1e2650a/konnect/run/26404.json",
+      "original_sha256": "ea7af7fe17744a58780a52da41bcd070ad3354c3e0e43fa4bf66219b05654269",
+      "published_sha256": "151f0df20f3ba504611d9d5beaa9a588255dd67a168f9ff2344cad8d9d1a6b71"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/deadline/.hazlomexa/runs/ae4a61b2-06ef-41fd-9375-d4cd84049871.json",
+      "original_sha256": "a21628024d0e21e57f397f9fc75bd87b8d21423beea3ad68bed6d3ae7c192131",
+      "published_sha256": "d341b58252562a5a410fb53e2ce31595e65b9bf3d1f8da8916642088704dc242"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/deadline/.hazlomexa/staging/ae4a61b2-06ef-41fd-9375-d4cd84049871/input.json",
+      "original_sha256": "ebc3c2119d805708452767fca0ad1d7a7db566cebe17e4b7bf16beb85a3a134b",
+      "published_sha256": "666b419347f7c05a0e51d24f95cb1633820fadd7df46c534b89dcca1e144e9f5"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/deadline/blocked-workflow-deadline.json",
+      "original_sha256": "addd4e23bf11947871446b7125f68eb1696c506792b759936f1736379739b6cd",
+      "published_sha256": "dc5b354d0d94bf85ea88c9cf7d6c77296fbbce8f6dd050662db2ff094b1e960d"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/deadline/profiles/ae4a61b2-06ef-41fd-9375-d4cd84049871/konnect.json",
+      "original_sha256": "e6363cb0a0a05ee95dcef83c8d5fab4ff29e2b73680ed0635dd4ffb957e25732",
+      "published_sha256": "82b4a07a67ba2f89f9138fc8f52cd206a62fe2af1c6ba472d1acde68fb5be9be"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/deadline/profiles/ae4a61b2-06ef-41fd-9375-d4cd84049871/konnect/run/5124.json",
+      "original_sha256": "87c06baf1387bac3462e85d4ffec9925b52a495e1d0a6e79dd92e53622f7b5c0",
+      "published_sha256": "e522768eac01198725acfcf668a61ffdbf61f64b82662a95981db2c0e33809b8"
+    },
+    {
+      "file": "docs/research/konnect-blocked-workflow-2026-10-13/status.json",
+      "original_sha256": "0965774c4034d0dad8cf656ee16f8859873bd5f3349f098ae2c01aa047e20859",
+      "published_sha256": "98f3680be946ce7431a3b753d66a78acdec3d4cf3d3cf40506de2143d29c6000"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/pcb/.hazlomexa/runs/ff285e31-e7e0-4a10-b4ff-d8d20eb7e48e.json",
+      "original_sha256": "6470f75e6db0c6f64a243c2a0b8129b6779d71ba09847a51fbe85e5ea55f56fe",
+      "published_sha256": "ca680c71fb3c15ba4c93d70ce67d725be5008315177901d22d5b8d5b40fd2fa9"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/pcb/.hazlomexa/staging/ff285e31-e7e0-4a10-b4ff-d8d20eb7e48e/input.json",
+      "original_sha256": "5d4ef6d583969b215816f33b5e978885df28c4fbd459e268ad28195f54ffe817",
+      "published_sha256": "95440777822c075f1dd78171d1605934e17c15cf977d8c978ae9fdd36492741e"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/pcb/cancel-evidence.json",
+      "original_sha256": "e73dbf55c6d6cdbf0c1ad0d661472f7b9b58e5a2466742e9b5325f56685083db",
+      "published_sha256": "979d838c7f8325e03f531806471345400bc8d6c05f0bba93768f20b8557960f1"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/pcb/profiles/ff285e31-e7e0-4a10-b4ff-d8d20eb7e48e/konnect.json",
+      "original_sha256": "1c36a993919033572902da7c6b3003221c8ab65caae62acf89e8cff027eb5a65",
+      "published_sha256": "f51df276149dacae47afbad058ac8afceea046284a867baa83f3d96534980c1e"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/schematic/.hazlomexa/runs/4bbe6b91-f3bd-4b16-b1dc-e81587c7a553.json",
+      "original_sha256": "2ac851d6a49b45158400ee6a4f402f43c94727007554a99beaaaa6f39c4be399",
+      "published_sha256": "75df311ba8365807d4d52968521a7b7a23c56a49b0ae0f7a0a7350724b27d5ae"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/schematic/.hazlomexa/staging/4bbe6b91-f3bd-4b16-b1dc-e81587c7a553/input.json",
+      "original_sha256": "c3c4fcf7b6018103ff450537ecb06e92f33d6cf2d49220f285e7a106e439c768",
+      "published_sha256": "124785d994623c63577a116d294d0bbc8e218ac4988c3caeb2dc3a7a242dc44b"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/schematic/cancel-evidence.json",
+      "original_sha256": "b75be6d6568063311ad6765d16ed21531dc8ac7909564ab78c1d17f87aea4f6c",
+      "published_sha256": "20175399613b3903ce308449b098f10fdd28653d2047f04dc9caa213aeb8388b"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/schematic/profiles/4bbe6b91-f3bd-4b16-b1dc-e81587c7a553/konnect.json",
+      "original_sha256": "8d958d9e26f1f914d5218ebcbac33bd4aace23fe198d00036ec4e9bc5f37b31b",
+      "published_sha256": "c4bbcc48c37921cd61320390389897e615c2c272c4b5e01d8a1eed5beffb0f6b"
+    },
+    {
+      "file": "docs/research/konnect-cancel-2026-10-12/status.json",
+      "original_sha256": "ae7c210f5c0869bbbb53dfbd71f4d37baac597a5d5441d0d0da9d30966a550ff",
+      "published_sha256": "fdcc82793b70749f678e1d8b03a9743de9dda7aea641734a29c44157b45326bd"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/adapter/Stage/Netlist.xml",
+      "original_sha256": "347c33d34a3c8871ea014f4c6b1a93dc547ad1feb12eae491ec6a0070296729f",
+      "published_sha256": "8a0387ff12daec0cd7d63545733c08980baf3e9d11ceed7a1f5210fc8461f6d6"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/adapter/Stage/input.json",
+      "original_sha256": "741e9580039be3457f51b662b2586b190215407051c8297332ff1627e978db9d",
+      "published_sha256": "8912874c448ea14dbc5234f3c7e8f70c3db6173d8233289de7eac8d2baa3b9f4"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/artifacts/39590a0b-8ba9-4077-baf4-9b78c7241824/Netlist.xml",
+      "original_sha256": "fd472501158a8fa407c340d51b0d69533eedaebfda9ca59b17261d095f55e17e",
+      "published_sha256": "187e8b914a17cd6b508c340b8df08045925133d9a0b6d7a214d8633eb4c6490b"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/artifacts/39590a0b-8ba9-4077-baf4-9b78c7241824/input.json",
+      "original_sha256": "973289d3754c7e767b474cc7f4d1b6f37fb710c5c1b3caf2a89334ca5a8f45de",
+      "published_sha256": "cd0fb9d6b29ab6380b507d619242b29cf7cd025996195f437bec4c12ef398b28"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/runs/128443bc-1ad2-4d3c-ab8f-c92a7016fb6c.json",
+      "original_sha256": "e79c608a2ad4cae56f80833870b9986fa1765c92566044c4fac2c37fd86df6ab",
+      "published_sha256": "e2310c069324f22a27100881d045a01367cf9f9d3175aead5c4cf9821866ce2b"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/runs/1a163b15-669b-4ec1-b819-0c59e44121ae.json",
+      "original_sha256": "1288151f1d1fc44005a7249f8253e4645b71003a8e30246c5d6093313759b8bc",
+      "published_sha256": "c63b6dffd191b848cb2a3cdc708af199ec2c0325f3613eb8f3de0d779011a2fb"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/runs/39590a0b-8ba9-4077-baf4-9b78c7241824.json",
+      "original_sha256": "a07a62f7223dc9fec9dd4b9d315fa385bca83910edd767f66740bc7d883ad714",
+      "published_sha256": "4cc42ac9d30167c13c88ae236a2e22927fb3a20c7257fa553aa9816508e37a42"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/runs/4b36f5fc-5773-4a5a-9db2-bff221e9964d.json",
+      "original_sha256": "0b2283379be5ca44af926ef51fb4d07fb3ac069bb44a3d04d8f4a4a7c342d224",
+      "published_sha256": "345e470b97a20e599d321c7c8e7d79a0faeedabf92ce3ae910231b88ca269a21"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/staging/128443bc-1ad2-4d3c-ab8f-c92a7016fb6c/Netlist.xml",
+      "original_sha256": "b9c097754f7c39ba6854131ed314bae69a35b23fc508797d392dac63c1304a5c",
+      "published_sha256": "6aa55392f7a731094f4b7608cfc4b79e1ac66559db84821b564d15949d2ba7d2"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/project/.hazlomexa/staging/128443bc-1ad2-4d3c-ab8f-c92a7016fb6c/input.json",
+      "original_sha256": "e1abe7311a9e51e0e82d1f7807d9e3702133d809c074b72a52ab63af0e66aa42",
+      "published_sha256": "3f0e25f994b2a10609af580ebe03b6c4c37786638e600e81d397ae1077eeb14e"
+    },
+    {
+      "file": "docs/research/konnect-kicad-readback-2026-10-11/status.json",
+      "original_sha256": "8c54e1296e1a36fd42fbcf540b481ad8cec4b89f15580c11b6bc8cae92604073",
+      "published_sha256": "a31c7986f24d2a123d561ad7151a500af107599e56134e2952064e0f5361a521"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/input.json",
+      "original_sha256": "58375a4867a835a415b906864c0ddd01c0469bdf68e0655725a52bb4449cf0b6",
+      "published_sha256": "bd265295b4f7769beefb697a94220f01c1838605a3d3ee0fa5574b7ebc805a2c"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/result.json",
+      "original_sha256": "e23a267ffab5ebb16e86aa2e7ab6532c2d36fcd3663e5fe2dced8fbb344ccc49",
+      "published_sha256": "b080f0d11b33a73b80eea31c9680062c65397dfaf1ae7b4f6d39eeabd3746d63"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/cb37eb6b-abe4-4867-901a-8705dc0b34ce/input.json",
+      "original_sha256": "9de9befcd6eb3189f5f0adedc14c17c3c43bc25d9a0f4fb0dab7518d77502bc0",
+      "published_sha256": "5c78f39994c2064e600e96f6e033f1200261408b3c1f7f05cee8decbde50208b"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/.hazlomexa/artifacts/cb37eb6b-abe4-4867-901a-8705dc0b34ce/result.json",
+      "original_sha256": "11558cd5e312f18a20c615bff87e9dfc1e9e1d2e62462a5f7a8cdbfa457b34a5",
+      "published_sha256": "6083b145e984a9dac5b4366406fe51f494da58020850d34040d309a6b104718c"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/.hazlomexa/runs/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36.json",
+      "original_sha256": "d720ea180765fbb01236ac03958d411da01b82f501d997c435ef215152825e98",
+      "published_sha256": "1903912187072677a4c9881e7a9692dfbddcf1f7e6c6f5e81dfdc815ec2c84ec"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/.hazlomexa/runs/cb37eb6b-abe4-4867-901a-8705dc0b34ce.json",
+      "original_sha256": "a5a7e236c4db0a68ac20e1cdc32764d65eec2b536f2f7eda0a1d27ebd048467b",
+      "published_sha256": "2ce8b39e32804d534265279ec1825328b171ad4820033e5a6ac846d40c56089d"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/calls.json",
+      "original_sha256": "fa74bb5252bef1e0ca83c620c422be86daeaf67b58cd2b9ae429c6f41abd6d41",
+      "published_sha256": "9d501c3a0c071ad326a7d9a034fe9c1788c2698d0de6ddc780283b41f38bcb0c"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/profiles/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/konnect.json",
+      "original_sha256": "13d511d39ace46a540b05a5eb4ce1d3698e4adc173eed30e8969121c3e6f7fd3",
+      "published_sha256": "eccc98fc0cca02a3ef0c25095d1cf28bf1182eca9e695a136b7f43508b6cf4f9"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/profiles/c0a625e6-15eb-4a7e-a3d2-15c64c3abb36/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "25f2c6eb6683f81fca2d4a4de568129cec93dabea7d25f3f57fd60ab51220f06",
+      "published_sha256": "444bef8f44c464c6e2ecb1a1e82e97a033f44e987065fdab9da3d3cddeb447d0"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/profiles/cb37eb6b-abe4-4867-901a-8705dc0b34ce/konnect.json",
+      "original_sha256": "7a447aea28ca03f629ac0248887072f1e97b5015a8ac41ff24c0c9d4ca05dd8e",
+      "published_sha256": "0d20b50569e80f5b9dd75c207b67e530d88ef4a505747375de358396f0749f13"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/pcb/profiles/cb37eb6b-abe4-4867-901a-8705dc0b34ce/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "71aa239392c237d373e39124db64b542e0df0f4aa00deaa2f98b85691524f0ed",
+      "published_sha256": "c8003aa28f3ae3cf983d4edb7f3f2da97c17066e055ec16cf21bfe9858e89814"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/2c59dd79-a974-42c5-bafd-659a6967f2c5/Netlist.xml",
+      "original_sha256": "7c63b1bdb3669149d2195f393cb58f6cdfd5f4a9b7b1ea44745d3351d6876bee",
+      "published_sha256": "f201977f10e947a86f8c518206613735308bfe176857d286673e296ab0be2209"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/2c59dd79-a974-42c5-bafd-659a6967f2c5/input.json",
+      "original_sha256": "206c513e23ba1a7cb590d703a62dbb325dab3dc50cefbb28b7ba9bc290c0be06",
+      "published_sha256": "3b13a2e486a4d053d0e6ccb09796af220625bda86180f03de790e5866d7cbff6"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/f974d210-3779-491e-947d-4308c1cf02f4/Netlist.xml",
+      "original_sha256": "52513ceff3639e3bb69c165136ffc8b1d190a9dbc85c5380ce431018eb4285b9",
+      "published_sha256": "e5ffd06c25c394bc5321f6ee5e64ebf0ccd60e527d3fdf88af5c1a08b4880826"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/.hazlomexa/artifacts/f974d210-3779-491e-947d-4308c1cf02f4/input.json",
+      "original_sha256": "1ccade8fe7f68c515ea5d8c05863eb7e674ecb89406db895d01e01e2c94f409e",
+      "published_sha256": "5b21936d5cbca947824f8de572863c08583c54b100060e532d0481de0617f657"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/.hazlomexa/runs/2c59dd79-a974-42c5-bafd-659a6967f2c5.json",
+      "original_sha256": "4d81daa8d1f14015527d614060ee17004833d267e339bdda58b26da1f9c8bc89",
+      "published_sha256": "a6e885f9969506dd4919e3a2dac15615d3fcbd93833c00826de3e8b8c63eeb58"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/.hazlomexa/runs/f974d210-3779-491e-947d-4308c1cf02f4.json",
+      "original_sha256": "8f15be48f31716f5c1b2799b691d78c0ace908097be755e295b138471b2e80b9",
+      "published_sha256": "ca89145a8e576d6f1c63e31ce7edb6a0234ee7a79c644018865f56cdce83b25f"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/profiles/2c59dd79-a974-42c5-bafd-659a6967f2c5/10.0/kicad_common.json",
+      "original_sha256": "2b2d8e8ba044ca38eae96bf53fe21b5584303cebf6c70341afaaaaf424c66913",
+      "published_sha256": "932e1dd64b7b846fc053b35a463221e4e61a931af17384e138fa21fd1f186445"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/profiles/2c59dd79-a974-42c5-bafd-659a6967f2c5/konnect.json",
+      "original_sha256": "e210da7e119d42cae418e57c254d3c8bf48d6278abeca301b5655d0e55cce450",
+      "published_sha256": "e789bd6bce8896e18dd57f92d264a2cb41b48dc59263a6500b8734ef2da1e317"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/profiles/f974d210-3779-491e-947d-4308c1cf02f4/10.0/kicad_common.json",
+      "original_sha256": "7f09974227614188560ba5b257e39fb5a4bda49890c82b42099cb8951d51f416",
+      "published_sha256": "43187a9c41e48ae57ee778c1231de8d63f5c88bae85353589e59003205d1e435"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/host-preflight/schematic/profiles/f974d210-3779-491e-947d-4308c1cf02f4/konnect.json",
+      "original_sha256": "b82e80622afaa5d4caa638ddbd7380a852cfd6901396b869ce301197300ca884",
+      "published_sha256": "f38481111e74bc2f35a845a699cf2579e3dd654f1d54ff28fdc289b0c432dd1f"
+    },
+    {
+      "file": "docs/research/konnect-missing-runtime-2026-10-12/source-inputs.json",
+      "original_sha256": "ecde949988cf04e7ff587c20e4b2623c49118812d4828fd58466e57c34c1b8ee",
+      "published_sha256": "e5b4b12ffedae44770e905edbebddb342e1be929fc3868aacf3aee4106ff0342"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/Netlist.xml",
+      "original_sha256": "cf994788cc19c1003cdf13a20412c146c725f5bfc28749a91da0bea5ed70f908",
+      "published_sha256": "ff85a49712a0c124c50feb0de7753605dbcf7bcdf6d79dbaf1d3b83d8e238508"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/approval-accessibility.txt",
+      "original_sha256": "b9120c6394a3198cca31aac8c543cd0f7ce2f9d14e02caf33903b00192359749",
+      "published_sha256": "309518de7a401e594809468ccfe424a254245738ff06cfe4fec8c3884628fb42"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/completed-accessibility.txt",
+      "original_sha256": "daa44500376d6cc1c9d1c248abc25427089c84d3125d443f8b45daab66119244",
+      "published_sha256": "4450444cd6452428d4ca787e48f2ef764c908b3269d2025d8a4581df974c0d35"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/completed-run.json",
+      "original_sha256": "bc0bc4974ed4d739260d63149ac03efb7c44b223c1b9292b4eea22487d41a443",
+      "published_sha256": "e0431a28e5f1cf30739d053fe82a66bdbc38e7301d7eaae37ae34da058aa0716"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/failed-run-recovered.txt",
+      "original_sha256": "5374dda0dfe31b6087443014eff3e67360e9cee621faeeb032b2f73eb7258876",
+      "published_sha256": "6a2822bcbc37335e18c0699432ab7802274b2500f9e3e7bd74f521342ae6c545"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/first-failed-run.json",
+      "original_sha256": "d752adb2c704fb4ace1c2804b9d175c3c332ed41e5fcc7a9f90ccde0db74703d",
+      "published_sha256": "a13fb05439c8cc65fa67670a4fad47498b66ca9483baa7f6ed355ff1c1e99f93"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/first-outcome-accessibility.txt",
+      "original_sha256": "14441cefc3cd6656829e4191111b94c825779bb79692b3ee5235c4566db3fcc3",
+      "published_sha256": "87ebc584d65d2ae190e642c3b20304048467c46d73c58f0d31dda967ab40b765"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/fixed-approval-accessibility.txt",
+      "original_sha256": "b813b743c247e6585db281393ede721a204f39d2d01f58098f29e4f2fc677122",
+      "published_sha256": "4c8171842f0241d6846d27a630e1befa955810a52a57adfa8cbb664b3895790d"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/human-readable-discovery.txt",
+      "original_sha256": "87d810a242fbbba6d7355fdd22b630491e4532849cbf4a4de7c7c55926ad3949",
+      "published_sha256": "20e969b35ddb08846c290d6551dd1176d6e9ac24a1b37081387dff8504b6fc03"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/netlist-reveal-accessibility.txt",
+      "original_sha256": "19476c3b60a763032fa4ae2f513372a3082be69325cc93bd1efb206898a78bad",
+      "published_sha256": "20ab3d96c790a5532b4012692f72f216469a0046a6f45cfa27b0dbeb782748bf"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/reopened-history-accessibility.txt",
+      "original_sha256": "6316019430aaa4704255ee9ef20537820806af7e0ae2ed1f0c934af258e505db",
+      "published_sha256": "d034cf1fa8769e70cfcb82196b9e5aeecf51d5c32ee1827541f9a8aef129d434"
+    },
+    {
+      "file": "docs/research/konnect-native-2026-10-12/reopened-report-accessibility.txt",
+      "original_sha256": "8733e6c34730c5ead6287df9dfd79916e322fd30060f76693d67fb0bea285322",
+      "published_sha256": "736309703078f3f3e8dd057fdfaee3a70c4af8458b661980a9ff893f4cf5cb29"
+    },
+    {
+      "file": "docs/research/konnect-native-progress-2026-10-11/app-accessibility.txt",
+      "original_sha256": "08ba4e842a9244d0b70a2ff5ca8a45f55425acdfaa2e9014bc5d26954a7a4767",
+      "published_sha256": "9126c5c1c76a2162db88b13bd573eda7a1135ab3b6d6af426d4bd16eae4b3e1c"
+    },
+    {
+      "file": "docs/research/konnect-native-progress-2026-10-11/status.json",
+      "original_sha256": "e392367533c29401137bf9daf209ecbe1539c4c8bc6a7a10803d68fe8cc1574f",
+      "published_sha256": "49d144aefc7c08be69ac947c7ab42f8b3e6d9c67ddbd9952efe7ab2b582626ac"
+    },
+    {
+      "file": "docs/research/konnect-pcb-2026-10-12/pcb-edit.json",
+      "original_sha256": "486e7beca99a4ded4ff6619df304a4a097454631c7f0d7a7f25f730c8d573d39",
+      "published_sha256": "067eea6aaf47f2194fc32991b6b2c2c67cb75dd149d035b5f85c77aed4f96ded"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/Completed/input.json",
+      "original_sha256": "e9dd934c7e9e2cb43a3791c52e4950db77f9ae25be9970a1dc400ad9af30cf83",
+      "published_sha256": "672d92246c3494d9cc1e7029e8729d6898db8cee5f3ed033f9dd4ddc4ab0b679"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/Completed/result.json",
+      "original_sha256": "9fbcd3600d888a1f92320106f2fd5fe917833f570dd78cfda44f32531a925c54",
+      "published_sha256": "d0f4f081d5220908b1c6c7a708fe7114d395e8fe013217561f2673eda43f28f8"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/README.md",
+      "original_sha256": "1d01a39e3e60bd6d44bb77523aa8a0f741a93637ca06821e711cb5a30ccf171b",
+      "published_sha256": "b589eb4b6d9659cec683a3bfd9df14a8fbcf1bd76687456699e4c32b227ab48f"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/runs/0d167926-cb6e-4799-9bba-64bd6f90517d.json",
+      "original_sha256": "5900b16da7721749508e993ed120e8d95841bb615a34429fb6958c5d8f022cf6",
+      "published_sha256": "554174c76504f8cabebb203bb30b8ad2442d4d98c02827a0a2ab15536e3f3780"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/runs/48892c70-e2ac-4ca2-bc7a-7a78ca265897.json",
+      "original_sha256": "8452d2842b0f1fd65a65ebc69aed3d0a23b41e017add0c1bbb5251d2b9c43148",
+      "published_sha256": "97eba59ac25e5383b294a128159972157c6355dc064793355be2d33ad560cea8"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/runs/618fdee9-0500-4648-b9f2-7cb353d8aba7.json",
+      "original_sha256": "098fc3df698971e1b1e77228cbc2db9269c110cbb0e4d58d04d6be558c3c240c",
+      "published_sha256": "3ae11cea232db6d43c6a3bed849fed29a90993fb1a71e8a00d4cdf9aaac35d08"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/runs/a0bbf6ba-99ce-4a26-a377-2bcbbffac875.json",
+      "original_sha256": "b520094fe7317fda3f1dcd546bab38229fc952699191d3707ed13c0eac82ea1c",
+      "published_sha256": "394d2948ba28e51fe1656397ca87c4987736d18f6a088d3120d801dd61b43070"
+    },
+    {
+      "file": "docs/research/konnect-pcb-desktop-2026-10-12/status.json",
+      "original_sha256": "29dfabe326ecc717850ce44e2e15e88996ab9a7188c689c4af0dec3361d1eff8",
+      "published_sha256": "1371cebcbcb82bb93a303d4ee69bbf6efd8010e25a6a2674b51a0d4f6d0488c7"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/4f889064-aaa1-45d4-831a-09abc596b4c0/input.json",
+      "original_sha256": "9c7f6fc270c4a5ffc534caf01c38caafc2f26a2e3710e531dfb37cb727b065e3",
+      "published_sha256": "4139dedf48eeb9bf84fecf288368d699a5d131d460fc5f51f62b4d63209c1810"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/4f889064-aaa1-45d4-831a-09abc596b4c0/result.json",
+      "original_sha256": "acdf36f833d80c38c143984405abf4709d0a92fb03603b147ce2f259bc806a20",
+      "published_sha256": "a2f221b3fe313a9f48be429034982c67c271c95284929a9fca92412fa76acf76"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/8b0fcf8d-3e26-4686-b633-d2d724a06317/input.json",
+      "original_sha256": "94bf9d756ee18d8c27c919705791a1dbe10ec3ad2da62199eb06511aeb666e31",
+      "published_sha256": "c6ce38b196e2b6171b41f1b08e6b4fec6747ca00bb23ca9d15a6f3bafbc21370"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/8b0fcf8d-3e26-4686-b633-d2d724a06317/result.json",
+      "original_sha256": "07699d011732f7f625b92116d08d1926a115e7f54e1173a6163fec66e75298eb",
+      "published_sha256": "5c0a6b8e68e9935fe607f224005f8e8aba583364fe524f1386e9d6396be0df16"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/calls.json",
+      "original_sha256": "c9f89d1c0d9624bf084344e4b56594615d845966d94f56cbe5b9fb096d5d2a8a",
+      "published_sha256": "264f077fbdc0ce4eb30e5d21a872665d61c3a17c1dcb591216eb4606ff09362f"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/run-4f889064-aaa1-45d4-831a-09abc596b4c0.json",
+      "original_sha256": "7088a92c24945ab4572085f0419e11083fb1fe08ba401569ec1eafc8aced6e4d",
+      "published_sha256": "25f73a4193c4903c67cc2a422e3b19e23bfce55bd854207a6f8025443f98c26b"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/run-8b0fcf8d-3e26-4686-b633-d2d724a06317.json",
+      "original_sha256": "14dcb8a83725351e0c4867bea181faf0fc31b0f6d1b3ca5732bfec5dcbb8d9fc",
+      "published_sha256": "08668de2adf0eb1e7c1e0e25f01f2249384337d82b83633c42a47109b9b3b298"
+    },
+    {
+      "file": "docs/research/konnect-pcb-tools-2026-10-12/status.json",
+      "original_sha256": "a11c3d291e3ae4f74fd2eca946e220299efc42404f4d26a2506b4612f27724c0",
+      "published_sha256": "b2c540e7b3a9cc7fe0698633c99e392a8f7703b09876bc851c365d34c12b0747"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/Completed/input.json",
+      "original_sha256": "1d73de2cd57d1dbd8cbc8d2d7fce0c26a265e295e8be9bd80298f1362dc17761",
+      "published_sha256": "0a93356742ed47b12332087484127020d5abd52a436679f2222208ff5b8d6918"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/Completed/result.json",
+      "original_sha256": "b5fd236a8c82790c2a83e6dd29c0c27057e70f5671f3a4fca804e4e83c885ae6",
+      "published_sha256": "a1dd20b52165cb93c1ad23ee51f351a9e62dd3712facf2b30bc577d584def627"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/FailedStage/input.json",
+      "original_sha256": "32223c3aaa44e8a6d8adf807bf37b32e8900b6483d9504a28207161f4d74abc1",
+      "published_sha256": "e8caad16cfe1947f02a8b63de5117f5c9b1aa12ed9d4401e551f6f508a4a125a"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/FailedStage/result.json",
+      "original_sha256": "a7aa9cba62849f87c6b23fe4ea5ed01bbb819420f8e203fc71a44dbccceb83f9",
+      "published_sha256": "206ff8a0e5a2596e86d01112c179da37666c4071ca579ebfe93056548f1208e3"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/README.md",
+      "original_sha256": "5131647657fc90466091ea61d9b2f7d442a0460381a094d6b046b8289522eae5",
+      "published_sha256": "cb15afc26d12519f37fe58ebcba6de5345fe3002440cb503240aaada7ce88994"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/runs/9842e8ec-5a4f-4d9a-9fa9-0a8c3c48efca.json",
+      "original_sha256": "1a14ce32e409857391c8182831e67dc28ad27332f5499680b5809f19876c1001",
+      "published_sha256": "9d94b64b317715299ea024b850a7950f0d5a622b2a34309c0bfc53b3cfc356ce"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/runs/bb5ada99-8577-47d7-a0f9-3e4b4a5bf088.json",
+      "original_sha256": "3ed52421319df0311b03512ab81e421282838a6462f81e581dedc868cacb4219",
+      "published_sha256": "19b2361643cbea20aed837890a313af02b769cb9a73bf921aaa1e9d158c42550"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/runs/d6dd8c67-c596-4f36-b31a-5468c84b0b1e.json",
+      "original_sha256": "4f751183a9418ce33bd80dce3c2098234f1ca8ca49302b5fe17883b6d9b1365d",
+      "published_sha256": "ec3a40284fff8eab13d918c872953d2302ec4c6e30528defc0c325866d597d14"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/runs/f376d3a1-f91b-4746-b0e6-bcaf32c3c066.json",
+      "original_sha256": "a2430e21143ea860fad5234f4e7cfbb0acac7656a9fa06c282161adcea5a93ce",
+      "published_sha256": "8d5ab1e08e09609451f1762015e4abdebb0ead8472f7b845ad713e8d782e7083"
+    },
+    {
+      "file": "docs/research/konnect-pcb-workflow-2026-10-12/status.json",
+      "original_sha256": "e897be10223c51e2bcb7419734588173af324922c249c6fb1dd8a88c38a6fde7",
+      "published_sha256": "4c0fe9eb7b0c2be760a7f0b9f9b08c8dddf7b3f7a2a171474d712043923f146e"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/raw/config.json",
+      "original_sha256": "52940c92cf490ce724bbd042538c0e2bdd5e9c15f472fef4392be0163fc96a06",
+      "published_sha256": "8e6a6203c11b6adbdf0d60ff2931c7f0cb793f60e66822cbc54cf08cd9016f42"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/raw/lock-refusal.json",
+      "original_sha256": "110ec8d21654d9e5b0a710fb04bf9202e751562e41c38750db7e0d0b9ca78598",
+      "published_sha256": "f05e32abc79030d54f3df6c351b8616330d66d3cdf0e7af3f26ddb4a39c66292"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/raw/schematic-edit.json",
+      "original_sha256": "00095af7dfa0922b3d72b4ced71c2339688a6e82af1999a3e4c7f48757a43415",
+      "published_sha256": "b4482f36fa62657fe730f1882a89d568c61116f640cb8c2d9172f88049d3defb"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/raw/status.json",
+      "original_sha256": "3bf099373222fb1fee16ab0f76a7ccb9516afddb686762fc86a4a77f6f6f201a",
+      "published_sha256": "04fdb0806d3ef4a79be8450e89670a6ba8a1ec392f5f5b15aa95f8bd07084241"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/raw/wire.json",
+      "original_sha256": "503c71d7dc2a3496d962360dba6afd54f806ff991d050fd5550e5c9073f1cb89",
+      "published_sha256": "a1b3e55ef6970072149d3251f17c35c0d59cc7a0949c365f759104f14a0a5b84"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/sdk-edit/config.json",
+      "original_sha256": "47d50808720cb3d165a03c50190045bed8ee1d00c239a2b8b1e7903812240996",
+      "published_sha256": "04f432e660b3b1e46cb09a6f029e48cb36484d50818ad302adf62c059ebeb8f1"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/sdk-edit/schematic-edit.json",
+      "original_sha256": "2ebf48f3323f27f70b251b4f9af1ed31cd538e8618c382277c398f6b14f08f20",
+      "published_sha256": "40ecf53bb92a95de047d9daa6f6a821919e6e4bff347f9d798ef4f922dc855d5"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/sdk/config.json",
+      "original_sha256": "f337effe9be61ef35d72eb0bb61618e75adf178f5f83a3202ced1e44840189ce",
+      "published_sha256": "407819d4e8faabbed5b4fa109bcccfd2c6b376c36924fcf8e138625160a86327"
+    },
+    {
+      "file": "docs/research/konnect-workflow-2026-10-11/project/.hazlomexa/artifacts/0f4b5364-25d4-4edd-8fba-4ea3ef794f47/input.json",
+      "original_sha256": "4f0b3d2bfcc78b7f13c95a71c23377e127741df7244e5d2a783bf8d17b884f67",
+      "published_sha256": "3179505f991ea79476b7766de171d8ee3cc405bd1fc8548685169293fe946e84"
+    },
+    {
+      "file": "docs/research/konnect-workflow-2026-10-11/project/.hazlomexa/runs/0aaf6202-c328-4908-8869-6161cca8fef7.json",
+      "original_sha256": "4707ac9d6380628681bf27e06bc87fd46267055dc5f6dbd93e54de1977021563",
+      "published_sha256": "1b117aa111ab454fccc1b3302f5785c4a3085a6177182c14b2a378a021ea3509"
+    },
+    {
+      "file": "docs/research/konnect-workflow-2026-10-11/project/.hazlomexa/runs/0f4b5364-25d4-4edd-8fba-4ea3ef794f47.json",
+      "original_sha256": "1bba7bc82b07108885732a077c63553d8f7321b0c370551a9a29c6e5270f21e3",
+      "published_sha256": "01449af6887486aad96be9b04f67b3e59fd2bfa7c23d5bd714476134d4f0f0c8"
+    },
+    {
+      "file": "docs/research/konnect-workflow-2026-10-11/project/.hazlomexa/runs/2b975c77-0d0c-4cb6-b5e2-52ce889b68d5.json",
+      "original_sha256": "08f6b0ed7af1cf13bcd0e7593ca8f0e83d9cd9982d801ab51e582f1d1d011b3b",
+      "published_sha256": "a4093c910fa663771fd6347df73a7e60a06d8810a5f9aaa81edfb4aae2674f10"
+    },
+    {
+      "file": "docs/research/konnect-workflow-2026-10-11/project/.hazlomexa/runs/745e25a9-9617-4995-93ac-947d575663ba.json",
+      "original_sha256": "13748b2ceddad2f92c10eb76927658a9c0fd95396ca62405ae5dcf7119dc59db",
+      "published_sha256": "2cf33ddef7920dae4e4a1f0416f1d8f1b3710e82986561c48e62db786acdee15"
+    },
+    {
+      "file": "docs/research/konnect-workflow-2026-10-11/project/.hazlomexa/staging/745e25a9-9617-4995-93ac-947d575663ba/input.json",
+      "original_sha256": "2228f0eff01b366f774da4e7118cdbbe14f62852668ecbacecd3d14036553d63",
+      "published_sha256": "7b899c849b744f1d0454625ec734ffa997779b9780622252a871a5204c6ac2db"
+    },
+    {
+      "file": "docs/research/konnect-workflow-2026-10-11/status.json",
+      "original_sha256": "0ad69324e28bc236463adfb1ed54121369a9fb72c410d83dd1062cfd256a7938",
+      "published_sha256": "e73ae11a30d723aa99d3c309f78bc117b61d4c3d19f860b3fd4dfade0b9c12a0"
+    },
+    {
+      "file": "docs/research/local-cancellation-2026-10-11-v2/show.json",
+      "original_sha256": "5f02e3c6fa29d4774a070d744abb49f5b00165de11babb416adf9daa6084a644",
+      "published_sha256": "ca88cd596b70e21a7cf97d633dc60847bfa362288964f4df6ccfc65dc3f21b4e"
+    },
+    {
+      "file": "docs/research/measured-cad-tools-2026-10-12/README.md",
+      "original_sha256": "1477dff9b99f635e74ce4c62ffc55b2b99bee377069c727daf5477741affd95e",
+      "published_sha256": "75d3f16cb9d10d67bf20c4387def455349450659d803d1628c3407b9e79f1172"
+    },
+    {
+      "file": "docs/research/measured-cad-tools-2026-10-12/status.json",
+      "original_sha256": "284765c9e935682bd8a68ce4478fb3eec407d5eba83a76c8a8de1808e7d416d4",
+      "published_sha256": "ca35230ccf38bc43c4b9ccf164ca8f4f48e57ce29c762afe91b487312ddb595b"
+    },
+    {
+      "file": "docs/research/missing-model-smoke-2026-10-11/result.json",
+      "original_sha256": "38bae7e864b8f107fa96890c8e0c620e07c95f542099f15ec2d755d4b55e7cd1",
+      "published_sha256": "9a3ba034b8a056da53e44520a7a890a65b286f12aefc99266e6839396155c2f6"
+    },
+    {
+      "file": "docs/research/native-opening-failure-2026-10-12/file-hashes.json",
+      "original_sha256": "e4fa6a3c9884b7057e73f987c15583c759d547456de58b030f26d82bcc648515",
+      "published_sha256": "22d19d0ef70535aabd7e656c8eabc99632b10a402d0c50ebec26fdc610e603e3"
+    },
+    {
+      "file": "docs/research/native-opening-failure-2026-10-12/identity.json",
+      "original_sha256": "ed4a3fc9867fb20b458af56b5c1d231552b3394dc6166d4b333403daa40cad1c",
+      "published_sha256": "7ddbab21fb126d42724f9525dde94f7cc93e196fd0ae1894924bb90e44c73db0"
+    },
+    {
+      "file": "docs/research/native-opening-failure-2026-10-12/result.json",
+      "original_sha256": "27ed789bf240e5cc64094cd167bdb74696b2f034ed23976aa8cec188c791a322",
+      "published_sha256": "22e6bb3271812bbfdd1b88ad54cb2151dc1b467be00889ea670631238e192836"
+    },
+    {
+      "file": "docs/research/native-opening-failure-2026-10-12/writer-lock-observation-failure.json",
+      "original_sha256": "40e733efe097d6f373209a585ab51f5d2f323c4972860f9668943221f9a382d9",
+      "published_sha256": "c2a57aeb26600ace27f0881bb7ad1da52dec5b9a3c5eb5490e6e90e4cb1dcdf6"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/cli-profile-probe.json",
+      "original_sha256": "08272b4eb00748615ed118676ab0b688b5f1215672d149402aead0ee1d850b95",
+      "published_sha256": "4027cc6fb75713a5f14a0f2b760ee009c49d53568782b80cdb7b412d7b73cd8e"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/encoding-failure.json",
+      "original_sha256": "5c5b05d306e535fbf377882d22d8119966d303a729ad802f180b3eee42427d6d",
+      "published_sha256": "cc28b5bf56d580d26b83660b6d4296699867212012a084cb7ae09c84555474ff"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/fcstd/gui-readback.json",
+      "original_sha256": "a53eae3abf076f64d10f13ee907121c5a5b2e777d2263604e3a1f55e42f6c756",
+      "published_sha256": "caadd690cd059e61ba35c10e8836092b8ff65c8bc949d5f34dbe4352597f6d31"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/fcstd/observer-module/HazloOpeningReadback/Init.py",
+      "original_sha256": "a617aaefad7955af50e4c3fb4090ead7efa69af86a7cdbef7365dc24b74e189b",
+      "published_sha256": "eba0d2c6b22b43891d66585c37b25e469a110f62f7c9ea8b036a67506e28bc0b"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/fcstd/observer-module/HazloOpeningReadback/InitGui.py",
+      "original_sha256": "ffee5291874e085fb8d4b3ccbd32d83ea6f8148a161fcc3f3f7cfc1921b7b328",
+      "published_sha256": "0ddefe0ecd03230fbd7b57c12a3b745655ccc531b963556989c77587d91ba3bc"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/fcstd/opening-proof.json",
+      "original_sha256": "6275279605a01ab94b7458637041aa22175772caf7200a99c75cc74724b33cb2",
+      "published_sha256": "51b36185ffa8823e35972a51dd816ca87417969737ecd7aa931686c9d12fb925"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/fcstd/result.json",
+      "original_sha256": "74fd82c4636b82dc2ef9989033157ec4b95894c98c19510d940f7dca26e24510",
+      "published_sha256": "3e771bc5e851fb2d45d480736b342c66308821d44ba232dceba08f25e15d93c2"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/observer-init-failure.json",
+      "original_sha256": "73f48e6ff0ba6c42639789baa52a03592dbfd53b8522a7313dac0c24f39a2294",
+      "published_sha256": "29599c2e8365d18105613b2258655ac4fb6a796fb4af55bb8d51613cc16c6490"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/step-title-failure.json",
+      "original_sha256": "5a2126c19160b43a19fcc563574aad73340278d86af18a958fea02ab2594710d",
+      "published_sha256": "556aff22657bef1f1c0d1282d20268c5b8649ced1116e5c39202122f8f829b3f"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/step/gui-readback.json",
+      "original_sha256": "18096e3e77d4e418bdd2b635102f6c5e09a0f6e088685649d385e55dc3657250",
+      "published_sha256": "6f2e19e59fbf32f8e5bf4d119ee331d373f1f37c9b5620710fd21f004dff3926"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/step/observer-module/HazloOpeningReadback/Init.py",
+      "original_sha256": "1210e409adbc6951a7f03952294e81ec8cf20e0329d19ec17bb664025222ac89",
+      "published_sha256": "45de45ced6782b3da4904821df0acfb43147128174316896cb8b85f2187d6db0"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/step/observer-module/HazloOpeningReadback/InitGui.py",
+      "original_sha256": "2150816bf1f622e1eb7ce43654b928944e3561f70d093165eba7d6b828266267",
+      "published_sha256": "07b41b24895e5fe600b4a5cf37eccadf61868a063537a7ad22b6b8530ee27746"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/step/opening-proof.json",
+      "original_sha256": "77c88b7d34f79d6ecfbfba295510f7639f37ea8ab1e14a5b8f64a9436bcbdc5d",
+      "published_sha256": "af415531eddcf036be55666ada5cd4ea7d883ba9fc73fad9bf0a62fce5334616"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/step/result.json",
+      "original_sha256": "add349b93f63860494bf5b449a1d43f954bc5c128bd5a83bf16e862a17c4d7c1",
+      "published_sha256": "9f5a72207ad1f2c881d0f1f559e4c6ab9fe4899e7bdbba6a44510fc1b48908b0"
+    },
+    {
+      "file": "docs/research/native-opening-success-2026-10-12/unavailable/result.json",
+      "original_sha256": "09e2c57e6559abd9bdaf6d6da0b8cbe423d99f7712f56347d081cedf2bf99720",
+      "published_sha256": "2653d9922251cec9d72eef9b0aed5f76e809227a3eb73e00f510226bf138e3a7"
+    },
+    {
+      "file": "docs/research/native-ui-elevation-2026-10-12/source-hashes.json",
+      "original_sha256": "9dcb60e7fa042210e45780ca00cc4f56e429f2cd99ba18806a5fca7ca5f6a64c",
+      "published_sha256": "54b3cc51e2778e770541459869fa1c85b1ed7c4b8af8687a3d6f5912d952dbfb"
+    },
+    {
+      "file": "docs/research/native-unknown-dimensions-2026-10-12/file-hashes.json",
+      "original_sha256": "34404e18e5a05157b41f7aea31b3c47ab23c897a7542c5039f121d16737f9e93",
+      "published_sha256": "f6a04e6d47f4072af2f01edec22f7de1dc960dd4b88497ece2a8d4060b0d6e0d"
+    },
+    {
+      "file": "docs/research/native-unknown-dimensions-2026-10-12/first-failure.json",
+      "original_sha256": "d2dcf7b8d298c5fec32406389ef122602dcf96bc735c9bad8ef5bc7ed6c13c4b",
+      "published_sha256": "ff734271e9ed52730cdb12b4bc7e6c9ee8e5888fb3cf7d2e0357055783f351d8"
+    },
+    {
+      "file": "docs/research/native-unknown-dimensions-2026-10-12/result.json",
+      "original_sha256": "f013af762eaa77b517ace5c78e1b5a01b66470d2f4e15fcb3c54ee311f4426a2",
+      "published_sha256": "0c855487c288d442decdd94789f8008f6ebd8fa301b56124236cfb30a00c51dd"
+    },
+    {
+      "file": "docs/research/native-unknown-dimensions-2026-10-12/source-identity.json",
+      "original_sha256": "7592f5b0971e5307667b8b97adcdcf12e57baf032de2e5c1c21f42be415a2111",
+      "published_sha256": "a3533a0231cd091a0308a1e1b3588e14a96ab79781d3982d2ad96cfb39852bd5"
+    },
+    {
+      "file": "docs/research/offline-webview-2026-10-11/probe.wsb",
+      "original_sha256": "70bbef5e40292174aeb3803e88e0d37b24809c581480f416005999cd415d0e59",
+      "published_sha256": "b13df207a784e870afc70d594f978c756d540629407d4fbaacfcf90c09b234d2"
+    },
+    {
+      "file": "docs/research/orca-app-2026-10-11/cancel-evidence.json",
+      "original_sha256": "9ed220787bafa334bc135828e8e271301105525997ae022350460d8b7524a371",
+      "published_sha256": "c0742d9a89c96a949897ca71feb58c13f50d8523f3fa410c6284cf52f82889a6"
+    },
+    {
+      "file": "docs/research/orca-app-2026-10-11/project-hashes.json",
+      "original_sha256": "d1a6f70d741312267783c1a68dccd0e741a9cc7dc3b4516a997fa3d54767ff2f",
+      "published_sha256": "c10e0cd6596c9a484f80cd0ed4efa624e028f3950839b8b4a2ccd826d1d0ec64"
+    },
+    {
+      "file": "docs/research/orca-profile-guidance-2026-10-12/artifact-hashes.json",
+      "original_sha256": "99a3ce43f43c793f89880f807d8a668ecf8935be4177af2757653f36aae8dc72",
+      "published_sha256": "e8a17a4464a03e65a52ed488ac3469694a5e5e7a8335950185b0fd829c95d461"
+    },
+    {
+      "file": "docs/research/orca-profile-guidance-2026-10-12/source-hashes.json",
+      "original_sha256": "cc2a34ce276ce010292deadb3b38abb70ff18aaae05665c7e2987a325fff84c7",
+      "published_sha256": "1b5d16736b74310cf223806bfff88666ed885885cbf6143f43ae613a38d57f18"
+    },
+    {
+      "file": "docs/research/orca-report-roundtrip-2026-10-12/source-hashes.json",
+      "original_sha256": "b1f659dc0091989cb4c5cb2bbf800fba3d75207ea0e28cc2851b81f1343c0b1d",
+      "published_sha256": "1f6d8fe21875a81795117b4c25745dc9695975d8d51a3e93c8c79ef7ace8b0b1"
+    },
+    {
+      "file": "docs/research/orca-runtime-2026-10-11/discovery-calls.json",
+      "original_sha256": "fc4ffe2b050265aab9b54754e0d38a6e5bfe4028e0083db068c2b5f9897174a9",
+      "published_sha256": "6cba3a044905ca7d6fdabcba1af9b6123a4561030bd9ab6b97e418261ccf46e7"
+    },
+    {
+      "file": "docs/research/orca-runtime-2026-10-11/identity.json",
+      "original_sha256": "b898195e08f497fe791be944f18800ced7dd5db6303657a61d1ff0844dd5b06a",
+      "published_sha256": "1b6e6c6dcffdba16481f7ce309ecf4c5a9e0d2b100dfa58f198be860a1fd1cf2"
+    },
+    {
+      "file": "docs/research/orca-runtime-2026-10-11/slice-result.json",
+      "original_sha256": "b4491a4b90c5f3a121f27bf5bb1e63b6271a7dd64a650431fb5f861c55a41373",
+      "published_sha256": "df7e5e59f939debd61bdd36d1e718ce50d791576d14f98758e5b0fe289727cd9"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/checks.json",
+      "original_sha256": "9e18a53b3084a916f7565eda6846617bb1297687b3ac6cc4a73404b593b41980",
+      "published_sha256": "e05896f85b2eeee54db9c1b1e5d55a2c8a4fc06249cd9aff9d6f63ca65888971"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/earlier-failures/fast-refusal-observer-race/fixture/.hazlomexa/runs/68b5ad9f-e8f1-4033-a4e7-d984ab00a9a9.json",
+      "original_sha256": "a86376bafa901b7eebd783a2a9bbfeb13929d9acddfd1bd758ea2273e592e46e",
+      "published_sha256": "05cea5fe4230cb86d3bd0fce7dde2114f9059746e65ac9d7de3389f8a1288a6a"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/earlier-failures/fast-refusal-observer-race/fixture/.hazlomexa/staging/68b5ad9f-e8f1-4033-a4e7-d984ab00a9a9/input.json",
+      "original_sha256": "5320898a393434d953d75a90abeb003bc2a8e327171895dd828004a434033137",
+      "published_sha256": "0cdf0eb1ff6dbbe45b7068fd248ea23dbc8b0f53a00e98687934c17d45728e05"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/earlier-failures/fast-refusal-observer-race/fixture/profiles/68b5ad9f-e8f1-4033-a4e7-d984ab00a9a9/konnect.json",
+      "original_sha256": "8468d0b8b4f02af542d86cefb5be948c0dd19ea2c2058d5f96273131d18c1e64",
+      "published_sha256": "6a68c313d8fd65e0f6bf82f34cee43d757d3359cdb01add1096539be90c7adf6"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/earlier-failures/original-cancellation-stall/fixture/.hazlomexa/runs/8903f2bb-2e99-4033-8baa-bd9c511754c0.json",
+      "original_sha256": "f4731d5c37fcac67dc040b10d554b2a62a36c77c87af10bdd93f9c985548d717",
+      "published_sha256": "b30989b9d52cb5af187ab337030d42904e4651bc4004370b51f40dbd24985abc"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/earlier-failures/original-cancellation-stall/fixture/.hazlomexa/staging/8903f2bb-2e99-4033-8baa-bd9c511754c0/input.json",
+      "original_sha256": "4bac96fa91860be0bdcc460b0a9882a416e591e7471c4421e8903d9596367b6f",
+      "published_sha256": "170b5f5f167f2d40ff4e0badc614ab2755aae57bb652d3be3877c507a1b68ef7"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/earlier-failures/original-cancellation-stall/fixture/profiles/8903f2bb-2e99-4033-8baa-bd9c511754c0/konnect.json",
+      "original_sha256": "908512729fa839bdcd8076fd57bfc3a52e64aaa04bce7e92343608c5d38abedc",
+      "published_sha256": "e489364f82065dc601f9322330c490790b6c408397532bd412278df47e13c47b"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/pcb-refusal/gate/status.json",
+      "original_sha256": "fd9805b2ab39761eb5f0d2261cb412f840371f1038ef2ca234cf7e707b0a4576",
+      "published_sha256": "c5ebf0674dfbb649ddd84ffe1e0aed84e4002dd70b2000a89582e957919b58bc"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/pcb-refusal/refusal/.hazlomexa/runs/e9e28700-4a0b-4bb1-b987-1585474908ef.json",
+      "original_sha256": "1258b81a622a9fd6f87b2cdeadeec46a584b129b07470bb44c4c52ff65d16c4d",
+      "published_sha256": "d2b629430bc4b9331dc3356d39ed39e90065488b8f64e0aedec253834dce7714"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/pcb-refusal/refusal/.hazlomexa/staging/e9e28700-4a0b-4bb1-b987-1585474908ef/input.json",
+      "original_sha256": "3ff82825ed5262ce2ff2701c39c77a625841c0721bc5a0472af6408927862152",
+      "published_sha256": "a429990b84f5f439ecbe391e6306e1aa2430e2f5f0e764025ff4cdde0acb94ab"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/pcb-refusal/refusal/blocked-workflow-refusal.json",
+      "original_sha256": "8369d954e6f6edfb8665584f2bcdf3f8310c4e78cb0e3a62800a0a708b6cb6bd",
+      "published_sha256": "595cf456f0f5492744d019a00a9c75d0635bea19c90f01d97a0be45920434982"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/pcb-refusal/refusal/profiles/e9e28700-4a0b-4bb1-b987-1585474908ef/konnect.json",
+      "original_sha256": "37cef28ea1f38a92fbe26212c1916bb7ccadc3782dce83e0ebeec1eb36561a91",
+      "published_sha256": "1978ae465fff969fec85f958c591cede20fadddf67586b96795536a5526de219"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/.hazlomexa/artifacts/0f3c54f8-7291-42f5-ac78-dedb744236bc/input.json",
+      "original_sha256": "0c1fe3968be719bf57889492d613c79826710605a4d33286fe5d4a64dc93bb8f",
+      "published_sha256": "12a4dd3d504e6fa67b607094f5836b4d2b944c29308077ee9b9cbacb710d546f"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/.hazlomexa/artifacts/0f3c54f8-7291-42f5-ac78-dedb744236bc/result.json",
+      "original_sha256": "c2bfc89d133cb38c0f4b13272c30752c6ea328c25bb7a221cabc3c1362df1846",
+      "published_sha256": "a33d7ad83877d76a0181840d52077ad1bade3009d726dc3b25d7f7b2b43f0bb0"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/.hazlomexa/artifacts/1d74d6d1-e2ab-46ef-a2c8-443ae50aae96/input.json",
+      "original_sha256": "c8577fd8bbfc7746759d91908a157b871a463e1e088a16a92b9734d18a861ccf",
+      "published_sha256": "bbdbbd5c21903ab54580616f3638b6267694bc456ef2e407347b9599f0088ec7"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/.hazlomexa/artifacts/1d74d6d1-e2ab-46ef-a2c8-443ae50aae96/result.json",
+      "original_sha256": "49cfc6ab0c84638f594680bfd56f0826908eafb57d155849d974ce3ddff155d3",
+      "published_sha256": "5ad9d7b89f216cbdfe45924805a38a8b0f1a2eed710bd78f9aea986453a670a6"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/.hazlomexa/runs/0f3c54f8-7291-42f5-ac78-dedb744236bc.json",
+      "original_sha256": "2c924dd96a36d2e9770850ab3a2b4657494b67814d1eff33848a8897a38d0d28",
+      "published_sha256": "09400dfcb59f3b7ccfa4a6294736bafce575aa39a7ffbf8cd7221887e5a33f8f"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/.hazlomexa/runs/1d74d6d1-e2ab-46ef-a2c8-443ae50aae96.json",
+      "original_sha256": "fdd2f04f712012de120abb2aea98a14ff2fb2fea5fc0c9b1dbbe06b7d53d7674",
+      "published_sha256": "3431e8dd3b7a76b3603fad17a2e304750b06bf04ec885a34a1f3509bab69654c"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/.hazlomexa/runs/5f9db825-d8ef-4d1c-856a-793de1a25dbe.json",
+      "original_sha256": "d5b7b3c0a2fc700359451fa2c7b17977339600c640335a69a815e80bd8326bda",
+      "published_sha256": "c30d63b1e0108bfb23c8554e3e3a41406593c82d906ef10c71721f1d9afe3da3"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/calls.json",
+      "original_sha256": "a1071c3d529b12db2f1189d1a425c6a066317348871984e2c91373b16ea224d9",
+      "published_sha256": "1af3fc9a036b7d2e7d8d9eba863cdb19c06f42f55cf5fa5faa951a63d04dd6a3"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/profiles/0f3c54f8-7291-42f5-ac78-dedb744236bc/konnect.json",
+      "original_sha256": "1dd2edd2e8306d1445635670e683c9b62454388625f5ff9dc08323033843aac8",
+      "published_sha256": "af15c3662c00674ee52a2a22f24151b125d40126d1ac333e5617971897a61959"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/profiles/0f3c54f8-7291-42f5-ac78-dedb744236bc/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "1cccf785aa5d23a9bae674b4fc8a1084a0347c7c18d05c765892674a10395064",
+      "published_sha256": "8059f481a44a7d0d0970435759cbc237d22e40fb977b8006fe1bd9d424edac1a"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/profiles/1d74d6d1-e2ab-46ef-a2c8-443ae50aae96/konnect.json",
+      "original_sha256": "f38407740ae8ec054e3f32c5447885d950a3b02fc4a6ad2456d77f45e1efa67f",
+      "published_sha256": "3cd25cb948563b539b214aefaabb5b3f81f3802395c16735c1c669083a9bd884"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/profiles/1d74d6d1-e2ab-46ef-a2c8-443ae50aae96/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "a3fbef4feaddeec6dc8e2cd827034f773172c6aeaa1a6d5c92c72c76e7b81651",
+      "published_sha256": "e485710c99872a6a9f47ca0a9b43cf3482064f1b0b3d8fddc1335fb1d7a36f0d"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/release-pcb/fixture/profiles/5f9db825-d8ef-4d1c-856a-793de1a25dbe/config/10.0/kicad_common.json",
+      "original_sha256": "c0c88316e57bb3b52caa9adb33c57c675192de9512e2f55d72797b331e6979cb",
+      "published_sha256": "abb31567b9b5d9c7d4393f433dec7c266c935da2560f6d371acacafd3c375fb8"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/cancellation/.hazlomexa/runs/b30c6d0c-24c3-466a-840f-d5adf6aaa4ee.json",
+      "original_sha256": "1d42d05a38c126ec6a6b5e8cefc7a92a6864a7479bbfe6147033ce701cbbdf1e",
+      "published_sha256": "b5e2c65d49d49d723872f22149b7b2a71bf9e4a705bdc55df0726b7c15000a56"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/cancellation/.hazlomexa/staging/b30c6d0c-24c3-466a-840f-d5adf6aaa4ee/input.json",
+      "original_sha256": "6d731b6f35d01775dfec8a898cc6d24d3638b26eb7eac81fce4682e306327798",
+      "published_sha256": "a71274cede6bad647f5eb9326f2019ede27b71958476f9dfcabdb2a642516b76"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/cancellation/blocked-workflow-cancellation.json",
+      "original_sha256": "808f072d12198ad84402da50531a30c6f4d71897aa355e3520d0c5a3948efb77",
+      "published_sha256": "62c66e2d1a7922057ef400ecb7b45f31d047729faae4266605c2ff721a2b5123"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/cancellation/profiles/b30c6d0c-24c3-466a-840f-d5adf6aaa4ee/konnect.json",
+      "original_sha256": "e6a10c5e48cb1ae8058fd9721b518701e334fa6ea80d84ee801583d714000252",
+      "published_sha256": "bfb90bf47135d32bb61f3c1623f1af84697033d59f513df198ff8508e17b81b4"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/cancellation/profiles/b30c6d0c-24c3-466a-840f-d5adf6aaa4ee/konnect/run/21380.json",
+      "original_sha256": "6f023c3979b4002eb5edde3a9fd835f0c1a5edaac66d5619d0f05a8765caa43e",
+      "published_sha256": "167446014c770224662d2f82355782c35d5a642c2546bb5d362b6201436e7ae2"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/deadline/.hazlomexa/runs/2b427bda-8991-4111-99a0-cece720f0e3c.json",
+      "original_sha256": "fb2022f2b244223f333ff2541f9cea99550ec5bc690e61fc2fc2219e8d715166",
+      "published_sha256": "bf3fd482eb157cfa6982846da232ff7651e1b2963035477dae84b59d064ce541"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/deadline/.hazlomexa/staging/2b427bda-8991-4111-99a0-cece720f0e3c/input.json",
+      "original_sha256": "26718b9476aa239e79e501fcfcd3d7df74c3d8b48057570dde687d083595c539",
+      "published_sha256": "717b28da3a3b9ca51cf9a35cb43fc412bdb5aef5f404af9e9b0d09c7ec1496c7"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/deadline/blocked-workflow-deadline.json",
+      "original_sha256": "dd4f1d3c36cbf0abcdebf7d07c90f465007b40a4aec2b32f8164d31348d61fd1",
+      "published_sha256": "5e4a99ee991c1e6281f78e7d62e4a869c74cdfe9586ea596c3eb3c50f2e61b2d"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/deadline/profiles/2b427bda-8991-4111-99a0-cece720f0e3c/konnect.json",
+      "original_sha256": "9df73ee2ef36814dde3ef819394075091f48781e29d72ec9c85b0ad8edb76bad",
+      "published_sha256": "820a73b01aff10ad3feba1741475cbae3c1da60bcfde0049831d9f8d2f9d618d"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/deadline/profiles/2b427bda-8991-4111-99a0-cece720f0e3c/konnect/run/4936.json",
+      "original_sha256": "6bd1f72e9ba1f621e8c37aef532799399dad58332f84471830c4b8145c727415",
+      "published_sha256": "d8475f680c0a2e9b2936e2e126dfdf83384e2d54838c18a050062369e580cdc6"
+    },
+    {
+      "file": "docs/research/pcb-busy-read-2026-10-13/schematic-interruption/gate/status.json",
+      "original_sha256": "8bf83587d33f7510464ddb27c1e6151dd150430fe7e7157810fb95c67c0d9909",
+      "published_sha256": "7acd60fd54880dd71a6802bad690d418472c43c7e0d12c54b84e7c30a58e94b1"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/.hazlomexa/artifacts/4b548e97-e773-4da5-9b29-904249b9bab0/input.json",
+      "original_sha256": "b8519597f8977c79a4dfbae292506c6408ad841ff48791c9df6dc6db8f8e680c",
+      "published_sha256": "49d2c70cc61e5af69cf6da3e4f6180754434fbc535211fe341702a2be0cce306"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/.hazlomexa/artifacts/4b548e97-e773-4da5-9b29-904249b9bab0/result.json",
+      "original_sha256": "4aa138995f9530215a79571e20eeac3cc7432a62365afe427bd7d0c7c60333c4",
+      "published_sha256": "e36fd7a0ed90de8c4db069753c43214457a4f1de1f71247ebb99e5d53199c4b7"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/.hazlomexa/artifacts/b5226bb2-3283-4d6a-9414-8852e6894e6c/input.json",
+      "original_sha256": "e7411cfd0c3c776d3f1ae8c878a8df9ec7ab33fe6d062f4a5be71e67165b1f16",
+      "published_sha256": "7d9bcaadfd3d5a021d7fdfcd80971721d6512889a046d3fb8782b7b9bf3d554e"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/.hazlomexa/artifacts/b5226bb2-3283-4d6a-9414-8852e6894e6c/result.json",
+      "original_sha256": "18cc8b3828f11d1c1fa408730bcce4890b7e55d14a15a35c15697078fd07f42b",
+      "published_sha256": "30464b5ab9032ade5c05fe599b86bf04a3401afdbc2de6073c3073eadaa4ff7d"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/.hazlomexa/runs/4b548e97-e773-4da5-9b29-904249b9bab0.json",
+      "original_sha256": "5dcc93aa21d028946daa265a9776cfc5a7e48dcd6717d3f9e677ddbd8019cb60",
+      "published_sha256": "d7d1449a70774b32a712a110bf67f145db0202df44fab0aa7f0c4363de3d2fb5"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/.hazlomexa/runs/57ee2909-36b3-463d-881e-775c973dc6a5.json",
+      "original_sha256": "3d7dd4360219ccb28f419ec25bc8987d42ab0f0a058c55baeebe534f45743ea9",
+      "published_sha256": "f8e2b68aaa7b4757d4b53dd1dd9b6c8c034947c796ad54457eb90604b5a8f604"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/.hazlomexa/runs/b5226bb2-3283-4d6a-9414-8852e6894e6c.json",
+      "original_sha256": "5dfe6c4cb976f0272d78794db9102b083166fdb58e93e5f0d9051c0423cfd11d",
+      "published_sha256": "a5c34dfe46e7b6c076a7b244244ee822002cc0f71a51645e3f5f21f671b9992f"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/calls.json",
+      "original_sha256": "970c99ea34ba5def78adaccebf76767904759b8503e0456d485893f258adabdc",
+      "published_sha256": "ef865dcf3071cb8f4952f525843c29b47575656ac12dc12379b43da43f67f31c"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/profiles/4b548e97-e773-4da5-9b29-904249b9bab0/konnect.json",
+      "original_sha256": "6e28d1e272a86123826f509313196ff4d08a1abbce26dec75e7a3c24375ec676",
+      "published_sha256": "5177e85887b3b408ec376934571c6ae7c7b4b313b977a5297de85fdf357a4d2f"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/profiles/4b548e97-e773-4da5-9b29-904249b9bab0/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "3633c1edc0d21b13d57d02d8ebf8e0343a582a451868bc1edaec15f61a14ec72",
+      "published_sha256": "0d31cf4e555ccfca35c917c5a2d9ec4d0b59e857f91afae082f8c52f204aa7ce"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/profiles/57ee2909-36b3-463d-881e-775c973dc6a5/config/10.0/kicad_common.json",
+      "original_sha256": "92465f325deb8696e48c508fb0da14070fe321c31324576a45c9807401e11cb3",
+      "published_sha256": "0e1dedaaba79f4d85361524e62cf129886eb4014a8b515bbe2f5e8cb546f0ea6"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/profiles/b5226bb2-3283-4d6a-9414-8852e6894e6c/konnect.json",
+      "original_sha256": "ea2e758c63542ddfc8744558b6be5cf30fb4f6f4e226cb78e19bc7f2338d662c",
+      "published_sha256": "b6322524c5064f2d8e6344cea0862e8a02f37b5bef90f7560c06424519c38b20"
+    },
+    {
+      "file": "docs/research/pcb-guided-move-2026-10-13/release-mcp/profiles/b5226bb2-3283-4d6a-9414-8852e6894e6c/verification-profile/config/10.0/kicad_common.json",
+      "original_sha256": "a100ddea39e9b091aaba54f90de51430d580195ff4dbc0e6723d85bb9b0ff71a",
+      "published_sha256": "79a63a61529cf0b0c84b285f6eb997c3e6bffee7410fbe90164eccd74e8079ad"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/cancellation/.hazlomexa/runs/2b187bb3-a0b1-4158-b327-466316315707.json",
+      "original_sha256": "0ccc8928f01f9faf3e5e950e17d85029cd49152b6a5865de58d370e0c769f148",
+      "published_sha256": "456f59f7a12807d91272c901a27e5368ee3622d29e24ea3990ceeb3894aa1afe"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/cancellation/.hazlomexa/staging/2b187bb3-a0b1-4158-b327-466316315707/input.json",
+      "original_sha256": "0be98581045c556c6880725a01e395510bfa347c36ce20cf867feebb07d1a98e",
+      "published_sha256": "d563dc4c9e46c08a3c067c49b146b570d25d23b8eefb3f62f2b53d45756acf5a"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/cancellation/blocked-workflow-cancellation.json",
+      "original_sha256": "78c2959b06b71d6c8e0c2388ed099a749b040856e9e77120288fd8ab1ab6fcd5",
+      "published_sha256": "7ce1342150a1558f3de69573e67e41844f1582735b91db1c1d52b7c69a54e38e"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/cancellation/profiles/2b187bb3-a0b1-4158-b327-466316315707/konnect.json",
+      "original_sha256": "d5ceed80ae19a0c15b1d0e5e035b27154b444587da7c2b134d13b867c1ed47d1",
+      "published_sha256": "d422861c9011e5595c469c12f77200fc7e2f40e8b56616fc53e1bc53568bcbec"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/cancellation/profiles/2b187bb3-a0b1-4158-b327-466316315707/konnect/run/27536.json",
+      "original_sha256": "be01d023d08842b5f14158569a943eb4f6213839acaaab9c24f1638f118d3a7f",
+      "published_sha256": "d27d9b964fc29d4027d8d031e6e66237960b57e4cc97db721cb46637149dcb03"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/checks.json",
+      "original_sha256": "417aedcf2aa272bf2da8e66eb9df38e8e74cb47b6aeae1bc2501d0208809ed03",
+      "published_sha256": "4d98c70b70e67b331c5f2fef75cdb09c0254301cbb8992963aa96136d6fe1288"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/deadline/.hazlomexa/runs/f23e7833-ac48-44f6-a62e-7bde4fb7b69e.json",
+      "original_sha256": "206e21b1ef317275e0950bd039b22e27c33489a8b5983dce33251da8cf3f3157",
+      "published_sha256": "cd99e0ecee286882adf211fcb1e7c0555708a81ca1cbc5821f2b587b15302a69"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/deadline/.hazlomexa/staging/f23e7833-ac48-44f6-a62e-7bde4fb7b69e/input.json",
+      "original_sha256": "d12c8e8ac2b214c1cedeb1f764eeebdeffc5f560684188a26080fd131e075b40",
+      "published_sha256": "aff93be4ead98462633956fccde12792445a4b77e3e63494fe6ca413d6d02738"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/deadline/blocked-workflow-deadline.json",
+      "original_sha256": "9663a578b3a16e1c83ac20cfa5632fb116fa5689b13d61b9350dfc523db37b1f",
+      "published_sha256": "9e919dd8c83ccede9bf6cb3888905b3e02fe476d761a4151481402655f8753d7"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/deadline/profiles/f23e7833-ac48-44f6-a62e-7bde4fb7b69e/konnect.json",
+      "original_sha256": "79994c726759bcbe881f76333f06e257764fa646abe5e7f7aeecfbcc841b0995",
+      "published_sha256": "6e3dea91232e3b5a2c103760d03f01553bf0371ef9e515b148c9a7130e71a7a1"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/deadline/profiles/f23e7833-ac48-44f6-a62e-7bde4fb7b69e/konnect/run/29396.json",
+      "original_sha256": "a64bdc19f024d807da2666ad1151caa683561d537c5e4c244baadc118a1060ba",
+      "published_sha256": "1c3eabf4fcf3c8797932693278fe7c516ba510c4fb544e44b1a196e366366e65"
+    },
+    {
+      "file": "docs/research/pcb-sdk-interruption-2026-10-13/gate/status.json",
+      "original_sha256": "787e8253c8513c1a7d8f02bb28fe0c0c113e4bb698a1034123bda0fb16ceb2aa",
+      "published_sha256": "894587f1a0417430d5890b73f128d2c73594abe3c4c461fc8207c8c1c32b65fe"
+    },
+    {
+      "file": "docs/research/project-opening-status-2026-10-11/installer-result.json",
+      "original_sha256": "9cefa774785cf9896dbb6abb7342489c728f31aa901ea92a27907b5b28f815c3",
+      "published_sha256": "033a79874f2ea9ad90f941d9ec0f1834c7ff6a917de3b1e7b5afef42c9246865"
+    },
+    {
+      "file": "docs/research/publication-cancel-2026-10-11/harness-failure-1.json",
+      "original_sha256": "93a80466e00a0210df38be2855bf949974e494e2890be4e4d180e77989c3fa03",
+      "published_sha256": "f0b726c540d8045b374850a6431f3e712c4e1ee6305d17dbce37a45b1853bbfa"
+    },
+    {
+      "file": "docs/research/publication-cancel-2026-10-11/harness-failure-2.json",
+      "original_sha256": "9de781cf92e6a60e7dc0e852ced710ce29cb8724998fe7ad913df0b35dde4e31",
+      "published_sha256": "b0e0be0972bec804bcc11426b81e76f7d3ec6707b8083fd31711d3b5bf17051c"
+    },
+    {
+      "file": "docs/research/publication-cancel-2026-10-11/result.json",
+      "original_sha256": "edf84105f7854f06fdb809861e83db288c5e2e594f5fcf98d291a587ed7d5188",
+      "published_sha256": "04bb454dc4367c745b31507d3bd348b16b200ba98aa8b1f9829d70eea9b14ae3"
+    },
+    {
+      "file": "docs/research/release-unknown-inputs-2026-10-12/file-hashes.json",
+      "original_sha256": "d972cee22e170eae43cc15288b9c8cc0a43a5e53a25159d5b4d62a69252f37cc",
+      "published_sha256": "0d4369840c3a6b6a4215efe5b17c6440302f6d563ca1f0547fcfb2d42f66bb8b"
+    },
+    {
+      "file": "docs/research/sandbox-probe-2026-10-11/clean-workflow-result.json",
+      "original_sha256": "920f1d2aee8860c3308d8a4b21a89fd42ba781fe78193fd3e40bf4d47af2555a",
+      "published_sha256": "5b79fa3b5802683efe58c9bad697d18d79230d1d12faeec90ca75197a15056d3"
+    },
+    {
+      "file": "docs/research/schematic-followup-2026-10-12/README.md",
+      "original_sha256": "a98d003464d7cbcaafb05c8615b38a799bb26af99b2ed9e7bcaad872cb966923",
+      "published_sha256": "8f4b37dc629a9f76d472136cb555cb3c650dbe5202bee69f6ab4316b5fc54651"
+    },
+    {
+      "file": "docs/research/schematic-followup-2026-10-12/first-Netlist.xml",
+      "original_sha256": "1352a0f66d803a1d72e526ca9884ce9c4e3a5e5ddec5d2f755f5883f46533d30",
+      "published_sha256": "165c34655d1ffce8871505d4c70531947664afe02196cbe2f98a4a510705cc51"
+    },
+    {
+      "file": "docs/research/schematic-followup-2026-10-12/followup-Netlist.xml",
+      "original_sha256": "fa0655674397c0e788b61a1e8972aa3a409dd8d580234e891f2a393ba243bdad",
+      "published_sha256": "4c20f54587d3fe2d8b7bfd139b1b04ef4c0545652948de9fbf4ed6219aabb1f5"
+    },
+    {
+      "file": "docs/research/schematic-followup-2026-10-12/konnect-followup.json",
+      "original_sha256": "b689153f75ed59511b852a4f10967c860ce58475086835be3785d476192ba35a",
+      "published_sha256": "0d23834f8e32bced2dabb49bba7d4524ed6540e5e9b10aabaebf41168b3ac48b"
+    },
+    {
+      "file": "docs/research/schematic-followup-2026-10-12/status.json",
+      "original_sha256": "ddf5c3a889e4a06cd97d25602739989563ef1dcef90b799063f751c3bf3f11ad",
+      "published_sha256": "e2a383c3d6a31beda7d6733cc50b59cc0ade1fc3f4b9e570cb53b1fa7af04b7f"
+    },
+    {
+      "file": "docs/research/selected-sketch-tools-2026-10-12/claude-mcp-list.txt",
+      "original_sha256": "d964be2a0068682534476e8460e4be904830f01c726e7cd9eb83fdd821bab2e9",
+      "published_sha256": "b0c5f36497310dcd5d543127a00a6cdabd2107e9551d54db06bb2b77c4af3821"
+    },
+    {
+      "file": "docs/research/slice-tools-2026-10-12/status.json",
+      "original_sha256": "b3c5ba10406f9797f5ed9107e23b494709cbb152c3232ab39a741b596c229a1f",
+      "published_sha256": "96ce0a65ff3b5490bfebd5c64eb6e6e2f8283fc0d6791c8ff19ba95beb986553"
+    },
+    {
+      "file": "docs/research/tool-workflows-2026-10-11/README.md",
+      "original_sha256": "5f5ccacd0eb1b783a92bf9173fddedef9e02b749f63394ba6bc93465f07ee979",
+      "published_sha256": "efca94c5da33688388bb60463bb60726480719132522fad3e4c234b1ca3840af"
+    },
+    {
+      "file": "docs/research/tool-workflows-2026-10-11/claude-mcp-list.txt",
+      "original_sha256": "d964be2a0068682534476e8460e4be904830f01c726e7cd9eb83fdd821bab2e9",
+      "published_sha256": "b0c5f36497310dcd5d543127a00a6cdabd2107e9551d54db06bb2b77c4af3821"
+    },
+    {
+      "file": "docs/research/unknown-dimensions-2026-10-12/file-hashes.json",
+      "original_sha256": "fa1fb3defaa55eea67c3e18bc179f7b233b8bad419eee270fbe33f40d8b05f93",
+      "published_sha256": "ab375a483cc3c5bdac148e560db1952f95232e5808f35e36411dab478790d62a"
+    },
+    {
+      "file": "docs/research/verified-result-tools-2026-10-12/follow-up/status.json",
+      "original_sha256": "315d5b430b8f57b79e669010d8a23250a56ac7e9a0eeeb042fb96c000b64a8e1",
+      "published_sha256": "44c7783e9a74822fc7a15dbc481cccfdd07c5709d0fb7530e33cbadc5051a2e5"
+    },
+    {
+      "file": "docs/research/verified-result-tools-2026-10-12/status.json",
+      "original_sha256": "e5f2e9a6af122db1bede5f668dea91eeba624ab1f54b5389a212f5dcce28f6e8",
+      "published_sha256": "dfb8d47fdc5e19c072d80be9d774997be6212efd7fa40c9eb4e064322dbb5ce9"
+    },
+    {
+      "file": "docs/research/arduino-runtime-2026-10-11/compile-help.stdout",
+      "original_sha256": "028e061d9d3b204c77c37162b8b9a8296678677a38bb521f512e33c3a4d837d8",
+      "published_sha256": "ae1f4e02e10aae3d5a2a7d8b7f5b46a9b66155390a4d78f745b90579396a6392"
+    },
+    {
+      "file": "docs/research/arduino-runtime-2026-10-11/config.stdout",
+      "original_sha256": "cb24c09fe0b002f8e89b62702f4d386700a48cfac94ca532f6be03f9d71763cd",
+      "published_sha256": "1c916dc9a023910bce1ed3ca36a5b29addddb963ae0a310e3608f50cdbe47280"
+    },
+    {
+      "file": "docs/research/konnect-runtime-2026-10-11/raw/Edited.net",
+      "original_sha256": "c1f4b0e1e59016bdefd1ca69b15df67bf6cdc8522d7e4b87fb4676f52b78637b",
+      "published_sha256": "4c652c0e1e91d33f4b1359d81c85adbefbf310523d7b32bcdb63d7142717930b"
+    }
+  ],
+  "scope": "Known personal Windows profile paths and configured email; unreviewed screenshots withheld. Original evidence hashes describe private unsanitized captures. Redacted metadata is not a new native execution proof.",
+  "fixture_hash_rebaseline": {
+    "fixture": "docs\\research\\konnect-pcb-workflow-2026-10-12\\Completed",
+    "reason": "Rebind the stored PCB result document to its privacy-redacted input metadata; geometry, check findings and production validation are unchanged. This is a sanitized regression fixture, not fresh native evidence."
+  },
+  "private_runtime_profile_files_withheld": 1355
+}

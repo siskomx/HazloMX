@@ -1,0 +1,25 @@
+{
+  "adapter_fixture": "C:/Users/USER/AppData/Local/Temp/hazlomexa-konnect-adapter-eb89fdda-3505-4aa9-a537-2f57e8f8dc90",
+  "actual_tests_passed": 2,
+  "native_cli_readback_verified": true,
+  "browser_workflows_passed": 8,
+  "production_deadline_expiry_verified": false,
+  "frontend_build_passed": true,
+  "workflow_fixture": "C:/Users/USER/AppData/Local/Temp/hazlomexa-workflow-04bd9051-2c57-4fd8-9084-41efa7e74fd9",
+  "desktop_clippy_passed": true,
+  "regular_tests_passed": 77,
+  "installed_workflow_verified": false,
+  "live_cancellation_verified": false,
+  "separately_ignored_entries": 24,
+  "source_sha256": {
+    "apps/desktop/src-tauri/src/kicad_run.rs": "6a1ff028fae21b121291ae3294d5371a7ef7efc67ea2734681be79b027197551",
+    "apps/desktop/src-tauri/src/jobs.rs": "095e953e5b867d48399de3bc3a689b01622d6d03d65490822772b32a26779e4a",
+    "apps/desktop/src-tauri/src/project.rs": "d79d18f2850c85f552b4b2b7047df3f16e1dee4dc91a298c2715ba991819034d",
+    "apps/desktop/src-tauri/src/main.rs": "8c0e61b6de615bcfbc6c043bee495d6dc899407c7f3acd5622837aca4efd98ac",
+    "apps/desktop/tests/design-flow.mjs": "b82897446e509d7db62def8b098ad6649ddfd31f35ec1c13a84a630babaf5d72",
+    "apps/desktop/src/main.ts": "1c7ecfdc3d4fdd955508fb6167d8737813a028b0a0568d219b6fea788c394e52",
+    "apps/desktop/src-tauri/src/konnect_run.rs": "2d7e539502993a020e316027fcc95bb053323ee5f362518a556168ba29d6d757"
+  },
+  "passed": true,
+  "native_desktop_verified": false
+}

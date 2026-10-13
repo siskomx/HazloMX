@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "missing_height",
+  "result": {
+    "proposal": {
+      "message": "Crea un bloque de largo 10 mm y ancho 20 mm.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 4.1216746
+}

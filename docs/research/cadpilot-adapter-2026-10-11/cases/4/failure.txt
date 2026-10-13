@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "C:/Users/USER/Documents/GitHub/HazloMX/target/cadpilot-probe/copy-246206c0-97a5-4607-85e5-2e1f64492e8b/4/cadpilot-copy.FCMacro", line 147, in <module>
+    result = run()
+             ^^^^^
+  File "C:/Users/USER/Documents/GitHub/HazloMX/target/cadpilot-probe/copy-246206c0-97a5-4607-85e5-2e1f64492e8b/4/cadpilot-copy.FCMacro", line 51, in run
+    operation, name, parameters = request(raw)
+                                  ^^^^^^^^^^^^
+  File "C:/Users/USER\Documents\GitHub\HazloMX\target\cadpilot-probe\copy-246206c0-97a5-4607-85e5-2e1f64492e8b\4\cadpilot_policy.py", line 49, in request
+    raise ValueError("Use finite numeric parameters; expressions are not accepted")
+ValueError: Use finite numeric parameters; expressions are not accepted

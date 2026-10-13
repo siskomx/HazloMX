@@ -1,0 +1,25 @@
+{
+  "scope": "actual helper/SDK/native measured copy edit, request cancellation and recovery; signed-in/native UI/installed acceptance pending",
+  "regular_tests": 87,
+  "runtime_probe": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-host-tools-f4fd7e8b-afcc-488a-a570-adf8a473dca7",
+  "source_hashes": [
+    {
+      "sha256": "603271374A7EAF9F6D3B0E8FCCB2A994DF84D0DF9DD6379E0728C879382E98C6",
+      "path": "apps/desktop/src-tauri/src/jobs.rs"
+    },
+    {
+      "sha256": "ED43D43CDF31B44A0B22C8E1BE47974A32132D418BB3565737DE50E7869E28E1",
+      "path": "apps/desktop/src-tauri/src/host_tools.rs"
+    },
+    {
+      "sha256": "7ABBFE0FA19D3E0BFA3C91C40B83D390A863A45E6B2FE149BCB02C47AF64A24D",
+      "path": "apps/desktop/src-tauri/src/project.rs"
+    },
+    {
+      "sha256": "9FC95116835506E3B740F7EE5959151AF0C27BEC955F963B4F3075178B0F65D4",
+      "path": "apps/desktop/src/main.ts"
+    }
+  ],
+  "tool_catalog_count": 10,
+  "ignored_gates": 29
+}

@@ -1,0 +1,12 @@
+﻿{
+    "user":  "WDAGUtilityAccount",
+    "test_exit":  0,
+    "pass":  true,
+    "stage":  "finished",
+    "volume":  {
+                   "filesystem":  "NTFS",
+                   "size":  65990656,
+                   "label":  "HMXFULL",
+                   "device":  "T:"
+               }
+}

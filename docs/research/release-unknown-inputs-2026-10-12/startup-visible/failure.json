@@ -1,0 +1,9 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: Installed WebView did not start",
+  "log": "",
+  "lastConnectionError": "Error: browserType.connectOverCDP: connect ECONNREFUSED 127.0.0.1:58520\nCall log:\n\u001b[2m  - <ws preparing> retrieving websocket url from http://127.0.0.1:58520\u001b[22m\n",
+  "port": 58520,
+  "root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Temp\\Hazlo release startup-VCN05I",
+  "app_pid": 7324,
+  "exit_code": null
+}

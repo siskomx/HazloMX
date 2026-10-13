@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "project_id": "32ce9db8-2429-4dd6-a0a1-b62955a1e6aa",
+  "input": {
+    "schema_version": 1,
+    "job_id": "35cfe561-a75f-4748-9e28-f04f08f9c15c",
+    "dimensions_mm": {
+      "length": 12.5,
+      "width": 20.0,
+      "height": 30.0
+    }
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "ollama",
+      "model": "kimi-k2.7-code:cloud",
+      "digest": "eda07a6592375dcbde7cf167b6d6b368cdd28e244f9d71559fb59919aca882fa",
+      "cloud": true,
+      "runtime_version": "0.35.1"
+    },
+    "user_edited": true,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/35cfe561-a75f-4748-9e28-f04f08f9c15c",
+    "created_unix_ms": 1791708921126,
+    "updated_unix_ms": 1791708924672,
+    "sequence": 4,
+    "error": null
+  }
+}

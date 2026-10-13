@@ -1,0 +1,43 @@
+{
+  "imperial_edit": true,
+  "native_package_root_accepted": true,
+  "native_cancellation_verified": false,
+  "passed_scope": "native selected-copy inspection/edit/readback/recovery; complete opening experience remains unfinished",
+  "original_sha256": "2F526E0F37F074B2F316382FD03B24BB56197B73F619CE70CC062F85354715F6",
+  "source_hashes": [
+    {
+      "sha256": "7AE2DF8F5A33BCBA4F8486AFC627BB2F8D489105D3949CCBAC10D5BFF3DD1C3A",
+      "path": "apps/desktop/src-tauri/src/cadpilot.rs"
+    },
+    {
+      "sha256": "8D87BD938DB7DF32C32DB23BC21769760C33A22D037BC7951D7AF34932A37885",
+      "path": "apps/desktop/src-tauri/src/main.rs"
+    },
+    {
+      "sha256": "5FFB7F708A82665C6BDE434CC64EA7DDE7436067C28EC2741FF8F1C7337C590F",
+      "path": "target/debug/hazlomexa.exe"
+    },
+    {
+      "sha256": "2CC982B63979ED732C9D5B0E0BAD754C2356F9D79D920AF8C0B722393DA1F255",
+      "path": "target/debug/hazlomexa-tools.exe"
+    },
+    {
+      "sha256": "FCF19EA3038D3AC3BA416F82E318DE2FD1A0AD8F4E9DB22061570509A04EE397",
+      "path": "apps/desktop/dist/index.html"
+    }
+  ],
+  "metric_measurement": true,
+  "freecad_native_properties_observed": true,
+  "native_runtime_picker": true,
+  "regular_tests": 89,
+  "installed_workflow_verified": false,
+  "saved_artifact_hashes_unchanged": 20,
+  "fcstd_opened": true,
+  "fixture": "target/native-cadpilot-20261012-01",
+  "unknown_dimensions_inspection": true,
+  "report_and_history_reopened": true,
+  "initial_freecad_viewport_hidden": true,
+  "separately_ignored_gates": 29,
+  "step_opening_verified": false,
+  "owned_windows_closed": true
+}

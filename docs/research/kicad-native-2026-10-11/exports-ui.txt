@@ -1,0 +1,176 @@
+Window: "ad8e4a05-8d7f-405b-a151-0624e5d5f212 - File Explorer", App: explorer.exe.
+	0 window ad8e4a05-8d7f-405b-a151-0624e5d5f212 - File Explorer Secondary Actions: Raise
+		1 pane
+		2 pane ad8e4a05-8d7f-405b-a151-0624e5d5f212
+			3 pane
+				4 pane Details Pane
+					5 pane
+						6 pane
+							7 group Exports ID: DetailsViewControlRootGrid
+								8 pane
+									9 image Thumbnail for current selection ID: Icon
+									10 text Exports
+									11 group Details ID: DetailsViewProperties
+										12 text Details
+										13 text Type
+										14 text File folder
+										15 text File location
+										16 text C:/Users/USER\Documents\GitHub\HazloMX\target\kicad-probe\native-07263e47-b7e3-4bb9-91b1-f5058cc29bf0\project\.hazlomexa\artifacts\ad8e4a05-8d7f-405b-a151-0624e5d5f212
+										17 text Date modified
+										18 text ‎10/‎11/‎2026 ‏‎7:30 PM
+										19 text Shared with
+										20 text scanner
+										21 button Properties
+											22 image
+											23 text Properties
+									24 scroll bar (settable, float) Vertical Value: 0 ID: VerticalScrollBar
+				25 status bar Status bar ID: StatusBarModuleInner
+					26 group Property Field ID: System.StatusBarViewItemCount
+						27 text 5 items Description: Total item count ID: PropertyValue
+					28 group Property Field ID: System.StatusBarSelectedItemCount
+						29 text 1 item selected Description: Selected item count and size ID: PropertyValue
+					30 group Property Field ID: System.StatusIcons
+						31 text State: ID: PropertyLabel
+						32 edit State Value: Shared ID: PreviewMetadataControlReadOnly
+					33 group View Modes ID: ViewButtonsGroup
+						34 radio button (selectable) Details Description: Displays information about each item in the window. (Ctrl+Shift+6) ID: ViewMode_Details
+						35 radio button (selectable) Large Icons Description: Displays items by using large thumbnails. (Ctrl+Shift+2) ID: ViewMode_LargeIcons
+				36 pane Control Host ID: ProperTreeHost
+					37 tree Navigation Pane ID: 100
+						38 scroll bar (settable, float) Vertical Value: 100 ID: NonClientVerticalScrollBar
+							39 button Line up ID: UpButton
+							40 button Page up ID: UpPageButton
+							41 thumb Position ID: ScrollbarThumb
+							42 button Line down ID: DownButton
+						43 tree item (selectable, settable, string) Desktop Value: Desktop
+							44 tree item (selectable, settable, string) Home Value: Home
+							45 tree item (selectable, settable, string) Gallery Value: Gallery
+							46 tree item (selectable, settable, string) Start of Quick Access - Desktop (pinned) Value: Start of Quick Access - Desktop (pinned)
+							47 tree item (selectable, settable, string) Downloads (pinned) Value: Downloads (pinned)
+							48 tree item (selectable, settable, string) Documents (pinned) Value: Documents (pinned)
+							49 tree item (selectable, settable, string) Pictures (pinned) Value: Pictures (pinned)
+							50 tree item (selectable, settable, string) Music (pinned) Value: Music (pinned)
+							51 tree item (selectable, settable, string) Videos (pinned) Value: Videos (pinned)
+							52 tree item (selectable, settable, string) End of Quick Access - PDFgear Value: End of Quick Access - PDFgear
+							53 tree item (selectable, settable, string) This PC Value: This PC
+								54 tree item (selectable, settable, string) Local Disk (C:) Value: Local Disk (C:)
+								55 tree item (selectable, settable, string) Media (\\CHILAQUILES) (Z:) Value: Media (\\CHILAQUILES) (Z:)
+							56 tree item (selectable, settable, string) Network Value: Network
+				57 pane Shell Folder View ID: listview
+					58 list Items View
+						59 header Header
+							60 split button Name ID: System.ItemNameDisplay
+								61 button Filter dropdown ID: DropDown
+							62 split button Date modified ID: System.DateModified
+								63 button Filter dropdown ID: DropDown
+							64 split button Type ID: System.ItemTypeText
+								65 button Filter dropdown ID: DropDown
+							66 split button Size ID: System.Size
+								67 button Filter dropdown ID: DropDown
+						68 list item (selectable, settable, string) Checked Value: Checked ID: 0
+							69 edit (settable, string) Name Value: Checked ID: System.ItemNameDisplay
+							70 edit Date modified Value: ‎10/‎11/‎2026 ‏‎7:30 PM ID: System.DateModified
+							71 edit Type Value: File folder ID: System.ItemTypeText
+							72 edit Size ID: System.Size
+						73 list item (selectable, settable, string) Exports Value: Exports ID: 1
+							74 edit (settable, string) Name Value: Exports ID: System.ItemNameDisplay
+							75 edit Date modified Value: ‎10/‎11/‎2026 ‏‎7:30 PM ID: System.DateModified
+							76 edit Type Value: File folder ID: System.ItemTypeText
+							77 edit Size ID: System.Size
+						78 list item (selectable, settable, string) Original Value: Original ID: 2
+							79 edit (settable, string) Name Value: Original ID: System.ItemNameDisplay
+							80 edit Date modified Value: ‎10/‎11/‎2026 ‏‎7:30 PM ID: System.DateModified
+							81 edit Type Value: File folder ID: System.ItemTypeText
+							82 edit Size ID: System.Size
+						83 list item (selectable, settable, string) Check Value: Check ID: 3
+							84 edit (settable, string) Name Value: Check ID: System.ItemNameDisplay
+							85 edit Date modified Value: ‎10/‎11/‎2026 ‏‎7:30 PM ID: System.DateModified
+							86 edit Type Value: JSON Source File ID: System.ItemTypeText
+							87 edit Size Value: 3 KB ID: System.Size
+						88 list item (selectable, settable, string) result Value: result ID: 4
+							89 edit (settable, string) Name Value: result ID: System.ItemNameDisplay
+							90 edit Date modified Value: ‎10/‎11/‎2026 ‏‎7:30 PM ID: System.DateModified
+							91 edit Type Value: JSON Source File ID: System.ItemTypeText
+							92 edit Size Value: 2 KB ID: System.Size
+		93 pane
+			94 pane
+				95 tab ID: TabView
+					96 list ID: TabListView
+						97 tab item (selectable) ad8e4a05-8d7f-405b-a151-0624e5d5f212
+							98 image
+							99 text ad8e4a05-8d7f-405b-a151-0624e5d5f212
+							100 button Close Tab ID: CloseButton
+					101 button Add New Tab ID: AddButton
+				102 app bar ID: NavigationCommands
+					103 app bar button (disabled) Back Description: Back ID: backButton
+					104 app bar button (disabled) Forward Description: Forward ID: forwardButton
+					105 app bar button Up to "artifacts" (Alt + Up Arrow) Description: Up to "artifacts" (Alt + Up Arrow) ID: upButton
+					106 app bar button Refresh "ad8e4a05-8d7f-405b-a151-0624e5d5f212" (F5) Description: Refresh "ad8e4a05-8d7f-405b-a151-0624e5d5f212" (F5) ID: refreshButton
+				107 group ID: PART_AutoSuggestBox
+					108 edit (settable, string) Address Bar ID: TextBox
+				109 split button This PC ID: FirstCrumbStackPanel
+					110 image
+				111 group ID: PART_BreadcrumbBar
+					112 split button More
+					113 split button This PC
+						114 text This PC
+					115 split button Local Disk (C:)
+						116 text Local Disk (C:)
+					117 split button Users
+						118 text Users
+					119 split button Ivan
+						120 text Ivan
+					121 split button Documents
+						122 text Documents
+					123 split button GitHub
+						124 text GitHub
+					125 split button HazloMX
+						126 text HazloMX
+					127 split button target
+						128 text target
+					129 split button kicad-probe
+						130 text kicad-probe
+					131 split button native-07263e47-b7e3-4bb9-91b1-f5058cc29bf0
+						132 text native-07263e47-b7e3-4bb9-91b1-f5058cc29bf0
+					133 split button project
+						134 text project
+					135 split button .hazlomexa
+						136 text .hazlomexa
+					137 split button artifacts
+						138 text artifacts
+					139 split button ad8e4a05-8d7f-405b-a151-0624e5d5f212
+						140 text ad8e4a05-8d7f-405b-a151-0624e5d5f212
+				141 group ID: FileExplorerSearchBox
+					142 edit (settable, string) Search ad8e4a05-8d7f-405b-a151-0624e5d5f212 ID: TextBox
+						143 text Search ad8e4a05-8d7f-405b-a151-0624e5d5f212
+				144 app bar ID: FileExplorerCommandBar
+					145 app bar button New
+						146 image
+					147 app bar button Cut Description: Move the selected items to the Clipboard.
+						148 image
+					149 app bar button Copy Description: Copy the selected items to the Clipboard.
+						150 image
+					151 app bar button (disabled) Paste Description: Paste the contents of the Clipboard to the current location.
+						152 image
+					153 app bar button Rename Description: Rename the selected item.
+						154 image
+					155 app bar button (disabled) Share
+						156 image
+					157 app bar button Delete Description: Move the selected items to the Recycle Bin or permanently delete them.
+						158 image
+					159 app bar button Sort ID: SortAndGroupButton
+						160 image
+					161 app bar button View
+						162 image
+					163 button More options ID: MoreButton
+				164 app bar ID: FileExplorerSecondaryCommandBar
+					165 app bar button Details Description: Show or hide the details pane. ID: DetailsPaneToggleButton
+						166 image
+		167 title bar (settable, string) Value: ad8e4a05-8d7f-405b-a151-0624e5d5f212 - File Explorer
+			168 menu bar System ID: MenuBar
+				169 menu item System
+			170 button Minimize
+			171 button Maximize
+			172 button Close
+
+The focused UI element is 108 edit (settable, string) Address Bar ID: TextBox.

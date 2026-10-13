@@ -1,0 +1,1 @@
+(kicad_sch (symbol (lib_id "Device:R") (property "Reference" "R1") (property "Value" "10k")))

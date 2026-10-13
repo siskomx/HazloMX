@@ -1,0 +1,17 @@
+{
+  "acceptable": false,
+  "cold": false,
+  "expected": {
+    "height": 25,
+    "length": 25,
+    "width": 25
+  },
+  "id": "cube",
+  "result": {
+    "proposal": {
+      "message": "Quiero un cubo sólido de 25 mm por lado.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 4.689615
+}

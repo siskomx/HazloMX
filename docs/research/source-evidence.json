@@ -1,0 +1,451 @@
+{
+  "review_date_local": "2026-10-10",
+  "timezone": "America/Los_Angeles",
+  "captured_utc": "2026-10-11T05:38:04.599037+00:00",
+  "scope": "Read-only source and release metadata inspection; no upstream code executed; asset digests are upstream claims, not independently verified binaries.",
+  "repositories": [
+    {
+      "repo": "FreeCAD/FreeCAD",
+      "tag": "1.1.4",
+      "commit": "4fd3bf320d9566a27e60069fc8387448aaa3a094",
+      "release_url": "https://github.com/FreeCAD/FreeCAD/releases/tag/1.1.4",
+      "published_utc": "2026-09-28T13:58:35Z",
+      "sources": [
+        {
+          "path": "src/App/Application.cpp",
+          "url": "https://raw.githubusercontent.com/FreeCAD/FreeCAD/4fd3bf320d9566a27e60069fc8387448aaa3a094/src/App/Application.cpp",
+          "sha256": "6727de0651526f682c89b2b14d7d8f1c699d7f7463e9843e0d7769ec932ee711",
+          "bytes": 143151
+        },
+        {
+          "path": "src/Main/MainCmd.cpp",
+          "url": "https://raw.githubusercontent.com/FreeCAD/FreeCAD/4fd3bf320d9566a27e60069fc8387448aaa3a094/src/Main/MainCmd.cpp",
+          "sha256": "5e55de0ff9bb316850d0237cddf91937870ed171ddcdff26347fb06530572924",
+          "bytes": 6439
+        },
+        {
+          "path": "src/Mod/Part/App/FeaturePartBox.cpp",
+          "url": "https://raw.githubusercontent.com/FreeCAD/FreeCAD/4fd3bf320d9566a27e60069fc8387448aaa3a094/src/Mod/Part/App/FeaturePartBox.cpp",
+          "sha256": "6256e7eeb5b7630af9b5d45e2f8ad87f2e4b74ff2075942c0c1eef1bc22edc76",
+          "bytes": 9609
+        }
+      ],
+      "assets": [
+        {
+          "name": "FreeCAD_1.1.4-Linux-aarch64-py311.AppImage-SHA256.txt",
+          "size_bytes": 109,
+          "reported_digest": "sha256:ade4b62166a4ac932ee031ec597c7d8ad4399201c4a1b0ecaac19b6c42eaca65",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-Linux-aarch64-py311.AppImage-SHA256.txt",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "FreeCAD_1.1.4-Linux-x86_64-py311.AppImage-SHA256.txt",
+          "size_bytes": 108,
+          "reported_digest": "sha256:ed97b0a49565565270b13788bc2395a72f3b46dacba5dbacc46e951d642543a1",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-Linux-x86_64-py311.AppImage-SHA256.txt",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "FreeCAD_1.1.4-macOS-arm64-py311.dmg-SHA256.txt",
+          "size_bytes": 102,
+          "reported_digest": "sha256:7c1c58e21470ac681a2613d76317a4fecb4d6214d909bbbf4257d1501162b684",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-macOS-arm64-py311.dmg-SHA256.txt",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "FreeCAD_1.1.4-macOS-x86_64-py311.dmg-SHA256.txt",
+          "size_bytes": 103,
+          "reported_digest": "sha256:87a9d55a244141f4f8950ee36f9f3d497be6640a4b0841cd37090b3dc984d8c5",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-macOS-x86_64-py311.dmg-SHA256.txt",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "FreeCAD_1.1.4-Windows-x86_64-py311-installer.exe",
+          "size_bytes": 519314976,
+          "reported_digest": "sha256:845f7101d33faf257a82a0cadc5f4f3804441f46ee493eb32b92fcf9c7147a24",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311-installer.exe",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "FreeCAD_1.1.4-Windows-x86_64-py311-installer.exe-SHA256.txt",
+          "size_bytes": 115,
+          "reported_digest": "sha256:2b84a91faa0a94fb1a9a8e39f7c80d26854bfbf7632b3cb6b744c09782604e4d",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311-installer.exe-SHA256.txt",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "FreeCAD_1.1.4-Windows-x86_64-py311.7z",
+          "size_bytes": 418088341,
+          "reported_digest": "sha256:4828741fc91ee37fafcdb97a1abacb18b04ba451ac4372d9ff7a7349b36f4d6d",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311.7z",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "FreeCAD_1.1.4-Windows-x86_64-py311.7z-SHA256.txt",
+          "size_bytes": 104,
+          "reported_digest": "sha256:386512a70b3e8400ffde94f6f8b1eee0438bcdafbd945cb89d354d3f6e6ddf5a",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311.7z-SHA256.txt",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "freecad_source_1.1.4.tar.gz-SHA256.txt",
+          "size_bytes": 94,
+          "reported_digest": "sha256:7ec8da65081e1cff65c9ca7b45fea074c01d8b0f6d0c8b77537b650b89a7646c",
+          "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.4/freecad_source_1.1.4.tar.gz-SHA256.txt",
+          "downloaded_or_verified": false
+        }
+      ]
+    },
+    {
+      "repo": "LBurny/cadpilot",
+      "tag": "v0.7.7",
+      "commit": "58bfee4d45061e55c158a5fd4786ab98a427f7f6",
+      "release_url": "https://github.com/LBurny/cadpilot/releases/tag/v0.7.7",
+      "published_utc": "2026-10-06T17:26:21Z",
+      "sources": [
+        {
+          "path": "src/cadpilot/freecad_client.py",
+          "url": "https://raw.githubusercontent.com/LBurny/cadpilot/58bfee4d45061e55c158a5fd4786ab98a427f7f6/src/cadpilot/freecad_client.py",
+          "sha256": "ea42b9c6e1e8b2b96c56de4e96f0a7d9e318d20107978f88e82a6325c3cc58c4",
+          "bytes": 21110
+        },
+        {
+          "path": "addon/CADPilot/rpc_server/rpc_server.py",
+          "url": "https://raw.githubusercontent.com/LBurny/cadpilot/58bfee4d45061e55c158a5fd4786ab98a427f7f6/addon/CADPilot/rpc_server/rpc_server.py",
+          "sha256": "c72063a78495db5fed528cdf6606793906b7e0a00080f19ec7ba7cbdfdb67224",
+          "bytes": 76378
+        },
+        {
+          "path": "addon/CADPilot/rpc_server/ip_filter.py",
+          "url": "https://raw.githubusercontent.com/LBurny/cadpilot/58bfee4d45061e55c158a5fd4786ab98a427f7f6/addon/CADPilot/rpc_server/ip_filter.py",
+          "sha256": "917fd8b9015dab18a7a04a51281240fcdf552012335f1903591505312f439984",
+          "bytes": 2877
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/LBurny/cadpilot/58bfee4d45061e55c158a5fd4786ab98a427f7f6/pyproject.toml",
+          "sha256": "cb805063d7783f745023528ce4f32b4a3a64e744239d4f6923a13353bb70c454",
+          "bytes": 1987
+        }
+      ],
+      "assets": []
+    },
+    {
+      "repo": "storytold/cadcraft",
+      "tag": "v0.5.0",
+      "commit": "315751e3ec98e708bcc831dd7f80ca0433a2e3d0",
+      "release_url": "https://github.com/storytold/cadcraft/releases/tag/v0.5.0",
+      "published_utc": "2026-10-11T00:11:33Z",
+      "sources": [
+        {
+          "path": "apps/cadcraft/src/control_server.rs",
+          "url": "https://raw.githubusercontent.com/storytold/cadcraft/315751e3ec98e708bcc831dd7f80ca0433a2e3d0/apps/cadcraft/src/control_server.rs",
+          "sha256": "7c9a4cd470fc039e6f18440ea576cd91fa47be9be54813c4286cfb74702f63ff",
+          "bytes": 2461
+        },
+        {
+          "path": "docs/control-protocol.md",
+          "url": "https://raw.githubusercontent.com/storytold/cadcraft/315751e3ec98e708bcc831dd7f80ca0433a2e3d0/docs/control-protocol.md",
+          "sha256": "dec08f32327dd2b941d4dfd59b6c8a7389db4bda064617d01dabb248acedd06b",
+          "bytes": 5383
+        },
+        {
+          "path": "packaging/windows/package.ps1",
+          "url": "https://raw.githubusercontent.com/storytold/cadcraft/315751e3ec98e708bcc831dd7f80ca0433a2e3d0/packaging/windows/package.ps1",
+          "sha256": "bc78b55d8926aa6bb930625e5987c74e3670463c6d97242891459ba072787b6f",
+          "bytes": 7029
+        }
+      ],
+      "assets": [
+        {
+          "name": "cadcraft-0.5.0-windows-arm64-portable.zip",
+          "size_bytes": 19809037,
+          "reported_digest": "sha256:cc3724ea996d54d8317a73b3dad66bf361368d799bcb42b3a720501aa38f0a38",
+          "url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/cadcraft-0.5.0-windows-arm64-portable.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "cadcraft-0.5.0-windows-arm64.msi",
+          "size_bytes": 14561280,
+          "reported_digest": "sha256:ba9b346fcb9772cd7827c1412b536939cc4d244c5e6b605313243a8b7a8274b0",
+          "url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/cadcraft-0.5.0-windows-arm64.msi",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "cadcraft-0.5.0-windows-x64-portable.zip",
+          "size_bytes": 21587357,
+          "reported_digest": "sha256:ce849d6ad1145a492b9b04bdab0ff36ee0e1cf72410d5e3a491ad006ff125614",
+          "url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/cadcraft-0.5.0-windows-x64-portable.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "cadcraft-0.5.0-windows-x64.msi",
+          "size_bytes": 16408576,
+          "reported_digest": "sha256:3533bca1af65191a7c9c9408e7e4f9049293a58d7f1586c8bf0a44697a88716c",
+          "url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/cadcraft-0.5.0-windows-x64.msi",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "cadcraft-0.5.0-windows-x86-portable.zip",
+          "size_bytes": 20496926,
+          "reported_digest": "sha256:5002c97326e46493447d921a01946b65459340f129c00d5b3227790a26eebd89",
+          "url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/cadcraft-0.5.0-windows-x86-portable.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "cadcraft-0.5.0-windows-x86.msi",
+          "size_bytes": 16076800,
+          "reported_digest": "sha256:2e92689ef26d5da4b5408b529e5748667c6f18e5ee5398b2d4c3471aa7089bf9",
+          "url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/cadcraft-0.5.0-windows-x86.msi",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size_bytes": 2341,
+          "reported_digest": "sha256:6980720946dfcf33794157dc0fefa2f1590c7aa4a1c43c9460ca212a86565433",
+          "url": "https://github.com/storytold/cadcraft/releases/download/v0.5.0/SHA256SUMS.txt",
+          "downloaded_or_verified": false
+        }
+      ]
+    },
+    {
+      "repo": "mixelpixx/Arduino-Agent",
+      "tag": "v0.7.1",
+      "commit": "fea5bb6a28d689a2ddbd1c635e2e187703c22549",
+      "release_url": "https://github.com/mixelpixx/Arduino-Agent/releases/tag/v0.7.1",
+      "published_utc": "2026-10-02T14:07:21Z",
+      "sources": [
+        {
+          "path": "arduino-mcp-extension/bridge/arduino-agent-bridge.js",
+          "url": "https://raw.githubusercontent.com/mixelpixx/Arduino-Agent/fea5bb6a28d689a2ddbd1c635e2e187703c22549/arduino-mcp-extension/bridge/arduino-agent-bridge.js",
+          "sha256": "399abc9415c53cd76f1b0cf26989adfc72c9cb7ab7ac1fd3d5487a57f945ae4b",
+          "bytes": 27672
+        }
+      ],
+      "assets": [
+        {
+          "name": "arduino-agent-windows.zip",
+          "size_bytes": 217376673,
+          "reported_digest": "sha256:a02ccf9fb97fa1e88b421ace4387bb5d912abe622152fcef2a9b89cae2603f58",
+          "url": "https://github.com/mixelpixx/Arduino-Agent/releases/download/v0.7.1/arduino-agent-windows.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "arduino-ide-mcp-windows.zip",
+          "size_bytes": 217376673,
+          "reported_digest": "sha256:a02ccf9fb97fa1e88b421ace4387bb5d912abe622152fcef2a9b89cae2603f58",
+          "url": "https://github.com/mixelpixx/Arduino-Agent/releases/download/v0.7.1/arduino-ide-mcp-windows.zip",
+          "downloaded_or_verified": false
+        }
+      ]
+    },
+    {
+      "repo": "mixelpixx/Konnect",
+      "tag": "v0.13.0",
+      "commit": "6bbe3e4f890ba1d37c0e5d5f38ccd03d90958c9e",
+      "release_url": "https://github.com/mixelpixx/Konnect/releases/tag/v0.13.0",
+      "published_utc": "2026-10-02T06:05:21Z",
+      "sources": [
+        {
+          "path": "crates/konnect-core/src/mcp/protocol.rs",
+          "url": "https://raw.githubusercontent.com/mixelpixx/Konnect/6bbe3e4f890ba1d37c0e5d5f38ccd03d90958c9e/crates/konnect-core/src/mcp/protocol.rs",
+          "sha256": "8a60ac31f6db9655922ba389c71c1728e70a47097a0836df52f71c012c4ce45f",
+          "bytes": 7531
+        },
+        {
+          "path": "crates/konnect-core/src/mcp/handler.rs",
+          "url": "https://raw.githubusercontent.com/mixelpixx/Konnect/6bbe3e4f890ba1d37c0e5d5f38ccd03d90958c9e/crates/konnect-core/src/mcp/handler.rs",
+          "sha256": "e5d627a186e10b41eb790065dc3e7fb806fd393e726106ded8cd938d52894f59",
+          "bytes": 116723
+        }
+      ],
+      "assets": [
+        {
+          "name": "konnect-pcm-v0.13.0-windows.zip",
+          "size_bytes": 16332854,
+          "reported_digest": "sha256:33b3cb975aef91a7603bf547a65ef8e9cbae3d8a35c2ba1cb15530f8a3e1f585",
+          "url": "https://github.com/mixelpixx/Konnect/releases/download/v0.13.0/konnect-pcm-v0.13.0-windows.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "konnect-v0.13.0-x86_64-pc-windows-msvc.zip",
+          "size_bytes": 13354938,
+          "reported_digest": "sha256:9099ad41becbfdbd00263af827a9ebab10d5732a6e42e8dfcff9a1a07dc1f089",
+          "url": "https://github.com/mixelpixx/Konnect/releases/download/v0.13.0/konnect-v0.13.0-x86_64-pc-windows-msvc.zip",
+          "downloaded_or_verified": false
+        }
+      ]
+    },
+    {
+      "repo": "ollama/ollama",
+      "tag": "v0.40.2",
+      "commit": "b061384d90ff455462bc32745dd0de479de717a3",
+      "release_url": "https://github.com/ollama/ollama/releases/tag/v0.40.2",
+      "published_utc": "2026-10-08T16:53:47Z",
+      "sources": [
+        {
+          "path": "server/routes.go",
+          "url": "https://raw.githubusercontent.com/ollama/ollama/b061384d90ff455462bc32745dd0de479de717a3/server/routes.go",
+          "sha256": "3fc5a208dabafa715d4ca3114aa84c8181d7d5f215c151b79224885883b060b6",
+          "bytes": 104911
+        }
+      ],
+      "assets": [
+        {
+          "name": "ollama-windows-amd64-mlx.zip",
+          "size_bytes": 1403168424,
+          "reported_digest": "sha256:fe187f88681bc5d3c196d91674f460e73fe22bbf5d329eccf80dd0f0222ac990",
+          "url": "https://github.com/ollama/ollama/releases/download/v0.40.2/ollama-windows-amd64-mlx.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "ollama-windows-amd64-rocm.zip",
+          "size_bytes": 255448027,
+          "reported_digest": "sha256:00cab1340f9086e2d85ed6962b3e5dcda80dd13c4bbd892a9368e22ea5aaba06",
+          "url": "https://github.com/ollama/ollama/releases/download/v0.40.2/ollama-windows-amd64-rocm.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "ollama-windows-amd64.zip",
+          "size_bytes": 1468085195,
+          "reported_digest": "sha256:e29ad1d5063dd4b54b2492d9b00adab2cff9621bfa654b6c92aa8d6f1fdfe7fc",
+          "url": "https://github.com/ollama/ollama/releases/download/v0.40.2/ollama-windows-amd64.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "ollama-windows-arm64.zip",
+          "size_bytes": 209958164,
+          "reported_digest": "sha256:82ad9bff6dd5c1c70400ceac00d01aaa0389e9182b98d918d1d164ebf87acdb2",
+          "url": "https://github.com/ollama/ollama/releases/download/v0.40.2/ollama-windows-arm64.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "sha256sum.txt",
+          "size_bytes": 1472,
+          "reported_digest": "sha256:f4c4f203342c7d6d1043d708aebecfc1bde088f961034209a45237196ad195dc",
+          "url": "https://github.com/ollama/ollama/releases/download/v0.40.2/sha256sum.txt",
+          "downloaded_or_verified": false
+        }
+      ]
+    },
+    {
+      "repo": "OrcaSlicer/OrcaSlicer",
+      "tag": "v2.4.2",
+      "commit": "8500fcdccaa10b5099ac20d252af3a7c560046f1",
+      "release_url": "https://github.com/OrcaSlicer/OrcaSlicer/releases/tag/v2.4.2",
+      "published_utc": "2026-07-07T03:33:49Z",
+      "sources": [
+        {
+          "path": "src/OrcaSlicer.cpp",
+          "url": "https://raw.githubusercontent.com/OrcaSlicer/OrcaSlicer/8500fcdccaa10b5099ac20d252af3a7c560046f1/src/OrcaSlicer.cpp",
+          "sha256": "777ec1f25d37f535af30fa9a4c549ad4334ae9efae377502fa19a2cb4794b162",
+          "bytes": 444346
+        }
+      ],
+      "assets": [
+        {
+          "name": "OrcaSlicer_Windows_Installer_V2.4.2_arm64.exe",
+          "size_bytes": 124937286,
+          "reported_digest": "sha256:ce00548d9444eeada4e61f49f35e2984e493671aadd3d98a9ee94fe18977527d",
+          "url": "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Windows_Installer_V2.4.2_arm64.exe",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "OrcaSlicer_Windows_Installer_V2.4.2_x64.exe",
+          "size_bytes": 137860341,
+          "reported_digest": "sha256:f602f9d646f49bee387d8f342a0193a7ef20756eabb845e19795c5a62b90a58a",
+          "url": "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Windows_Installer_V2.4.2_x64.exe",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "OrcaSlicer_Windows_V2.4.2_arm64_portable.zip",
+          "size_bytes": 153768591,
+          "reported_digest": "sha256:428a26878ca39dcd87f52fe3faea55aa76c9d477c369377f62e047194cdef06b",
+          "url": "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Windows_V2.4.2_arm64_portable.zip",
+          "downloaded_or_verified": false
+        },
+        {
+          "name": "OrcaSlicer_Windows_V2.4.2_x64_portable.zip",
+          "size_bytes": 171367668,
+          "reported_digest": "sha256:feba3009dfb9d268779cca5758a1a5bc3b7d0722bf8fa48d5c57340de975d6be",
+          "url": "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Windows_V2.4.2_x64_portable.zip",
+          "downloaded_or_verified": false
+        }
+      ]
+    }
+  ],
+  "documentation_fingerprints": [
+    {
+      "url": "https://v2.tauri.app/security/capabilities/",
+      "resolved_url": "https://v2.tauri.app/security/capabilities/",
+      "sha256": "d62fc160bda0422c223f3926534ed3b48f398f0d9821de6144770fd983cbefcc",
+      "bytes": 119879
+    },
+    {
+      "url": "https://v2.tauri.app/develop/calling-frontend/",
+      "resolved_url": "https://v2.tauri.app/develop/calling-frontend/",
+      "sha256": "f2c6ea3e3fc044dc5fb8ba6c8bfbc9c7b90c35a6fee02fdda69f4f56d62340fe",
+      "bytes": 222535
+    },
+    {
+      "url": "https://v2.tauri.app/distribute/windows-installer/",
+      "resolved_url": "https://v2.tauri.app/distribute/windows-installer/",
+      "sha256": "86f8df70c33daa665c530b4e5555a1de1a1b4064e60223b24b949033f21bb104",
+      "bytes": 246022
+    },
+    {
+      "url": "https://docs.ollama.com/api/chat",
+      "resolved_url": "https://docs.ollama.com/api/chat",
+      "sha256": "11f3bd104436bfb443c66e98f60a208f96105a4bfc52497e50d59e8c2a9348c6",
+      "bytes": 384530
+    },
+    {
+      "url": "https://docs.ollama.com/api/errors",
+      "resolved_url": "https://docs.ollama.com/api/errors",
+      "sha256": "84ddc9c48201d5da134fe655d0bdde10208f0df344c6fb369ff4aabef0263fa9",
+      "bytes": 265695
+    },
+    {
+      "url": "https://docs.ollama.com/capabilities/structured-outputs",
+      "resolved_url": "https://docs.ollama.com/capabilities/structured-outputs",
+      "sha256": "4735448dbba82293627ac236f1312c9550becf5665715a1bd74bd9112107117e",
+      "bytes": 363340
+    },
+    {
+      "url": "https://docs.ollama.com/gpu",
+      "resolved_url": "https://docs.ollama.com/gpu",
+      "sha256": "621fb48805854e02517d8ff2d48a0e9f81ce65a573a16ce215d50c8542781dc0",
+      "bytes": 310742
+    },
+    {
+      "url": "https://docs.ollama.com/windows",
+      "resolved_url": "https://docs.ollama.com/windows",
+      "sha256": "2f10b24ae94ad1aae4227eb1f0f53bfe10a07d65bb927358262fc4c7720c88b5",
+      "bytes": 283073
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/app-server.md",
+      "resolved_url": "https://learn.chatgpt.com/docs/app-server.md",
+      "sha256": "14c29f997cffff66125e710c1746425c53262eb4e636eb0bbcd5c8b4ec7e4464",
+      "bytes": 100675
+    },
+    {
+      "url": "https://code.claude.com/docs/en/agent-sdk/permissions.md",
+      "resolved_url": "https://code.claude.com/docs/en/agent-sdk/permissions.md",
+      "sha256": "bf059433fe7b1801a958893df59093730c90cea4a470cf541805d89b9a4eaab1",
+      "bytes": 25128
+    },
+    {
+      "url": "https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/",
+      "resolved_url": "https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/",
+      "sha256": "61220b6eb2f7b1562b0d9d80d593f851a2f5540a8d7d90d99c627c069d92ca9b",
+      "bytes": 55737
+    },
+    {
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+      "resolved_url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+      "sha256": "3f93f01edcfb66d16a99bedfc2cc3ff498403746bcecd654e1111e973e02b0f1",
+      "bytes": 315291
+    }
+  ]
+}

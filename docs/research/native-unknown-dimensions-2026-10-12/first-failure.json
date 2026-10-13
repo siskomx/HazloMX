@@ -1,0 +1,9 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: No actual owned FreeCAD process was observed before cancellation",
+  "ui": {
+    "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Mexa á native-ddkBSa\\project",
+    "error": "",
+    "status": "Archivos verificados y publicados."
+  },
+  "log": ""
+}

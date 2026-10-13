@@ -1,0 +1,10 @@
+{
+  "disk_full_error": 112,
+  "filled_bytes": 53624832,
+  "input_preserved": true,
+  "no_artifacts_published": true,
+  "pass": true,
+  "previous_snapshot_preserved": true,
+  "recovered_phase": "interrupted",
+  "snapshot_error": 112
+}

@@ -1,0 +1,21 @@
+﻿{
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "native_ui_driver_elevated":  true,
+    "installer_sha256":  "8ada4074b8399a4ffb688e8deebb05da9d0104d3d4570b840d79469a7a8b02fa",
+    "app_alive":  true,
+    "uninstalled":  true,
+    "resumed_after_identity_check":  false,
+    "current_user_install":  true,
+    "previous_installer_sha256":  "705532b4b91127222d31847467817346d296298dfa9c225ba00e87f1710a902b",
+    "user":  "WDAGUtilityAccount",
+    "native_agent_connector_workflow":  true,
+    "lifecycle_pass":  true,
+    "native_release_initial_ui":  true,
+    "previous_build_update":  true,
+    "pass":  true,
+    "stage":  "finished",
+    "same_version_update":  true,
+    "connector_exit":  0,
+    "binaries_match_package_build":  true,
+    "user_files_preserved":  true
+}

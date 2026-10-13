@@ -1,0 +1,19 @@
+{
+  "installer_sha256": "705532b4b91127222d31847467817346d296298dfa9c225ba00e87f1710a902b",
+  "app_sha256": "581492ebe9f1695946af8c2e8c854723eef6ca3a87f4bd66ba47712e280db0a2",
+  "unbundled_app_sha256": "293ba489f43594b8491a91f8914e90a8abf04cf7953e4e0b520c9232211cd05e",
+  "bundle_marker": "NSS",
+  "helper_sha256": "0e157f8c0918945488ca28cb7903c5b4b676c4efb4a4d5018a7e818aa5b7b308",
+  "harness_sha256": "bb93f2020feaf6e765adb65908f268d185977210c8e1ee3a54ee5bd2e4bb70c0",
+  "version": "0.1.0",
+  "tool_count": 15,
+  "networking": "enabled",
+  "cadcraft_cli_sha256": "d9517678cf9216a63ecb7f4adfe4ab485af9541849d465245251bba91845724f",
+  "drawing_harness_sha256": "6e4d52e74550d2ce8e6531c36e5d336eb251c1433df434ef5a68dcc8ebd052b1",
+  "cadpilot_harness_sha256": "aebf939cce7b6a15be004d2592d41441d043dee93c4aab073c91c7671413fd86",
+  "freecad_cmd_sha256": "b79c648edd6e40d6769b3096317ca2063d86a1d47412afd93d02c4047521b2dd",
+  "orca_cli_sha256": "481c9f071fdb3cda033d1677ce7a9442c41a25cbeeb42cfc808af179b4dc85c3",
+  "orca_harness_sha256": "e782c1975ff799aa158e1a39b8dd51376027a7f738c146b6b2b7849d5cefd2a8",
+  "arduino_cli_sha256": "1017de89179c3167e6b8a38ca6cc4091fa69a3cf97aafa7810f01423003f5571",
+  "arduino_harness_sha256": "5305673688b13e7ba3419a2f68df5e4866d4d9c67899209d883a76bff384e07d"
+}

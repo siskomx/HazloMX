@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "missing_units",
+  "result": {
+    "proposal": {
+      "message": "¿En qué unidad están las medidas (mm, cm, m, pulgadas, pies)?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 0.8219725
+}

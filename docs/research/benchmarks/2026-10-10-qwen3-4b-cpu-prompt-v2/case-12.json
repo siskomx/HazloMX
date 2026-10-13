@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "ambiguous_order",
+  "result": {
+    "proposal": {
+      "message": "¿Cuál es el largo, ancho y alto del bloque? (Ejemplo: largo 10 mm, ancho 20 mm, alto 30 mm)",
+      "status": "clarification"
+    }
+  },
+  "seconds": 6.8814440999999995
+}

@@ -1,0 +1,13 @@
+{
+  "installer_sha256": "57c36bf4fa76ab1ddbb9f3cbaf3806f3b1a056a1867a9f90bd5b177b75360c0b",
+  "release_app_sha256": "620c3e8b53db304a57dd5fb0fb5aef219c80a867ad1473c3984065c52605baba",
+  "installed_app_sha256": "5b9399647bfbfd7162f08b7d829dacedac068bd1164b14adfabe29addff307f8",
+  "regular_tests": 46,
+  "ignored_standalone": 8,
+  "frontend_build": true,
+  "frontend_fixtures": true,
+  "desktop_clippy": true,
+  "installed_guest_update_view_uninstall_tested": true,
+  "fresh_current_installer_bootstrap_tested": false,
+  "models_run": 0
+}

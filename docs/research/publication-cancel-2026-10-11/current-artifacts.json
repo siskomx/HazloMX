@@ -1,0 +1,34 @@
+{
+  "installer": {
+    "path": "target/release/bundle/nsis/Hazlo Mexa_0.1.0_x64-setup.exe",
+    "sha256": "cc395aa2aad549181301a10241dc467ddd50b52b1c069dc3efb2c98add491f15"
+  },
+  "release_app": {
+    "path": "target/release/hazlomexa.exe",
+    "sha256": "6b34e9eda66fb57b35ef805f904fc543fc82096453cc3974478b7804f7d150c1"
+  },
+  "macro": {
+    "path": "apps/desktop/src-tauri/resources/freecad/create-solid.FCMacro",
+    "sha256": "5abc79546b17926d0ecc8590bd013e373bdf73e8f00cf9dbd4f7930d98e47df1"
+  },
+  "lock": {
+    "path": "Cargo.lock",
+    "sha256": "a01b86c1e848e922d12752d1415f9fcf53672f55e7b899337914a8e0fe602bff"
+  },
+  "frontend_lock": {
+    "path": "apps/desktop/package-lock.json",
+    "sha256": "3a7ce8ea71b570842cd95563de708cb1915b25672f37cc6dee82dbbd5428d87d"
+  },
+  "backend_tests": {
+    "path": "target/sandbox-probe/622a4688-48f5-4dde-9d62-8deebcb8f61d/input/tests.exe",
+    "sha256": "b2243dbcead2e68d9d619cf3e4240fab22ac130b7793b406711e2a3bb9117bda"
+  },
+  "native_harness": {
+    "path": "apps/desktop/tests/native-smoke.mjs",
+    "sha256": "cf5cd4693323acee79120e6ca470070905cef0f35f8b7f6cbef69ce7b35dd055"
+  },
+  "frontend_harness": {
+    "path": "apps/desktop/tests/design-flow.mjs",
+    "sha256": "025528aad6ce71cb627cfd9b4f752d8c10e8b8d8ca200345e94617c0017681db"
+  }
+}

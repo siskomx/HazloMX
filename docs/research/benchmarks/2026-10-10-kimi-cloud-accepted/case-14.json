@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "lid",
+  "result": {
+    "proposal": {
+      "message": "¿Solo necesitas las dimensiones externas de la caja (80×50×25 mm) o también el espesor de paredes y la tolerancia de la tapa a presión?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 0.9929903
+}

@@ -1,0 +1,36 @@
+{
+  "pass": true,
+  "full_acceptance": false,
+  "date": "2026-10-11",
+  "guest_id": "8a231cfa-1016-49cd-b65c-325507dfa92d",
+  "guest_build": 26100,
+  "installer_sha256": "cc395aa2aad549181301a10241dc467ddd50b52b1c069dc3efb2c98add491f15",
+  "earlier_bootstrap_installer_sha256": "4fede5cb05b32ac8eb8a72e0627345b06baa56dccb6e2b3502d17f68b495908e",
+  "actual_models_run": 0,
+  "guest_left_running": false,
+  "backend_regular_tests_passed": 40,
+  "ignored_standalone_tests": 5,
+  "frontend_fixture_pass": true,
+  "frontend_build_pass": true,
+  "desktop_clippy_pass": true,
+  "checks": [
+    "Actual installed release; native project picker and explicit manual approval",
+    "Fixed unmodified FreeCAD macro rejects occupied staging output; result success=false, error Output already exists: solid.FCStd; persisted Failed, files_verified=false, no accepted output",
+    "Actual FreeCAD successfully generates and verifies FCStd/STEP; occupied publication destination causes error183, persisted Failed with files_verified=true; staged files retained and occupant untouched",
+    "UI distinguishes completed generation/verification from publication failure; previous artifact controls remain available",
+    "Same-version installer update/start then native reopen succeeds with both failure histories and no regeneration",
+    "Eleven baseline project files remain byte-identical; all twenty-one exported files independently SHA256 verified on host",
+    "Corrected installer uninstall exit0; app removed and all twenty-one project hashes preserved"
+  ],
+  "remaining": [
+    "Precise installed Cancel event during atomic publication race",
+    "Final requirement-by-requirement acceptance audit",
+    "Full-disk CAD publication is not established by the snapshot I/O disk-full proof"
+  ],
+  "limits": [
+    "Bootstrap prerequisite used earlier installer; corrected installer install/update/start/uninstall tested with its WebView2 already installed",
+    "Native fault tests modify only reserved owned guest paths, never the fixed macro or old artifacts",
+    "Regular backend cancellation/commit race tests establish authoritative outcomes, not precise installed UI timing",
+    "Actual model quality remains experimental; model evaluations stay deferred"
+  ]
+}

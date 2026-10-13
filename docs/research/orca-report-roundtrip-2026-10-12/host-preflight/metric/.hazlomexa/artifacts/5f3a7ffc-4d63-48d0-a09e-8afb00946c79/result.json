@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "job_id": "5f3a7ffc-4d63-48d0-a09e-8afb00946c79",
+  "orca_version": "2.4.2",
+  "summary": {
+    "layers": 50,
+    "max_z_mm": 10.0,
+    "bounds_mm": [
+      10.0,
+      10.0,
+      10.0
+    ],
+    "settings": {
+      "bed": "Textured PEI Plate",
+      "bed_c": 50.0,
+      "filament": "Prusa Generic PLA",
+      "layer_mm": 0.2,
+      "machine": "Prusa MK3S 0.4 nozzle",
+      "nozzle_c": 220.0,
+      "nozzle_mm": 0.4,
+      "process": "0.20mm Standard @MK3S 0.4"
+    }
+  },
+  "sha256": {
+    "Model-mm.stl": "ecd136e72fe07417445638b3fd07553b6eb9e7e1be43699fb6c2932506dd98ed",
+    "Original/Filament.json": "9ff818b607a016955aa4f821d32563f594dd546f9bab171f0c11aaace08bdd21",
+    "Original/Machine.json": "d89873a83c6f19ad2dbb6a30cdd9b57d5555ccf3d30a2242c8bec1bb9cdae917",
+    "Original/Original.stl": "c1c022788a012c7eb8f7ca9807b83fcf4a1ee6a3c5538a7669fe3779c117bf73",
+    "Original/Process.json": "6f8f64aad70d15f30dd77d4cad3fdddad4c673c1292cb6e455fe91adad432384",
+    "Original/ProfileSources/filament/Prusa Generic PLA.json": "ae54cfcb0c2b9f49b30ae9026379051b602b9cbf505738646256571cd5b2c223",
+    "Original/ProfileSources/filament/fdm_filament_common.json": "7e9e2aab22308279f16ffdb84bea3b3a0016d1e305ab411db493c2eb9ef4ff0a",
+    "Original/ProfileSources/filament/fdm_filament_pla.json": "412073f0eaad84901f700f7cc3a672b9c9c39877800ebcb8db39b9fe950e5942",
+    "Original/ProfileSources/machine/Prusa MK3S 0.4 nozzle.json": "532a5b004c3f49def83bc151481de48d52db9cef340da2abfb35c66eef3ce898",
+    "Original/ProfileSources/machine/fdm_machine_common.json": "de44aa2b3073eb1056c708cf38c60b61d91f939cbbfc6e555d8436b7020f47d3",
+    "Original/ProfileSources/process/0.20mm Standard @MK3S 0.4.json": "dfdd3261a378341663849303a25364f792684cb673ccb8b25aa22d7f83eac93c",
+    "Original/ProfileSources/process/fdm_process_common.json": "dc69dc8507f91afeffc9598d72b9cac8b2597d3a20236bd2167288baf8dd936b",
+    "Sliced.3mf": "48930389844716a505bceef94004622b6d49aace0248b81f1de1a3add41379c0",
+    "Toolpath.gcode": "9c5f254f3886c147f7e146d1cdbd32bc85e7bd1d7c8b2cc6d1b1f0add09377c5"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "cancellation_ms": 6,
+  "job_id": "eb5da05a-fc52-4461-929a-772a8987db8e",
+  "native_ui_cancel_verified": false,
+  "observed_owned_pids": [
+    18928
+  ],
+  "passed": true,
+  "published": false,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-orca-cancel-ddbe7cf2-220e-48dd-911c-6d0545cd9155"
+}

@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "lid",
+  "result": {
+    "proposal": {
+      "message": "Se solicita una caja hueca con tapa a presión. Para crear una caja hueca con tapa a presión, necesitamos especificar las medidas externas y las medidas internas (para el hueco). Sin embargo, en la descripción solo se proporcionan las medidas externas (largo 80 mm, ancho 50 mm, alto 2:50 mm). No se indican las medidas internas ni si se requiere un espesor específico para la tapa a presión. Por lo tanto, el orden es ambiguo y no se puede definir las medidas exactas de la caja hueca con tapa a presión.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 28.4264387
+}

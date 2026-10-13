@@ -1,0 +1,180 @@
+Window: "ab5cc639-b3ef-4f50-a889-edc638115f8c - File Explorer", App: explorer.exe.
+	0 window ab5cc639-b3ef-4f50-a889-edc638115f8c - File Explorer Secondary Actions: Raise
+		7 pane
+		8 pane ab5cc639-b3ef-4f50-a889-edc638115f8c
+			9 pane
+				10 pane Details Pane
+					11 pane
+						12 pane
+							13 group Netlist ID: DetailsViewControlRootGrid
+								14 pane
+									15 image Thumbnail for current selection ID: Icon
+									16 image Icon for current selection
+									17 text Netlist
+									18 button Share ID: shareButton
+										19 image
+										20 text Share
+									21 group Details ID: DetailsViewProperties
+										22 text Details
+										23 text Type
+										24 text Microsoft Edge HTML Document
+										25 text Size
+										26 text 12.9 KB
+										27 text File location
+										28 text C:/Users/USER\Documents\GitHub\HazloMX\target\native-konnect-c42af480-0f36-4145-b7ff-3357d7e1cc71\project\.hazlomexa\artifacts\ab5cc639-b3ef-4f50-a889-edc638115f8c
+										29 text Date modified
+										30 text ‎10/‎12/‎2026 ‏‎8:37 AM
+										31 text Shared with
+										32 text scanner
+										33 button Properties
+											34 image
+											35 text Properties
+									36 scroll bar (settable, float) Vertical Value: 0 ID: VerticalScrollBar
+				37 status bar Status bar ID: StatusBarModuleInner
+					38 group Property Field ID: System.StatusBarViewItemCount
+						39 text 5 items Description: Total item count ID: PropertyValue
+					40 group Property Field ID: System.StatusBarSelectedItemCount
+						41 text 1 item selected 12.9 KB Description: Selected item count and size ID: PropertyValue
+					42 group Property Field ID: System.StatusIcons
+						43 text State: ID: PropertyLabel
+						44 edit State Value: Shared ID: PreviewMetadataControlReadOnly
+					45 group View Modes ID: ViewButtonsGroup
+						46 radio button (selectable) Details Description: Displays information about each item in the window. (Ctrl+Shift+6) ID: ViewMode_Details
+						47 radio button (selectable) Large Icons Description: Displays items by using large thumbnails. (Ctrl+Shift+2) ID: ViewMode_LargeIcons
+				48 pane Control Host ID: ProperTreeHost
+					49 tree Navigation Pane ID: 100
+						50 scroll bar (settable, float) Vertical Value: 0 ID: NonClientVerticalScrollBar
+							51 button Line up ID: UpButton
+							52 thumb Position ID: ScrollbarThumb
+							53 button Page down ID: DownPageButton
+							54 button Line down ID: DownButton
+						55 tree item (selectable, settable, string) Desktop Value: Desktop
+							56 tree item (selectable, settable, string) Home Value: Home
+							57 tree item (selectable, settable, string) Gallery Value: Gallery
+							58 tree item (selectable, settable, string) Start of Quick Access - Desktop (pinned) Value: Start of Quick Access - Desktop (pinned)
+							59 tree item (selectable, settable, string) Downloads (pinned) Value: Downloads (pinned)
+							60 tree item (selectable, settable, string) Documents (pinned) Value: Documents (pinned)
+							61 tree item (selectable, settable, string) Pictures (pinned) Value: Pictures (pinned)
+							62 tree item (selectable, settable, string) Music (pinned) Value: Music (pinned)
+							63 tree item (selectable, settable, string) Videos (pinned) Value: Videos (pinned)
+							64 tree item (selectable, settable, string) End of Quick Access - PDFgear Value: End of Quick Access - PDFgear
+							65 tree item (selectable, settable, string) This PC Value: This PC
+								66 tree item (selectable, settable, string) Local Disk (C:) Value: Local Disk (C:)
+								67 tree item (selectable, settable, string) Media (\\CHILAQUILES) (Z:) Value: Media (\\CHILAQUILES) (Z:)
+							68 tree item (selectable, settable, string) Network Value: Network
+				69 pane Shell Folder View ID: listview
+					70 list Items View
+						71 header Header
+							72 split button Name ID: System.ItemNameDisplay
+								73 button Filter dropdown ID: DropDown
+							74 split button Date modified ID: System.DateModified
+								75 button Filter dropdown ID: DropDown
+							76 split button Type ID: System.ItemTypeText
+								77 button Filter dropdown ID: DropDown
+							78 split button Size ID: System.Size
+								79 button Filter dropdown ID: DropDown
+						80 list item (selectable, settable, string) Edited Value: Edited ID: 0
+							81 edit (settable, string) Name Value: Edited ID: System.ItemNameDisplay
+							82 edit Date modified Value: ‎10/‎12/‎2026 ‏‎8:37 AM ID: System.DateModified
+							83 edit Type Value: File folder ID: System.ItemTypeText
+							84 edit Size ID: System.Size
+						85 list item (selectable, settable, string) Original Value: Original ID: 1
+							86 edit (settable, string) Name Value: Original ID: System.ItemNameDisplay
+							87 edit Date modified Value: ‎10/‎12/‎2026 ‏‎8:37 AM ID: System.DateModified
+							88 edit Type Value: File folder ID: System.ItemTypeText
+							89 edit Size ID: System.Size
+						90 list item (selectable, settable, string) input Value: input ID: 2
+							91 edit (settable, string) Name Value: input ID: System.ItemNameDisplay
+							92 edit Date modified Value: ‎10/‎12/‎2026 ‏‎8:37 AM ID: System.DateModified
+							93 edit Type Value: JSON Source File ID: System.ItemTypeText
+							94 edit Size Value: 1 KB ID: System.Size
+						95 list item (selectable, settable, string) Netlist Value: Netlist ID: 3
+							96 edit (settable, string) Name Value: Netlist ID: System.ItemNameDisplay
+							97 edit Date modified Value: ‎10/‎12/‎2026 ‏‎8:37 AM ID: System.DateModified
+							98 edit Type Value: Microsoft Edge HTML Document ID: System.ItemTypeText
+							99 edit Size Value: 13 KB ID: System.Size
+						100 list item (selectable, settable, string) result Value: result ID: 4
+							101 edit (settable, string) Name Value: result ID: System.ItemNameDisplay
+							102 edit Date modified Value: ‎10/‎12/‎2026 ‏‎8:37 AM ID: System.DateModified
+							103 edit Type Value: JSON Source File ID: System.ItemTypeText
+							104 edit Size Value: 2 KB ID: System.Size
+		105 pane
+			106 pane
+				107 tab ID: TabView
+					108 list ID: TabListView
+						109 tab item (selectable) ab5cc639-b3ef-4f50-a889-edc638115f8c
+							110 image
+							111 text ab5cc639-b3ef-4f50-a889-edc638115f8c
+							112 button Close Tab ID: CloseButton
+					113 button Add New Tab ID: AddButton
+				114 app bar ID: NavigationCommands
+					115 app bar button (disabled) Back Description: Back ID: backButton
+					116 app bar button (disabled) Forward Description: Forward ID: forwardButton
+					117 app bar button Up to "artifacts" (Alt + Up Arrow) Description: Up to "artifacts" (Alt + Up Arrow) ID: upButton
+					118 app bar button Refresh "ab5cc639-b3ef-4f50-a889-edc638115f8c" (F5) Description: Refresh "ab5cc639-b3ef-4f50-a889-edc638115f8c" (F5) ID: refreshButton
+				119 group ID: PART_AutoSuggestBox
+					120 edit (settable, string) Address Bar ID: TextBox
+				121 split button This PC ID: FirstCrumbStackPanel
+					122 image
+				123 group ID: PART_BreadcrumbBar
+					124 split button More
+					125 split button This PC
+						126 text This PC
+					127 split button Local Disk (C:)
+						128 text Local Disk (C:)
+					129 split button Users
+						130 text Users
+					131 split button Ivan
+						132 text Ivan
+					133 split button Documents
+						134 text Documents
+					135 split button GitHub
+						136 text GitHub
+					137 split button HazloMX
+						138 text HazloMX
+					139 split button target
+						140 text target
+					141 split button native-konnect-c42af480-0f36-4145-b7ff-3357d7e1cc71
+						142 text native-konnect-c42af480-0f36-4145-b7ff-3357d7e1cc71
+					143 split button project
+						144 text project
+					145 split button .hazlomexa
+						146 text .hazlomexa
+					147 split button artifacts
+						148 text artifacts
+					149 split button ab5cc639-b3ef-4f50-a889-edc638115f8c
+						150 text ab5cc639-b3ef-4f50-a889-edc638115f8c
+				151 group ID: FileExplorerSearchBox
+					152 edit (settable, string) Search ab5cc639-b3ef-4f50-a889-edc638115f8c ID: TextBox
+						153 text Search ab5cc639-b3ef-4f50-a889-edc638115f8c
+				154 app bar ID: FileExplorerCommandBar
+					155 app bar button New
+						156 image
+					157 app bar button Cut Description: Move the selected items to the Clipboard.
+						158 image
+					159 app bar button Copy Description: Copy the selected items to the Clipboard.
+						160 image
+					161 app bar button (disabled) Paste Description: Paste the contents of the Clipboard to the current location.
+						162 image
+					163 app bar button Rename Description: Rename the selected item.
+						164 image
+					165 app bar button Share Description: Choose an app to share the selected files.
+						166 image
+					167 app bar button Delete Description: Move the selected items to the Recycle Bin or permanently delete them.
+						168 image
+					169 app bar button Sort ID: SortAndGroupButton
+						170 image
+					171 app bar button View
+						172 image
+					173 button More options ID: MoreButton
+				174 app bar ID: FileExplorerSecondaryCommandBar
+					175 app bar button Details Description: Show or hide the details pane. ID: DetailsPaneToggleButton
+						176 image
+		1 title bar (settable, string) Value: ab5cc639-b3ef-4f50-a889-edc638115f8c - File Explorer
+			2 menu bar System ID: MenuBar
+				3 menu item System
+			4 button Minimize
+			5 button Maximize
+			6 button Close
+
+The focused UI element is 120 edit (settable, string) Address Bar ID: TextBox.

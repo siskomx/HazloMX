@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "hollow_enclosure",
+  "result": {
+    "proposal": {
+      "message": "La caja hueca tiene paredes de 2 mm, por lo que las medidas externas son 100 mm, 60 mm y 30 mm. Para calcular las medidas internas, restamos 2 mm de cada lado en cada dimensión. Sin embargo, el problema no especifica si las medidas dadas son externas o internas. Si son externas, las medidas internas serían: largo = 100 - 4 = 96 mm, ancho = 60 - . ¿Qué tipo de medidas son las dadas? (largo, ancho, alto externos o internos?)",
+      "status": "clarification"
+    }
+  },
+  "seconds": 19.6898024
+}

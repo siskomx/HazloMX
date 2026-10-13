@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "hollow_enclosure",
+  "result": {
+    "proposal": {
+      "message": "El usuario menciona que es una caja hueca con pared de 2 mm. Esto indica que no se trata de las dimensiones externas sino las internas. Para calcular las dimensiones internas, se restarían 2 mm de cada lado (ancho, largo y alto). Sin embargo, el usuario no especifica si las medidas proporcionadas son externas o internas. Por lo tanto, necesito pedir clarificación sobre si las medidas dadas son externas o internas para poder calcular correctamente las dimensiones internas.",
+      "status": "clarification"
+    }
+  },
+  "seconds": 15.1292071
+}

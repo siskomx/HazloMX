@@ -1,0 +1,23 @@
+{
+  "config": {
+    "build_cache": {
+      "path": "C:/Users/USER/Documents/GitHub/HazloMX/target/arduino-probe/cache"
+    },
+    "directories": {
+      "data": "C:/Users/USER/Documents/GitHub/HazloMX/target/arduino-probe/data",
+      "downloads": "C:/Users/USER/Documents/GitHub/HazloMX/target/arduino-probe/downloads",
+      "user": "C:/Users/USER/Documents/GitHub/HazloMX/target/arduino-probe/user"
+    },
+    "metrics": {
+      "enabled": false
+    },
+    "network": {
+      "cloud_api": {
+        "skip_board_detection_calls": true
+      }
+    },
+    "updater": {
+      "enable_notification": false
+    }
+  }
+}

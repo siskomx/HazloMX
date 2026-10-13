@@ -1,0 +1,2 @@
+    Checking hazlomexa v0.1.0 (C:/Users/USER\Documents\GitHub\HazloMX\apps\desktop\src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.13s

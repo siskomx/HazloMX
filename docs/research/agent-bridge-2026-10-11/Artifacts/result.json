@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "job_id": "b1757da9-7391-41c5-927e-c7ac6640cdcf",
+  "konnect_version": "0.13.0",
+  "protocol_version": "2025-06-18",
+  "files": [
+    {
+      "path": "Edited/test.kicad_sch",
+      "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+    },
+    {
+      "path": "Netlist.xml",
+      "sha256": "b77169d4dbf565a753dce5bc9d2d10ab4dd5acbb408c1035b1676c6a1fb2d1b1"
+    },
+    {
+      "path": "Original/test.kicad_sch",
+      "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+    },
+    {
+      "path": "input.json",
+      "sha256": "a966cf426dbfe19d7964d4d0ccd8b7534f894a2ec367103ab2f43082d8e25d2c"
+    }
+  ]
+}

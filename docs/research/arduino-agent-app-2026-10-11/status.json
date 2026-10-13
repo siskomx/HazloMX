@@ -1,0 +1,25 @@
+{
+  "pass": true,
+  "sandbox_id": "89f6dade-1e44-4db9-852b-f9d866bb84bc",
+  "regular_tests": 52,
+  "ignored_standalone": 10,
+  "actual_agent_adapter": true,
+  "actual_agent_workflow": true,
+  "auth_health_preflight_verified": true,
+  "frontend_fixtures": true,
+  "desktop_clippy": true,
+  "native_agent_ui_verified": false,
+  "installed_agent_workflow_verified": false,
+  "in_flight_cancellation_verified": false,
+  "project_export_hashes_verified": 17,
+  "backend_test_exe_sha256": "07308ad88d8b0b3368176804f07c29a154303fbd8c65792fd4ea8ccbba298340",
+  "source_sha256": {
+    "apps/desktop/src-tauri/src/agent.rs": "a70dc3e4e86854556e969712ae08f4bdf1042ee868f9fb14dee6c2e67e1c887e",
+    "apps/desktop/src-tauri/src/jobs.rs": "a037f571a6cf220cf9c06e682d6fb190efdb78f0ff0949870e29a44896aac262",
+    "apps/desktop/src-tauri/src/project.rs": "f88c9ec4f65f05c9944bd86222062240c3e6a30c61becedd73b402d304c92511",
+    "apps/desktop/src-tauri/src/main.rs": "20e05a94aac24f816dbafb69c26e33c9177a57b9a4b84bede399d554103c7ae5",
+    "Cargo.lock": "be3690e0aeb6c98ddf7ce8c1a9b4aa5fd72236db800c6ddecf42605b9f12beef"
+  },
+  "models_run": 0,
+  "hardware_mutations": false
+}

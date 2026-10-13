@@ -1,0 +1,5 @@
+{
+  "error": "Las dimensiones deben estar entre 1 y 200 mm.",
+  "generated_text": "{\"status\":\"proposal\",\"dimensions_mm\":{\"length\":1000,\"width\":200,\"height\":300}}",
+  "id": "missing_units"
+}

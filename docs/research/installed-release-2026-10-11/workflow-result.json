@@ -1,0 +1,33 @@
+{
+  "pass": true,
+  "full_acceptance_pass": false,
+  "installer_sha256": "6484c18e6147b104b6abca47fcae8aef5e43b959c2a11f41dd1cb0919c055d3d",
+  "os": "Windows Sandbox build 26100",
+  "runtime": "FreeCAD 1.1.4 portable, read-only mapped from host",
+  "checks": [
+    "Latest installer WebView2 bootstrap/install/start/uninstall passes on retry",
+    "Native picker creates project",
+    "Inch display roundtrip retains canonical 10/20/30 mm",
+    "Explicit approval generates real FCStd/STEP",
+    "Separate generation/validation/publication/opening results",
+    "FCStd opens visibly and centered without a fit action",
+    "Abrupt app restart after completed publication",
+    "Native open picker restores project and completed history without regeneration",
+    "Approval denial publishes no additional run",
+    "Original file and artifact hashes unchanged across restart/opening/denial",
+    "Entire closed project exported and every hash verified on host"
+  ],
+  "first_install_attempt": {
+    "exit_code": 2,
+    "installed": false,
+    "cause": "Not established; guest network probe succeeded afterward, unchanged installer passed retry."
+  },
+  "model_calls": 0,
+  "unchecked": [
+    "Inference/CAD/commit cancellation in the current installed guest",
+    "Runtime missing/script error/occupied destination in current installed guest",
+    "Offline selected-model-missing with a running Ollama service",
+    "Seeded credential log exclusion in this GUI workflow"
+  ],
+  "exported_project_files": 9
+}

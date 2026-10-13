@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-11",
+  "commands": [
+    {"command": "rtk proxy python -m unittest discover -s tests/konnect -p test_*.py", "exit_code": 0, "passed": 2},
+    {"command": "rtk proxy python tests/konnect/runtime_probe.py", "exit_code": 0, "evidence": "raw/status.json"},
+    {"command": "rtk cargo run -p hazlomexa --example konnect_protocol", "exit_code": 0, "evidence": "sdk/status.json"},
+    {"command": "rtk cargo test -p hazlomexa --lib sdk_stdio_close_stops_owned_tree", "exit_code": 0, "passed": 1},
+    {"command": "rtk cargo test -p hazlomexa --lib", "exit_code": 0, "passed": 69, "ignored": 22},
+    {"command": "rtk cargo clippy -p hazlomexa --all-targets --features tauri/custom-protocol -- -D warnings", "exit_code": 0}
+  ],
+  "application_adapter_implemented": false,
+  "native_pcb_ipc_verified": false,
+  "installed_workflow_verified": false
+}

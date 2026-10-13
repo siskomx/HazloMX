@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "capabilities": [
+      "vision",
+      "thinking",
+      "completion",
+      "tools"
+    ],
+    "details": {
+      "families": null,
+      "family": "kimi-k2",
+      "format": "",
+      "parameter_size": "1042000000000",
+      "parent_model": "kimi-k2.7-code",
+      "quantization_level": "INT4"
+    },
+    "model_info": {
+      "general.architecture": "kimi-k2",
+      "general.parameter_count": 1042000000000,
+      "kimi-k2.context_length": 262144,
+      "kimi-k2.embedding_length": 2048
+    },
+    "modified_at": "2026-06-12T00:00:00Z",
+    "thinking": {
+      "default": true,
+      "values": [
+        false,
+        true
+      ]
+    }
+  },
+  "status": 200
+}

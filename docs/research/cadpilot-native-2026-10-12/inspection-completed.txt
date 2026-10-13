@@ -1,0 +1,152 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			8 pane Hazlo Mexa
+				9 pane (disabled)
+				10 region Hazlo Mexa - Web content
+					11 region
+						12 region
+							13 region
+								14 region
+								15 region
+									16 region
+										17 region
+											18 region
+												19 region
+												23 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													24 main ID: app
+														25 section header
+															26 heading Hazlo Mexa
+															27 text De una idea a un archivo que puedes editar.
+															28 text CAD y Arduino · v0.1
+														29 region Tu proyecto
+															30 heading Tu proyecto ID: project-heading
+															193 text C:/Users/USER\Documents\GitHub\HazloMX\target\native-cadpilot-20261012-01\project
+															32 button Crear en carpeta… ID: create-project
+															33 button Abrir proyecto… ID: open-project
+														34 details ID: agent-tools-panel
+															35 disclosure triangle Usar las herramientas de Hazlo con Claude Code o Codex
+																36 text Usar las herramientas de Hazlo con Claude Code o Codex
+														37 region ¿Qué quieres crear?
+															38 text 01 / CONVERSA
+															39 heading ¿Qué quieres crear? ID: proposal-heading
+															194 text Describe el documento que quieres medir, modificar o ampliar. Podemos reunir primero su catálogo y medidas.
+															41 text ¿Qué vas a trabajar?
+															42 combo box (settable, string) ¿Qué vas a trabajar? Value: Documento existente · CADPilot ID: workflow
+															43 text ¿Con quién quieres conversar?
+															44 combo box (settable, string) ¿Con quién quieres conversar? Value: Guía actual / Ollama ID: assistant-provider
+															45 status ID: claude-chat-progress
+															46 log Conversación de diseño ID: conversation
+																126 text Hazlo Mexa:
+																127 text ¿Quieres medir un documento, modificar una caja o añadir geometría? Si aún no sabes sus medidas o nombres internos, empieza por Medir e inspeccionar. Seleccionaremos una copia del FCStd y reuniremos su catálogo antes de aprobar; el original se conserva.
+															52 text Tu idea o respuesta
+															53 edit (settable, string) Tu idea o respuesta Description: Quiero recrear o modificar este documento, pero aún no conozco sus medidas ID: prompt
+															54 button Enviar ID: infer
+															55 button (disabled) Detener ID: cancel-inference
+															56 button Nueva conversación ID: new-conversation
+															57 status ID: inference-status
+															195 text La inspección mide una copia del documento nativo; no necesitas conocer sus dimensiones para empezar. Confirma después los parámetros y unidades de la operación.
+															196 text C:/Users/USER\AppData\Local\HazloMexa/runtimes/FreeCAD-1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311/FreeCADCmd.exe
+															130 button Seleccionar FreeCAD 1.1.4… ID: select-pilot-freecad
+															131 text ¿Qué quieres hacer con el documento?
+															132 combo box (settable, string) ¿Qué quieres hacer con el documento? Value: Medir e inspeccionar primero ID: cadpilot-operation
+															133 text Nombre interno del objeto
+															134 edit (disabled) Nombre interno del objeto Description: Consulta el catálogo medido o elige un nombre nuevo Value: Document ID: cadpilot-object
+															135 text Unidad de los parámetros nuevos
+															136 combo box (settable, string) Unidad de los parámetros nuevos Value: Milímetros ID: cadpilot-unit
+															137 text El documento nativo conserva sus medidas en mm. La inspección reúne el catálogo y medidas antes de aprobar; el original se conserva. Por ahora se aceptan hasta 32 primitivas nativas independientes, sin estado GUI, expresiones ni documentos vinculados.
+															138 button Seleccionar documento e inspeccionar propuesta… ID: prepare-cadpilot
+														68 region Vista de la propuesta
+															69 text 02 / REVISA
+															70 heading Vista de la propuesta ID: preview-heading
+															197 text Compara las medidas actuales con los parámetros de la copia. Para cambiar la propuesta, cancélala y prepara otra.
+															198 text Selected.FCStd · Medir documento · 1 objeto medido
+															199 text Target · Part::Box · 10 × 20 × 30 mm · volumen 6000 mm³
+															73 button (disabled) Aprobar informe de medición ID: approve
+															74 button (disabled) Cancelar ID: cancel
+															200 text La operación se liga al original capturado, catálogo y geometría medidos. Se revalidan antes de editar; el original y los objetos no seleccionados se conservan.
+														76 region Resultados
+															77 text 03 / ABRE
+															78 heading Resultados ID: results-heading
+															79 status ID: status
+																201 text Mediciones y archivos verificados y publicados. El original se conserva.
+															81 list
+																82 term Generación
+																	83 text Generación
+																202 text Completada
+																85 term Verificación
+																	86 text Verificación
+																203 text Catálogo y geometría medidos, originales y archivos de la copia verificados
+																88 term Publicación
+																	89 text Publicación
+																204 text Archivos disponibles en el proyecto
+															205 text Selected.FCStd · Medir documento · 1 objeto medido · Archivos seleccionados · 12/10/2026, 9:30:38 a.m.
+															206 button Mostrar FCStd original
+															207 button Ver mediciones y operación
+								20 region
+						21 region
+						22 region
+		2 title bar (settable, string) Value: Hazlo Mexa
+			3 menu bar System ID: MenuBar
+				4 menu item System
+			5 button Minimize
+			6 button Maximize
+			7 button Close
+
+Document text: ```
+Hazlo Mexa
+De una idea a un archivo que puedes editar.
+CAD y Arduino · v0.1
+Tu proyecto
+C:/Users/USER\Documents\GitHub\HazloMX\target\native-cadpilot-20261012-01\project
+Crear en carpeta…
+Abrir proyecto…
+Usar las herramientas de Hazlo con Claude Code o Codex
+01 / CONVERSA
+¿Qué quieres crear?
+Describe el documento que quieres medir, modificar o ampliar. Podemos reunir primero su catálogo y medidas.
+¿Qué vas a trabajar?
+￼
+¿Con quién quieres conversar?
+￼
+￼
+Hazlo Mexa: ¿Quieres medir un documento, modificar una caja o añadir geometría? Si aún no sabes sus medidas o nombres internos, empieza por Medir e inspeccionar. Seleccionaremos una copia del FCStd y reuniremos su catálogo antes de aprobar; el original se conserva.
+Tu idea o respuesta
+￼
+Enviar
+Detener
+Nueva conversación
+￼
+La inspección mide una copia del documento nativo; no necesitas conocer sus dimensiones para empezar. Confirma después los parámetros y unidades de la operación.
+C:/Users/USER\AppData\Local\HazloMexa/runtimes/FreeCAD-1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311/FreeCADCmd.exe
+Seleccionar FreeCAD 1.1.4…
+¿Qué quieres hacer con el documento?
+￼
+Nombre interno del objeto
+Document
+Unidad de los parámetros nuevos
+￼
+El documento nativo conserva sus medidas en mm. La inspección reúne el catálogo y medidas antes de aprobar; el original se conserva. Por ahora se aceptan hasta 32 primitivas nativas independientes, sin estado GUI, expresiones ni documentos vinculados.
+Seleccionar documento e inspeccionar propuesta…
+02 / REVISA
+Vista de la propuesta
+Compara las medidas actuales con los parámetros de la copia. Para cambiar la propuesta, cancélala y prepara otra.
+Selected.FCStd · Medir documento · 1 objeto medido
+Target · Part::Box · 10 × 20 × 30 mm · volumen 6000 mm³
+Aprobar informe de medición
+Cancelar
+La operación se liga al original capturado, catálogo y geometría medidos. Se revalidan antes de editar; el original y los objetos no seleccionados se conservan.
+03 / ABRE
+Resultados
+Mediciones y archivos verificados y publicados. El original se conserva.
+Generación
+Completada
+Verificación
+Catálogo y geometría medidos, originales y archivos de la copia verificados
+Publicación
+Archivos disponibles en el proyecto
+Selected.FCStd · Medir documento · 1 objeto medido · Archivos seleccionados · 12/10/2026, 9:30:38 a.m.
+Mostrar FCStd original
+Ver mediciones y operación
+￼
+```

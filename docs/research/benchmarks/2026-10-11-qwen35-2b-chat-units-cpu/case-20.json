@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_idea",
+  "result": {
+    "proposal": {
+      "message": "¿Qué tipo de pieza es (ej. caja, cubo, cilindro) y para qué la usará? ¿Tienes alguna referencia visual o dimensiones aproximadas?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 8.748702
+}

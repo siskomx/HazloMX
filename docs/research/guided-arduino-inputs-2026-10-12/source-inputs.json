@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "16EBFAA8D3E366A129BAA901A91DF2CAB022905B011535CE8DA8544FAD4BF52E",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src\\design.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "40F4E46EBD4236F7466183088A6A66C892EF28EDC4DA2BAAE4059E52CAFB5D67",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src\\main.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E3BA4ECABB1FF6B71450EB6E114B457F63801A982067F702C9A83F0AFE2CDB2D",
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\design-flow.mjs"
+  }
+]

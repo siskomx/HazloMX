@@ -1,0 +1,1 @@
+{"schema_version": 1, "job_id": "74b2b24b-1c83-4679-8d26-1b5576272f2c", "cadpilot_version": "0.7.7", "operation": "edit_box", "object": "Target", "units": "mm", "parameters": {"length": "=external()", "width": 2, "height": 3}}

@@ -1,0 +1,68 @@
+﻿{
+    "input":  true,
+    "result":  true,
+    "user":  "WDAGUtilityAccount",
+    "processes":  [
+                      {
+                          "Id":  9728,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791855713480)\/",
+                          "CPU":  1.421875
+                      },
+                      {
+                          "Id":  12896,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791855711871)\/",
+                          "CPU":  0.703125
+                      },
+                      {
+                          "Id":  15596,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791855713107)\/",
+                          "CPU":  9.625
+                      },
+                      {
+                          "Id":  15924,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791855712929)\/",
+                          "CPU":  0.09375
+                      },
+                      {
+                          "Id":  16088,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791855713012)\/",
+                          "CPU":  0.8125
+                      },
+                      {
+                          "Id":  11752,
+                          "ProcessName":  "MicrosoftEdgeWebview2Setup",
+                          "StartTime":  "\/Date(1791855711444)\/",
+                          "CPU":  0.421875
+                      },
+                      {
+                          "Id":  11980,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791855771487)\/",
+                          "CPU":  7.515625
+                      },
+                      {
+                          "Id":  14932,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791855686059)\/",
+                          "CPU":  13.109375
+                      },
+                      {
+                          "Id":  15248,
+                          "ProcessName":  "previous-setup",
+                          "StartTime":  "\/Date(1791855709932)\/",
+                          "CPU":  0.90625
+                      },
+                      {
+                          "Id":  15648,
+                          "ProcessName":  "setup",
+                          "StartTime":  "\/Date(1791855729505)\/",
+                          "CPU":  40.484375
+                      }
+                  ],
+    "installed":  false
+}

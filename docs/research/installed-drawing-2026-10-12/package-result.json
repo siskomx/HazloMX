@@ -1,0 +1,17 @@
+﻿{
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "installer_sha256":  "d8c54f69d8aa508126c86b22ecc4d455b785834c83882817de83ab3c5a738782",
+    "app_alive":  true,
+    "native_drawing_connector_workflow":  true,
+    "uninstalled":  true,
+    "resumed_after_identity_check":  false,
+    "current_user_install":  true,
+    "user":  "WDAGUtilityAccount",
+    "previous_build_update":  false,
+    "pass":  true,
+    "stage":  "finished",
+    "same_version_update":  true,
+    "connector_exit":  0,
+    "binaries_match_package_build":  true,
+    "user_files_preserved":  true
+}

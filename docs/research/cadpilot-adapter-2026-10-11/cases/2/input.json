@@ -1,0 +1,1 @@
+{"schema_version": 1, "job_id": "632311a3-d2a5-4a78-aef1-101b26e84661", "cadpilot_version": "0.7.7", "operation": "add_box", "object": "AddedBox", "units": "cm", "parameters": {"length": 1, "width": 2, "height": 3, "x": 5, "y": 0, "z": 0}}

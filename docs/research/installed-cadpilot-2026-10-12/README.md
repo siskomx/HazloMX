@@ -1,0 +1,17 @@
+# Installed CADPilot connector and native workflow
+
+Fresh Windows Sandbox `bd6fe5ec-044e-481e-9909-7e201ff2d7f0` passes the per-user `0.1.0` installer with SHA-256 `0cdc30add47507a476c0a08191586aa5072d049372a0537db32b53051df6a8e4`, same-version update, exact installed app/helper identities, fifteen-tool SDK protocol checks, three CADPilot jobs, project recovery, five-second process startup and uninstall preserving user/source/project bytes. The guest is stopped after evidence retention.
+
+The [native result](cadpilot-result.json), [lifecycle result](package-result.json) and [calls](project/calls.json) prove the tested sequence:
+
+1. Inspect an explicitly supplied original FCStd with identified FreeCAD 1.1.4 / CADPilot 0.7.7 on an owned copy.
+2. The installed `hazlomexa-tools.exe` connector reads the verified inspection and proposes a centimeter-based box edit. A stale result hash is rejected. Shared-backend approval is required, hidden from the agent, and usable only once. Native readback verifies the box is 10 × 20 × 35 mm with volume 7000 mm³.
+3. The connector uses that actual saved result to propose an inch-based cylinder addition. Native readback verifies its diameter is 50.8 mm, height 25.4 mm and base center (25.4, 0, 0) mm, with one valid solid. The edited box remains unchanged. Originals and previous FCStd/STEP outputs are byte-preserved. Recovery restores all three completed jobs and the final report identity.
+
+The test executable uses the current shared workflow backend as its approval/dispatch driver and the actual installed connector as its SDK transport. It does **not** drive the installed desktop's pickers, GUI approval or signed-in conversation. It performs no model inference or hardware action. The [fixture scope](fixture-scope.json) explicitly omits the already retained KiCad/drawing gates and the earlier terminal installed-UI observer failure. `pass: true` applies to this connector/lifecycle gate only; that earlier full native-UI requirement remains unfinished.
+
+The [guest harness](probe.ps1) copies the read-only FreeCAD runtime into the guest's own NTFS folder, checks runtime/harness identities and retains the verified project before uninstall. [Package identities](package-identity.json), the [configuration](probe.wsb) and [file hashes](file-hashes.json) retain exact inputs/results. The runtime copy completed without restarting the driver; its live process and copy progress were observed. Build, formatting and all-target desktop Clippy pass. The host preflight also passed three jobs; its first relative-path invocation was refused before engineering execution and rerun with explicit absolute paths.
+
+Follow the [current package acceptance procedure](../../../apps/desktop/tests/README.md) to reproduce with the current preparer. The scripts, package identities and results retained in this directory keep their historical scope; later workflows and package changes are not inferred for this earlier gate. The combined current result is authoritative only after every included workflow and its native initial-UI/profile-cleanup check passes.
+
+The tested installer predates the later CADPilot diameter/context-reset UI changes and CADCraft unit-guidance messages. Updated-package acceptance, native desktop workflows, signed-in agent conversation, broader native-document fidelity and live unsaved-document editing remain unfinished. The full goal stays active.

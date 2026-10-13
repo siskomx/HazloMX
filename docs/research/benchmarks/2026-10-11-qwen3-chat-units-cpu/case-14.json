@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "lid",
+  "result": {
+    "proposal": {
+      "message": "La geometría solicitada es una caja hueca con tapa a presión, pero el sistema solo soporta sólidos rectangulares y cubos. ¿Quieres un bloque rectangular de referencia para las medidas proporcionadas (80 mm x 50 mm x 25 mm) o prefieres ajustar la geometría a lo que el sistema puede crear?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 11.715713000000001
+}

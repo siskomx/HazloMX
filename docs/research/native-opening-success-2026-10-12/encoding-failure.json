@@ -1,0 +1,12 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: GUI did not receive the exact saved artifact path",
+  "log": "",
+  "opening_proof": {
+    "title": " solid - FreeCAD 1.1.4",
+    "pid": 24836,
+    "command": "\"C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\bin\\FreeCAD.exe\" \"C:/Users/USER\\AppData\\Local\\Temp\\Hazlo opening �-k0gmX4\\project\\.hazlomexa\\artifacts\\69092a1b-7a59-4371-89d7-83466175ab41\\solid.FCStd\"",
+    "executable": "C:/Users/USER\\AppData\\Local\\HazloMexa\\runtimes\\FreeCAD-1.1.4\\FreeCAD_1.1.4-Windows-x86_64-py311\\bin\\FreeCAD.exe",
+    "window": 20841744,
+    "expected": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo opening á-k0gmX4\\project\\.hazlomexa\\artifacts\\69092a1b-7a59-4371-89d7-83466175ab41\\solid.FCStd"
+  }
+}

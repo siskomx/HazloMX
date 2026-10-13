@@ -1,0 +1,10 @@
+{
+  "pass": true,
+  "version": "1.5.1",
+  "archive_sha256": "sha256:fabe42e0eb04d00e776a66178299ff95a46c623dbc260f997e58fd514853dd40",
+  "exe_sha256": "1017de89179c3167e6b8a38ca6cc4091fa69a3cf97aafa7810f01423003f5571",
+  "isolated_paths_verified": true,
+  "compiled_sketch": false,
+  "hardware_operations": false,
+  "models_run": 0
+}

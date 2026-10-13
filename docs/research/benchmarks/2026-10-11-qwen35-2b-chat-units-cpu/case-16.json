@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "too_large",
+  "result": {
+    "proposal": {
+      "message": "El límite máximo permitido es 200 mm para cada dimensión. ¿Qué largo menor quieres usar (ej. 200 mm)?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 9.8960583
+}

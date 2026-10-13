@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 4,
+    "length": 80,
+    "width": 50
+  },
+  "id": "shared_units",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 4.0,
+        "length": 80.0,
+        "width": 50.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 5.6004471
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "command": [
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\runtime\\orca-slicer.exe",
+      "--help"
+    ],
+    "exit_code": 0,
+    "stdout_bytes": 0,
+    "stderr_bytes": 0
+  },
+  {
+    "command": [
+      "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\orca-probe\\runtime\\orca-slicer.exe",
+      "--version"
+    ],
+    "exit_code": 4294967294,
+    "stdout_bytes": 0,
+    "stderr_bytes": 28
+  }
+]

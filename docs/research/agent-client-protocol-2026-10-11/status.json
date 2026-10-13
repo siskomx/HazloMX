@@ -1,0 +1,10 @@
+{
+  "claude_health_checked": true,
+  "codex_mcp_read_passed": true,
+  "exact_catalog_passed": true,
+  "model_turn_started": false,
+  "owned_process_stopped": true,
+  "pid": 12112,
+  "project_id": "9536615a-c1d9-475d-868e-7f08029e7216",
+  "stale_selection_refused": true
+}

@@ -1,0 +1,12 @@
+{
+  "cancellation_ms": 15,
+  "job_id": "0cf61313-0ecf-4bee-8bd0-32c145d0b14e",
+  "native_ui_cancel_verified": false,
+  "observed_owned_pids": [
+    25180
+  ],
+  "passed": true,
+  "phase": "cancelled",
+  "published": false,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-kicad-cancel-5e53053b-af5c-4b5e-adce-4c5b5d65d093"
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src\\main.ts",
+    "Hash": "D9595B83AD35FC9AEF3E988EFB2C0B863085B874E5CD8B0F3C52A31E670F3392"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src\\style.css",
+    "Hash": "2D7E794B42EFCD1B4772E5C5B9377529BB2D9AEFF7AED0495412CEB53536EB1E"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\src\\cadcraft.rs",
+    "Hash": "45F10DD56F10D19A47596835649A281C8E5FD86C738B6B38F81E66AB2AF55D0D"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\src\\cadpilot.rs",
+    "Hash": "917D87A4A7DFB7214EEB85BEFEFE362A9955C0A0E51638B9D21CF5DD0A3BCED2"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\src\\orca.rs",
+    "Hash": "F8B8A09411F592BB81C131B8939628F940DA749FAB83A106D484BA3B710C240F"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot_policy.py",
+    "Hash": "7F7B44C4952DBADE09605167763CB3D46440CD7E7B66AB5E46D1614EF299DB2B"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot-copy.FCMacro",
+    "Hash": "9C4BA1ED98C6B032BDCD70747F5D6077913389C0DA86F13E88B88AF37B5BF90A"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\sandbox-current-package.ps1",
+    "Hash": "02241174C6499B0970725F9FF1A25DFB9243E7AD64D1F2C5ACE200CB4445EC97"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\sandbox-webview-startup.ps1",
+    "Hash": "51D65336F53FAC50C74BE5A9F8859F1F44F809A9A471931ECD099979A9F83EAE"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\installed-startup.mjs",
+    "Hash": "0A3F485EBD91D2CF70C82EF95EFAFF83B418C84A3AD4332D33903F396C6A661B"
+  }
+]

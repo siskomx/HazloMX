@@ -1,0 +1,17 @@
+{
+  "cancel_to_socket_close_ms": null,
+  "cancellation_fixture": false,
+  "cloud_inference": false,
+  "context_preserved": true,
+  "credentials_present": false,
+  "exact_model_tool_surface": true,
+  "loopback_only": true,
+  "question_cancel": false,
+  "question_fixture": false,
+  "questions_received": 0,
+  "refreshed_tool_result": true,
+  "resume_fixture": true,
+  "success_fixture": true,
+  "tool_count": 5,
+  "turn_decoder_passed": true
+}

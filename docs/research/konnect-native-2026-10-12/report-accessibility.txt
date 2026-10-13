@@ -1,0 +1,87 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			8 pane Hazlo Mexa
+				9 pane (disabled)
+				10 region Hazlo Mexa - Web content
+					11 region
+						12 region
+							13 region
+								14 region
+								15 region
+									16 region
+										17 region
+											18 region
+												19 region
+												20 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													389 dialog Informe de edición Konnect · solo lectura Secondary Actions: Raise ID: artifact-preview
+														390 heading Informe de edición Konnect · solo lectura ID: artifact-preview-heading
+														391 group { "schema_version": 2, "job_id": "ab5cc639-b3ef-4f50-a889-edc638115f8c", "konnect_version": "0.13.0", "protocol_version": "2025-06-18", "files": [ { "path": "Edited/basic_test.kicad_pcb", "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a" }, { "path": "Edited/basic_test.kicad_prl", "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79" }, { "path": "Edited/basic_test.kicad_pro", "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da" }, { "path": "Edited/basic_test.kicad_sch", "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836" }, { "path": "Edited/custom_ds.kicad_wks", "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077" }, { "path": "Netlist.xml", "sha256": "cf994788cc19c1003cdf13a20412c146c725f5bfc28749a91da0bea5ed70f908" }, { "path": "Original/basic_test.kicad_pcb", "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a" }, { "path": "Original/basic_test.kicad_pro", "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837" }, { "path": "Original/basic_test.kicad_sch", "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a" }, { "path": "Original/custom_ds.kicad_wks", "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077" }, { "path": "input.json", "sha256": "8e15cfb997dd436be138c3f729b8b1eb1dfaa65984878f8fd6a8dfe9ebf92154" } ] } ID: artifact-source
+															392 text { "schema_version": 2, "job_id": "ab5cc639-b3ef-4f50-a889-edc638115f8c", "konnect_version": "0.13.0", "protocol_version": "2025-06-18", "files": [ { "path": "Edited/basic_test.kicad_pcb", "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a" }, { "path": "Edited/basic_test.kicad_prl", "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79" }, { "path": "Edited/basic_test.kicad_pro", "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da" }, { "path": "Edited/basic_test.kicad_sch", "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836" }, { "path": "Edited/custom_ds.kicad_wks", "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077" }, { "path": "Netlist.xml", "sha256": "cf994788cc19c1003cdf13a20412c146c725f5bfc28749a91da0bea5ed70f908" }, { "path": "Original/basic_test.kicad_pcb", "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a" }, { "path": "Original/basic_test.kicad_pro", "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837" }, { "path": "Original/basic_test.kicad_sch", "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a" }, { "path": "Original/custom_ds.kicad_wks", "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077" }, { "path": "input.json", "sha256": "8e15cfb997dd436be138c3f729b8b1eb1dfaa65984878f8fd6a8dfe9ebf92154" } ] }
+														393 button Cerrar
+								88 region
+						89 region
+						90 region
+		2 title bar (settable, string) Value: Hazlo Mexa
+			3 menu bar System ID: MenuBar
+				4 menu item System
+			5 button Minimize
+			6 button Maximize
+			7 button Close
+
+Document text: ```
+Informe de edición Konnect · solo lectura
+{
+  "schema_version": 2,
+  "job_id": "ab5cc639-b3ef-4f50-a889-edc638115f8c",
+  "konnect_version": "0.13.0",
+  "protocol_version": "2025-06-18",
+  "files": [
+    {
+      "path": "Edited/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Edited/basic_test.kicad_prl",
+      "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+    },
+    {
+      "path": "Edited/basic_test.kicad_pro",
+      "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+    },
+    {
+      "path": "Edited/basic_test.kicad_sch",
+      "sha256": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836"
+    },
+    {
+      "path": "Edited/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "Netlist.xml",
+      "sha256": "cf994788cc19c1003cdf13a20412c146c725f5bfc28749a91da0bea5ed70f908"
+    },
+    {
+      "path": "Original/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Original/basic_test.kicad_pro",
+      "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+    },
+    {
+      "path": "Original/basic_test.kicad_sch",
+      "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+    },
+    {
+      "path": "Original/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "input.json",
+      "sha256": "8e15cfb997dd436be138c3f729b8b1eb1dfaa65984878f8fd6a8dfe9ebf92154"
+    }
+  ]
+}
+Cerrar
+```

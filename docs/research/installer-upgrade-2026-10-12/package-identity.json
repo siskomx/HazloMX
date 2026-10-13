@@ -1,0 +1,13 @@
+{
+  "installer_sha256": "d8c54f69d8aa508126c86b22ecc4d455b785834c83882817de83ab3c5a738782",
+  "app_sha256": "cceb1193de528ce8524ada982a6c668e685fe40e6e377faf7858e69dcd78a9c8",
+  "unbundled_app_sha256": "f79b6d4b6902c7ec04979cdff7fc69de60a7af78cbdd7020c191d536a01365a3",
+  "bundle_marker": "NSS",
+  "helper_sha256": "5606ee741f472986799db6cb69c57a96d38f77ce67fe95caa7f7cd90f53a7acc",
+  "harness_sha256": "bfbd6f96d0d7c37a7a9bcbe27a09cd81316b609c367a98d426529dcf1bb946e4",
+  "version": "0.1.0",
+  "tool_count": 15,
+  "networking": "enabled",
+  "engineering_harness_sha256": "a19ccb45106245d201094f667660cb0adb5ec41ab3d48089190c15287a6f374f",
+  "kicad_cli_sha256": "cbd8197dd1f46b9a956f3d7973edc9a6a97960298731448ae9142dffe47abc7a"
+}

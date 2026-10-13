@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "design_no_substitution",
+  "result": {
+    "proposal": {
+      "message": "La geometría solicitada (caja hueca con agujeros) no es soportada por mi herramienta. ¿Quieres que cree un bloque rectangular de referencia en lugar de la caja hueca?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 10.8723815
+}

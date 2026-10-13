@@ -1,0 +1,14 @@
+{
+  "installer_sha256": "f32aa75be7eb71092e0f365c929e084ffa2ad23927ba4514d599573975fee5d2",
+  "release_app_sha256": "c237a70b5b5b0cbe91201f52585bca1ceecb2590e67b7f432b2c8d1e5c06f94a",
+  "installer_bytes": 3833951,
+  "regular_tests": 52,
+  "ignored_standalone": 10,
+  "frontend_build": true,
+  "frontend_fixtures": true,
+  "desktop_clippy": true,
+  "actual_agent_backend_verified": true,
+  "native_agent_ui_verified": false,
+  "installed_agent_workflow_verified": false,
+  "models_run": 0
+}

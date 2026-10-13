@@ -1,0 +1,778 @@
+[
+  {
+    "path": "fixture-scope.json",
+    "sha256": "ad877f98ee23a869ee2af487f3508c9da06fc7e6e915283dae1e2c2b5e5952f8"
+  },
+  {
+    "path": "installed-startup.mjs",
+    "sha256": "0a3f485ebd91d2cf70c82ef95efaff83b418c84a3ad4332d33903f396c6a661b"
+  },
+  {
+    "path": "package-identity.json",
+    "sha256": "66595e2b4897c0c8d845fdfb81a812568eb2795f2940735889229e304f8ae6ae"
+  },
+  {
+    "path": "previous-package-identity.json",
+    "sha256": "d3af955765aa7d93ce44d23ead6c53cb62e8b2b8900eaccf3c3b000f5e0ef183"
+  },
+  {
+    "path": "probe.ps1",
+    "sha256": "af58bb9ee3ae97febbb28b2ab859769300255b01c2c40ff7f3523340d357aace"
+  },
+  {
+    "path": "probe.wsb",
+    "sha256": "ec846fd2fccb53e3a1c1eb94d7a50c870f81088935b300bff789813b599057c8"
+  },
+  {
+    "path": "release-inputs.json",
+    "sha256": "d6a528e0a44026012fdfef9887d0608328fdd61285dc49b2dba5fce38782dc51"
+  },
+  {
+    "path": "sandbox-webview-startup.ps1",
+    "sha256": "51d65336f53fac50c74be5a9f8859f1f44f809a9a471931ecd099979a9f83eae"
+  },
+  {
+    "path": "guest\\arduino-copy-state.json",
+    "sha256": "ddb15b0afb23b06352cae63e82259f972434c4b018f4bdab495b89ee32c8a250"
+  },
+  {
+    "path": "guest\\arduino-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\arduino-result.json",
+    "sha256": "a33088fae86cff0e85bb43ff53fe25d048a40d631ed559c6b3c4750d6fbf361b"
+  },
+  {
+    "path": "guest\\guest-state.json",
+    "sha256": "0d08abc44925d1b35ae66c6bb7867dc306727f55bd0528e3d18f195893defca3"
+  },
+  {
+    "path": "guest\\installed-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\installed-tools.json",
+    "sha256": "d2d9aa34cf0628490a3fac33ea0100a1c257e53ee3ac49994979e5a5a9b6fa5c"
+  },
+  {
+    "path": "guest\\package-result.json",
+    "sha256": "8e498cd1fcf5f3d86eae9f627b0863eb414862918efed916b239538f60c1f358"
+  },
+  {
+    "path": "guest\\startup-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\startup-log.json",
+    "sha256": "b874e467180dc83fff5609116da3807292e07d58c8bedaab2f90deecbcaab530"
+  },
+  {
+    "path": "guest\\updated-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\updated-tools.json",
+    "sha256": "d2d9aa34cf0628490a3fac33ea0100a1c257e53ee3ac49994979e5a5a9b6fa5c"
+  },
+  {
+    "path": "guest\\webview-policy-receipt.json",
+    "sha256": "abdcd92c00717c86464886ce2338423db42c041e6115787fd0bd691186cc5a92"
+  },
+  {
+    "path": "guest\\arduino-project\\calls.json",
+    "sha256": "1da108bc9e7b1cb1d1dc83e755ad5d8625ad0fba479c43f57cc901207009db5b"
+  },
+  {
+    "path": "guest\\arduino-project\\hazlomx.json",
+    "sha256": "d945302635fda664f3b348e7a7345b1a383ddfcd0a07f381aad4b90500a00f15"
+  },
+  {
+    "path": "guest\\arduino-project\\user-original.txt",
+    "sha256": "cd42ff51cfda2e714a0c7da970d7da88f05d5fd8c058557c8dc5e23013af70a2"
+  },
+  {
+    "path": "guest\\startup\\result.json",
+    "sha256": "b717bf3a083e95d42fa8ca1b0de69c1f25a5820e3d11abca51b338beda06c06b"
+  },
+  {
+    "path": "guest\\startup\\startup.png",
+    "sha256": "710758a6808545fc3e87e939992e7d3fb49aaf570bf99f46f79fecf2b80ccb0c"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\config.yaml",
+    "sha256": "45dacbb94e4a49b919c95284a72c8caf92d10978bcc763029481ad1c77f45f0e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\config.yaml",
+    "sha256": "ceec17802d4ef779446e0418cc429eaf687a272c19ac0b06bb2ba5ba8b47a31b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\config.yaml",
+    "sha256": "9dd09d357a047006fa25b0cb1dbe928f949cc572982ec371e7dc8eb8d64deff9"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\build.options.json",
+    "sha256": "fda5618e50a4e299bb9dc4acdf420d09627a91eb098e93ddaf2b48e64ae662b9"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\compile_commands.json",
+    "sha256": "b2ff44412a0a4f6a4cfdc3acf142fb6fbb70d2586fdc92efd8320aabbb128075"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\includes.cache",
+    "sha256": "bc2dda05659a2190f776685193edfa35c2cf2d745c268575027d2d7f6122f705"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\libraries.cache",
+    "sha256": "00fb508436e726f0ec5a813ea223a44ccda3ce6a99b5c2a53a748540a3d77a18"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\Sketch.ino.eep",
+    "sha256": "788e5ffc44ae4ee912fe01f495951f96b0accd5705e184dcaea197d8b64856a6"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\Sketch.ino.elf",
+    "sha256": "a2d95a62115f05a3ab195beaabe0567fd52b3de16ebacc98ebfb538c5d8d7559"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\Sketch.ino.hex",
+    "sha256": "1923c082b7dae924bfa0a8e4bb1766af68b96798aedec570b75abc65ca705d42"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\Sketch.ino.with_bootloader.bin",
+    "sha256": "8c26b5f3034cb368d5733f03e5020fdbcb371a5fef262273b15e764fa28d8d2d"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\Sketch.ino.with_bootloader.hex",
+    "sha256": "0f042362329f723024f6af20f93457461ddf3748edc5cbe0427e41cf7afe938b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\exported\\Sketch.ino.eep",
+    "sha256": "788e5ffc44ae4ee912fe01f495951f96b0accd5705e184dcaea197d8b64856a6"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\exported\\Sketch.ino.elf",
+    "sha256": "a2d95a62115f05a3ab195beaabe0567fd52b3de16ebacc98ebfb538c5d8d7559"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\exported\\Sketch.ino.hex",
+    "sha256": "1923c082b7dae924bfa0a8e4bb1766af68b96798aedec570b75abc65ca705d42"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\exported\\Sketch.ino.with_bootloader.bin",
+    "sha256": "8c26b5f3034cb368d5733f03e5020fdbcb371a5fef262273b15e764fa28d8d2d"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\exported\\Sketch.ino.with_bootloader.hex",
+    "sha256": "0f042362329f723024f6af20f93457461ddf3748edc5cbe0427e41cf7afe938b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\Sketch\\Sketch.ino",
+    "sha256": "bb0a67921376536e3f4600ba46abc4d4fed6aed5fc8668929e6e3642b8ba520e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\abi.cpp.d",
+    "sha256": "519742fd518967622132e9809f7f3172097734b24ac581fa7548e3103d563701"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\abi.cpp.o",
+    "sha256": "7757dd7d1977ba97d5c649a8fe562a87b2c8687f960bfbe02a9d75004733bf21"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\CDC.cpp.d",
+    "sha256": "47d74fc389845a350f6ef601d1a9e27c93960c3e8ad8e41e20f86a4b1d6cb1cc"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\CDC.cpp.o",
+    "sha256": "f2cf8c4752a3b4816ddc5a0caf2b13c95306c313a0500e68bf4d798c4460402e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\core.a",
+    "sha256": "d77d6845c3e9aa517c780c1dc904086d571636f9c955aa13fe576d3c2ee738f3"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial.cpp.d",
+    "sha256": "6784a1ba5e328a400920332b10ae66a0460de3474c12ad21e83a226d248d4c60"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial.cpp.o",
+    "sha256": "08248805b24fc46a611ad427a88b3cd6e0e2caa7ee800691e4544bcf270e19fe"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial0.cpp.d",
+    "sha256": "9b2fd486d54d47c289507711888a7673a118999259784f6a2b8d64db522dfbf7"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial0.cpp.o",
+    "sha256": "48444817639807c39da5773339abbebdf3ffa983f0adb36fdafec6ecc83458b7"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial1.cpp.d",
+    "sha256": "6968236f3db5f86373689de4138e4d26810474c06021222e5ee9ae8e8234439b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial1.cpp.o",
+    "sha256": "c9b40a78108ad96beeae81c8c35ab8ca68518249b6043c3d5aac4b4f39521b81"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial2.cpp.d",
+    "sha256": "a5b5a06bdb4566de2ec34a187e595766ea2d39f83c99a14928e62b17fffcab78"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial2.cpp.o",
+    "sha256": "2181ad54910d56ad841381e05c55d080ac9dbe06a48b92ed6d0b8003882d4745"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial3.cpp.d",
+    "sha256": "0d7fc92242f26e42f758453fa0db70455a9d42a2bedce68648ed623fdb857b75"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\HardwareSerial3.cpp.o",
+    "sha256": "743558f122d22ce79c64a9ec4fb72e96ef517d374db79603c9ad500e36304ea6"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\hooks.c.d",
+    "sha256": "5488ee4b7b9dbadb7937bd18f60ddadc6a440ff05c2a5463e0baa488099c5b99"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\hooks.c.o",
+    "sha256": "002e8448d93f18852ded6111757ef99638ea3892f4758d193a8243ba253a30e7"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\IPAddress.cpp.d",
+    "sha256": "d49a1b9fd96cf0a03cc097672db0285b8751999d1ea9b3d57f4ffe065fbddc0f"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\IPAddress.cpp.o",
+    "sha256": "1029bd73467a09cb443de817a5f246329ceb4c6712a691a1d94439c9383fb71d"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\main.cpp.d",
+    "sha256": "7a07f92e7ed84fd470c1aacf6795e0e4aa4ce186cacb00e163b0d6d841c69620"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\main.cpp.o",
+    "sha256": "e33d2fa0c30182f52ea072d97803aa6947d6287a4d54e511910e1dd6409480b7"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\new.cpp.d",
+    "sha256": "2abab006ee693477dbbce8c047a4d61f8305cc7b8fc94b44443d4840fa66e3ab"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\new.cpp.o",
+    "sha256": "ad0b69b13f31fb322489d3b5c0d4271c28230f4a563e8dc456ca7cc321fad65b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\PluggableUSB.cpp.d",
+    "sha256": "5f91686dfdd48f0d6da86bcfc533f2ee3fb12fb8db17073ceacd75be1274ad93"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\PluggableUSB.cpp.o",
+    "sha256": "152ba6aa182f5be02035f3b30c6d49b8831b1b0169cf2b4846e22b854f4c097b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\Print.cpp.d",
+    "sha256": "f8262ec81e69618fbb397077a24e367ba7cc871808ee9efb7a74808cf77bdbea"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\Print.cpp.o",
+    "sha256": "7b520f9cd30f921d72ee259d53aff688d38a3c19dab0cf4e3b86a91e41830429"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\Stream.cpp.d",
+    "sha256": "a968da3cb7758fe7f9584621b9b60fad4c0000b065ec740933694441e1b003ac"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\Stream.cpp.o",
+    "sha256": "91de932f2daed20202d0e53076c4876d33ea40710d7607c741b9eadddc6f4e44"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\Tone.cpp.d",
+    "sha256": "bf39f300db31e2784d430d671508400d044a1d8ba211675efc1907c0687fa362"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\Tone.cpp.o",
+    "sha256": "d30e0990e60913fd6b59c95f69a878469b9f0778be468d7ea832d4859e3132cf"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\USBCore.cpp.d",
+    "sha256": "cbffe7fbce5ac653ed5939f7498faa66024fa9d384b1a66c2356b9d6ca86f243"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\USBCore.cpp.o",
+    "sha256": "09598f00c76ec40563b8c4bcc72c0af985f3df51cf777c4b16d3f4454f631892"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\WInterrupts.c.d",
+    "sha256": "2c9da0638556a7803d060758877bb316860299dc93b1fd2d96f848a66253a9ca"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\WInterrupts.c.o",
+    "sha256": "61cd6aac6496eebc7a8fc5af599dfb61ae051fabbef8c9fb0d068e4aec26c248"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring.c.d",
+    "sha256": "9ba5704e03b092d05d1b00f3d0c80fad6944686e990499b79ea5452a655f5a9b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring.c.o",
+    "sha256": "5fb1df550ab358b4a3cd6dbd0a65ed483ea75aa434f33ab06a57186530f7fdf5"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_analog.c.d",
+    "sha256": "1c8f2bc981a0615077a6da97137c5aac0bebefa0ce1458731cd32233e509e0f1"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_analog.c.o",
+    "sha256": "419fb0498ab7fd70eb290ddb9eed7c9f417b06e0e08113ee1db1e210c367aea2"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_digital.c.d",
+    "sha256": "3c8cedbc3033a7f13d547306112978f10d8983053c9a00c5527a25dd9a0bc358"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_digital.c.o",
+    "sha256": "5f771c3e9fe65160948ee5fcd2c2f30143f7cc3399bed8263a3f7be0f77eeb9f"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_pulse.c.d",
+    "sha256": "874086385b196fa8cd1d61e978ec4caf173ead93c78149a416d5c2251bf92136"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_pulse.c.o",
+    "sha256": "e12305c631ad2939de3e3ff82ff8293b431e06b425f1efd184d55461d81c7fbd"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_pulse.S.d",
+    "sha256": "c33a58fbe7299cf8ba1b9a2fab33fdc93ce2041c22745bef5365162931f1f12e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_pulse.S.o",
+    "sha256": "182bdb64270356d947b4fb406910427648e1ca4aa0b15643b12c7abfa3af104f"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_shift.c.d",
+    "sha256": "a4e184e0eac1dcf5859cf45ad7a04e48b9f6cb9b0a6e64bb1cf3b190703612bc"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\wiring_shift.c.o",
+    "sha256": "31d1776c13730af00e02c2d62849a1a41a19bb6d3083e27be5a6cc9753365b63"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\WMath.cpp.d",
+    "sha256": "aa7b07727f6cc09a0e911b205128afe5aa19c83df5858b1f891ee6f31aa8d612"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\WMath.cpp.o",
+    "sha256": "f80f8323cd4b27694a88d71e425ed35765687f439abc1f63fddee8957a690795"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\WString.cpp.d",
+    "sha256": "a788f07e2a7cca1b61a1c8aee9e6a9061817dc316e2154f1645f731bd0988894"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\core\\WString.cpp.o",
+    "sha256": "bae527e4faf8d110965b5bf0af3e79181c96014e8fb551c61bc395abe3bd7451"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\sketch\\Sketch.ino.cpp",
+    "sha256": "61ac25008c080fee154fd09ed51b002aa93c79a00cb3f6a0f4737eaebc2aded0"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\sketch\\Sketch.ino.cpp.d",
+    "sha256": "0135f7da4a3ecb49b51799a7f687fe18df11704fca362ff8d5f881da144148f9"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\sketch\\Sketch.ino.cpp.merged",
+    "sha256": "36099ff6ea722f972050a67ce4f70a92c76225c402c1bc8ecb7807510149f393"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\sketch\\Sketch.ino.cpp.merged.libsdetect.d",
+    "sha256": "5ab379ecb578dfd9ecfa3150d690341e05c0562c73cbcc1fdaed48fb6c199650"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\64582bae-84f4-4f66-869e-dfec8f388d34\\build\\sketch\\Sketch.ino.cpp.o",
+    "sha256": "1fa4e6697fd4b0b1516f09f01b67ac5b684079956ed45b473e1e1e68785bf3a9"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\build.options.json",
+    "sha256": "ded68d9e215c7d640fc2e788dbddf209df8add5b122290381190ae1e1362728f"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\compile_commands.json",
+    "sha256": "73210a652c62ec216fdc6aaf4775a77cb27e44596c0b2a7b76c18b8a3bfd63ec"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\includes.cache",
+    "sha256": "8327958559759d1853e44d9ffafcd12f6e8779f4097e61b47bce2d06909e2436"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\libraries.cache",
+    "sha256": "00fb508436e726f0ec5a813ea223a44ccda3ce6a99b5c2a53a748540a3d77a18"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\Sketch.ino.eep",
+    "sha256": "788e5ffc44ae4ee912fe01f495951f96b0accd5705e184dcaea197d8b64856a6"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\Sketch.ino.elf",
+    "sha256": "b2b18b722504d7dfdbd45ddcefd9140c47518ba10cb849b0020427f988b779ac"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\Sketch.ino.hex",
+    "sha256": "94f09d0213f2517e9d283fc50020f37a3357a418d708cd6a454b74d0e79e8275"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\Sketch.ino.with_bootloader.bin",
+    "sha256": "e2f56817abbddf6c09da4e62ed11b6e5e4975e4484ef1fb19ef4a43b1948195e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\Sketch.ino.with_bootloader.hex",
+    "sha256": "00cbb2709623188101ea2490cf0e1867199859e95ac4d3ccf117f8614f85ee45"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\exported\\Sketch.ino.eep",
+    "sha256": "788e5ffc44ae4ee912fe01f495951f96b0accd5705e184dcaea197d8b64856a6"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\exported\\Sketch.ino.elf",
+    "sha256": "b2b18b722504d7dfdbd45ddcefd9140c47518ba10cb849b0020427f988b779ac"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\exported\\Sketch.ino.hex",
+    "sha256": "94f09d0213f2517e9d283fc50020f37a3357a418d708cd6a454b74d0e79e8275"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\exported\\Sketch.ino.with_bootloader.bin",
+    "sha256": "e2f56817abbddf6c09da4e62ed11b6e5e4975e4484ef1fb19ef4a43b1948195e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\exported\\Sketch.ino.with_bootloader.hex",
+    "sha256": "00cbb2709623188101ea2490cf0e1867199859e95ac4d3ccf117f8614f85ee45"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\Sketch\\Sketch.ino",
+    "sha256": "09aee5b8f913784772a5d35274188a556f6e5f16284a3242ec14ba79f0e862a7"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\abi.cpp.d",
+    "sha256": "2b10335daf7b1fda6f404f6f01b4d5ad3edb79b8e199cc21c76fdebc3531365c"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\abi.cpp.o",
+    "sha256": "57fc76c4ce4430fff27d180f42c8175bcfeaa988f994a39e1af84fb33dfc69b2"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\CDC.cpp.d",
+    "sha256": "8bc38f51c6ad9ae633045fd1992ed726cc5a9b0334796c7e88e99222cf973e02"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\CDC.cpp.o",
+    "sha256": "cc2b8bd1805131add1ab176764d981529485fbd66e7476aa4f67d80f284883fe"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\core.a",
+    "sha256": "00b4464679c0fcf10634ca5a5ecb8a2879bf9bfd012b923b8328d82800110537"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial.cpp.d",
+    "sha256": "6264769e2a4d56d4ccad14731a3d6624a26ce9cab3992803d954b80d408f55c2"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial.cpp.o",
+    "sha256": "6a9e979bfd30cdb105ef38657cac68f8d038428c74c87d47761bae079df22168"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial0.cpp.d",
+    "sha256": "c9dcc9628713417b68b4aadc75c13dec443535da15db5a3d6af76261a4026afb"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial0.cpp.o",
+    "sha256": "7d809d2cb9d1ea372f9bf68dab25731761c9d5354ff24a9513f2d2aaf119676c"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial1.cpp.d",
+    "sha256": "b5cdc23bfaabca43f6cd78657ff99acf90f04aae4532632af76097b1c87ad57f"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial1.cpp.o",
+    "sha256": "d6ed60406bd3d9fa2bc889e36c096b43f4296af7d0b76e056fcf4575fb4fc664"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial2.cpp.d",
+    "sha256": "b2acebbc6fb71a9b1dc6f6e85f9aebd2c838c59ce8184745174e74811fe66501"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial2.cpp.o",
+    "sha256": "b24f54e9d5a8ca4469a1c7f036b448953df4cd8c7e9f265917ed6f2edf922740"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial3.cpp.d",
+    "sha256": "586d60f1613095a6ba2b87c5046f4f5c4e7ac554fcd22c726016929ffa3727d8"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\HardwareSerial3.cpp.o",
+    "sha256": "ee8fde51ab4f6ffd81ae6bb9807d6cdc7c5317c4e64f3e3b118fe056b9520814"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\hooks.c.d",
+    "sha256": "6fa3092505ae9940c381e95e465ffc088f6a5e6a4e96bd098c2d9d4be638a8c9"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\hooks.c.o",
+    "sha256": "fed9c00da26b715468362fe9d79bf184adf9caf41f7e702cc84d6db3af879da2"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\IPAddress.cpp.d",
+    "sha256": "ebcd8ccb573131d9f3b0da89ee0c12c299d9bec5a1a6647e8ebcbd2d13cad579"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\IPAddress.cpp.o",
+    "sha256": "517b3f8aa379100273d508bd514ec989546595b221bd907268d9b2959f040fea"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\main.cpp.d",
+    "sha256": "6aed15e58ff853e1523068c3ff46149d3cd7922ab1c0d1aa08d756660ea10a20"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\main.cpp.o",
+    "sha256": "f1e7ccccac0dcb57cef29017f485c8a63376a4adf93e2f61525e7bb09d304baa"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\new.cpp.d",
+    "sha256": "bc14db87a55b456ef1f387dc6b8bfca65684bf09b38a9812efa9581248b3cfa9"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\new.cpp.o",
+    "sha256": "bc96682d7621b9021dab1aefb38785bea28183f1993e609ec31b2cd36172f034"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\PluggableUSB.cpp.d",
+    "sha256": "4ad73ef74b48a9de46b37532f68366fa257a9254400057777252071f9fa37ab6"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\PluggableUSB.cpp.o",
+    "sha256": "8977d30fc908bb223ca8593c0216fea9f036f5e86fd7d6c74f035f479d041157"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\Print.cpp.d",
+    "sha256": "58bae28a02420bc1b45fb3095fa35d2abc81f9a3fa46c28a11026d732e5b7451"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\Print.cpp.o",
+    "sha256": "dba8db2115188ba88b8f04622f366e429e04b62bd09b7c75535c24364d15caa5"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\Stream.cpp.d",
+    "sha256": "301f1459e54d123fc31fab8dd1441a7e9c67c1985f6e0044c62f18c0342b3a48"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\Stream.cpp.o",
+    "sha256": "7ea7f17623c424fbad78cda8bc57ba11a6b74b647177de455f40c2cd45cb9e54"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\Tone.cpp.d",
+    "sha256": "aa9a397259d7c6a6fdf8b28cb6fc108c318332774ac60ef62338c784dd51bbce"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\Tone.cpp.o",
+    "sha256": "f99a5e197d4f77f474046dfbc34b500961da7b12293c38c3e54e960877798eda"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\USBCore.cpp.d",
+    "sha256": "176a8a1efb1a4cada725d000f20539ea03f9084806ccb04a691239b5e3cad845"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\USBCore.cpp.o",
+    "sha256": "fd2f11f22e1a8ff6cb0deb776b0cca27abb49ad20fcb85999cdaa9bce9b38b04"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\WInterrupts.c.d",
+    "sha256": "d0b9c701499d13ca27fcaf2f4d6ce2ae05eb4ca2197471d40cb113fe15948607"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\WInterrupts.c.o",
+    "sha256": "3104ccd1a57f7f41abd8634c682ce4f6ecd7ec2a044ed6b5343c45d8140a3fb4"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring.c.d",
+    "sha256": "2318e2146852cb45cc04b44f1cb0266d0b70e84df408b0e117088fba13c9f75e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring.c.o",
+    "sha256": "b81c904ad19a1a4c1a4b054100c07d802d09fe51bc5d6b9bb8395e79276a4a8b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_analog.c.d",
+    "sha256": "a655067a448550c03a2f5a295812f134903aa0ee153fd0dc9227b28b2f22937f"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_analog.c.o",
+    "sha256": "fe031e83564d52110a4a44be4fccf46bb06ad74cdbc3c1a6176d500e3f684bdb"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_digital.c.d",
+    "sha256": "9dc854785bec78277d233e8f386addf3aa6da8639c0b0fc0e3f1949995bdb40b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_digital.c.o",
+    "sha256": "956a140bc22a5a68a34cf267b8d85cf2e658f8c4489c7f81bf44f2c4df929d59"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_pulse.c.d",
+    "sha256": "73b7885d959ba99eed43f5bbe4b0763c9d433ffc990b3c17f0cf66ecfef4c0dd"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_pulse.c.o",
+    "sha256": "379801354a6ca77b89517c27fcc8ea11e7a074675a5c492f4307856fe796b764"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_pulse.S.d",
+    "sha256": "5a9303adbc79cdd03271ece03e46ba9c3abb080373eae24ddc2397aac0179f6e"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_pulse.S.o",
+    "sha256": "dafd8db5c95fb544f59c2285bc4a53ae9347c9da7a94155fb890eda775c8cb77"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_shift.c.d",
+    "sha256": "90b617a5cd1d20145a3671234d46728388305d28162426e6de7096dc3eb6c9a5"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\wiring_shift.c.o",
+    "sha256": "abada792dd54628f40f6495e3e47cb95c372352781a8442d4ca919e6f6727425"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\WMath.cpp.d",
+    "sha256": "2d2df2bd35a4592bf6dfa302ab2732fcddad3f28eb576672e9982a7817c4411a"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\WMath.cpp.o",
+    "sha256": "742693bdee38459148160620363df7b5fa0604e6912dded9244478d7a1a8e167"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\WString.cpp.d",
+    "sha256": "22a521290db1bc9f3a306e731891da6ce458cad1090bb7a39ee9bf324fdb236d"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\core\\WString.cpp.o",
+    "sha256": "2477130552ad8c6ab3c8a1156916c86c353d955841cb0a4aa7e66b4d9e15c04b"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\sketch\\Sketch.ino.cpp",
+    "sha256": "45e036d5e6e12377a1f3b846e12cbc2572d99ef69cb360af558ae71f3e81d4eb"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\sketch\\Sketch.ino.cpp.d",
+    "sha256": "a60fea40e8ad850c7484276759c33a1551c241c6ca20ada195a30cc53d8e880d"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\sketch\\Sketch.ino.cpp.merged",
+    "sha256": "217ad8d573556f6966bf1cc6a8a95d0bba1b1a7bae05a9816b7b97947d0a4a59"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\sketch\\Sketch.ino.cpp.merged.libsdetect.d",
+    "sha256": "fb1a2f8c5bc70f40ff42fa1b91cf29deeac4ccffc91a4a31b4b7c305429ca9ba"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\build\\sketch\\Sketch.ino.cpp.o",
+    "sha256": "7ed5ab7cfb763b7718b4b8c5ee232da383d3622ded4169d8a5d0775a971e3592"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\build\\build.options.json",
+    "sha256": "8e7062ded7c0b05b27de7bc2c14f6a9800f0245d9fd569a96910e69412d819a5"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\build\\includes.cache",
+    "sha256": "62f5802603775339b42a5885199a0d93d1e0d356266106d37746ce04a84acd82"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\build\\libraries.cache",
+    "sha256": "00fb508436e726f0ec5a813ea223a44ccda3ce6a99b5c2a53a748540a3d77a18"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\Sketch\\Sketch.ino",
+    "sha256": "83dbff7d02fd3d7b6332a2cb0802a9f8b863359e1cfd5c2ecb4e6cd3390ce7cc"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\build\\sketch\\Sketch.ino.cpp",
+    "sha256": "2a1e0d96b5b799139bd22d55a51b3459d061d3eae9967da65115c42e7853ae26"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\build\\sketch\\Sketch.ino.cpp.merged",
+    "sha256": "8c043414d856fc4bc7a8907f5926c831347354783713a0a8cb789bdd4ffe1688"
+  },
+  {
+    "path": "guest\\arduino-project\\profiles\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\build\\sketch\\Sketch.ino.cpp.merged.libsdetect.d",
+    "sha256": "47976323785b8479dddeb45a34c123bbf2a8100f74a2bfa770f62f57ae7ba2da"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\runs\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57.json",
+    "sha256": "0bf81265219ee145e2f599af429c6e841f1036754e1a26a5674f0961036448a4"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\runs\\55daa6d2-665f-4771-95cf-f4b020cd4e4e.json",
+    "sha256": "2d0373d27f0700626487df6afac59d2da10329f2ae43ed70f323605ce63cfec6"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\runs\\64582bae-84f4-4f66-869e-dfec8f388d34.json",
+    "sha256": "bf6c8e19088273edd98445ed35eca238e3131ecf5b46e5d9766706edf05785d9"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\runs\\6aa400a0-ccb8-4e98-a08e-068a39eae8f8.json",
+    "sha256": "5a61ac8eb899e42d5cf83824c262b1f81d29e7f3324948747a80ab94ff6ac5bc"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\staging\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\input.json",
+    "sha256": "db0903693df78ed7889e2188ed0c86beb5dc2082cb52e9e618a074400ca3aaea"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\staging\\3cb9f9b8-5a13-45fd-967a-fb601b2caa57\\Sketch.ino",
+    "sha256": "83dbff7d02fd3d7b6332a2cb0802a9f8b863359e1cfd5c2ecb4e6cd3390ce7cc"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\firmware.elf",
+    "sha256": "b2b18b722504d7dfdbd45ddcefd9140c47518ba10cb849b0020427f988b779ac"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\firmware.hex",
+    "sha256": "94f09d0213f2517e9d283fc50020f37a3357a418d708cd6a454b74d0e79e8275"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\input.json",
+    "sha256": "d2f77994e72c9f132261b198d165e3859aa8d6ce80fc02a1ef3f19da3baa42ab"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\result.json",
+    "sha256": "9eb35baba792c3f6d5cb3d7e2a4dde59e82a174f99516bcd1a5e16da2ec7f9a3"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\55daa6d2-665f-4771-95cf-f4b020cd4e4e\\Sketch.ino",
+    "sha256": "09aee5b8f913784772a5d35274188a556f6e5f16284a3242ec14ba79f0e862a7"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\64582bae-84f4-4f66-869e-dfec8f388d34\\firmware.elf",
+    "sha256": "a2d95a62115f05a3ab195beaabe0567fd52b3de16ebacc98ebfb538c5d8d7559"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\64582bae-84f4-4f66-869e-dfec8f388d34\\firmware.hex",
+    "sha256": "1923c082b7dae924bfa0a8e4bb1766af68b96798aedec570b75abc65ca705d42"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\64582bae-84f4-4f66-869e-dfec8f388d34\\input.json",
+    "sha256": "2130d275d7dc88449c9ce8b9756344155f10ed36737ed2749bb84b31716e6e0d"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\64582bae-84f4-4f66-869e-dfec8f388d34\\result.json",
+    "sha256": "fa53ffbcba6c9354dd7a7c3d748f4f69157fdc4e9ce81b8eba60152b50cb275f"
+  },
+  {
+    "path": "guest\\arduino-project\\.hazlomexa\\artifacts\\64582bae-84f4-4f66-869e-dfec8f388d34\\Sketch.ino",
+    "sha256": "bb0a67921376536e3f4600ba46abc4d4fed6aed5fc8668929e6e3642b8ba520e"
+  }
+]

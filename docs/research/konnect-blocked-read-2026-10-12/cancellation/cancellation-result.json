@@ -1,0 +1,15 @@
+{
+  "cancellation_ms": 3033,
+  "ceased_before_barrier_release": true,
+  "elapsed_ms": 4418,
+  "error": "Edición cancelada; se conserva la copia sin publicar.",
+  "mode": "cancellation",
+  "model_inference": false,
+  "native_ui": false,
+  "owned_pids": [
+    12104
+  ],
+  "pass": true,
+  "scope": "actual native dispatcher blocked component read before mutation",
+  "source_and_copy_preserved": true
+}

@@ -1,0 +1,180 @@
+{
+  "final_read": {
+    "checks": null,
+    "components": null,
+    "content": "{\n  \"schema_version\": 1,\n  \"job_id\": \"4d7757fb-fd66-4243-9780-c60fa434c496\",\n  \"orca_version\": \"2.4.2\",\n  \"summary\": {\n    \"layers\": 50,\n    \"max_z_mm\": 10.0,\n    \"bounds_mm\": [\n      10.0,\n      10.0,\n      10.0\n    ],\n    \"settings\": {\n      \"bed\": \"Textured PEI Plate\",\n      \"bed_c\": 50.0,\n      \"filament\": \"Prusa Generic PLA\",\n      \"layer_mm\": 0.2,\n      \"machine\": \"Prusa MK3S 0.4 nozzle\",\n      \"nozzle_c\": 220.0,\n      \"nozzle_mm\": 0.4,\n      \"process\": \"0.20mm Standard @MK3S 0.4\"\n    }\n  },\n  \"sha256\": {\n    \"Model-mm.stl\": \"ecd136e72fe07417445638b3fd07553b6eb9e7e1be43699fb6c2932506dd98ed\",\n    \"Original/Filament.json\": \"9ff818b607a016955aa4f821d32563f594dd546f9bab171f0c11aaace08bdd21\",\n    \"Original/Machine.json\": \"d89873a83c6f19ad2dbb6a30cdd9b57d5555ccf3d30a2242c8bec1bb9cdae917\",\n    \"Original/Original.stl\": \"c1c022788a012c7eb8f7ca9807b83fcf4a1ee6a3c5538a7669fe3779c117bf73\",\n    \"Original/Process.json\": \"6f8f64aad70d15f30dd77d4cad3fdddad4c673c1292cb6e455fe91adad432384\",\n    \"Original/ProfileSources/filament/Prusa Generic PLA.json\": \"ae54cfcb0c2b9f49b30ae9026379051b602b9cbf505738646256571cd5b2c223\",\n    \"Original/ProfileSources/filament/fdm_filament_common.json\": \"7e9e2aab22308279f16ffdb84bea3b3a0016d1e305ab411db493c2eb9ef4ff0a\",\n    \"Original/ProfileSources/filament/fdm_filament_pla.json\": \"412073f0eaad84901f700f7cc3a672b9c9c39877800ebcb8db39b9fe950e5942\",\n    \"Original/ProfileSources/machine/Prusa MK3S 0.4 nozzle.json\": \"532a5b004c3f49def83bc151481de48d52db9cef340da2abfb35c66eef3ce898\",\n    \"Original/ProfileSources/machine/fdm_machine_common.json\": \"de44aa2b3073eb1056c708cf38c60b61d91f939cbbfc6e555d8436b7020f47d3\",\n    \"Original/ProfileSources/process/0.20mm Standard @MK3S 0.4.json\": \"dfdd3261a378341663849303a25364f792684cb673ccb8b25aa22d7f83eac93c\",\n    \"Original/ProfileSources/process/fdm_process_common.json\": \"dc69dc8507f91afeffc9598d72b9cac8b2597d3a20236bd2167288baf8dd936b\",\n    \"Sliced.3mf\": \"7f27e459fb3fab541bd86bfa031572eeeced51c467511e21d5015a72499769b4\",\n    \"Toolpath.gcode\": \"f9443609c11f541a8559510057f6cb327fe6c21bdd93fdc65af33a2d546c26f2\"\n  }\n}",
+    "drawing": null,
+    "format": "slice_report",
+    "job_id": "4d7757fb-fd66-4243-9780-c60fa434c496",
+    "project_id": "b96e73ae-e7c3-4e91-89d1-0f79e31842e5",
+    "scope": "verified_published_result",
+    "sha256": "25465721447d8ed7226274644850af44226ccb69ca89ccd27240545e27ab6079",
+    "slicing": {
+      "mesh": {
+        "bounds_mm": [
+          [
+            100.0,
+            100.0,
+            0.0
+          ],
+          [
+            110.0,
+            110.0,
+            10.0
+          ]
+        ],
+        "shape_sha256": "bee2af55d25283b0392f093123c50eac41216bf93b3da0d70d5e3247e69496c7",
+        "triangles": 12
+      },
+      "operation": "slice_to_files_only",
+      "settings": {
+        "bed": "Textured PEI Plate",
+        "bed_area_mm": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            250.0,
+            0.0
+          ],
+          [
+            250.0,
+            210.0
+          ],
+          [
+            0.0,
+            210.0
+          ]
+        ],
+        "bed_c": 50.0,
+        "filament": "Prusa Generic PLA",
+        "filament_mm": 1.75,
+        "layer_mm": 0.2,
+        "machine": "Prusa MK3S 0.4 nozzle",
+        "nozzle_c": 220.0,
+        "nozzle_mm": 0.4,
+        "printable_height_mm": 210.0,
+        "process": "0.20mm Standard @MK3S 0.4"
+      },
+      "units": "mm"
+    },
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "first_read": {
+    "checks": null,
+    "components": null,
+    "content": "{\n  \"schema_version\": 1,\n  \"job_id\": \"daf7a34b-0cdf-42da-bfbd-d50bce8c96e4\",\n  \"orca_version\": \"2.4.2\",\n  \"summary\": {\n    \"layers\": 50,\n    \"max_z_mm\": 10.0,\n    \"bounds_mm\": [\n      10.0,\n      10.0,\n      10.0\n    ],\n    \"settings\": {\n      \"bed\": \"Textured PEI Plate\",\n      \"bed_c\": 45.0,\n      \"filament\": \"Prusa Generic PLA\",\n      \"layer_mm\": 0.2,\n      \"machine\": \"Prusa MK3S 0.4 nozzle\",\n      \"nozzle_c\": 220.0,\n      \"nozzle_mm\": 0.4,\n      \"process\": \"0.20mm Standard @MK3S 0.4\"\n    }\n  },\n  \"sha256\": {\n    \"Model-mm.stl\": \"ecd136e72fe07417445638b3fd07553b6eb9e7e1be43699fb6c2932506dd98ed\",\n    \"Original/Filament.json\": \"a4444ecb2492b35cb45db9c14ff08a80f689a6cf389dce23ab5c3c903a39b88a\",\n    \"Original/Machine.json\": \"d89873a83c6f19ad2dbb6a30cdd9b57d5555ccf3d30a2242c8bec1bb9cdae917\",\n    \"Original/Original.stl\": \"c1c022788a012c7eb8f7ca9807b83fcf4a1ee6a3c5538a7669fe3779c117bf73\",\n    \"Original/Process.json\": \"6f8f64aad70d15f30dd77d4cad3fdddad4c673c1292cb6e455fe91adad432384\",\n    \"Original/ProfileSources/filament/Prusa Generic PLA.json\": \"ae54cfcb0c2b9f49b30ae9026379051b602b9cbf505738646256571cd5b2c223\",\n    \"Original/ProfileSources/filament/fdm_filament_common.json\": \"7e9e2aab22308279f16ffdb84bea3b3a0016d1e305ab411db493c2eb9ef4ff0a\",\n    \"Original/ProfileSources/filament/fdm_filament_pla.json\": \"412073f0eaad84901f700f7cc3a672b9c9c39877800ebcb8db39b9fe950e5942\",\n    \"Original/ProfileSources/machine/Prusa MK3S 0.4 nozzle.json\": \"532a5b004c3f49def83bc151481de48d52db9cef340da2abfb35c66eef3ce898\",\n    \"Original/ProfileSources/machine/fdm_machine_common.json\": \"de44aa2b3073eb1056c708cf38c60b61d91f939cbbfc6e555d8436b7020f47d3\",\n    \"Original/ProfileSources/process/0.20mm Standard @MK3S 0.4.json\": \"dfdd3261a378341663849303a25364f792684cb673ccb8b25aa22d7f83eac93c\",\n    \"Original/ProfileSources/process/fdm_process_common.json\": \"dc69dc8507f91afeffc9598d72b9cac8b2597d3a20236bd2167288baf8dd936b\",\n    \"Sliced.3mf\": \"d35e0aab0e70f48bef3921cf1b886ef4c5b88d3346ab3ce427424296d9e31cf1\",\n    \"Toolpath.gcode\": \"b7ec6c22ffb2f30380a7b7575364b67c677e8be7d69c4734313b70ed6843eca2\"\n  }\n}",
+    "drawing": null,
+    "format": "slice_report",
+    "job_id": "daf7a34b-0cdf-42da-bfbd-d50bce8c96e4",
+    "project_id": "b96e73ae-e7c3-4e91-89d1-0f79e31842e5",
+    "scope": "verified_published_result",
+    "sha256": "e0e3c7c3b6c2b46283f1b34eccb663f03ca816b6f954d48b88491fba659ef620",
+    "slicing": {
+      "mesh": {
+        "bounds_mm": [
+          [
+            100.0,
+            100.0,
+            0.0
+          ],
+          [
+            110.0,
+            110.0,
+            10.0
+          ]
+        ],
+        "shape_sha256": "bee2af55d25283b0392f093123c50eac41216bf93b3da0d70d5e3247e69496c7",
+        "triangles": 12
+      },
+      "operation": "slice_to_files_only",
+      "settings": {
+        "bed": "Textured PEI Plate",
+        "bed_area_mm": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            250.0,
+            0.0
+          ],
+          [
+            250.0,
+            210.0
+          ],
+          [
+            0.0,
+            210.0
+          ]
+        ],
+        "bed_c": 45.0,
+        "filament": "Prusa Generic PLA",
+        "filament_mm": 1.75,
+        "layer_mm": 0.2,
+        "machine": "Prusa MK3S 0.4 nozzle",
+        "nozzle_c": 220.0,
+        "nozzle_mm": 0.4,
+        "printable_height_mm": 210.0,
+        "process": "0.20mm Standard @MK3S 0.4"
+      },
+      "units": "mm"
+    },
+    "source_is_untrusted_data": true,
+    "source_name": null
+  },
+  "proposal": {
+    "human_approval_required": true,
+    "job_id": "4d7757fb-fd66-4243-9780-c60fa434c496",
+    "mesh": {
+      "bounds_mm": [
+        [
+          100.0,
+          100.0,
+          0.0
+        ],
+        [
+          110.0,
+          110.0,
+          10.0
+        ]
+      ],
+      "shape_sha256": "bee2af55d25283b0392f093123c50eac41216bf93b3da0d70d5e3247e69496c7",
+      "triangles": 12
+    },
+    "operation": "slice_to_files_only",
+    "phase": "awaiting_approval",
+    "settings": {
+      "bed": "Textured PEI Plate",
+      "bed_area_mm": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          250.0,
+          0.0
+        ],
+        [
+          250.0,
+          210.0
+        ],
+        [
+          0.0,
+          210.0
+        ]
+      ],
+      "bed_c": 50.0,
+      "filament": "Prusa Generic PLA",
+      "filament_mm": 1.75,
+      "layer_mm": 0.2,
+      "machine": "Prusa MK3S 0.4 nozzle",
+      "nozzle_c": 220.0,
+      "nozzle_mm": 0.4,
+      "printable_height_mm": 210.0,
+      "process": "0.20mm Standard @MK3S 0.4"
+    }
+  }
+}

@@ -1,0 +1,136 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.31s
+     Running unittests src\lib.rs (target\debug\deps\hazlomexa-af07e57d7e34a273.exe)
+
+running 129 tests
+test agent::tests::actual_owned_agent_edits_only_copy_and_verifies_selected_document ... ignored, Requires the authenticated pinned Agent in an owned Windows guest
+test arduino::tests::actual_owned_compilation_and_invalid_sketch ... ignored, Requires explicitly provisioned official Arduino CLI and AVR core
+test cadcraft::tests::actual_cli_copies_converts_and_adds_circle ... ignored, Actual identified official CADCraft CLI and frozen drawing fixtures; run explicitly
+test cadpilot::tests::actual_cadpilot_owned_selected_copy_adapter ... ignored, Actual identified FreeCAD 1.1.4/CADPilot 0.7.7 owned selected-copy adapter
+test claude::tests::actual_restricted_stream_without_credentials ... ignored, Requires installed Claude Code and the release MCP helper; uses no credentials
+test agent::tests::selected_document_decodes_uri_and_requires_exact_windows_path ... ok
+test agent::tests::requires_identified_authenticated_health_before_mcp_dispatch ... ok
+test arduino::tests::hex_requires_checksum_flash_bounds_and_terminal_record ... ok
+test cadcraft::tests::rejects_incomplete_or_inconsistent_circle_pages ... ok
+test cadcraft::tests::verifies_circle_geometry_instead_of_only_counts ... ok
+test cadpilot::tests::known_rejections_are_actionable_and_unknown_text_is_not_exposed ... ok
+test cadcraft::tests::rejects_unbounded_or_forged_drawing_inputs ... ok
+test arduino::tests::input_rejects_cli_options_unknown_fields_and_empty_source ... ok
+test cadpilot::tests::requests_reject_untyped_or_unbounded_parameters ... ok
+test cadcraft::tests::reads_only_valid_insertion_unit_header ... ok
+test codex::tests::connection_config_rejects_extra_environment_and_disables_native_actions ... ok
+test codex::tests::captured_installed_client_turns_preserve_real_status_and_text ... ok
+test claude::tests::utf8_chunks_terminal_and_no_duplicate_text ... ok
+test codex::tests::final_messages_replace_deltas_without_duplicate_text ... ok
+test freecad::tests::actual_freecad_runs_inside_owned_job_with_private_configuration ... ignored, requires HAZLOMEXA_FREECAD_CMD; run the native suite explicitly
+test host_tools::tests::actual_mcp_cadpilot_measured_followup ... ignored, Actual FreeCAD/CADPilot measured MCP follow-up, approval, native cancellation and recovery
+test claude::tests::failed_auth_is_terminal_and_arguments_disable_builtins ... ok
+test host_tools::tests::actual_mcp_proposal_keeps_desktop_approval_and_verification ... ignored, Requires the identified Konnect and KiCad Windows runtimes
+test host_tools::tests::actual_mcp_solid_and_compile_approval_recovery ... ignored, Requires the identified FreeCAD and Arduino runtimes and release helper
+test codex::tests::pre_cancelled_runner_never_reads_or_launches_runtime ... ok
+test freecad::tests::mismatched_or_nonfinite_results_are_rejected ... ok
+test codex::tests::rpc_preserves_early_notifications_and_rejects_other_actions ... ok
+test jobs::tests::actual_agent_cancel_with_confirmed_write_reply_held ... ignored, Requires owned Agent guest with the confirmed-write reply barrier
+test jobs::tests::actual_agent_workflow_approval_publication_failure_and_recovery ... ignored, Requires authenticated Arduino Agent 0.7.1 in the owned Windows guest
+test jobs::tests::actual_approved_workflow_publishes_and_recovers ... ignored, requires HAZLOMEXA_FREECAD_CMD pointing to official FreeCAD 1.1.4
+test codex::tests::identity_actions_failures_and_limits_remain_separate ... ok
+test jobs::tests::actual_arduino_workflow_publication_recovery_and_failure ... ignored, Requires explicitly provisioned Arduino CLI and owned AVR core
+test jobs::tests::actual_cad_publication_on_exhausted_disk_preserves_whole_outputs_and_recovery ... ignored, requires the owned 64 MiB guest NTFS disk and official FreeCAD 1.1.4
+test jobs::tests::actual_cadcraft_owned_process_cancellation ... ignored, Actual identified CADCraft process cancellation; invoke alone or with --test-threads=1
+test jobs::tests::actual_cadcraft_workflow_publication_and_recovery ... ignored, Actual official CADCraft Windows CLI; explicitly verifies shared approval/publication/recovery
+test jobs::tests::actual_cadpilot_workflow_publication_and_recovery ... ignored, Actual CADPilot 0.7.7 selected-copy approval, publication and recovery
+test jobs::tests::actual_kicad_owned_process_cancellation ... ignored, Actual identified KiCad process cancellation; invoke alone or with --test-threads=1
+test jobs::tests::actual_kicad_workflow_publication_and_recovery ... ignored, Actual official KiCad 10.0.7 Windows runtime: approval, publication and recovery
+test jobs::tests::actual_konnect_workflow_publication_and_recovery ... ignored, Actual Konnect 0.13.0/KiCad 10.0.7: shared approval, publication and recovery
+test jobs::tests::actual_orca_owned_process_cancellation ... ignored, Actual identified OrcaSlicer live process cancellation; run serially
+test jobs::tests::actual_orca_workflow_publication_and_recovery ... ignored, Actual official OrcaSlicer 2.4.2 approval, publication, cancellation and recovery
+test claude::tests::extra_tools_unfinished_bad_sessions_and_limits_refused ... ok
+test agent::tests::accepted_files_must_match_both_approved_sources ... ok
+test codex::tests::bounded_records_reject_incomplete_and_non_object_json ... ok
+test cadcraft::tests::legacy_circle_reports_remain_readable_without_downgrading_new_requests ... ok
+test agent::tests::rejects_unknown_effects_paths_and_large_or_invalid_sources ... ok
+test cadpilot::tests::package_folder_selection_keeps_module_identity_checks ... ok
+test jobs::tests::inference_clarification_and_invalid_dimensions_leave_no_job ... ok
+test jobs::tests::gui_resolution_supports_portable_and_installed_layouts_and_missing_gui ... ok
+test host_tools::tests::cad_tools_require_verified_context_and_exact_typed_inputs ... ok
+test kicad::tests::excluded_findings_are_not_counted_as_active_errors ... ok
+test kicad::tests::actual_reports_separate_completed_checks_from_findings ... ok
+test host_tools::tests::schematic_followups_require_paired_verified_context ... ok
+test kicad::tests::rejects_mismatched_incomplete_and_contradictory_reports ... ok
+test jobs::tests::model_identity_edits_and_failure_history_survive_restart ... ok
+test jobs::tests::edits_invalidate_previous_approval_and_approval_is_single_use ... ok
+test kicad_run::tests::actual_kicad_captured_project_checks_and_exports ... ignored, Actual official KiCad Windows x64 10.0.7 runtime and captured upstream project
+test kicad_run::tests::actual_kicad_process_short_deadline ... ignored, Actual KiCad command with a short supervisor deadline; run with --test-threads=1
+test kicad_project::tests::cancelled_capture_does_not_create_a_source_copy ... ok
+test jobs::tests::arduino_runtime_requires_owned_toolchain_marker_and_invalidates_approval ... ok
+test konnect::tests::malformed_and_stale_inputs_refused ... ok
+test jobs::tests::inference_cannot_dispatch_and_cancelled_or_old_results_cannot_propose ... ok
+test konnect::tests::value_only_and_number_normalization ... ok
+test konnect_run::tests::actual_konnect_captured_copy_adapter ... ignored, actual Konnect 0.13.0 and KiCad 10.0.7 runtime required
+test konnect::tests::discovery_lists_instances_and_refuses_ambiguous_units ... ok
+test konnect_run::tests::native_netlist_rejects_wrong_values_duplicates_and_malformed_xml ... ok
+test konnect::tests::duplicate_properties_and_resource_limits_are_refused ... ok
+test jobs::tests::manual_fallback_clears_failed_inference_only_after_valid_proposal ... ok
+test jobs::tests::escaped_sketch_metadata_is_bounded_and_reopens_without_solid_dimensions ... ok
+test jobs::tests::agent_original_binding_edit_gates_and_project_changes ... ok
+test host_tools::tests::capabilities_are_selected_bounded_and_cannot_approve ... ok
+test ollama::tests::complete_wire_response_still_requires_strict_host_validation ... ok
+test host_tools::tests::sdk_catalog_and_tool_round_trip ... ok
+test jobs::tests::denial_prevents_dispatch_and_project_switch_invalidates_approval ... ok
+test konnect::tests::retained_actual_edit_passes_and_placement_tamper_fails ... ok
+test ollama::tests::protocol_failures_never_produce_a_proposal ... ok
+test host_tools::tests::sketch_tools_bind_inspected_source_and_preserve_review_and_recovery ... ok
+test orca::tests::ascii_and_binary_units_preserve_geometry ... ok
+test ollama::tests::explicit_cloud_profile_pins_routing_and_keeps_host_validation ... ok
+test orca_run::tests::actual_orca_captures_profiles_and_slices_verified_files ... ignored, Actual official OrcaSlicer Windows x64 2.4.2 and explicit stock profiles
+test kicad_project::tests::rejects_missing_outside_remote_and_builtin_escape_dependencies ... ok
+test ollama::tests::transport_streams_only_after_version_and_local_digest_checks ... ok
+test ollama::tests::every_byte_boundary_including_utf8_preserves_proposal ... ok
+test jobs::tests::history_keeps_previous_results_and_does_not_interrupt_an_active_run ... ok
+test process::tests::crash_owner_helper ... ignored, subprocess helper for the abrupt-owner-exit test
+test ollama::tests::redirect_missing_cloud_or_changed_model_never_receives_prompt ... ok
+test jobs::tests::reopening_selected_project_reuses_writer_and_invalidates_approval ... ok
+test konnect_run::tests::cancelled_request_never_starts_or_creates_private_files ... ok
+test jobs::tests::arduino_approval_edit_denial_and_mixed_history_preserve_legacy_runs ... ok
+test project::tests::actual_disk_exhaustion_preserves_snapshot_and_inputs ... ignored, requires the owned 64 MiB NTFS fixture in Windows Sandbox
+test orca::tests::cancelled_and_malformed_mesh_imports_are_rejected ... ok
+test jobs::tests::publication_failure_preserves_verified_files_and_distinction_on_reopen ... ok
+test jobs::tests::restart_never_restores_a_live_approval ... ok
+test jobs::tests::konnect_proposal_validates_current_value_and_recovers_schema_nine ... ok
+test ollama::tests::cancellation_drops_stalled_request_within_one_second ... ok
+test kicad_project::tests::captures_absolute_local_resources_and_worksheets_without_footprint_sheet_metadata ... ok
+test project::tests::artifact_text_is_bounded_utf8_and_does_not_modify_source ... ok
+test orca::tests::captured_profiles_units_and_sources_are_bound_to_the_proposal ... ok
+test kicad_project::tests::captures_hierarchy_rules_libraries_and_relocates_only_dependency_atoms ... ok
+test host_tools::tests::tool_designs_require_units_inputs_and_preserve_provenance ... ok
+test project::tests::publication_crash_helper ... ignored, subprocess helper for publication crash boundary checks
+test project::tests::failed_snapshot_replace_and_partial_temporary_file_preserve_state ... ok
+test project::tests::interrupted_and_unapproved_runs_never_publish_or_resume ... ok
+test tests::generated_request_matches_fixed_adapter_contract ... ok
+test tests::invalid_dimensions_cannot_become_an_operation ... ok
+test tests::provider_objects_cannot_smuggle_fields_or_coerce_values ... ok
+test tool_bridge::tests::actual_stdio_helper_and_idle_revocation ... ignored, Build release hazlomexa-tools.exe first
+test project::tests::legacy_runs_remain_readable_and_invalid_audit_cannot_change_paths ... ok
+test project::tests::path_escape_device_and_stream_names_are_rejected ... ok
+test project::tests::locked_output_fails_publication_and_preserves_private_input ... ok
+test project::tests::agent_publication_recovery_preserves_imported_original_and_rejects_other_formats ... ok
+test project::tests::single_writer_unknown_versions_and_originals_are_preserved ... ok
+test project::tests::frontend_fixture_matches_native_snapshot_and_dimension_schema ... ok
+test project::tests::junction_escape_is_rejected_without_touching_its_target ... ok
+test tool_bridge::tests::local_auth_sdk_and_revocation ... ok
+test project::tests::publication_is_whole_set_nonreplacing_and_recovered_after_lost_status ... ok
+test orca::tests::rejects_profile_scripts_credentials_cycles_and_incompatible_machine ... ok
+test konnect_run::tests::verifies_captured_portable_copy_and_refuses_tampered_inventory ... ok
+test project::tests::occupied_destination_does_not_block_uncommitted_history_or_hide_completed_corruption ... ok
+test orca_run::tests::real_archive_contract_rejects_units_settings_and_gcode_tampering ... ok
+test project::tests::abrupt_exit_at_publication_boundaries_recovers_without_regeneration ... ok
+test process::tests::cancellation_before_dispatch_creates_no_process_or_file ... ok
+test process::tests::abrupt_owner_exit_closes_job_and_terminates_descendants ... ok
+test jobs::tests::concurrent_cancel_and_commit_have_one_authoritative_outcome ... ok
+test ollama::tests::captured_real_stream_survives_every_byte_boundary ... ok
+test process::tests::timeout_is_distinct_from_completion ... ok
+test process::tests::sdk_stdio_close_stops_owned_tree ... ok
+test process::tests::quotes_arguments_and_drains_both_pipes_under_limits ... ok
+test process::tests::cancellation_stops_owned_descendants_but_preserves_unrelated_process ... ok
+
+test result: ok. 99 passed; 0 failed; 30 ignored; 0 measured; 0 filtered out; finished in 4.19s
+

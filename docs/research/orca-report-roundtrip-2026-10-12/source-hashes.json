@@ -1,0 +1,22 @@
+[
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\src\\orca.rs",
+    "Hash": "6152C95AABB0F603C2AE65C2EAFB09E21A49462FF6CBEB9C7EA580A39387B1A6"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\src\\orca_run.rs",
+    "Hash": "668B2ED7C64D11CDE1EFC49BBFF0B5350F4DE00454D2211FB4D9912B1C89069F"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\src-tauri\\examples\\installed_orca_workflow.rs",
+    "Hash": "FA6FE7B8B4C0656E29572A39F9888BB82E6C10D1B9C44E6F60638D2B8B6F0E35"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\prepare-current-package.py",
+    "Hash": "DAEFA7ABE264AB72CFFD94EAA92EA98399327D0F517AA1EC5AC6C4B2B21ADB0D"
+  },
+  {
+    "Path": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\apps\\desktop\\tests\\sandbox-current-package.ps1",
+    "Hash": "AD7F9FF9CD47DD9FD53740C98A1503236A74D6EB0A9D20AD0A7155B08FFD5B43"
+  }
+]

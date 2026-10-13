@@ -1,0 +1,37 @@
+{
+  "native_job_id": "e907ee66-c637-4eb0-9951-688fe74e76fc",
+  "native_project": "C:/Users/USER\\Documents\\GitHub\\HazloMX\\target\\native-cadcraft-20261012-01\\project",
+  "native_runtime_and_source_pickers": true,
+  "native_approval_publication": true,
+  "native_report_read": true,
+  "native_restart_history_and_report": true,
+  "original_and_all_artifact_hashes_preserved": true,
+  "independent_fixture_circles": [
+    {
+      "10": 0.0,
+      "20": 0.0,
+      "30": 0.0,
+      "40": 10.0
+    },
+    {
+      "10": 30.0,
+      "20": 0.0,
+      "30": 0.0,
+      "40": 2.0
+    }
+  ],
+  "png_inspected": true,
+  "native_imperial_conversion": "not_checked",
+  "native_result_explorer_reveal": "not_checked",
+  "live_gui_editing": "not_checked",
+  "installed_workflow": "not_checked",
+  "source_sha256": {
+    "apps/desktop/src/main.ts": "0e0973defccf2a2da5ef77852b4124f02672a06a896b7e9dca9a85da2b754137",
+    "apps/desktop/src-tauri/src/main.rs": "0e08792b96d4f38c4b524ff09b481ebda64e5c985ce3772ca55b55f9e2542cb5",
+    "apps/desktop/src-tauri/src/cadcraft.rs": "1ad7a784bfceabfb4bc6cbe68466f08b708dcadf8abdddcceb3c73e39f4e7c26",
+    "apps/desktop/src-tauri/src/jobs.rs": "5e81cb5214b20aef70ab2101b1f6016492561871c65dc0296a69dd30bb687b48",
+    "target/debug/hazlomexa.exe": "7a31b290ffc27bbff8433e488ea1d4dd77174a32744dfbb1458a9b9eb97e79d5",
+    "target/debug/hazlomexa-tools.exe": "ab59ea6faa6aee76f2a3e2ef2c05b8ba0263636685c1c517dd949df793f53751",
+    "target/cadcraft-probe/runtime/cadcraft-0.5.0-windows-x64-portable/cadcraft-cli.exe": "d9517678cf9216a63ecb7f4adfe4ab485af9541849d465245251bba91845724f"
+  }
+}

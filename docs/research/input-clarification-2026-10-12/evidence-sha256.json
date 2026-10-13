@@ -1,0 +1,18 @@
+[
+  {
+    "path": "arduino-interval-clarification.png",
+    "sha256": "8f5ca165686bb091e3249e9f428959d28355a0229284ae95c4122b4e4e4331bf"
+  },
+  {
+    "path": "package-identity.json",
+    "sha256": "5078c9ebbc87768ef5985c3cf4921c708bdcd4eadf784bbbf696fe782ec51d5d"
+  },
+  {
+    "path": "README.md",
+    "sha256": "e3931171eebb62f1d58fec9c6edec09e7396bce7963d57fe94208a2c0fda8760"
+  },
+  {
+    "path": "source-inputs.json",
+    "sha256": "87df7a502f1d4fb67aa4864d79df7d8390bd56a41480f55fe28a6b24a68355c6"
+  }
+]

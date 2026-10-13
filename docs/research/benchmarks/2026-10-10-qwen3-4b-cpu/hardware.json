@@ -1,0 +1,14 @@
+{
+  "captured_from": "Windows CIM on benchmark host",
+  "os": "Windows 11 Pro",
+  "version": "10.0.26200",
+  "build": "26200",
+  "architecture": "x64",
+  "cpu": "Intel Core Ultra 7 155H",
+  "physical_cores": 16,
+  "logical_processors": 22,
+  "physical_memory_bytes": 16500436992,
+  "graphics": "Intel Arc Graphics",
+  "graphics_driver": "32.0.101.6556",
+  "vulkan_requested": false
+}

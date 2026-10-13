@@ -1,0 +1,323 @@
+{
+  "passed": true,
+  "contexts": [
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "freecad",
+        "draft_fields": {
+          "unit": "mm",
+          "length": null,
+          "width": null,
+          "height": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "arduino",
+        "draft_fields": {
+          "arduino-board": "arduino:avr:uno"
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "agent",
+        "draft_fields": {},
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "drawing",
+        "draft_fields": {
+          "drawing-format": "dxf",
+          "drawing-unit": "mm",
+          "drawing-add-circle": false,
+          "drawing-circle-unit": "mm",
+          "drawing-x": null,
+          "drawing-y": null,
+          "drawing-diameter": null,
+          "drawing-loss": false
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "konnect",
+        "draft_fields": {
+          "schematic-component": null,
+          "konnect-reference": null,
+          "konnect-value": "  Mixed Case Ω  "
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "pcb",
+        "draft_fields": {
+          "pcb-component": null,
+          "pcb-unit": "mm",
+          "pcb-x": null,
+          "pcb-y": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "kicad",
+        "draft_fields": {
+          "kicad-unit": "mm"
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "slice",
+        "draft_fields": {
+          "slice-unit": "mm",
+          "slice-bed": "textured",
+          "slice-bed-temperature": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "cadpilot",
+        "draft_fields": {
+          "cadpilot-operation": "inspect",
+          "cadpilot-component": null,
+          "cadpilot-object": null,
+          "cadpilot-unit": "mm",
+          "cadpilot-length": null,
+          "cadpilot-width": null,
+          "cadpilot-height": null,
+          "cadpilot-diameter": null,
+          "cadpilot-x": null,
+          "cadpilot-y": null,
+          "cadpilot-z": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "freecad",
+        "draft_fields": {
+          "unit": "mm",
+          "length": null,
+          "width": null,
+          "height": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "arduino",
+        "draft_fields": {
+          "arduino-board": "arduino:avr:uno"
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "agent",
+        "draft_fields": {},
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "drawing",
+        "draft_fields": {
+          "drawing-format": "dxf",
+          "drawing-unit": "mm",
+          "drawing-add-circle": false,
+          "drawing-circle-unit": "mm",
+          "drawing-x": null,
+          "drawing-y": null,
+          "drawing-diameter": null,
+          "drawing-loss": false
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "konnect",
+        "draft_fields": {
+          "schematic-component": null,
+          "konnect-reference": null,
+          "konnect-value": "  Mixed Case Ω  "
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "pcb",
+        "draft_fields": {
+          "pcb-component": null,
+          "pcb-unit": "mm",
+          "pcb-x": null,
+          "pcb-y": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "kicad",
+        "draft_fields": {
+          "kicad-unit": "mm"
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "slice",
+        "draft_fields": {
+          "slice-unit": "mm",
+          "slice-bed": "textured",
+          "slice-bed-temperature": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "cadpilot",
+        "draft_fields": {
+          "cadpilot-operation": "inspect",
+          "cadpilot-component": null,
+          "cadpilot-object": null,
+          "cadpilot-unit": "mm",
+          "cadpilot-length": null,
+          "cadpilot-width": null,
+          "cadpilot-height": null,
+          "cadpilot-diameter": null,
+          "cadpilot-x": null,
+          "cadpilot-y": null,
+          "cadpilot-z": null
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "claude",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "cadpilot",
+        "draft_fields": {
+          "cadpilot-operation": "edit_box",
+          "cadpilot-component": "Other",
+          "cadpilot-object": "Other",
+          "cadpilot-unit": "cm",
+          "cadpilot-length": "0.2",
+          "cadpilot-width": "0.3",
+          "cadpilot-height": null,
+          "cadpilot-diameter": null,
+          "cadpilot-x": null,
+          "cadpilot-y": null,
+          "cadpilot-z": null
+        },
+        "cadpilot_source": {
+          "base_job_id": "pilot-job-225fef86-5073-4a12-8bd4-b37df4309f33",
+          "result_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    },
+    {
+      "provider": "codex",
+      "context": {
+        "project_id": "other-project",
+        "workflow": "cadpilot",
+        "draft_fields": {
+          "cadpilot-operation": "edit_box",
+          "cadpilot-component": "Other",
+          "cadpilot-object": "Other",
+          "cadpilot-unit": "cm",
+          "cadpilot-length": "0.2",
+          "cadpilot-width": "0.3",
+          "cadpilot-height": null,
+          "cadpilot-diameter": null,
+          "cadpilot-x": null,
+          "cadpilot-y": null,
+          "cadpilot-z": null
+        },
+        "cadpilot_source": {
+          "base_job_id": "pilot-job-225fef86-5073-4a12-8bd4-b37df4309f33",
+          "result_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "current_job": null,
+        "source_is_untrusted_data": true
+      }
+    }
+  ]
+}

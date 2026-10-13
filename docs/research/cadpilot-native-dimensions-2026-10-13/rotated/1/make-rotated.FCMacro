@@ -1,0 +1,10 @@
+import FreeCAD as App
+from pathlib import Path
+assert ".".join(App.Version()[:3]) == "1.1.4"
+doc = App.newDocument("RotatedFixture")
+box = doc.addObject("Part::Box", "Target")
+box.Length, box.Width, box.Height = 10, 20, 30
+box.Placement = App.Placement(App.Vector(5, 6, 7), App.Rotation(App.Vector(0, 0, 1), 45))
+doc.recompute()
+doc.saveAs(str(Path.cwd() / "Rotated.FCStd"))
+App.closeDocument(doc.Name)

@@ -1,0 +1,52 @@
+{
+  "schema_version": 10,
+  "project_id": "8474d598-56a4-4f01-a415-d20181e88a99",
+  "input": {
+    "schema_version": 2,
+    "job_id": "9e05804e-0c3c-44db-ac3c-4d87a6c9b122",
+    "cadcraft_version": "0.5.0",
+    "source_name": "Original.dxf",
+    "source_format": "dxf",
+    "source_sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982",
+    "output_format": "dxf",
+    "units": "mm",
+    "circle": {
+      "center": [
+        30.0,
+        0.0
+      ],
+      "radius": 2.0
+    },
+    "allow_loss": false,
+    "original_summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "mcp"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/9e05804e-0c3c-44db-ac3c-4d87a6c9b122",
+    "created_unix_ms": 1791920921115,
+    "updated_unix_ms": 1791920926377,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

@@ -1,0 +1,9 @@
+﻿{
+    "checks":  [
+                   "actual_freecad_runs_inside_owned_job_with_private_configuration",
+                   "actual_approved_workflow_publishes_and_recovers"
+               ],
+    "pass":  true,
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "ascii_profiles":  true
+}

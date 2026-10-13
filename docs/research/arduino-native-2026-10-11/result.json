@@ -1,0 +1,27 @@
+{
+  "pass": true,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Arduino á native-zbULOl",
+  "project": "C:/Users/USER\\AppData\\Local\\Temp\\Hazlo Arduino á native-zbULOl\\project",
+  "job_id": "7b1cf418-5cac-41ff-8e84-79acdf807386",
+  "hashes": {
+    "firmware.hex": "fca1d74f3e16ea45d3e7aaf7d3b89f0dabb462a645d241aa5cf74dce11fb84c3",
+    "firmware.elf": "3b766e110a0edcf7983b315af27d1760a1d5dc59c2713c8227efcd3cfdfb2e26",
+    "Sketch.ino": "2ebcb54548fc254df02ef9ed9172a332063ea069037032753392b2e0d954836f"
+  },
+  "unprivileged_denial": "start_compile not allowed on window \"unprivileged\", webview \"unprivileged\", URL: local\n\nallowed on: [webviews: \"main\", URL: local]\n\nreferenced by: capability: main, permission: allow-start-compile",
+  "cancellation_ms": 100.5694999999996,
+  "observed_compiler_pids": [
+    23912,
+    10920
+  ],
+  "models_run": 0,
+  "checks": [
+    "actual native Arduino compile approval",
+    "keyboard approval",
+    "edit/stale approval rejection",
+    "no staging before approval",
+    "actual compiler cancellation and independent PID cessation",
+    "invalid sketch failure",
+    "reload and artifact preservation"
+  ]
+}

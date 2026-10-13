@@ -1,0 +1,124 @@
+Window: "Hazlo Mexa", App: hazlomexa.exe.
+	0 window Hazlo Mexa Secondary Actions: Raise
+		1 pane
+			8 pane Hazlo Mexa
+				9 pane (disabled)
+				10 region Hazlo Mexa - Web content
+					11 region
+						12 region
+							13 region
+								14 region
+								15 region
+									16 region
+										17 region
+											18 region
+												19 region
+												23 document Hazlo Mexa Value: http://tauri.localhost/ ID: RootWebArea
+													24 main ID: app
+														25 section header
+															26 heading Hazlo Mexa
+															27 text De una idea a un archivo que puedes editar.
+															28 text Sólido rectangular · v0.1
+														29 region Tu proyecto
+															30 heading Tu proyecto ID: project-heading
+															85 text C:/Users/USER\Documents\GitHub\HazloMX\target\native-folder-probe\carpeta á 54af195b-4b95-43d3-a758-14c63c3c0849
+															32 button Crear en carpeta… ID: create-project
+															33 button Abrir proyecto… ID: open-project
+														34 region Un bloque, a tu medida
+															35 text 01 / DEFINE
+															36 heading Un bloque, a tu medida ID: proposal-heading
+															37 text Un sólido rectangular con medidas entre 1 y 200 mm.
+															38 group Medidas en milímetros ID: dimensions
+																39 text Medidas en milímetros
+																40 text Largo
+																41 spin button (settable, float) Largo Value: 10 ID: length
+																42 text Ancho
+																43 spin button (settable, float) Ancho Value: 20 ID: width
+																44 text Alto
+																45 spin button (settable, float) Alto Value: 30 ID: height
+															46 button Preparar propuesta ID: prepare
+															47 heading Solicitud en español
+															48 text Modelo en Ollama
+															49 combo box (settable, string) Modelo en Ollama Value: Qwen3 4B local · experimental ID: model-profile
+															86 text Procesa en tu equipo. Este modelo todavía falla en algunas solicitudes ambiguas; revisa las medidas o usa la entrada manual.
+															51 text Describe tu bloque y sus medidas
+															52 edit (settable, string) Describe tu bloque y sus medidas Description: Un bloque de largo 12.5 mm, ancho 7.25 mm y alto 3.5 mm ID: prompt
+															53 button Interpretar solicitud ID: infer
+															54 button (disabled) Cancelar solicitud ID: cancel-inference
+															55 status ID: inference-status
+															56 details
+																57 disclosure triangle Respuesta del modelo
+																	58 text Respuesta del modelo
+															59 text Requiere Ollama 0.35.1 abierto y el modelo instalado. También puedes usar las medidas manuales.
+															60 details ID: runtime
+																61 disclosure triangle FreeCAD 1.1.4
+																	62 text FreeCAD 1.1.4
+														63 region Vista de la propuesta
+															64 text 02 / REVISA
+															65 heading Vista de la propuesta ID: preview-heading
+															66 text Confirma estas medidas antes de generar archivos.
+															67 graphic Sólido rectangular de 10 por 20 por 30 milímetros. Ilustración esquemática. Description: Sólido rectangular de 10 por 20 por 30 milímetros. Ilustración esquemática.
+															87 text Todavía no hay una operación pendiente.
+															69 button (disabled) Aprobar y generar ID: approve
+															70 button (disabled) Cancelar ID: cancel
+															71 text La aprobación genera un archivo FCStd editable y su copia STEP. No se reemplazan resultados anteriores.
+														72 region Resultados
+															73 text 03 / ABRE
+															74 heading Resultados ID: results-heading
+															75 status ID: status
+																88 text Selecciona medidas y prepara una propuesta.
+								20 region
+						21 region
+						22 region
+		2 title bar (settable, string) Value: Hazlo Mexa
+			3 menu bar System ID: MenuBar
+				4 menu item System
+			5 button Minimize
+			6 button Maximize
+			7 button Close
+
+Document text: ```
+Hazlo Mexa
+De una idea a un archivo que puedes editar.
+Sólido rectangular · v0.1
+Tu proyecto
+C:/Users/USER\Documents\GitHub\HazloMX\target\native-folder-probe\carpeta á 54af195b-4b95-43d3-a758-14c63c3c0849
+Crear en carpeta…
+Abrir proyecto…
+01 / DEFINE
+Un bloque, a tu medida
+Un sólido rectangular con medidas entre 1 y 200 mm.
+Medidas en milímetros
+Largo
+10
+Ancho
+20
+Alto
+30
+Preparar propuesta
+Solicitud en español
+Modelo en Ollama
+￼
+Procesa en tu equipo. Este modelo todavía falla en algunas solicitudes ambiguas; revisa las medidas o usa la entrada manual.
+Describe tu bloque y sus medidas
+￼
+Interpretar solicitud
+Cancelar solicitud
+￼
+Respuesta del modelo
+Requiere Ollama 0.35.1 abierto y el modelo instalado. También puedes usar las medidas manuales.
+FreeCAD 1.1.4
+02 / REVISA
+Vista de la propuesta
+Confirma estas medidas antes de generar archivos.
+￼
+Todavía no hay una operación pendiente.
+Aprobar y generar
+Cancelar
+La aprobación genera un archivo FCStd editable y su copia STEP. No se reemplazan resultados anteriores.
+03 / ABRE
+Resultados
+Selecciona medidas y prepara una propuesta.
+￼
+￼
+```

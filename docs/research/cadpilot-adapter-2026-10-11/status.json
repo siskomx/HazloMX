@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "hazlomexa",
+    "--lib",
+    "actual_cadpilot",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "source_hashes": {
+    "apps\\desktop\\src-tauri\\src\\cadpilot.rs": "b6bf3a59b51b8bcb29353db7c68a8713c2c55b3efcbcd811114f31086f376d91",
+    "apps\\desktop\\src-tauri\\src\\freecad.rs": "6e6230c338f7f5c1e4bb6aee59b5885f243c1e3cd30cf6f2c456f95c395a910b",
+    "Cargo.lock": "9a615a7100dabb1e48cae732675fd4b1587f994529997e83a2b80fa23da18635",
+    "apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot-copy.FCMacro": "cacf9679170b77d3fda1b5b912c4d7db18314e8068bebf31a104ee0d853753af",
+    "apps\\desktop\\src-tauri\\resources\\freecad\\cadpilot_policy.py": "167fff576da46a8d41fc8144187e4bb25987a73742570fe88a6ea0a433076d20"
+  },
+  "application_workflow_verified": false,
+  "native_ui_verified": false,
+  "installed_workflow_verified": false
+}

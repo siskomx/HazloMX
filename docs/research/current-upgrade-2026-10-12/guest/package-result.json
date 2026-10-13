@@ -1,0 +1,23 @@
+﻿{
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "native_ui_driver_elevated":  true,
+    "installer_sha256":  "e99018d27ef349257ed9b4bc66998f7556d5927315b205249a6782d1eddaa1f5",
+    "app_alive":  true,
+    "native_drawing_connector_workflow":  true,
+    "uninstalled":  true,
+    "resumed_after_identity_check":  false,
+    "current_user_install":  true,
+    "previous_installer_sha256":  "0cdc30add47507a476c0a08191586aa5072d049372a0537db32b53051df6a8e4",
+    "lifecycle_pass":  true,
+    "user":  "WDAGUtilityAccount",
+    "native_cadpilot_connector_workflow":  true,
+    "native_release_initial_ui":  true,
+    "native_kicad_connector_workflow":  true,
+    "previous_build_update":  true,
+    "pass":  true,
+    "stage":  "finished",
+    "same_version_update":  true,
+    "connector_exit":  0,
+    "binaries_match_package_build":  true,
+    "user_files_preserved":  true
+}

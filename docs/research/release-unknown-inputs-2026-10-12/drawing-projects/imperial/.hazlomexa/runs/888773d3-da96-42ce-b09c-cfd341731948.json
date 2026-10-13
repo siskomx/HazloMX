@@ -1,0 +1,52 @@
+{
+  "schema_version": 5,
+  "project_id": "715c870b-272e-47ea-93be-5ac39eed1fc0",
+  "input": {
+    "schema_version": 2,
+    "job_id": "888773d3-da96-42ce-b09c-cfd341731948",
+    "cadcraft_version": "0.5.0",
+    "source_name": "imperial.dxf",
+    "source_format": "dxf",
+    "source_sha256": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7",
+    "output_format": "dwg",
+    "units": "in",
+    "circle": {
+      "center": [
+        30.0,
+        0.0
+      ],
+      "radius": 2.0
+    },
+    "allow_loss": false,
+    "original_summary": {
+      "entity_count": 1,
+      "counts": {
+        "Circle": 1
+      },
+      "extents": [
+        [
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ]
+    }
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/888773d3-da96-42ce-b09c-cfd341731948",
+    "created_unix_ms": 1791847214435,
+    "updated_unix_ms": 1791847222427,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

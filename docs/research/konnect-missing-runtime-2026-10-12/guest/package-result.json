@@ -1,0 +1,15 @@
+﻿{
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "error":  "Native Konnect test failed (101).",
+    "installer_sha256":  "705532b4b91127222d31847467817346d296298dfa9c225ba00e87f1710a902b",
+    "resumed_after_identity_check":  false,
+    "current_user_install":  true,
+    "previous_installer_sha256":  "e99018d27ef349257ed9b4bc66998f7556d5927315b205249a6782d1eddaa1f5",
+    "user":  "WDAGUtilityAccount",
+    "previous_build_update":  true,
+    "pass":  false,
+    "stage":  "failed",
+    "same_version_update":  true,
+    "connector_exit":  0,
+    "binaries_match_package_build":  true
+}

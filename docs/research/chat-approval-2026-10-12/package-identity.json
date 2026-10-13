@@ -1,0 +1,20 @@
+[
+  {
+    "path": "target/release/bundle/nsis/Hazlo Mexa_0.1.0_x64-setup.exe",
+    "bytes": 5333643,
+    "sha256": "9d2ba301ae48e3f3ac33f84f249c8bebf0f6c897f6c07d320773ec86a954941d",
+    "signature": "NotSigned"
+  },
+  {
+    "path": "target/release/hazlomexa.exe",
+    "bytes": 25010176,
+    "sha256": "f8f291ac37f82ab8a5353386623be420be53d81d91f83882a0769284e04343ba",
+    "signature": "NotSigned"
+  },
+  {
+    "path": "target/release/hazlomexa-tools.exe",
+    "bytes": 591872,
+    "sha256": "9033e54d6fddb06fbccda81360eb0a5ac6f8bb1cbb441a1ebe3937f7ccc864bf",
+    "signature": "NotSigned"
+  }
+]

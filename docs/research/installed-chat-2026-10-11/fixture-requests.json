@@ -1,0 +1,50 @@
+[
+  {
+    "route": "/api/version",
+    "mode": "clarification",
+    "closed": false,
+    "received_unix_ms": 1791749830108
+  },
+  {
+    "route": "/api/tags",
+    "mode": "clarification",
+    "closed": false,
+    "received_unix_ms": 1791749830127
+  },
+  {
+    "route": "/api/show",
+    "mode": "clarification",
+    "closed": false,
+    "received_unix_ms": 1791749830154
+  },
+  {
+    "route": "/api/generate",
+    "mode": "clarification",
+    "closed": false,
+    "received_unix_ms": 1791749830165
+  },
+  {
+    "route": "/api/version",
+    "mode": "error",
+    "closed": false,
+    "received_unix_ms": 1791749855192
+  },
+  {
+    "route": "/api/tags",
+    "mode": "error",
+    "closed": false,
+    "received_unix_ms": 1791749855212
+  },
+  {
+    "route": "/api/show",
+    "mode": "error",
+    "closed": false,
+    "received_unix_ms": 1791749855222
+  },
+  {
+    "route": "/api/generate",
+    "mode": "error",
+    "closed": false,
+    "received_unix_ms": 1791749855233
+  }
+]

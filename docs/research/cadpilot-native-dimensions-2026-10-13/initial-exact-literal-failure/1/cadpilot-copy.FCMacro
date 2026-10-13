@@ -1,0 +1,167 @@
+"""Fixed selected-copy operations using identified upstream CADPilot primitives; no RPC."""
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import shutil
+import sys
+import traceback
+
+import FreeCAD as App
+import Part
+
+ROOT = Path.cwd()
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cadpilot_policy import document, request, unique_fields, visible_document, verify_step_solids
+
+MODULES = {
+    "__init__.py": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228",
+    "geometry_query.py": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773",
+    "object_factory.py": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893",
+    "property_mapper.py": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6",
+    "tip_policy.py": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a",
+}
+
+
+def measurements(doc, measure):
+    reports = {}
+    for obj in doc.Objects:
+        result = measure(doc.Name, obj.Name)
+        if not result.get('success') or not result.get('is_valid') or result['counts']['solids'] != 1:
+            raise ValueError("Selected copy has invalid geometry")
+        if not math.isfinite(result['volume_mm3']) or result['volume_mm3'] <= 0:
+            raise ValueError("Selected copy has invalid volume")
+        if any(not isinstance(v, (int, float)) or not math.isfinite(v) or abs(v) > 20000 for v in result['bbox'].values()):
+            raise ValueError("Selected copy has invalid bounds")
+        if obj.TypeId == 'Part::Box':
+            # World bounds include rotation; reuse the box's native lengths instead.
+            result['dimensions_mm'] = {key: float(getattr(obj, key.title())) for key in ['length', 'width', 'height']}
+            if any(not math.isfinite(v) or v <= 0 for v in result['dimensions_mm'].values()):
+                raise ValueError("Selected copy has invalid native dimensions")
+        reports[obj.Name] = result
+    return reports
+
+
+def run():
+    if any((ROOT/name).exists() for name in ['Working.FCStd','Edited.FCStd','Edited.step','result.json','failure.txt']):
+        raise ValueError("Working outputs already exist; no file will be replaced")
+    if '.'.join(App.Version()[:3]) != '1.1.4':
+        raise ValueError("Select certified FreeCAD 1.1.4")
+    data = (ROOT / 'input.json').read_bytes()
+    if len(data) > 16384:
+        raise ValueError("Request exceeds limit")
+    raw = json.loads(data, object_pairs_hook=unique_fields)
+    operation, name, parameters = request(raw)
+    source = ROOT / 'Original.FCStd'
+    catalog = document(source)
+    if operation == 'edit_box' and name not in catalog:
+        raise ValueError("Selected object is not in the captured document")
+    if operation == 'edit_box' and catalog[name] != 'Part::Box':
+        raise ValueError("Select a native box for dimensional editing")
+    if operation.startswith('add_') and name in catalog:
+        raise ValueError("New object name already exists")
+    for filename, expected in MODULES.items():
+        if hashlib.sha256((ROOT / 'addon/rpc_server' / filename).read_bytes()).hexdigest() != expected:
+            raise ValueError("CADPilot primitive identity mismatch")
+    sys.path.insert(0, str(ROOT / 'addon'))
+    from rpc_server.geometry_query import measure_geometry, global_shape
+    from rpc_server.object_factory import create_object_gui, edit_object_gui
+    from rpc_server.property_mapper import Object
+
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    # Only the working copy is deserialized and made writable by FreeCAD.
+    shutil.copyfile(source, ROOT / 'Working.FCStd')
+    doc = App.openDocument(str(ROOT / 'Working.FCStd'))
+    if {obj.Name: obj.TypeId for obj in doc.Objects} != catalog:
+        raise ValueError("Loaded object catalog differs from captured document")
+    doc.UndoMode = 1
+    if doc.UndoMode != 1:
+        raise ValueError("Selected copy cannot record rollback")
+    before = measurements(doc, measure_geometry)
+    if operation != 'inspect':
+        doc.openTransaction('Hazlo Mexa approved selected-copy operation')
+        try:
+            if operation == 'edit_box':
+                properties = {key.title(): value for key, value in parameters.items()}
+                if edit_object_gui(doc.Name, Object(name=name, properties=properties)) is not True:
+                    raise ValueError("CADPilot did not complete the typed edit")
+            else:
+                properties = {key.title(): value for key, value in parameters.items() if key not in {'x', 'y', 'z'}}
+                properties['Placement'] = {'Base': {key: parameters[key] for key in ['x', 'y', 'z']}}
+                kind = 'Part::Box' if operation == 'add_box' else 'Part::Cylinder'
+                created = create_object_gui(doc.Name, Object(name=name, type=kind, properties=properties))
+                if not isinstance(created, dict) or not created.get('success') or created.get('object_name') != name:
+                    raise ValueError("CADPilot did not create the approved object identity")
+            after = measurements(doc, measure_geometry)
+            target = doc.getObject(name)
+            for key, value in parameters.items():
+                actual = getattr(target.Placement.Base,key) if key in {'x','y','z'} else float(getattr(target,key.title()))
+                if abs(actual-value)>0.000001:
+                    raise ValueError("Native parameters differ from the approved operation")
+            for obj_name, report in before.items():
+                if (operation != 'edit_box' or obj_name != name) and after.get(obj_name) != report:
+                    raise ValueError("Unselected geometry changed")
+            doc.commitTransaction()
+        except BaseException:
+            doc.abortTransaction()
+            doc.recompute()
+            if measurements(doc, measure_geometry) != before:
+                raise ValueError("Rollback could not be verified; working copy remains private")
+            raise
+        doc.saveAs(str(ROOT / 'Edited.FCStd'))
+        visible_document(ROOT / 'Edited.FCStd', after)
+        document(ROOT / 'Edited.FCStd')
+        Part.export(list(doc.Objects), str(ROOT / 'Edited.step'))
+        check = Part.Shape()
+        check.read(str(ROOT / 'Edited.step'))
+        expected_volume = sum(report['volume_mm3'] for report in after.values())
+        if not check.isValid() or len(check.Solids) != len(after) or abs(check.Volume - expected_volume) > max(0.01, expected_volume * 0.00002):
+            raise ValueError("STEP round trip differs from the edited copy")
+        verify_step_solids(check.Solids, [global_shape(obj) for obj in doc.Objects])
+        App.closeDocument(doc.Name)
+        doc = App.openDocument(str(ROOT/'Edited.FCStd'))
+        reopened = measurements(doc, measure_geometry)
+        if set(reopened) != set(after):
+            raise ValueError("Saved native object catalog differs from the edited copy")
+        for object_name, expected_report in after.items():
+            actual_report = dict(reopened[object_name])
+            # BREP reopening changes near-zero centre-of-mass noise (observed at 1e-16 mm).
+            if any(abs(a-b)>0.000001 for a,b in zip(actual_report['center_of_mass'],expected_report['center_of_mass'])):
+                raise ValueError("Saved native centre of mass differs from the edited copy")
+            actual_report['center_of_mass'] = expected_report['center_of_mass']
+            if actual_report != expected_report:
+                raise ValueError("Saved native geometry differs from the edited copy")
+        target = doc.getObject(name)
+        for key, value in parameters.items():
+            actual = getattr(target.Placement.Base,key) if key in {'x','y','z'} else float(getattr(target,key.title()))
+            if abs(actual-value)>0.000001:
+                raise ValueError("Saved native parameters differ from the approved operation")
+    else:
+        after = before
+    if hashlib.sha256(source.read_bytes()).hexdigest() != source_hash:
+        raise ValueError("Captured original changed")
+    return {"schema_version": 1, "job_id": raw['job_id'], "success": True,
+            "cadpilot_version": "0.7.7", "freecad_version": "1.1.4", "operation": operation,
+            "object": name, "parameters_mm": parameters, "source_sha256": source_hash,
+            "catalog": catalog, "before": before, "after": after,
+            "sha256": {name: hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in
+                       (['Edited.FCStd', 'Edited.step'] if operation != 'inspect' else [])}}
+
+
+try:
+    result = run()
+    serialized = json.dumps(result, indent=2, allow_nan=False)
+    if len(serialized.encode('utf-8')) > 65536:
+        raise ValueError("Measurement report exceeds the supported display limit")
+    with (ROOT/'result.json').open('x', encoding='utf-8') as output:
+        output.write(serialized)
+    os._exit(0)
+except BaseException:
+    try:
+        with (ROOT/'failure.txt').open('x',encoding='utf-8') as output:
+            output.write(traceback.format_exc())
+    except FileExistsError:
+        pass
+    os._exit(1)

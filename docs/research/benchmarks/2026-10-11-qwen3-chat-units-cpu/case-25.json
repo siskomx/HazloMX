@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 20,
+    "length": 100,
+    "width": 50
+  },
+  "id": "design_meters",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 20.0,
+        "length": 100.0,
+        "width": 50.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 5.1507055
+}

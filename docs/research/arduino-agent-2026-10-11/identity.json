@@ -1,0 +1,33 @@
+{
+  "tag": "v0.7.1",
+  "commit": "fea5bb6a28d689a2ddbd1c635e2e187703c22549",
+  "assets": [
+    {
+      "name": "arduino-agent-windows.zip",
+      "size": 217376673,
+      "digest": "sha256:a02ccf9fb97fa1e88b421ace4387bb5d912abe622152fcef2a9b89cae2603f58",
+      "browser_download_url": "https://github.com/mixelpixx/Arduino-Agent/releases/download/v0.7.1/arduino-agent-windows.zip"
+    }
+  ],
+  "source_sha256": {
+    "arduino-mcp-extension/README.md": "0d0dc0f74ffedfaccac59569401b690861129e19e4b91f638a9d8654eb273989",
+    "electron-app/package.json": "ac7fc30a8ad8d71e01081a60b1e0b9999f2311837d0463472d0c5ea96a780d59",
+    "arduino-mcp-extension/bridge/arduino-agent-bridge.js": "399abc9415c53cd76f1b0cf26989adfc72c9cb7ab7ac1fd3d5487a57f945ae4b",
+    "arduino-mcp-extension/bridge/README.md": "6449b21659b27457be718e1e8654834de9f3aeb2f6caf429f89374075d726bc9",
+    "arduino-mcp-extension/src/common/mcp-instructions.ts": "5e375b951db8636d9e396408b74c98057a817f2449d4273326266af61f2c8c09",
+    "arduino-mcp-extension/src/common/mcp-prompts.ts": "a2bc418dc81443f19c3debe2bb993f889e8f358b29a3d236b3280f346baf3e1e",
+    "arduino-mcp-extension/src/common/mcp-service.ts": "3c4b150d277853c1a5bcc7aec671924dba095f10475014a2af3fb16e0c9b9b17",
+    "arduino-mcp-extension/src/common/mcp-tool-router.ts": "bbb94471222b6ebef3dbd1aeae1f2bf18714337548a979c1de4eada720f8cf76",
+    "arduino-mcp-extension/src/common/mcp-tools.ts": "17d85bf1d8406035a7a369ced5e723e1cbb573f18a89b2613f7e2fd986e4c5e5",
+    "arduino-mcp-extension/src/common/mcp-types.ts": "c1b07528b34c79b057aeb5b1f1fe23c3532c565899d6dd799a381fbf7088bec3",
+    "arduino-mcp-extension/src/node/arduino-mcp-backend-module.ts": "fc3baeb2ffc3eb9ff4fe1120f3983ba4f0b966b82ca8c1d19c063fa9d11bbac5",
+    "arduino-mcp-extension/src/node/mcp-arduino-services.ts": "05918480a29d80fe97a6d896de09938572e2c138432a103fad52022871c6335a",
+    "arduino-mcp-extension/src/node/mcp-contribution.ts": "61171fd26b60125a8c6c871e30dbb314503859d7d3a6c6a1493f0ed173a4d75c",
+    "arduino-mcp-extension/src/node/mcp-logger.ts": "037f308b08fa1f579a86c69d393aae8e2f996907223a5d7b6af1643594b8cb9d",
+    "arduino-mcp-extension/src/node/mcp-serial-manager.ts": "d33cea740a3165cba1653fd47a89256d8fbfa51790393a1e48b3f0a4a73a5683",
+    "arduino-mcp-extension/src/node/mcp-server.ts": "954ab65e9de3e0f76764a90b313057166189945a8b304eb755ded74557715cb1",
+    "arduino-mcp-extension/src/node/mcp-service-impl.ts": "bf9b2a90157556a72274e2b530531ed2018c5b3287106c6401cc6c43b28f3442",
+    "arduino-ide-extension/src/node/cli-config.ts": "3dc34e6b055fef7cae62ef569a8c592d0dad72288f579f5611a35493674e71f8",
+    "arduino-ide-extension/src/node/config-service-impl.ts": "930eeb9925f72c2769cd8246859d5cc56241fea9cd94b9ee705289bfd93f40be"
+  }
+}

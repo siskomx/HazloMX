@@ -1,0 +1,24 @@
+{
+  "approval_consumed": true,
+  "cancel_return_ms": null,
+  "cancellation_ms": null,
+  "ceased_before_barrier_release": true,
+  "elapsed_ms": 76427,
+  "error": "Konnect no confirmó la edición a tiempo; la copia se conserva sin publicar.",
+  "held_response_ms": 62971,
+  "integration": "pcb",
+  "job_id": "f23e7833-ac48-44f6-a62e-7bde4fb7b69e",
+  "mode": "deadline",
+  "native_board_read_checkpoint": true,
+  "no_owned_server_remaining_before_release": true,
+  "owned_pids": [
+    29396
+  ],
+  "passed": true,
+  "phase": "failed",
+  "published": false,
+  "recovered_runs": 1,
+  "root": "C:/Users/USER\\AppData\\Local\\Temp\\hazlomexa-workflow-8330f84e-f89c-41f7-9fa6-5e70bf3fd6cd",
+  "scope": "actual approved workflow held staging-file access; exact SDK mutation phase and native UI not asserted",
+  "source_and_working_copy_preserved": true
+}

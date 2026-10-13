@@ -1,0 +1,434 @@
+﻿[
+    {
+        "hash":  "2691E1349226907F28128DC0D04945160CB0082A9C0ED551F5AE24753A7E756F",
+        "path":  "C:\\HazloPackageProject\\user-source.txt"
+    },
+    {
+        "hash":  "59A6322F4F3949C3ED4683D248D16CDD5D6B75BDEC68687CBE620BEF40094DD4",
+        "path":  "C:\\HazloPackageProject\\hazlomx.json"
+    },
+    {
+        "hash":  "6454C200D0338A206BBD3081DCED0ADAAFB19C95217E8913C96ECA2BC2943E56",
+        "path":  "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\mx.hazlomexa.desktop\\preserve-package-test.txt"
+    },
+    {
+        "hash":  "9D31882E76E3CA802B30FC3C5A05FBA84F4032A664E525049AA0716CF877894E",
+        "path":  "C:\\HazloPackageEngineering\\project\\calls.json"
+    },
+    {
+        "hash":  "80EE76387AA5C12395600415F29CC53AA068CFA0682B08234079BB113E63C8A5",
+        "path":  "C:\\HazloPackageEngineering\\project\\hazlomx.json"
+    },
+    {
+        "hash":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\writer.lock"
+    },
+    {
+        "hash":  "4330E0DC68A51B6D0F1A4A173729519F73549D32F4E631EF3A397BBA55DF2787",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Check.json"
+    },
+    {
+        "hash":  "DAFE7A3E5534F9E84F84554EB8EF0DCFAABA3DF2FF548B024AAD2913B91CCF35",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\result.json"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "8C0A62A87F9615D591987C06C0712BA2623FFA4BD2E41FCCDCAAC663572B85DA",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Checked\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "1AA7AB250F36E672E68B72C3FB414063629BF2059112DCE43FD69C8F03FF882E",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Exports\\Netlist.xml"
+    },
+    {
+        "hash":  "8535037351B186400EC5B8C550F0680C51EDEB28D8E013EDA415F60316B1C5A3",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Exports\\Schematic.pdf"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "CA256500447BAD81C80E21D78AE572E02B881FFF9387A42115811077853A6837",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\a066bc20-b0b4-48d9-924b-5593a222e195\\Original\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "AB263FA64004840D3CB1B36B7DA226442E58000B4DFAA30771B987AD30A2FE6B",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Check.json"
+    },
+    {
+        "hash":  "583FF68038B70A8CB80D2F7E8D6D8B700654359668C2EC0B374121FE394AAB9D",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\result.json"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "8C0A62A87F9615D591987C06C0712BA2623FFA4BD2E41FCCDCAAC663572B85DA",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Checked\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "6599A8478E8FB3CAC564875917204754769AEBA4FBA3439EB79E34CE44B84312",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Exports\\Netlist.xml"
+    },
+    {
+        "hash":  "131A308B617002D13054C6C5EC186AFAF229BC0EB78AC29D06078C0E85592FF0",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Exports\\Schematic.pdf"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "8C0A62A87F9615D591987C06C0712BA2623FFA4BD2E41FCCDCAAC663572B85DA",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\artifacts\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\Original\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "FD8055D9195005000C8CC6809C4C99B675614676DC719C963DEC6CE22F840EC6",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.json"
+    },
+    {
+        "hash":  "06A6BDED943C06CFD21A642CC932B7EE86465B446328D41ECD2383061ECD0A8F",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.json"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "CA256500447BAD81C80E21D78AE572E02B881FFF9387A42115811077853A6837",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\a066bc20-b0b4-48d9-924b-5593a222e195.sources\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "8C0A62A87F9615D591987C06C0712BA2623FFA4BD2E41FCCDCAAC663572B85DA",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\.hazlomexa\\runs\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3.sources\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "F6FBC1B264FE758459132824860391AC0DA3AD4261064328369BE95592CAE57B",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\.cache\\fontconfig\\CACHEDIR.TAG"
+    },
+    {
+        "hash":  "6B9D9E758A245D9C6CCA3EA017C35EB5DFEEF64349D75B4BAADEBC24B565E505",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9"
+    },
+    {
+        "hash":  "3A24BBACAB369DA74EFDAFF851BE8869D8CA2E5E4CA28304F9EB57041BDAD759",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\cvpcb.json"
+    },
+    {
+        "hash":  "AD360FD6896E8D8F65059A2AAFF40139E8C37F5F758954D3B94BE9033FB114FB",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\eeschema.json"
+    },
+    {
+        "hash":  "3C6FE7FFACA851CE51AD8EC60C5276D47D1252DB0AEEE0EF9A71EB6C7895A0FF",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\fp-lib-table"
+    },
+    {
+        "hash":  "20C9DB1C1F2CAACC9F2FB9BF25909F0E50DCB86F5FBDA21233168C0D751BC650",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\kicad.json"
+    },
+    {
+        "hash":  "4E7256F343581BA6E7F6D5DEACCD3E09BFB1E928DE422F114B524CFB9DE4EE88",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\kicad_common.json"
+    },
+    {
+        "hash":  "281D80D7B9C25BB972D12AF2DDA4BFC1913AE4915F0F80F37464B2612046654D",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\sym-lib-table"
+    },
+    {
+        "hash":  "9B42635C84A17CB400A5FF58BE7E9376289054294C8AB6B9D92257AF7F87A8AA",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\config\\10.0\\symbol_editor.json"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "74749046B03AB8D22676AE32FFFC59F26DB8CCC1812A83D1E870EF1C071DEB79",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_prl"
+    },
+    {
+        "hash":  "8C0A62A87F9615D591987C06C0712BA2623FFA4BD2E41FCCDCAAC663572B85DA",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\a066bc20-b0b4-48d9-924b-5593a222e195\\working\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "F6FBC1B264FE758459132824860391AC0DA3AD4261064328369BE95592CAE57B",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\.cache\\fontconfig\\CACHEDIR.TAG"
+    },
+    {
+        "hash":  "6B9D9E758A245D9C6CCA3EA017C35EB5DFEEF64349D75B4BAADEBC24B565E505",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9"
+    },
+    {
+        "hash":  "3A24BBACAB369DA74EFDAFF851BE8869D8CA2E5E4CA28304F9EB57041BDAD759",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\cvpcb.json"
+    },
+    {
+        "hash":  "AD360FD6896E8D8F65059A2AAFF40139E8C37F5F758954D3B94BE9033FB114FB",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\eeschema.json"
+    },
+    {
+        "hash":  "3C6FE7FFACA851CE51AD8EC60C5276D47D1252DB0AEEE0EF9A71EB6C7895A0FF",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\fp-lib-table"
+    },
+    {
+        "hash":  "20C9DB1C1F2CAACC9F2FB9BF25909F0E50DCB86F5FBDA21233168C0D751BC650",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\kicad.json"
+    },
+    {
+        "hash":  "E5226854A08617B78B377F10221431E977187307FA2131755526FB2C4ECA07BB",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\kicad_common.json"
+    },
+    {
+        "hash":  "281D80D7B9C25BB972D12AF2DDA4BFC1913AE4915F0F80F37464B2612046654D",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\sym-lib-table"
+    },
+    {
+        "hash":  "9B42635C84A17CB400A5FF58BE7E9376289054294C8AB6B9D92257AF7F87A8AA",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\config\\10.0\\symbol_editor.json"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "74749046B03AB8D22676AE32FFFC59F26DB8CCC1812A83D1E870EF1C071DEB79",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_prl"
+    },
+    {
+        "hash":  "8C0A62A87F9615D591987C06C0712BA2623FFA4BD2E41FCCDCAAC663572B85DA",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\project\\profiles\\d60b0b37-5d27-42ae-8aae-1af0d062e7b3\\working\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "5DB4B0BBA54553591DE636E83B3DA3141868CD1E2E5FD327B6CBDB7EB5804B3A",
+        "path":  "C:\\HazloPackageEngineering\\sources\\basic_test.kicad_pcb"
+    },
+    {
+        "hash":  "CA256500447BAD81C80E21D78AE572E02B881FFF9387A42115811077853A6837",
+        "path":  "C:\\HazloPackageEngineering\\sources\\basic_test.kicad_pro"
+    },
+    {
+        "hash":  "89DC77461EFE4EF0DD1E3A4DF76257D893979AFF23985E02F55D128D62B7D79A",
+        "path":  "C:\\HazloPackageEngineering\\sources\\basic_test.kicad_sch"
+    },
+    {
+        "hash":  "45531248855C321BA2389FEA087232043B4643AB648F36487B60293F01774077",
+        "path":  "C:\\HazloPackageEngineering\\sources\\custom_ds.kicad_wks"
+    },
+    {
+        "hash":  "1C9C1D4FCF403B63676FAB32AF2B1B49D9740F735EE443C9D269A76713C64317",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\calls.json"
+    },
+    {
+        "hash":  "0C4CD331439D683B3FB5EDD87677F33B73271C1B54B9386F417526A70ADB0E35",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\hazlomx.json"
+    },
+    {
+        "hash":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\writer.lock"
+    },
+    {
+        "hash":  "E83EACF249463230251C75EA44278CAF53F8D7AB159B34FB1A06207AF3AD6660",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Drawing.dxf"
+    },
+    {
+        "hash":  "3A89BA12B1640173ED1B8F8F912AEA2C5CEC55D1E8D19730B7DADB0344287AAD",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Original.dwg"
+    },
+    {
+        "hash":  "54E789BEB08E2005B1E8B2F76EFC3E48E66AAA07A226A122F9D149364A95A4A5",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Preview.png"
+    },
+    {
+        "hash":  "C4D337BD61549FD0F3F6F5EC0E77086037ED41592A041570D69FBEAA3C6BA5D3",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\result.json"
+    },
+    {
+        "hash":  "3A89BA12B1640173ED1B8F8F912AEA2C5CEC55D1E8D19730B7DADB0344287AAD",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\Drawing.dwg"
+    },
+    {
+        "hash":  "7F8449FF7C7ACC207348318793B414BA46E9CFB9111952B96EEDBDD22F06BEE7",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\Original.dxf"
+    },
+    {
+        "hash":  "46474C07403FD6B8BAF247AECF776FADFDE19554F6838B605A278B8A01B1BDA4",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\Preview.png"
+    },
+    {
+        "hash":  "511579031DA1B7494232773CD8C012D1B635ED218FFE19F1957B7AEF6DE0D453",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\artifacts\\888773d3-da96-42ce-b09c-cfd341731948\\result.json"
+    },
+    {
+        "hash":  "3A89BA12B1640173ED1B8F8F912AEA2C5CEC55D1E8D19730B7DADB0344287AAD",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\runs\\03ecf2b3-4bf6-414a-b315-0080e7f348dd.dwg"
+    },
+    {
+        "hash":  "53C95073DE0C1BE9B52C48E2281790E4D267F81A3CCD4804D4E5FA2574CED4A5",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\runs\\03ecf2b3-4bf6-414a-b315-0080e7f348dd.json"
+    },
+    {
+        "hash":  "7F8449FF7C7ACC207348318793B414BA46E9CFB9111952B96EEDBDD22F06BEE7",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\runs\\888773d3-da96-42ce-b09c-cfd341731948.dxf"
+    },
+    {
+        "hash":  "CF10AC949203804C671BB918A071F778475EA99C745408C6A69CB1182C78CE76",
+        "path":  "C:\\HazloPackageDrawing\\projects\\imperial\\.hazlomexa\\runs\\888773d3-da96-42ce-b09c-cfd341731948.json"
+    },
+    {
+        "hash":  "C6DE26361BFFB2CD8CA24A2EFF49785C245834A6EE987BBACDE4D71C5BF09074",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\calls.json"
+    },
+    {
+        "hash":  "CF5C868E5442F47B46CBC92DF50B8D355A54E3F5B7C2B64FED17405052BF1C52",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\hazlomx.json"
+    },
+    {
+        "hash":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\writer.lock"
+    },
+    {
+        "hash":  "60A76EB01FB19C711A052AB4C72805CD6972504B7D4CE97153714E11B4341B50",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Drawing.dwg"
+    },
+    {
+        "hash":  "B8D261ACE3B289EBF38075A12B764DD4188EADAEAF2597B1447C9FB066AA1982",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Original.dxf"
+    },
+    {
+        "hash":  "46474C07403FD6B8BAF247AECF776FADFDE19554F6838B605A278B8A01B1BDA4",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Preview.png"
+    },
+    {
+        "hash":  "D4E805147442F4339A152DF6122A16B7942C0E2FD8D23DDC6B67B49FEB509B4B",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\result.json"
+    },
+    {
+        "hash":  "8B6745FA99BC9226FE47BD631505F269D1F638D1435B9EC3110E9B2A99B14443",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Drawing.dxf"
+    },
+    {
+        "hash":  "60A76EB01FB19C711A052AB4C72805CD6972504B7D4CE97153714E11B4341B50",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Original.dwg"
+    },
+    {
+        "hash":  "54E789BEB08E2005B1E8B2F76EFC3E48E66AAA07A226A122F9D149364A95A4A5",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Preview.png"
+    },
+    {
+        "hash":  "4D974AA3C8730103CAD9E24D99EC27428AF254A1933736EEDCC3EC86E10F1BF7",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\artifacts\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\result.json"
+    },
+    {
+        "hash":  "B8D261ACE3B289EBF38075A12B764DD4188EADAEAF2597B1447C9FB066AA1982",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\runs\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb.dxf"
+    },
+    {
+        "hash":  "33705A1188BC4A68BDF4EB547749CFC5948887C310B5884342CC5F95E37F7A19",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\runs\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb.json"
+    },
+    {
+        "hash":  "60A76EB01FB19C711A052AB4C72805CD6972504B7D4CE97153714E11B4341B50",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\runs\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6.dwg"
+    },
+    {
+        "hash":  "9409E0D359213FD40E8E4CF1F4505023EE9292597ABFEBB5EB47B9EBDA915AC7",
+        "path":  "C:\\HazloPackageDrawing\\projects\\metric\\.hazlomexa\\runs\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6.json"
+    },
+    {
+        "hash":  "6E839D8FB0122F4702A9EA15899D4CF53CFA8F2D7BD189CA993D4CCBFDD446B8",
+        "path":  "C:\\HazloPackageDrawing\\projects\\profiles\\03ecf2b3-4bf6-414a-b315-0080e7f348dd\\Edited.dxf"
+    },
+    {
+        "hash":  "93D573A7338445C0C9DBE07B5619FFD5F002C524C5F521223F5C191E7852B666",
+        "path":  "C:\\HazloPackageDrawing\\projects\\profiles\\4a1228d5-b6b2-4e3e-bc7b-821a0039d7bb\\Edited.dxf"
+    },
+    {
+        "hash":  "C6223E0F8549FBE86433BD7E92F738767F7A706CD7280CB2BEE84C436B358FBC",
+        "path":  "C:\\HazloPackageDrawing\\projects\\profiles\\888773d3-da96-42ce-b09c-cfd341731948\\Edited.dxf"
+    },
+    {
+        "hash":  "37E8D73EFDBF5A4FF0997B7B5091B417A2276D7A661F62AFF21DF31CAE69390D",
+        "path":  "C:\\HazloPackageDrawing\\projects\\profiles\\f52e3a93-f0a9-4ba1-a613-acbc1c21eae6\\Edited.dxf"
+    },
+    {
+        "hash":  "7F8449FF7C7ACC207348318793B414BA46E9CFB9111952B96EEDBDD22F06BEE7",
+        "path":  "C:\\HazloPackageDrawing\\sources\\imperial.dxf"
+    },
+    {
+        "hash":  "B8D261ACE3B289EBF38075A12B764DD4188EADAEAF2597B1447C9FB066AA1982",
+        "path":  "C:\\HazloPackageDrawing\\sources\\metric.dxf"
+    }
+]

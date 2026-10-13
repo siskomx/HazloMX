@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "negative",
+  "result": {
+    "proposal": {
+      "message": "El largo no puede ser negativo. ¿Cuál es el largo correcto en milímetros?",
+      "status": "clarification"
+    }
+  },
+  "seconds": 0.9418216
+}

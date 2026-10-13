@@ -1,0 +1,50 @@
+"""Independent native-document and STEP round-trip check for the first adapter."""
+import json
+from pathlib import Path
+import sys
+import xml.etree.ElementTree as ET
+import zipfile
+
+import FreeCAD as App
+import Part
+
+root = Path.cwd()
+expected = json.loads((root / "input.json").read_text(encoding="utf-8"))["dimensions_mm"]
+wanted = [expected[name] for name in ("length", "width", "height")]
+
+
+def verify(shape, sizes):
+    assert not shape.isNull() and shape.isValid() and len(shape.Solids) == 1
+    actual = [shape.BoundBox.XLength, shape.BoundBox.YLength, shape.BoundBox.ZLength]
+    assert all(abs(a - b) <= 0.01 for a, b in zip(actual, sizes)), (actual, sizes)
+    volume = sizes[0] * sizes[1] * sizes[2]
+    assert abs(shape.Volume - volume) <= max(0.001, volume * 0.000001)
+
+
+with zipfile.ZipFile(root / "solid.FCStd") as archive:
+    assert archive.namelist().count("GuiDocument.xml") == 1
+    gui = ET.fromstring(archive.read("GuiDocument.xml"))
+    providers = gui.findall("ViewProviderData/ViewProvider")
+    assert len(providers) == 1 and providers[0].get("name") == "Solid"
+    assert providers[0].find("Properties/Property[@name='Visibility']/Bool").get("value") == "true"
+    camera = gui.find("Camera").get("settings").split()
+    height = float(camera[camera.index("height") + 1])
+    assert height > sum(value * value for value in wanted) ** 0.5
+    assert 0 < float(camera[camera.index("nearDistance") + 1]) < float(camera[camera.index("farDistance") + 1])
+
+document = App.openDocument(str(root / "solid.FCStd"))
+try:
+    assert len(document.Objects) == 1
+    box = document.getObject("Solid")
+    assert box.TypeId == "Part::Box"
+    assert [box.Length.Value, box.Width.Value, box.Height.Value] == wanted
+    verify(box.Shape, wanted)
+    box.Length = wanted[0] + 1
+    document.recompute()
+    verify(box.Shape, [wanted[0] + 1, wanted[1], wanted[2]])
+finally:
+    App.closeDocument(document.Name)
+
+verify(Part.read(str(root / "solid.step")), wanted)
+(root / "verified.json").write_text(json.dumps({"success": True}), encoding="utf-8")
+sys.exit(0)

@@ -1,0 +1,96 @@
+﻿{
+    "runs":  [
+                 {
+                     "schema_version":  2,
+                     "project_id":  "f3fe5276-f549-4b81-8a21-9fe8df393a73",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "9ca60d9b-067f-471a-801e-ab1263293a30",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "cancelled",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/9ca60d9b-067f-471a-801e-ab1263293a30",
+                                   "created_unix_ms":  1791742055724,
+                                   "updated_unix_ms":  1791742065765,
+                                   "sequence":  2,
+                                   "error":  null
+                               }
+                 },
+                 {
+                     "schema_version":  2,
+                     "project_id":  "f3fe5276-f549-4b81-8a21-9fe8df393a73",
+                     "input":  {
+                                   "schema_version":  1,
+                                   "job_id":  "c0ff3ddc-65b4-4e35-abd7-053ef4eb86a7",
+                                   "dimensions_mm":  {
+                                                         "length":  10.0,
+                                                         "width":  20.0,
+                                                         "height":  30.0
+                                                     }
+                               },
+                     "phase":  "completed",
+                     "audit":  {
+                                   "source":  {
+                                                  "provider":  "manual"
+                                              },
+                                   "user_edited":  false,
+                                   "adapter_version":  1,
+                                   "destination":  ".hazlomexa/artifacts/c0ff3ddc-65b4-4e35-abd7-053ef4eb86a7",
+                                   "created_unix_ms":  1791741750108,
+                                   "updated_unix_ms":  1791741848989,
+                                   "sequence":  3,
+                                   "error":  null
+                               }
+                 }
+             ],
+    "pass":  true,
+    "files":  [
+                  {
+                      "sha256":  "37510C562D61675A5D5F67A0C627F06C626308B392D1BE4D508481CF9AA46473",
+                      "path":  "hazlomx.json"
+                  },
+                  {
+                      "sha256":  "96261009BA0944D01612FF707F4DE40A172A33C8BFE0ED9D63E40C3C346A5A7F",
+                      "path":  "original.txt"
+                  },
+                  {
+                      "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                      "path":  ".hazlomexa\\writer.lock"
+                  },
+                  {
+                      "sha256":  "DCBE74B2513D7B46DEE4814F2BD724E704593278AC3A8BC2A91E7D477A2C83A2",
+                      "path":  ".hazlomexa\\artifacts\\c0ff3ddc-65b4-4e35-abd7-053ef4eb86a7\\input.json"
+                  },
+                  {
+                      "sha256":  "4300076B897CB9AD7E4DD2135544E8690E8D6085DD0730AEAB09EAA9EFE66DC1",
+                      "path":  ".hazlomexa\\artifacts\\c0ff3ddc-65b4-4e35-abd7-053ef4eb86a7\\result.json"
+                  },
+                  {
+                      "sha256":  "6E7DE4AAB6593A6847D11317BA57145CDFF946140532529DD4EDFD3DA684ABAB",
+                      "path":  ".hazlomexa\\artifacts\\c0ff3ddc-65b4-4e35-abd7-053ef4eb86a7\\solid.FCStd"
+                  },
+                  {
+                      "sha256":  "3D5D46D29F5F84E1A0C9B5780400FDBCCB3A151A558D98642389296AB0A7408A",
+                      "path":  ".hazlomexa\\artifacts\\c0ff3ddc-65b4-4e35-abd7-053ef4eb86a7\\solid.step"
+                  },
+                  {
+                      "sha256":  "701D7CCA01A08831D854502BAB222943C99FD7BA1E5ED07AD0A0754856D61AA2",
+                      "path":  ".hazlomexa\\runs\\9ca60d9b-067f-471a-801e-ab1263293a30.json"
+                  },
+                  {
+                      "sha256":  "F5FE1F26E49448FD2A2AFECCB335D1AF899860D979C1169308DEAE3C4DC7C6DA",
+                      "path":  ".hazlomexa\\runs\\c0ff3ddc-65b4-4e35-abd7-053ef4eb86a7.json"
+                  }
+              ],
+    "project_id":  "f3fe5276-f549-4b81-8a21-9fe8df393a73"
+}

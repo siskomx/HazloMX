@@ -1,0 +1,11 @@
+{
+  "test_executable_sha256": "14c159d4f9be5578f888aa2833a257c2fcb31ea4b0459740b7264473c7f85070",
+  "vcruntime140_sha256": "184146852727a9db4eea06178716bec3cdbb1015c911f6b0f915b184ad7775b2",
+  "volume": {
+    "filesystem": "NTFS",
+    "size": 65990656,
+    "label": "HMXFULL",
+    "device": "T:"
+  },
+  "scope": "actual NTFS snapshot I/O exhaustion and input preservation, not complete CAD generation/publication on a full disk"
+}

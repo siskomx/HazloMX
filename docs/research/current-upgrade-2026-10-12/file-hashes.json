@@ -1,0 +1,886 @@
+[
+  {
+    "path": "installed-startup.mjs",
+    "sha256": "0a3f485ebd91d2cf70c82ef95efaff83b418c84a3ad4332d33903f396c6a661b"
+  },
+  {
+    "path": "package-identity.json",
+    "sha256": "d3af955765aa7d93ce44d23ead6c53cb62e8b2b8900eaccf3c3b000f5e0ef183"
+  },
+  {
+    "path": "previous-package-identity.json",
+    "sha256": "e152f889946c18446ddbe8d1c9c9a21a8053eb43fc01046325f457f95e01c827"
+  },
+  {
+    "path": "probe.ps1",
+    "sha256": "02241174c6499b0970725f9ff1a25dfb9243e7ad64d1f2c5ace200cb4445ec97"
+  },
+  {
+    "path": "probe.wsb",
+    "sha256": "e999f865852a4dbd9ba7e4119a5b8ab49ea511eaaed7fd75fc2957dcef7a79e6"
+  },
+  {
+    "path": "release-inputs.json",
+    "sha256": "d1a60a089cddb2465b6838b58be54d2f604d0c2af22c5ffdb025c019bb144ee1"
+  },
+  {
+    "path": "sandbox-webview-startup.ps1",
+    "sha256": "51d65336f53fac50c74be5a9f8859f1f44f809a9a471931ecd099979a9f83eae"
+  },
+  {
+    "path": "guest\\cadpilot-copy-state.json",
+    "sha256": "60bb9567d5547b55b534354af762724732f37d18d9ada38299089b7144d4f3f9"
+  },
+  {
+    "path": "guest\\cadpilot-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\cadpilot-result.json",
+    "sha256": "c9ce90566915bbbf6eb7993fdc712f6db90989b13987fbb56081bcb69d64143a"
+  },
+  {
+    "path": "guest\\drawing-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\drawing-result.json",
+    "sha256": "61ad60c0c047b1e5ea4169ef3802160273e3c5e77726b6932880c90a24ceac04"
+  },
+  {
+    "path": "guest\\engineering-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\engineering-result.json",
+    "sha256": "36f461bfb8f8cb6650618b90c6baf644aa7ca08f92798a671314a0f5fc622dae"
+  },
+  {
+    "path": "guest\\guest-state.json",
+    "sha256": "0475094e883472f19fd66dc7d59ad845c42334db985ae13076b5a01285e8bc41"
+  },
+  {
+    "path": "guest\\installed-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\installed-tools.json",
+    "sha256": "0867435b1726a2a1e3584f54d99158ccdc60a583d20d159db203f4b04d4d5cd6"
+  },
+  {
+    "path": "guest\\package-result.json",
+    "sha256": "e219058881be5e22853a6fb83f7a58cefa6ff441c45c3ae9e21dca624089b18a"
+  },
+  {
+    "path": "guest\\runtime-copy-state.json",
+    "sha256": "a616e448020168dfc8db7cc1b6961ffb9005722af9d1800df0369401240e11ce"
+  },
+  {
+    "path": "guest\\startup-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\startup-log.json",
+    "sha256": "b874e467180dc83fff5609116da3807292e07d58c8bedaab2f90deecbcaab530"
+  },
+  {
+    "path": "guest\\updated-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\updated-tools.json",
+    "sha256": "0867435b1726a2a1e3584f54d99158ccdc60a583d20d159db203f4b04d4d5cd6"
+  },
+  {
+    "path": "guest\\webview-policy-receipt.json",
+    "sha256": "796afdf34b23996b3bf98c298bc2a1a9eed935f989eb47f7f48d5d6ac3c7dc80"
+  },
+  {
+    "path": "host-unbundled-ui\\result.json",
+    "sha256": "ad7e76e9268b2409e8491a731eac99b2031363881549d1a382993500c3fddb8d"
+  },
+  {
+    "path": "host-unbundled-ui\\startup.png",
+    "sha256": "710758a6808545fc3e87e939992e7d3fb49aaf570bf99f46f79fecf2b80ccb0c"
+  },
+  {
+    "path": "guest\\cadpilot-project\\calls.json",
+    "sha256": "fa849561e80d3cde77c3c403b481043ec4448e7a9836001ea2b225e9329c865e"
+  },
+  {
+    "path": "guest\\cadpilot-project\\hazlomx.json",
+    "sha256": "859838f751fed5f34ad3a0fe798bacd5b085e94ada860223bcb85ca0858ad26a"
+  },
+  {
+    "path": "guest\\engineering-project\\calls.json",
+    "sha256": "252698404e6f5df07af68cccc03a609ed5e30b8b9b6ec02952a383ddd5b375ad"
+  },
+  {
+    "path": "guest\\engineering-project\\hazlomx.json",
+    "sha256": "79a624e934cb95a1e1c6b64e2aa7793ed2f12773cf04d52f63c3c76770ddd50f"
+  },
+  {
+    "path": "guest\\startup\\result.json",
+    "sha256": "b717bf3a083e95d42fa8ca1b0de69c1f25a5820e3d11abca51b338beda06c06b"
+  },
+  {
+    "path": "guest\\startup\\startup.png",
+    "sha256": "710758a6808545fc3e87e939992e7d3fb49aaf570bf99f46f79fecf2b80ccb0c"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\working\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\config\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\config\\10.0\\kicad_common.json",
+    "sha256": "86142221ced458b5305e53168434a70f8ee3c4719b39ed693f9270e1a093b6fc"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\config\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9",
+    "sha256": "6b9d9e758a245d9c6cca3ea017c35eb5dfeef64349d75b4baadebc24b565e505"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\working\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\working\\basic_test.kicad_prl",
+    "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\working\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\working\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\working\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\config\\10.0\\cvpcb.json",
+    "sha256": "3a24bbacab369da74efdaff851be8869d8ca2e5e4ca28304f9eb57041bdad759"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\config\\10.0\\eeschema.json",
+    "sha256": "ad360fd6896e8d8f65059a2aaff40139e8c37f5f758954d3b94be9033fb114fb"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\config\\10.0\\fp-lib-table",
+    "sha256": "3c6fe7ffaca851ce51ad8ec60c5276d47d1252db0aeee0ef9a71eb6c7895a0ff"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\config\\10.0\\kicad.json",
+    "sha256": "20c9db1c1f2caacc9f2fb9bf25909f0e50dcb86f5fbda21233168c0d751bc650"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\config\\10.0\\kicad_common.json",
+    "sha256": "6c517b0f1e1300dead4a49e1f4f29b632818f215bcc2bfce02140e0483df9972"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\config\\10.0\\sym-lib-table",
+    "sha256": "281d80d7b9c25bb972d12af2dda4bfc1913ae4915f0f80f37464b2612046654d"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\config\\10.0\\symbol_editor.json",
+    "sha256": "9b42635c84a17cb400a5ff58be7e9376289054294c8ab6b9d92257af7f87a8aa"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\.cache\\fontconfig\\CACHEDIR.TAG",
+    "sha256": "f6fbc1b264fe758459132824860391ac0da3ad4261064328369be95592cae57b"
+  },
+  {
+    "path": "guest\\engineering-project\\profiles\\2b3e4796-b985-4cbf-b156-246a6481bda0\\.cache\\fontconfig\\d031bbba323fd9e5b47e0ee5a0353f11-le64.cache-9",
+    "sha256": "6b9d9e758a245d9c6cca3ea017c35eb5dfeef64349d75b4baadebc24b565e505"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\2b3e4796-b985-4cbf-b156-246a6481bda0.json",
+    "sha256": "01ca449b1765ca34cf45ae8aaba3bcc236793a480d20c5484ceaccd087c294ab"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\aef9016a-9e91-4a8b-b99a-b6d22d672894.json",
+    "sha256": "5b52815198010d7dd32c6a96482ad686ea0df8e6fea94bfc9de27d2927728049"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\2b3e4796-b985-4cbf-b156-246a6481bda0.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\2b3e4796-b985-4cbf-b156-246a6481bda0.sources\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\2b3e4796-b985-4cbf-b156-246a6481bda0.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\2b3e4796-b985-4cbf-b156-246a6481bda0.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\aef9016a-9e91-4a8b-b99a-b6d22d672894.sources\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\aef9016a-9e91-4a8b-b99a-b6d22d672894.sources\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\aef9016a-9e91-4a8b-b99a-b6d22d672894.sources\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\runs\\aef9016a-9e91-4a8b-b99a-b6d22d672894.sources\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Check.json",
+    "sha256": "96027220bf342fcd490ec00ee21a8448137dce4254a1d64320379642d95d767f"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\result.json",
+    "sha256": "bc22b5fc37e3c9f32d7734191b17d36f62de74a7f029b20ffe2fdab4810fb5c2"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Check.json",
+    "sha256": "c55674c19c55cc14ed8cac272e5d4ef19c646111ea24eada3787bc4c8490df39"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\result.json",
+    "sha256": "3634a55175eb9a87dc0073081ba6bf0c2441b70305a9be0777977c8d757d392d"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Checked\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Exports\\Netlist.xml",
+    "sha256": "cd485ebf29bfc5a46fa45b71a16c2d0fc276f5cd47a1dff112f3260660eb0d23"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Exports\\Schematic.pdf",
+    "sha256": "49a24ded1419bb17e500338d6d648bc588047be1f471812abf21db17e7196d1e"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Original\\basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\aef9016a-9e91-4a8b-b99a-b6d22d672894\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Checked\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Checked\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Checked\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Checked\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Exports\\Netlist.xml",
+    "sha256": "4a4f37f05285d91a8ee91eccd7e15c5cc3aca719f26486b4edd5877bd1377717"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Exports\\Schematic.pdf",
+    "sha256": "8113812038bf630d11982a72799621974ebbccc40055b2afb1fc94c2144b9c4d"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Original\\basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Original\\basic_test.kicad_pro",
+    "sha256": "8c0a62a87f9615d591987c06c0712ba2623ffa4bd2e41fccdcaac663572b85da"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Original\\basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  {
+    "path": "guest\\engineering-project\\.hazlomexa\\artifacts\\2b3e4796-b985-4cbf-b156-246a6481bda0\\Original\\custom_ds.kicad_wks",
+    "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\calls.json",
+    "sha256": "69af5312634bad598dfaf9c9ecfd617c641438b739789542a81d3220ebd83322"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\hazlomx.json",
+    "sha256": "38846d400625f1b0bb3ca9fdc3390dcd9a9b4903604512432a0cc32e11807b33"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\calls.json",
+    "sha256": "3cb734020fd80ed346c89d274d0e9c468a938dcf21a3cc2f13e8d909c4d85c48"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\hazlomx.json",
+    "sha256": "3d37a343b58c47b2b02fcba13124885aa6b93c58d244d484bb847e90f5dad154"
+  },
+  {
+    "path": "guest\\drawing-projects\\profiles\\622baf8d-8069-4a57-8ebb-ee0ee422a614\\Edited.dxf",
+    "sha256": "37e8d73efdbf5a4ff0997b7b5091b417a2276d7a661f62aff21df31cae69390d"
+  },
+  {
+    "path": "guest\\drawing-projects\\profiles\\bda167c1-f6bb-4ab4-8b90-f90c06896ccc\\Edited.dxf",
+    "sha256": "93d573a7338445c0c9dbe07b5619ffd5f002c524c5f521223f5c191e7852b666"
+  },
+  {
+    "path": "guest\\drawing-projects\\profiles\\f4ed5ff3-17d6-465c-a543-bd8c96d475c6\\Edited.dxf",
+    "sha256": "6e839d8fb0122f4702a9ea15899d4cf53cfa8f2d7bd189ca993d4ccbfdd446b8"
+  },
+  {
+    "path": "guest\\drawing-projects\\profiles\\f7b49222-92a4-4966-a66b-f36251cafb0f\\Edited.dxf",
+    "sha256": "c6223e0f8549fbe86433bd7e92f738767f7a706cd7280cb2bee84c436b358fbc"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\runs\\622baf8d-8069-4a57-8ebb-ee0ee422a614.dwg",
+    "sha256": "60a76eb01fb19c711a052ab4c72805cd6972504b7d4ce97153714e11b4341b50"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\runs\\622baf8d-8069-4a57-8ebb-ee0ee422a614.json",
+    "sha256": "3f3213bce29c88a0db6a66c7f99c0ca7a3da13e536ae9b702ce53c9acc612c74"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\runs\\bda167c1-f6bb-4ab4-8b90-f90c06896ccc.dxf",
+    "sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\runs\\bda167c1-f6bb-4ab4-8b90-f90c06896ccc.json",
+    "sha256": "c649e3ac576ed67a04912c227ad5b4204e1147d31a4210456a3a4250db1f49cb"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\622baf8d-8069-4a57-8ebb-ee0ee422a614\\Drawing.dxf",
+    "sha256": "8b6745fa99bc9226fe47bd631505f269d1f638d1435b9ec3110e9b2a99b14443"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\622baf8d-8069-4a57-8ebb-ee0ee422a614\\Original.dwg",
+    "sha256": "60a76eb01fb19c711a052ab4c72805cd6972504b7d4ce97153714e11b4341b50"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\622baf8d-8069-4a57-8ebb-ee0ee422a614\\Preview.png",
+    "sha256": "54e789beb08e2005b1e8b2f76efc3e48e66aaa07a226a122f9d149364a95a4a5"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\622baf8d-8069-4a57-8ebb-ee0ee422a614\\result.json",
+    "sha256": "5f21e26a8272be46af7ac4ff50bc9612ad0f9b90e20c30fa5d73fc31760ef70c"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\bda167c1-f6bb-4ab4-8b90-f90c06896ccc\\Drawing.dwg",
+    "sha256": "60a76eb01fb19c711a052ab4c72805cd6972504b7d4ce97153714e11b4341b50"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\bda167c1-f6bb-4ab4-8b90-f90c06896ccc\\Original.dxf",
+    "sha256": "b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\bda167c1-f6bb-4ab4-8b90-f90c06896ccc\\Preview.png",
+    "sha256": "46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4"
+  },
+  {
+    "path": "guest\\drawing-projects\\metric\\.hazlomexa\\artifacts\\bda167c1-f6bb-4ab4-8b90-f90c06896ccc\\result.json",
+    "sha256": "62a1a9b8e42d9803331bd70b484389af1223669ce731ffafe61ad506e3e6f390"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\runs\\f4ed5ff3-17d6-465c-a543-bd8c96d475c6.dwg",
+    "sha256": "3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\runs\\f4ed5ff3-17d6-465c-a543-bd8c96d475c6.json",
+    "sha256": "7d346a2ca1488769e42548684cb71dbdb548a8270f50c0607c79e16cd135464a"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\runs\\f7b49222-92a4-4966-a66b-f36251cafb0f.dxf",
+    "sha256": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\runs\\f7b49222-92a4-4966-a66b-f36251cafb0f.json",
+    "sha256": "de3143690a9ba07a76aff00e0666f439a2d56fffa12376bb41d3ea04c7c6589f"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f4ed5ff3-17d6-465c-a543-bd8c96d475c6\\Drawing.dxf",
+    "sha256": "e83eacf249463230251c75ea44278caf53f8d7ab159b34fb1a06207af3ad6660"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f4ed5ff3-17d6-465c-a543-bd8c96d475c6\\Original.dwg",
+    "sha256": "3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f4ed5ff3-17d6-465c-a543-bd8c96d475c6\\Preview.png",
+    "sha256": "54e789beb08e2005b1e8b2f76efc3e48e66aaa07a226a122f9d149364a95a4a5"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f4ed5ff3-17d6-465c-a543-bd8c96d475c6\\result.json",
+    "sha256": "df3c5796cbed1699ba74fc6f3d3ee095b2ae4eec270659ebe70931b777baccb0"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f7b49222-92a4-4966-a66b-f36251cafb0f\\Drawing.dwg",
+    "sha256": "3a89ba12b1640173ed1b8f8f912aea2c5cec55d1e8d19730b7dadb0344287aad"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f7b49222-92a4-4966-a66b-f36251cafb0f\\Original.dxf",
+    "sha256": "7f8449ff7c7acc207348318793b414ba46e9cfb9111952b96eedbdd22f06bee7"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f7b49222-92a4-4966-a66b-f36251cafb0f\\Preview.png",
+    "sha256": "46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4"
+  },
+  {
+    "path": "guest\\drawing-projects\\imperial\\.hazlomexa\\artifacts\\f7b49222-92a4-4966-a66b-f36251cafb0f\\result.json",
+    "sha256": "7fe2851cb49ecc3bb62e32f998a94045dc31aff19889dd91a2915160e1c22c60"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\cadpilot-copy.FCMacro",
+    "sha256": "9c4ba1ed98c6b032bdcd70747f5d6077913389c0da86f13e88b88af37b5bf90a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\cadpilot_policy.py",
+    "sha256": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\cadpilot-copy.FCMacro",
+    "sha256": "9c4ba1ed98c6b032bdcd70747f5d6077913389c0da86f13e88b88af37b5bf90a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\cadpilot_policy.py",
+    "sha256": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\31acfefc-f162-44b7-8b99-ca39662c574e\\cadpilot-copy.FCMacro",
+    "sha256": "9c4ba1ed98c6b032bdcd70747f5d6077913389c0da86f13e88b88af37b5bf90a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\31acfefc-f162-44b7-8b99-ca39662c574e\\cadpilot_policy.py",
+    "sha256": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\cadpilot-copy.FCMacro",
+    "sha256": "9c4ba1ed98c6b032bdcd70747f5d6077913389c0da86f13e88b88af37b5bf90a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\cadpilot_policy.py",
+    "sha256": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\cadpilot-copy.FCMacro",
+    "sha256": "9c4ba1ed98c6b032bdcd70747f5d6077913389c0da86f13e88b88af37b5bf90a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\cadpilot_policy.py",
+    "sha256": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\cadpilot-copy.FCMacro",
+    "sha256": "9c4ba1ed98c6b032bdcd70747f5d6077913389c0da86f13e88b88af37b5bf90a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\profiles\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\cadpilot_policy.py",
+    "sha256": "7f7b44c4952dbade09605167763cb3d46440cd7e7b66ab5e46d1614ef299db2b"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.json",
+    "sha256": "fa166a79bd0c45fd9f2b01fd9ed6063c8d58192ac5d5c7916ad609f7a0c955f4"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.json",
+    "sha256": "8b99b113df966279fb93b04982ad118923db1a74caeeafb373f5b02d155ca72f"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.json",
+    "sha256": "91221164d48306c0d6672a109a6cce4fb60ba7ed29044e5c9e1bb8c385df39c2"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\input.json",
+    "sha256": "91c3b31f6110507f8e146d3257df192300534deff1b2b1006f3c4092233e449a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\result.json",
+    "sha256": "bc1c4697e84ccc60c466b4ee92b2369041492c509c40d8caa3f634341b3859dd"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.sources\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\input.json",
+    "sha256": "c14807811e2ae1ddda58e5fe89a61f070ff3125405a47023a8e853df61be96bd"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\result.json",
+    "sha256": "c5f88d171277599924ef7506d058d6a87ab30800c23de515ca466c954d7da59d"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.sources\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\input.json",
+    "sha256": "8415b3b6570f9a0115aeebcc14028852700247ea33b36434307e0ec39565977c"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\Original.FCStd",
+    "sha256": "57bba9b52dd90b3894606e6bbf2ce1c2a6eb8680c8c1c11bcd1abcbb872f5001"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\result.json",
+    "sha256": "0401a28eba13741026acd3c2d5339d5bd26d27bb4f3dacf633330b855ea552dd"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\Working.FCStd",
+    "sha256": "57bba9b52dd90b3894606e6bbf2ce1c2a6eb8680c8c1c11bcd1abcbb872f5001"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.sources\\Original.FCStd",
+    "sha256": "57bba9b52dd90b3894606e6bbf2ce1c2a6eb8680c8c1c11bcd1abcbb872f5001"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.sources\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.sources\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.sources\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.sources\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.sources\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\4f6d22e6-ae77-4db2-9717-1a019d1453c4.preview\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.sources\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.sources\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.sources\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.sources\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.sources\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\31acfefc-f162-44b7-8b99-ca39662c574e.preview\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.sources\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.sources\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.sources\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.sources\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.sources\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\runs\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09.preview\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\Edited.FCStd",
+    "sha256": "57bba9b52dd90b3894606e6bbf2ce1c2a6eb8680c8c1c11bcd1abcbb872f5001"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\Edited.step",
+    "sha256": "016fb9730c5b4236281e2ffe13a42caf6097490324ea533bfdf2b14bf49bfb0a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\input.json",
+    "sha256": "590e60d1c883b08d7c821e1fab42864cbc72d22319a4389e24f57af2e58ecdcd"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\result.json",
+    "sha256": "98f3749b13eb34ebe06a611224a8ceb8b9c4db8e866d1ffbd627ce8e8445fbc2"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\input.json",
+    "sha256": "c14807811e2ae1ddda58e5fe89a61f070ff3125405a47023a8e853df61be96bd"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\Original.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\result.json",
+    "sha256": "c5f88d171277599924ef7506d058d6a87ab30800c23de515ca466c954d7da59d"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\Working.FCStd",
+    "sha256": "2f526e0f37f074b2f316382fd03b24bb56197b73f619ce70cc062f85354715f6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\Edited.FCStd",
+    "sha256": "25588bb50e96a1fe325b33346240c436f00264ceb2d8dcaede34e1191f816d60"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\Edited.step",
+    "sha256": "36c3a673e68f4d50b72d4bb62c7968576ba52e3e788f1e85d9e15d4089ca2836"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\input.json",
+    "sha256": "8ff0ba101618332cf904fa1d268bb4a2313b78e1ab050879563879fd6185959a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\Original.FCStd",
+    "sha256": "57bba9b52dd90b3894606e6bbf2ce1c2a6eb8680c8c1c11bcd1abcbb872f5001"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\result.json",
+    "sha256": "67391085850587762b7584901c60d686532f5a8941c3ab418044d79e17cbad2e"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\Working.FCStd",
+    "sha256": "57bba9b52dd90b3894606e6bbf2ce1c2a6eb8680c8c1c11bcd1abcbb872f5001"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\4f6d22e6-ae77-4db2-9717-1a019d1453c4\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\31acfefc-f162-44b7-8b99-ca39662c574e\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\addon\\rpc_server\\geometry_query.py",
+    "sha256": "ccbd26a7eeab36fb067a16497aa4d02c3f47d1762a3e610c239aa62b1fd3a773"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\addon\\rpc_server\\object_factory.py",
+    "sha256": "955c898a616fa5c398e3c40b5491fd5a6825e95658db9106689c1a8ce8aa1893"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\addon\\rpc_server\\property_mapper.py",
+    "sha256": "45884b4b1043b99d913883b3e3ff46c6134865a159275b8c5f603d1396c0dda6"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\addon\\rpc_server\\tip_policy.py",
+    "sha256": "c429ed49413acfc09a0af58c7376b3edccb4901c76a799e0ea82395f1071364a"
+  },
+  {
+    "path": "guest\\cadpilot-project\\.hazlomexa\\artifacts\\2e2c2fb1-bf22-4afb-87db-2cacb1e7ab09\\addon\\rpc_server\\__init__.py",
+    "sha256": "1b7786fa2055d10a04f9e20ebf1e75af21c736935a132ce9e9cc940382dbe228"
+  }
+]

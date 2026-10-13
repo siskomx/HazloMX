@@ -1,0 +1,9 @@
+﻿{
+    "redacted_files":  [
+                           {
+                               "occurrences":  1,
+                               "file":  "agent-stdout.log"
+                           }
+                       ],
+    "service_stopped":  true
+}

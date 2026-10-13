@@ -1,0 +1,17 @@
+{
+  "guest_native_suite_pass": false,
+  "guest_installer_prerequisite_pass": true,
+  "host_native_suite_pass": true,
+  "models_run": 0,
+  "observed_limitation": "Debug app renders in guest, but CDP never listens. Automated guest suite stops before UI checks. Guest-local data retry did not fix this; mapped-folder causation is unproven.",
+  "production_changes": false,
+  "test_changes": [
+    "Native process observation uses Windows CIM instead of Python",
+    "Optional test-only Playwright and contract paths for clean guest",
+    "Wait for owned app exit before evidence export",
+    "Guest-local project/WebView data and mapped evidence export"
+  ],
+  "debug_binary_sha256": "af2a6db01548304428a2cc00f2d967a9917e9ae71df138982b65f39a10c258a9",
+  "installer_sha256": "6484c18e6147b104b6abca47fcae8aef5e43b959c2a11f41dd1cb0919c055d3d",
+  "remaining": "Guest inference/CAD/commit cancellation and full negative cases still require verification."
+}

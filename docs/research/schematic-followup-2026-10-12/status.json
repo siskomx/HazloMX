@@ -1,0 +1,40 @@
+{
+  "tampered_sheet_refused": true,
+  "captured_source_files": 4,
+  "tampered_dependency_refused": true,
+  "original_hashes_verified": 4,
+  "regular_tests": 88,
+  "root": "C:/Users/USER/AppData/Local/Temp/hazlomexa-host-tools-168b97f6-4772-4a8a-873c-010fedd62c03",
+  "stale_report_refused": true,
+  "recovered_runs": 2,
+  "shared_helper_sdk_native_followup": true,
+  "runtime_test_seconds": 19.42,
+  "live_editing_verified": false,
+  "pass": true,
+  "signed_in_chat_verified": false,
+  "installed_workflow_verified": false,
+  "separately_ignored_gates": 29,
+  "source_hashes": [
+    {
+      "path": "apps/desktop/src-tauri/src/jobs.rs",
+      "sha256": "649FF6B8A9D60EA21099AFD6890993404FDF3178BC270E1CC509E3ABD35F16FE"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/host_tools.rs",
+      "sha256": "9CCE694B138C312C6A6865ECE7DEECAD6C145F9BA98B716C41CA9C567FFBEFDC"
+    },
+    {
+      "path": "target/release/hazlomexa-tools.exe",
+      "sha256": "54132C183A429557E17CFBBB672529F6201C3594ACCAF8B920CDA7CCDA3EA113"
+    },
+    {
+      "path": "target/konnect-probe/runtime/konnect.exe",
+      "sha256": "09969EC5F05600039E206ACEDB0B6B785528F1BCED2DBE2C7F426483013E4F2C"
+    },
+    {
+      "path": "target/kicad-probe/runtime/bin/kicad-cli.exe",
+      "sha256": "CBD8197DD1F46B9A956F3D7973EDC9A6A97960298731448AE9142DFFE47ABC7A"
+    }
+  ],
+  "installed_codex_catalog_passed": true
+}

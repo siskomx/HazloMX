@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "C:/Users/USER/Documents/GitHub/HazloMX/target/cadpilot-probe/copy-246206c0-97a5-4607-85e5-2e1f64492e8b/6/cadpilot-copy.FCMacro", line 147, in <module>
+    result = run()
+             ^^^^^
+  File "C:/Users/USER/Documents/GitHub/HazloMX/target/cadpilot-probe/copy-246206c0-97a5-4607-85e5-2e1f64492e8b/6/cadpilot-copy.FCMacro", line 55, in run
+    raise ValueError("Selected object is not in the captured document")
+ValueError: Selected object is not in the captured document

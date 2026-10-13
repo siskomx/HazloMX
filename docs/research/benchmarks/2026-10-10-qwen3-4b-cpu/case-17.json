@@ -1,0 +1,13 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": "clarification",
+  "id": "zero",
+  "result": {
+    "proposal": {
+      "message": "La altura no puede ser 0 mm. ¿Quieres que sea 1 mm o 200 mm? (Ejemplo: 1 mm)",
+      "status": "clarification"
+    }
+  },
+  "seconds": 12.0763363
+}

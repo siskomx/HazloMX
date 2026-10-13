@@ -1,0 +1,49 @@
+{
+  "schema_version": 6,
+  "project_id": "1d6d1e46-e7f9-419f-b4da-ca121c851a7c",
+  "input": {
+    "schema_version": 1,
+    "job_id": "42090e23-a4f3-4b79-b13a-d79a9571e3ed",
+    "kicad_version": "10.0.7",
+    "source_root": "C:/Users/USER/AppData/Local/Temp/hazlomexa-kicad-workflow-50f02cd1-aa35-4392-9363-146590caa694/sources",
+    "entry": "basic_test.kicad_sch",
+    "files": [
+      {
+        "path": "basic_test.kicad_pcb",
+        "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a",
+        "bytes": 71304
+      },
+      {
+        "path": "basic_test.kicad_pro",
+        "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837",
+        "bytes": 13507
+      },
+      {
+        "path": "basic_test.kicad_sch",
+        "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+        "bytes": 25307
+      },
+      {
+        "path": "custom_ds.kicad_wks",
+        "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077",
+        "bytes": 2516
+      }
+    ],
+    "units": "in",
+    "layers": []
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "manual"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/42090e23-a4f3-4b79-b13a-d79a9571e3ed",
+    "created_unix_ms": 1791771673433,
+    "updated_unix_ms": 1791771690626,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

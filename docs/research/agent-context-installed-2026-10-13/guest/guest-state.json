@@ -1,0 +1,70 @@
+﻿{
+    "processes":  [
+                      {
+                          "Id":  14300,
+                          "ProcessName":  "MicrosoftEdgeUpdate",
+                          "StartTime":  "\/Date(1791910352908)\/",
+                          "CPU":  0.1875
+                      },
+                      {
+                          "Id":  2160,
+                          "ProcessName":  "powershell",
+                          "StartTime":  "\/Date(1791911932798)\/",
+                          "CPU":  4.546875
+                      }
+                  ],
+    "freecad_top":  [
+                        {
+                            "Name":  "bin",
+                            "Length":  null
+                        },
+                        {
+                            "Name":  "data",
+                            "Length":  null
+                        },
+                        {
+                            "Name":  "doc",
+                            "Length":  null
+                        },
+                        {
+                            "Name":  "Ext",
+                            "Length":  null
+                        },
+                        {
+                            "Name":  "lib",
+                            "Length":  null
+                        },
+                        {
+                            "Name":  "Mod",
+                            "Length":  null
+                        },
+                        {
+                            "Name":  "share",
+                            "Length":  null
+                        },
+                        {
+                            "Name":  "FreeCAD.exe",
+                            "Length":  129208
+                        },
+                        {
+                            "Name":  "FreeCADCmd.exe",
+                            "Length":  129208
+                        },
+                        {
+                            "Name":  "packages.txt",
+                            "Length":  30993
+                        }
+                    ],
+    "installed":  false,
+    "result":  true,
+    "user":  "WDAGUtilityAccount",
+    "io":  [
+               {
+                   "ProcessId":  2160,
+                   "ReadTransferCount":  341965,
+                   "WriteTransferCount":  120
+               }
+           ],
+    "input":  true,
+    "freecad_owned":  true
+}

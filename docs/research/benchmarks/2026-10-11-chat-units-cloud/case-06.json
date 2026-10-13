@@ -1,0 +1,21 @@
+{
+  "acceptable": true,
+  "cold": false,
+  "expected": {
+    "height": 25,
+    "length": 25,
+    "width": 25
+  },
+  "id": "cube",
+  "result": {
+    "proposal": {
+      "dimensions_mm": {
+        "height": 25.0,
+        "length": 25.0,
+        "width": 25.0
+      },
+      "status": "proposal"
+    }
+  },
+  "seconds": 0.7556948
+}

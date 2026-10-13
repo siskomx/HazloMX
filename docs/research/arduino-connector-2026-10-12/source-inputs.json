@@ -1,0 +1,30 @@
+[
+  {
+    "path": "apps/desktop/src-tauri/examples/installed_arduino_workflow.rs",
+    "sha256": "a1940249116b6a4a1357494969942ab62c02a25dc5223a61a9f7f45fa500e045"
+  },
+  {
+    "path": "apps/desktop/tests/prepare-current-package.py",
+    "sha256": "1b53abe5107433b943f10daef10d6208137760f3a3bf143b5200c2d509bc8018"
+  },
+  {
+    "path": "apps/desktop/tests/sandbox-current-package.ps1",
+    "sha256": "af58bb9ee3ae97febbb28b2ab859769300255b01c2c40ff7f3523340d357aace"
+  },
+  {
+    "path": "target/release/hazlomexa-tools.exe",
+    "sha256": "0e157f8c0918945488ca28cb7903c5b4b676c4efb4a4d5018a7e818aa5b7b308"
+  },
+  {
+    "path": "target/debug/examples/installed_arduino_workflow.exe",
+    "sha256": "5305673688b13e7ba3419a2f68df5e4866d4d9c67899209d883a76bff384e07d"
+  },
+  {
+    "path": "target/arduino-probe/runtime/arduino-cli.exe",
+    "sha256": "1017de89179c3167e6b8a38ca6cc4091fa69a3cf97aafa7810f01423003f5571"
+  },
+  {
+    "path": "target/arduino-probe/data/hazlomexa-toolchain.json",
+    "sha256": "c4a6330d0e58aaf4529e4d35ee345a0742749f7011911194a0bedd0c5677df3d"
+  }
+]

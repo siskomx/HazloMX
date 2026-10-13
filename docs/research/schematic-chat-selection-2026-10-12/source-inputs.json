@@ -1,0 +1,14 @@
+[
+  {
+    "path": "apps/desktop/src/design.ts",
+    "sha256": "2f1b2d83a107f74d01a1e3e6614c2b1289bb18ce4b068039ed52d681a671e5c5"
+  },
+  {
+    "path": "apps/desktop/src/main.ts",
+    "sha256": "9827fb38db6825d1d75f7fbbecc588e29a94fbd75c2226edfe63917a5b4a7aa5"
+  },
+  {
+    "path": "apps/desktop/tests/design-flow.mjs",
+    "sha256": "e99ec3fba31a5b16d0ffed1167e70aeab575c09af763f714a2fea372349487c5"
+  }
+]

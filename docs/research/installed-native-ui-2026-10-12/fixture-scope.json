@@ -1,0 +1,5 @@
+{
+  "launch": "Disposable guest app-specific HKLM WebView policy with cleanup",
+  "engineering": "omitted; separately retained",
+  "scope": "Installed native initial UI and lifecycle only"
+}

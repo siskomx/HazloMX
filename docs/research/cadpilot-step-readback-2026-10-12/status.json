@@ -1,0 +1,9 @@
+{
+  "native_conversation": false,
+  "regular_rust_tests": 111,
+  "policy_tests": 4,
+  "actual_selected_copy_adapter": true,
+  "clippy_all_targets": true,
+  "actual_publication_recovery_gate": true,
+  "installed_updated_macro": false
+}

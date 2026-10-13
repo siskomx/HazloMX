@@ -1,0 +1,19 @@
+﻿{
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "installer_sha256":  "0cdc30add47507a476c0a08191586aa5072d049372a0537db32b53051df6a8e4",
+    "app_alive":  true,
+    "uninstalled":  true,
+    "resumed_after_identity_check":  false,
+    "current_user_install":  true,
+    "user":  "WDAGUtilityAccount",
+    "same_version_update":  true,
+    "lifecycle_pass":  true,
+    "native_release_ui_error":  "Explorer-launched native UI driver did not finish.",
+    "previous_build_update":  false,
+    "pass":  false,
+    "stage":  "finished with unverified native UI",
+    "native_release_initial_ui":  false,
+    "connector_exit":  0,
+    "binaries_match_package_build":  true,
+    "user_files_preserved":  true
+}

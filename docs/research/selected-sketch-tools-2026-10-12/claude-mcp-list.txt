@@ -1,0 +1,3 @@
+Checking MCP server health…
+
+hazlomexa: C:/Users/USER\Documents\GitHub\HazloMX\target/release/hazlomexa-tools.exe  - √ Connected

@@ -1,0 +1,13 @@
+{
+  "post_run_capture": true,
+  "reason": "Preparation wrapper did not capture a pre-launch release-inputs manifest; source hashes were reconciled after terminal results against prior catalog and retained frontend/backend gates.",
+  "unchanged_prior_inputs": 7,
+  "changed_prior_inputs": [
+    "apps/desktop/src/design.ts",
+    "apps/desktop/src/main.ts",
+    "apps/desktop/src-tauri/src/jobs.rs",
+    "apps/desktop/tests/design-flow.mjs"
+  ],
+  "recorded_gate_inputs_verified": 5,
+  "source_files": 12
+}

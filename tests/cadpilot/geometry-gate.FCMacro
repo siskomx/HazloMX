@@ -1,0 +1,122 @@
+"""Actual upstream geometry/edit primitives on owned FreeCAD fixtures, no RPC listener."""
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import shutil
+import sys
+import traceback
+
+import FreeCAD as App
+import Part
+
+ROOT = Path.cwd()
+
+
+def check(report, size, volume):
+    assert report["success"] and report["is_valid"], report
+    assert report["counts"]["solids"] == 1, report
+    box = report["bbox"]
+    actual = [box[axis + "max"] - box[axis + "min"] for axis in "xyz"]
+    assert all(abs(a - b) < 0.01 for a, b in zip(actual, size)), report
+    assert abs(report["volume_mm3"] - volume) < max(0.01, volume * 0.00001), report
+
+
+def run():
+    assert ".".join(App.Version()[:3]) == "1.1.4", App.Version()
+    request = json.loads((ROOT / "input.json").read_text(encoding="utf-8"))
+    addon = ROOT / "addon"
+    for name, expected in request["modules"].items():
+        assert hashlib.sha256((addon / "rpc_server" / name).read_bytes()).hexdigest() == expected
+    sys.path.insert(0, str(addon))
+    from rpc_server.geometry_query import measure_geometry
+    from rpc_server.object_factory import create_object_gui, edit_object_gui
+    from rpc_server.property_mapper import Object
+
+    original = App.newDocument("SelectedOriginal")
+    obj = original.addObject("Part::Box", "Target")
+    obj.Length, obj.Width, obj.Height = 10, 20, 30
+    original.recompute()
+    original.saveAs(str(ROOT / "Original.FCStd"))
+    App.closeDocument(original.Name)
+    source_hash = hashlib.sha256((ROOT / "Original.FCStd").read_bytes()).hexdigest()
+    shutil.copyfile(ROOT / "Original.FCStd", ROOT / "Working.FCStd")
+    selected = App.openDocument(str(ROOT / "Working.FCStd"))
+    # Console documents do not enable undo recording automatically.
+    selected.UndoMode = 1
+    assert selected.UndoMode == 1
+    decoy = App.newDocument("Unselected")
+    other = decoy.addObject("Part::Box", "Target")
+    other.Length, other.Width, other.Height = 2, 3, 4
+    decoy.recompute()
+    decoy.saveAs(str(ROOT / "Unselected.FCStd"))
+    decoy_hash = hashlib.sha256((ROOT / "Unselected.FCStd").read_bytes()).hexdigest()
+    App.setActiveDocument(decoy.Name)
+    before = measure_geometry(selected.Name, "Target")
+    check(before, [10, 20, 30], 6000)
+    assert not measure_geometry(selected.Name, "Missing")["success"]
+    assert not measure_geometry("MissingDocument", "Target")["success"]
+
+    selected.openTransaction("Owned rollback fixture")
+    failed = edit_object_gui(selected.Name, Object(name="Target", properties={"Length": 13, "Width": "invalid length"}))
+    assert failed is not True, failed
+    assert abs(float(selected.getObject("Target").Length) - 13) < 0.001
+    selected.abortTransaction()
+    selected.recompute()
+    rolled_back = measure_geometry(selected.Name, "Target")
+    check(rolled_back, [10, 20, 30], 6000)
+
+    selected.openTransaction("Owned typed edit fixture")
+    # 0.5 inch is 12.7 mm; no expression or arbitrary code enters the mapper.
+    assert edit_object_gui(selected.Name, Object(name="Target", properties={"Length": 12.7, "Width": 25.4, "Height": 7.62})) is True
+    selected.commitTransaction()
+    after = measure_geometry(selected.Name, "Target")
+    check(after, [12.7, 25.4, 7.62], 12.7 * 25.4 * 7.62)
+    assert float(other.Length) == 2 and float(other.Width) == 3 and float(other.Height) == 4
+
+    selected.openTransaction("Owned modeling fixture")
+    created = create_object_gui(selected.Name, Object(name="AddedCylinder", type="Part::Cylinder", properties={"Radius": 2, "Height": 8, "Placement": {"Base": {"x": 40, "y": 0, "z": 0}}}))
+    assert created["success"] and created["object_name"] == "AddedCylinder", created
+    selected.commitTransaction()
+    cylinder = measure_geometry(selected.Name, created["object_name"])
+    check(cylinder, [4, 4, 8], math.pi * 4 * 8)
+    assert cylinder["bbox"]["xmin"] == 38 and cylinder["bbox"]["xmax"] == 42
+    selected.saveAs(str(ROOT / "Edited.FCStd"))
+    Part.export([selected.getObject("Target"), selected.getObject("AddedCylinder")], str(ROOT / "Edited.step"))
+    selected_name = selected.Name
+    App.closeDocument(selected_name)
+    reopened = App.openDocument(str(ROOT / "Edited.FCStd"))
+    check(measure_geometry(reopened.Name, "Target"), [12.7, 25.4, 7.62], 12.7 * 25.4 * 7.62)
+    assert set(o.Name for o in reopened.Objects) == {"Target", "AddedCylinder"}
+    assert abs(float(reopened.getObject("Target").Length) - 12.7) < 0.001
+    step_shape = Part.Shape()
+    step_shape.read(str(ROOT / "Edited.step"))
+    assert step_shape.isValid() and len(step_shape.Solids) == 2
+    assert abs(step_shape.Volume - (12.7 * 25.4 * 7.62 + math.pi * 4 * 8)) < 0.01
+
+    body_doc = App.newDocument("GlobalCoordinates")
+    body = body_doc.addObject("PartDesign::Body", "Body")
+    feature = body.newObject("PartDesign::Feature", "Feature")
+    feature.Shape = Part.makeBox(3, 4, 5)
+    body.Tip = feature
+    body.Placement.Base = App.Vector(100, 200, 300)
+    body_doc.recompute()
+    global_report = measure_geometry(body_doc.Name, feature.Name)
+    check(global_report, [3, 4, 5], 60)
+    assert [global_report["bbox"][axis + "min"] for axis in "xyz"] == [100, 200, 300], global_report
+    assert hashlib.sha256((ROOT / "Original.FCStd").read_bytes()).hexdigest() == source_hash
+    assert hashlib.sha256((ROOT / "Unselected.FCStd").read_bytes()).hexdigest() == decoy_hash
+    return {"passed": True, "freecad_version": "1.1.4", "cadpilot_version": "0.7.7", "before": before,
+            "rollback": rolled_back, "after": after, "created": cylinder, "global_coordinates": global_report,
+            "original_sha256": source_hash, "unselected_sha256": decoy_hash,
+            "rpc_verified": False, "native_gui_verified": False, "application_workflow_verified": False}
+
+
+try:
+    result = run()
+    (ROOT / "result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    os._exit(0)
+except BaseException:
+    (ROOT / "failure.txt").write_text(traceback.format_exc(), encoding="utf-8")
+    os._exit(1)

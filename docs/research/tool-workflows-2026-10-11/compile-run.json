@@ -1,0 +1,24 @@
+{
+  "schema_version": 10,
+  "project_id": "a1d53084-6ebe-4284-be60-ce021f7c61b8",
+  "input": {
+    "schema_version": 1,
+    "job_id": "70f0e64f-9b4b-480a-b23c-aab6e154cac1",
+    "fqbn": "arduino:avr:uno",
+    "source": "void setup() {} void loop() {}"
+  },
+  "phase": "completed",
+  "audit": {
+    "source": {
+      "provider": "mcp"
+    },
+    "user_edited": false,
+    "adapter_version": 1,
+    "destination": ".hazlomexa/artifacts/70f0e64f-9b4b-480a-b23c-aab6e154cac1",
+    "created_unix_ms": 1791788059687,
+    "updated_unix_ms": 1791788065645,
+    "sequence": 3,
+    "error": null,
+    "files_verified": true
+  }
+}

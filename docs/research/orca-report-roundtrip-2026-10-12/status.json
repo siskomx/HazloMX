@@ -1,0 +1,9 @@
+{
+  "current_installer_contains_fix": false,
+  "printer_control": false,
+  "regular_rust_tests": 113,
+  "installed_orca_acceptance": false,
+  "recovery_verified": true,
+  "model_inference": false,
+  "host_native_connector_jobs": 4
+}

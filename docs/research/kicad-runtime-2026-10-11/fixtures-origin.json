@@ -1,0 +1,18 @@
+{
+  "basic_test.kicad_pcb": {
+    "url": "https://github.com/KiCad/kicad-source-mirror/blob/69cafb907ebc09e7722a2a464b1d466fc2e3608d/qa/data/cli/basic_test/basic_test.kicad_pcb",
+    "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+  },
+  "basic_test.kicad_pro": {
+    "url": "https://github.com/KiCad/kicad-source-mirror/blob/69cafb907ebc09e7722a2a464b1d466fc2e3608d/qa/data/cli/basic_test/basic_test.kicad_pro",
+    "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+  },
+  "basic_test.kicad_sch": {
+    "url": "https://github.com/KiCad/kicad-source-mirror/blob/69cafb907ebc09e7722a2a464b1d466fc2e3608d/qa/data/cli/basic_test/basic_test.kicad_sch",
+    "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+  },
+  "NoConnectOnPin.kicad_sch": {
+    "url": "https://github.com/KiCad/kicad-source-mirror/blob/69cafb907ebc09e7722a2a464b1d466fc2e3608d/qa/data/eeschema/NoConnectOnPin.kicad_sch",
+    "sha256": "f621b1ee7d95905038fa1dbc0a47f93339dead5f238138dcea76c29ba039eb6f"
+  }
+}

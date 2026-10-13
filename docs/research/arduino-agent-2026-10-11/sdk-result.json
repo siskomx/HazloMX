@@ -1,0 +1,112 @@
+{
+  "automatic_post_retry": false,
+  "hardware_mutations": false,
+  "original_preserved": true,
+  "pass": true,
+  "sdk": "rmcp 3.5.1",
+  "server": {
+    "capabilities": {
+      "prompts": {},
+      "tools": {}
+    },
+    "instructions": "Arduino Agent - an Arduino IDE with this MCP server embedded. You share one editor, one board and one serial monitor with the user; prefer these tools over asking the user to click in the IDE.\n\nRecommended workflow:\n1. arduino_context for current state (open sketch, selected board/port, connected boards with USB vid/pid).\n2. If the board shows identified:false, run arduino_board suggest_fqbn (uses USB identity + name matching; tells you which core to install if missing). ALWAYS pass an explicit fqbn to compile/upload/serial connect for such boards - they can never be auto-identified.\n3. Write code with arduino_sketch (set_content writes to disk AND live-reloads the user's editor).\n4. Compile/upload with wait:true - one call returns the final result. A timed_out:true response is NOT an error: call arduino_task_status {task_id, wait:true} to keep waiting (first builds for a new core can take minutes).\n5. arduino_upload compiles first automatically - no separate compile needed.\n6. After upload, connect serial at the baud rate in the sketch's Serial.begin(). Reads are cursor-based: keep the returned cursor and pass it as since to page output losslessly. Use wait_for {pattern} to block until expected output arrives.\n7. Crash/reset detection is automatic: read/wait_for responses carry events (reset/panic/watchdog/brownout/abort, with reset reasons and backtraces). A crash ends a pending wait_for early. \"No output\" plus reset events means the board is crash-looping, not quiet.\n\nFailure handling:\n- Failed compile/upload tasks carry result.explained - read it before retrying; it names the cause and the fix (port busy, bootloader mode, wrong FQBN, power).\n- Native-USB boards (ESP32-S2/S3/C3) re-enumerate after reset: the port can change or vanish; re-run arduino_board list_connected. Uploads are far more reliable via a board's UART/bridge port; native-USB uploads can require holding BOOT while pressing RESET.\n- Serial port busy on upload usually means this server's own monitor is connected: arduino_serial disconnect first.\n\nFirmware rules of thumb:\n- Never busy-loop without delay()/vTaskDelay() on ESP32 - a starved idle task trips the task watchdog and reboots the chip.\n- Serial.begin(115200) is the conventional rate; after flashing over native USB, wait ~1s for CDC re-enumeration before expecting output.",
+    "protocolVersion": "2025-11-25",
+    "serverInfo": {
+      "name": "arduino-agent",
+      "version": "0.7.1"
+    }
+  },
+  "source": {
+    "content": [
+      {
+        "text": "{\n  \"content\": \"void setup() {}\\nvoid loop() { delay(500); }\\n\",\n  \"path\": \"C:\\\\AgentSketchbook\\\\ProbeSketch\\\\ProbeSketch.ino\"\n}",
+        "type": "text"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "List all available Arduino IDE tool categories. Start here to discover what operations are available.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "list_tool_categories"
+    },
+    {
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Get detailed information about all tools in a specific category including parameters and examples.",
+      "inputSchema": {
+        "properties": {
+          "category": {
+            "description": "Category name from list_tool_categories",
+            "enum": [
+              "sketch",
+              "build",
+              "board",
+              "serial",
+              "library",
+              "ide"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "type": "object"
+      },
+      "name": "get_category_tools"
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Execute an Arduino IDE tool by name with the specified parameters. Use get_category_tools first to see available tools and their parameters.",
+      "inputSchema": {
+        "properties": {
+          "params": {
+            "description": "Tool parameters - see get_category_tools for schema",
+            "type": "object"
+          },
+          "tool_name": {
+            "description": "Tool name (e.g., arduino_sketch, arduino_compile)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool_name",
+          "params"
+        ],
+        "type": "object"
+      },
+      "name": "execute_tool"
+    },
+    {
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Search for Arduino IDE tools by keyword. Searches tool names, descriptions, and parameter names.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "description": "Search term (e.g., \"upload\", \"serial\", \"library\")",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "search_tools"
+    }
+  ]
+}

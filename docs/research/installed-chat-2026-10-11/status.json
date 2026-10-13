@@ -1,0 +1,28 @@
+{
+  "pass": true,
+  "full_acceptance": false,
+  "date": "2026-10-11",
+  "guest_id": "7bbd92db-f66a-4ff9-9d12-6994e6bdb158",
+  "guest_build": 26100,
+  "installer_sha256": "4fede5cb05b32ac8eb8a72e0627345b06baa56dccb6e2b3502d17f68b495908e",
+  "actual_models_run": 0,
+  "guest_left_running": false,
+  "checks": [
+    "Installed native app, native project picker, controlled loopback Ollama fixture",
+    "Missing model rejected before show/generate; controls recovered",
+    "Stalled partial NDJSON cancelled via Detener; independent server disconnect observed",
+    "Spanish clarification displayed asking for dimensions and units",
+    "Seeded provider error shown as generic Spanish failure",
+    "No new jobs or artifact sets; three existing runs and one publication retained",
+    "All eleven source/export file SHA256 values independently match on host",
+    "Fake secret absent from 295 files scanned after app closure in project and app-specific Local/Roaming AppData"
+  ],
+  "scope_limits": [
+    "Fixture responses establish application/protocol behavior, not model quality or remote inference cessation",
+    "No exact UI cancellation latency claim",
+    "Secret scan covers existing readable files, not deleted disk pages, registry, process memory or host Ollama logs",
+    "Initial clarification fixture had an incorrect JSON content type; app rejection was expected; fixture corrected and self-check extended",
+    "Installed script-error, occupied-publication and precise commit-event checks remain pending",
+    "Full disk CAD publication remains unverified"
+  ]
+}

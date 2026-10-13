@@ -1,0 +1,22 @@
+{
+  ".hazlomexa/runs/2b975c77-0d0c-4cb6-b5e2-52ce889b68d5.sources/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+  ".hazlomexa/runs/0aaf6202-c328-4908-8869-6161cca8fef7.sources/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+  ".hazlomexa/runs/6f0efeb6-4722-457c-a2b6-322144114fee.sources/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+  ".hazlomexa/runs/745e25a9-9617-4995-93ac-947d575663ba.json": "13748b2ceddad2f92c10eb76927658a9c0fd95396ca62405ae5dcf7119dc59db",
+  ".hazlomexa/artifacts/0f4b5364-25d4-4edd-8fba-4ea3ef794f47/Edited/basic_test.kicad_sch": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836",
+  ".hazlomexa/artifacts/0f4b5364-25d4-4edd-8fba-4ea3ef794f47/Original/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+  ".hazlomexa/artifacts/0f4b5364-25d4-4edd-8fba-4ea3ef794f47/input.json": "4f0b3d2bfcc78b7f13c95a71c23377e127741df7244e5d2a783bf8d17b884f67",
+  ".hazlomexa/runs/2b975c77-0d0c-4cb6-b5e2-52ce889b68d5.json": "08f6b0ed7af1cf13bcd0e7593ca8f0e83d9cd9982d801ab51e582f1d1d011b3b",
+  ".hazlomexa/writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  ".hazlomexa/staging/745e25a9-9617-4995-93ac-947d575663ba/input.json": "2228f0eff01b366f774da4e7118cdbbe14f62852668ecbacecd3d14036553d63",
+  ".hazlomexa/runs/0f4b5364-25d4-4edd-8fba-4ea3ef794f47.json": "1bba7bc82b07108885732a077c63553d8f7321b0c370551a9a29c6e5270f21e3",
+  ".hazlomexa/runs/745e25a9-9617-4995-93ac-947d575663ba.sources/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+  ".hazlomexa/staging/745e25a9-9617-4995-93ac-947d575663ba/Edited/basic_test.kicad_sch": "0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836",
+  ".hazlomexa/artifacts/0f4b5364-25d4-4edd-8fba-4ea3ef794f47/result.json": "56a413597fb61551b7910429875ee986e5bb153e9718adbf8d5084f935290cb0",
+  "sources/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+  ".hazlomexa/runs/0aaf6202-c328-4908-8869-6161cca8fef7.json": "4707ac9d6380628681bf27e06bc87fd46267055dc5f6dbd93e54de1977021563",
+  ".hazlomexa/staging/745e25a9-9617-4995-93ac-947d575663ba/result.json": "bfbd7b78d128b2900c51d8ff9224114bb6110548918c134f6191ee4124c68b42",
+  ".hazlomexa/artifacts/745e25a9-9617-4995-93ac-947d575663ba/preserve.txt": "1daf82f62247f3a1d148c2d88b1828c9efa2d5f087d7059e98650aafe7afdea3",
+  ".hazlomexa/staging/745e25a9-9617-4995-93ac-947d575663ba/Original/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a",
+  ".hazlomexa/runs/0f4b5364-25d4-4edd-8fba-4ea3ef794f47.sources/basic_test.kicad_sch": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+}

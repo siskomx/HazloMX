@@ -1,0 +1,7 @@
+{
+  "native_metric_and_inch_gate": true,
+  "installed_current_change": false,
+  "native_profile_discovery": false,
+  "all_target_clippy": true,
+  "regular_rust_tests": 112
+}

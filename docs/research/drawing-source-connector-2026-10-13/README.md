@@ -1,0 +1,7 @@
+# Source-first drawing edits through the bundled connector
+
+The current production helper (395fdfd035fe3996df0a1e2bcda45c0d929cf999db6aa9db0d5491b157543ca8) from installer b37decdea5d15c82ce6e95c01034542de1cd305ccc668aedca2c2147703eff98 passes the expanded drawing harness on Windows 11 x64 host build 26200. The exact harness/source/runtime/helper/input hashes were captured before execution and verified unchanged afterward.
+
+For both metric and inch originals, the human-side fixture selects the source, then actual stdio MCP inspect_selected_drawing reads native metadata without a job. propose_selected_drawing_change creates a source-bound proposal with no exposed approval token. A backend fixture approval executes a native DWG circle addition; the connector re-reads the verified result. Existing result-bound follow-up edits produce DXF, verified circles, unchanged original and prior result, and recover both jobs on reopen. All four jobs pass. Real native center/radius readback, correct source units and recovery remain required by the harness.
+
+This is a native host backend/transport proof with fixture approvals. It is not an installed desktop GUI, ordinary nonadministrator acceptance, actual signed-in Claude/Codex conversation, user picker test or live unsaved-document edit. A fresh guest package gate remains separate. No models or hardware ran. The installer source inputs remain byte-identical; only the example harness changed.

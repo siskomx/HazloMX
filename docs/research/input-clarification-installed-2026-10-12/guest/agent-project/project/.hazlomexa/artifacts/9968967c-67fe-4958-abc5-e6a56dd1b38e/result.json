@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "job_id": "9968967c-67fe-4958-abc5-e6a56dd1b38e",
+  "agent_version": "0.7.1",
+  "protocol_version": "2025-11-25",
+  "artifacts": [
+    "Original.ino",
+    "Sketch.ino"
+  ]
+}

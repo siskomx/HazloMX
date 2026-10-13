@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id":"design_idea","prompt":"Quiero recrear una pieza que se perdió, todavía no sé las medidas.","expected":"clarification"},
+    {"id":"design_followup","prompt":"{\"conversation\":[{\"role\":\"user\",\"content\":\"Necesito un bloque sólido rectangular de largo 1 pulgada y ancho 2 cm.\"},{\"role\":\"assistant\",\"content\":\"¿Cuánto mide de alto?\"},{\"role\":\"user\",\"content\":\"Media pulgada de alto.\"}]}","expected":{"length":25.4,"width":20,"height":12.7}},
+    {"id":"design_units_followup","prompt":"{\"conversation\":[{\"role\":\"user\",\"content\":\"Bloque sólido: largo 1, ancho 2, alto 3.\"},{\"role\":\"assistant\",\"content\":\"¿En qué unidades?\"},{\"role\":\"user\",\"content\":\"Centímetros para las tres.\"}]}","expected":{"length":10,"width":20,"height":30}},
+    {"id":"design_fraction","prompt":"Un cubo sólido de 1 1/4 pulgadas por lado.","expected":{"length":31.75,"width":31.75,"height":31.75}},
+    {"id":"design_feet","prompt":"Bloque rectangular sólido de largo 0.5 ft, ancho 1 in y alto 2 cm.","expected":{"length":152.4,"width":25.4,"height":20}},
+    {"id":"design_meters","prompt":"Bloque rectangular sólido: largo 0.1 m, ancho 0.05 m, alto 0.02 m.","expected":{"length":100,"width":50,"height":20}},
+    {"id":"design_imperial_limit","prompt":"Un bloque sólido de largo 8 pulgadas, ancho 1 pulgada y alto 1 pulgada.","expected":"clarification"},
+    {"id":"design_changed_object","prompt":"{\"conversation\":[{\"role\":\"user\",\"content\":\"Quiero un cubo sólido de 10 mm por lado.\"},{\"role\":\"assistant\",\"content\":\"Revisa la propuesta.\"},{\"role\":\"user\",\"content\":\"Olvida ese cubo. Ahora quiero recrear otra pieza rectangular y no sé sus medidas.\"}]}","expected":"clarification"},
+    {"id":"design_no_substitution","prompt":"Necesito recrear una caja hueca de largo 2 pulgadas, ancho 1 pulgada y alto 1 pulgada con agujeros.","expected":"clarification"},
+    {"id":"design_accepted_reference","prompt":"{\"conversation\":[{\"role\":\"user\",\"content\":\"Quiero una caja hueca de largo 2 pulgadas, ancho 1 pulgada y alto 1 pulgada.\"},{\"role\":\"assistant\",\"content\":\"Solo puedo crear sólidos rectangulares. ¿Aceptas un bloque de referencia con esas medidas?\"},{\"role\":\"user\",\"content\":\"Sí, crea el bloque sólido de referencia con esas medidas.\"}]}","expected":{"length":50.8,"width":25.4,"height":25.4}}
+  ]
+}

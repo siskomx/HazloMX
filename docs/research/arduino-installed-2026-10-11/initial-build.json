@@ -1,0 +1,11 @@
+{
+  "installer_sha256": "63c0c1d415f4f24fddba38c6a0247222f854881d9d856a916a0c13386324c8db",
+  "release_app_sha256": "8cf3d19e3e5bfaa9f1ea5d0b67ce15b847904d63a2c11983785c6d67cf06d100",
+  "regular_tests": 45,
+  "ignored_standalone": 8,
+  "frontend_build": true,
+  "frontend_fixtures": true,
+  "desktop_clippy": true,
+  "installed_arduino_guest_tested": false,
+  "models_run": 0
+}

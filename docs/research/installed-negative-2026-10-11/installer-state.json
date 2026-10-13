@@ -1,0 +1,25 @@
+﻿{
+    "processes":  [
+                      {
+                          "Name":  "MicrosoftEdgeUpdate.exe",
+                          "ProcessId":  15992,
+                          "ParentProcessId":  13520
+                      },
+                      {
+                          "Name":  "MicrosoftEdgeUpdate.exe",
+                          "ProcessId":  15796,
+                          "ParentProcessId":  15992
+                      },
+                      {
+                          "Name":  "MicrosoftEdgeUpdate.exe",
+                          "ProcessId":  13380,
+                          "ParentProcessId":  1252
+                      }
+                  ],
+    "webview":  [
+                    {
+                        "name":  "Microsoft Edge WebView2 Runtime",
+                        "pv":  "155.0.4283.45"
+                    }
+                ]
+}

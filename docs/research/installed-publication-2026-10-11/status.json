@@ -1,0 +1,32 @@
+{
+  "pass": true,
+  "date": "2026-10-11",
+  "environment": "Owned Windows Sandbox build 26100, 2 GiB",
+  "installer_sha256": "cc395aa2aad549181301a10241dc467ddd50b52b1c069dc3efb2c98add491f15",
+  "job_id": "7577cd1e-3173-4a25-a7ed-697e3ca61379",
+  "actual_freecad": true,
+  "held_publication": {
+    "successful_result": true,
+    "cad_ceased": true,
+    "persisted_phase": "running",
+    "published": false
+  },
+  "native_cancel_click_during_hold": true,
+  "controlled_release": true,
+  "final_phase": "completed",
+  "whole_set_files": [
+    "input.json",
+    "result.json",
+    "solid.FCStd",
+    "solid.step"
+  ],
+  "closed_export": {
+    "files": 23,
+    "host_sha256_verified": true,
+    "prior_project_preserved": true
+  },
+  "fresh_webview_bootstrap": true,
+  "first_attempt": "Failed fixture deadline; retained separately, not counted as passing controlled release",
+  "scope": "Actual installed Cancel input while the production publication data-read was blocked. Does not instrument the backend Cancel dispatch instant or the indivisible rename syscall. Earlier native/backend tests cover cancellation winning before publication.",
+  "models_run": false
+}

@@ -1,0 +1,12 @@
+﻿{
+    "observed_ids":  [
+                         10428,
+                         14540
+                     ],
+    "pass":  true,
+    "ceased_unix_ms":  1791748568054,
+    "remaining":  [
+
+                  ],
+    "observation":  "Owned CAD processes ceased; persisted phase must be checked separately."
+}

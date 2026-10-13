@@ -1,0 +1,76 @@
+{
+  "components": [
+    {
+      "library": "power:GND",
+      "reference": "#PWR01",
+      "value": "GND"
+    },
+    {
+      "library": "power:GND",
+      "reference": "#PWR02",
+      "value": "GND"
+    },
+    {
+      "library": "power:GND",
+      "reference": "#PWR03",
+      "value": "GND"
+    },
+    {
+      "library": "power:GND",
+      "reference": "#PWR04",
+      "value": "GND"
+    },
+    {
+      "library": "Device:C_Small",
+      "reference": "C1",
+      "value": "10u"
+    },
+    {
+      "library": "Connector:Conn_01x01_Pin",
+      "reference": "J1",
+      "value": "Conn_01x01_Pin"
+    },
+    {
+      "library": "Connector:Conn_01x01_Pin",
+      "reference": "J2",
+      "value": "Conn_01x01_Pin"
+    },
+    {
+      "library": "Connector:Conn_01x01_Pin",
+      "reference": "J3",
+      "value": "Conn_01x01_Pin"
+    },
+    {
+      "library": "Connector:Conn_01x01_Pin",
+      "reference": "J4",
+      "value": "Conn_01x01_Pin"
+    },
+    {
+      "library": "Device:R_US",
+      "reference": "R1",
+      "value": "12.34k"
+    },
+    {
+      "library": "Device:R_US",
+      "reference": "R2",
+      "value": "10k"
+    },
+    {
+      "library": "Device:R_US",
+      "reference": "R3",
+      "value": "10k"
+    },
+    {
+      "library": "Amplifier_Operational:TLV2371DBV",
+      "reference": "U1",
+      "value": "TLV2371DBV"
+    }
+  ],
+  "content": "{\n  \"schema_version\": 2,\n  \"job_id\": \"40533bd0-a524-4db3-bb45-d0bd1aa7d41a\",\n  \"konnect_version\": \"0.13.0\",\n  \"protocol_version\": \"2025-06-18\",\n  \"files\": [\n    {\n      \"path\": \"Edited/test.kicad_sch\",\n      \"sha256\": \"0861d3bdec539c52a92be4197a1b4c8c89b0b12a5eb451b067d1db76a749c836\"\n    },\n    {\n      \"path\": \"Netlist.xml\",\n      \"sha256\": \"31d06b26a7c2095c38c2dc6e4b4f2635a29ab0e95281196739f52817e91c5bc8\"\n    },\n    {\n      \"path\": \"Original/test.kicad_sch\",\n      \"sha256\": \"89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a\"\n    },\n    {\n      \"path\": \"input.json\",\n      \"sha256\": \"0b9e2cf0fa2026206b6e30ed9dbf23b5f4ea6fc2afe7e76ab06cf4b001704a1d\"\n    }\n  ]\n}",
+  "format": "konnect_report",
+  "job_id": "40533bd0-a524-4db3-bb45-d0bd1aa7d41a",
+  "project_id": "bc5a6723-189c-48de-9500-275820b9f708",
+  "scope": "verified_published_result",
+  "sha256": "709c37019184433af9ac947efe8537637dd676cbf15d6f3ff0839ed6e774676e",
+  "source_is_untrusted_data": true
+}

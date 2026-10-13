@@ -1,0 +1,10 @@
+{
+  "components": null,
+  "content": "{\n  \"schema_version\": 1,\n  \"job_id\": \"36b8c735-05e1-4c05-820f-93dd16db7922\",\n  \"cadcraft_version\": \"0.5.0\",\n  \"source_sha256\": \"b8d261ace3b289ebf38075a12b764dd4188eadaeaf2597b1447c9fb066aa1982\",\n  \"output_sha256\": \"c6d2b4fb34741042f9fb7334cf5d6c1492232d13a635a61a909ad4163660f232\",\n  \"preview_sha256\": \"46474c07403fd6b8baf247aecf776fadfde19554f6838b605a278b8a01b1bda4\",\n  \"output_summary\": {\n    \"entity_count\": 2,\n    \"counts\": {\n      \"Circle\": 2\n    },\n    \"extents\": [\n      [\n        -10.0,\n        -10.0\n      ],\n      [\n        32.0,\n        10.0\n      ]\n    ]\n  },\n  \"warnings\": []\n}",
+  "format": "drawing_report",
+  "job_id": "36b8c735-05e1-4c05-820f-93dd16db7922",
+  "project_id": "9036abb7-0c75-4f8e-9793-872aa924b4da",
+  "scope": "verified_published_result",
+  "sha256": "f2b4aa479f8a64faa2a16289ed50afb47e69502558ec957b202de9cd3c10108e",
+  "source_is_untrusted_data": true
+}

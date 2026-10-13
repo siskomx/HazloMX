@@ -1,0 +1,68 @@
+{
+  "pass": true,
+  "app_closed": true,
+  "project_files": [
+    {
+      "path": "hazlomx.json",
+      "sha256": "b9df1543ad85181360f62483e447ebec8dc9522567a83096e7aa570f521dbeed"
+    },
+    {
+      "path": "original.txt",
+      "sha256": "96fe617d939b0f7be812189d3b12df0aa0aec46d5cc1b7194630df38da0aee81"
+    },
+    {
+      "path": ".hazlomexa/writer.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".hazlomexa/runs/2bc1e577-9f76-4e98-80a5-957270aa3eff.json",
+      "sha256": "0fa4ab77439f8a4b91efbd5b521339920ede55072906192cec6cd2d3400fb543"
+    },
+    {
+      "path": ".hazlomexa/runs/5035f728-eae4-4205-bf78-b45da7045f6e.json",
+      "sha256": "bf465812ac656cc52915ec2951e9f4fc081a5421d8c8feb47945267daf97663f"
+    },
+    {
+      "path": ".hazlomexa/runs/7b1cf418-5cac-41ff-8e84-79acdf807386.json",
+      "sha256": "c875af6ab5581ff6ec36900ad09088469d9b412484d7a9a26f9b573d9bddaeac"
+    },
+    {
+      "path": ".hazlomexa/staging/2bc1e577-9f76-4e98-80a5-957270aa3eff/input.json",
+      "sha256": "4c76b25008f211fa143601970c9726db05747c5d4ddc9900abbca531827fc3d3"
+    },
+    {
+      "path": ".hazlomexa/staging/2bc1e577-9f76-4e98-80a5-957270aa3eff/Sketch.ino",
+      "sha256": "2ebcb54548fc254df02ef9ed9172a332063ea069037032753392b2e0d954836f"
+    },
+    {
+      "path": ".hazlomexa/staging/5035f728-eae4-4205-bf78-b45da7045f6e/input.json",
+      "sha256": "02ca3d61a5cf4a9b29c4196fb86a506240a8ca44ac220ec4cb8a0e3d19366c58"
+    },
+    {
+      "path": ".hazlomexa/staging/5035f728-eae4-4205-bf78-b45da7045f6e/Sketch.ino",
+      "sha256": "db12ae167c6418b71b52059cd0e30292a16d8d6a2a55a471afdb99345cc41853"
+    },
+    {
+      "path": ".hazlomexa/artifacts/7b1cf418-5cac-41ff-8e84-79acdf807386/firmware.elf",
+      "sha256": "3b766e110a0edcf7983b315af27d1760a1d5dc59c2713c8227efcd3cfdfb2e26"
+    },
+    {
+      "path": ".hazlomexa/artifacts/7b1cf418-5cac-41ff-8e84-79acdf807386/firmware.hex",
+      "sha256": "fca1d74f3e16ea45d3e7aaf7d3b89f0dabb462a645d241aa5cf74dce11fb84c3"
+    },
+    {
+      "path": ".hazlomexa/artifacts/7b1cf418-5cac-41ff-8e84-79acdf807386/input.json",
+      "sha256": "2c8e59c1a8c5a959620dd1b7c615662cbc979065fc1d2ac227bc2c85b23ea5ce"
+    },
+    {
+      "path": ".hazlomexa/artifacts/7b1cf418-5cac-41ff-8e84-79acdf807386/result.json",
+      "sha256": "356741df335024e7348abf787387b109440a1913cc3efdf932923853fedf8b30"
+    },
+    {
+      "path": ".hazlomexa/artifacts/7b1cf418-5cac-41ff-8e84-79acdf807386/Sketch.ino",
+      "sha256": "2ebcb54548fc254df02ef9ed9172a332063ea069037032753392b2e0d954836f"
+    }
+  ],
+  "debug_app_sha256": "9583771283c2fd475a66ca9594c61af80efc571c4957315ddfcefd265bc58699",
+  "scope": "Native debug Tauri UI and real Arduino CLI, not installed guest or hardware upload"
+}

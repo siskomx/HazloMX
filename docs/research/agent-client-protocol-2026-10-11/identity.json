@@ -1,0 +1,24 @@
+{
+  "codex_version": "0.159.2",
+  "claude_version": "2.1.285",
+  "clippy_passed": true,
+  "model_turn_started": false,
+  "hashes": [
+    {
+      "path": "apps/desktop/src-tauri/examples/codex_protocol.rs",
+      "sha256": "4f442519f1726078b078abfd2b8491519370d0fbf17eabd8bf0bc73b66917425"
+    },
+    {
+      "path": "target/release/hazlomexa-tools.exe",
+      "sha256": "54132c183a429557e17cfbbb672529f6201c3594accaf8b920cda7ccda3ea113"
+    },
+    {
+      "path": "C:/Users/USER\\AppData\\Roaming\\npm\\node_modules\\@openai\\codex\\node_modules\\@openai\\codex-win32-x64\\vendor\\x86_64-pc-windows-msvc\\bin\\codex.exe",
+      "sha256": "52f75c649bebb8001102a1dd129c1ea6d02b0940321e6d7e82ee0526753bd58a"
+    },
+    {
+      "path": "C:/Users/USER\\.local\\bin\\claude.exe",
+      "sha256": "121fc8151ed40bd9c144d68aa1cea23427803628ffab65e23da1cceda155697e"
+    }
+  ]
+}

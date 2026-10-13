@@ -1,0 +1,14 @@
+[
+  {
+    "file": "Original.dxf",
+    "exit_code": 0,
+    "stdout": "{\"count\":1,\"entities\":[{\"color\":\"ByLayer\",\"geometry\":{\"center\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"radius\":10.0,\"type\":\"circle\"},\"handle\":\"100\",\"layer\":\"0\",\"transparency\":\"ByLayer\",\"type\":\"Circle\"}],\"offset\":0,\"returned\":1}\n",
+    "stderr": ""
+  },
+  {
+    "file": "Drawing.dxf",
+    "exit_code": 0,
+    "stdout": "{\"count\":2,\"entities\":[{\"color\":\"ByLayer\",\"geometry\":{\"center\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"radius\":10.0,\"type\":\"circle\"},\"handle\":\"100\",\"layer\":\"0\",\"transparency\":\"ByLayer\",\"type\":\"Circle\"},{\"color\":\"ByLayer\",\"geometry\":{\"center\":{\"x\":30.0,\"y\":0.0,\"z\":0.0},\"radius\":2.0,\"type\":\"circle\"},\"handle\":\"112B\",\"layer\":\"0\",\"transparency\":\"ByLayer\",\"type\":\"Circle\"}],\"offset\":0,\"returned\":2}\n",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,73 @@
+﻿{
+    "pass":  true,
+    "project_files":  [
+                          {
+                              "sha256":  "6BA23C3B3E6263565AE7E3F266881924C2C89857243D21B973825A60623000EE",
+                              "path":  "hazlomx.json"
+                          },
+                          {
+                              "sha256":  "22897DA95B428CD8C177CA4CDB60BD8D558B047C56FBDAFBF3DD1FFB0095FFDB",
+                              "path":  "UserOriginal.ino"
+                          },
+                          {
+                              "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                              "path":  ".hazlomexa\\writer.lock"
+                          },
+                          {
+                              "sha256":  "199F1F70FF121FC86781F37AAEC5BB2C8F92868E744D979B3D91E4E53C0436A0",
+                              "path":  ".hazlomexa\\artifacts\\2de14c30-e918-4a2f-b911-0e73f9e7c78e\\keep.txt"
+                          },
+                          {
+                              "sha256":  "ABBF16DC5102B367B5F77767CCB7168601F2B0A2FFD779D0EC8383C2989CD390",
+                              "path":  ".hazlomexa\\artifacts\\fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc\\input.json"
+                          },
+                          {
+                              "sha256":  "22897DA95B428CD8C177CA4CDB60BD8D558B047C56FBDAFBF3DD1FFB0095FFDB",
+                              "path":  ".hazlomexa\\artifacts\\fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc\\Original.ino"
+                          },
+                          {
+                              "sha256":  "1D1261AEA76ABF693A18037A55BD3764B69F0B5B4E6791142C192ED42B375B25",
+                              "path":  ".hazlomexa\\artifacts\\fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc\\result.json"
+                          },
+                          {
+                              "sha256":  "8B67DE3860B79E0E01F33893D031E99687DEF5B9E853D66391A179DCC85227C6",
+                              "path":  ".hazlomexa\\artifacts\\fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc\\Sketch.ino"
+                          },
+                          {
+                              "sha256":  "1556DE70837083933458489C4DF8928093397D7F37C3E58A401778AB479E810D",
+                              "path":  ".hazlomexa\\artifacts\\fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc\\working-copy.json"
+                          },
+                          {
+                              "sha256":  "5B42D8F5E87976DC62E71A37AD99AA399BCD3E863278B0386F5CF569C438CDEC",
+                              "path":  ".hazlomexa\\runs\\2de14c30-e918-4a2f-b911-0e73f9e7c78e.json"
+                          },
+                          {
+                              "sha256":  "462A14065576B9C45D08179D921C188F37D502DEC3F6F57DA56217BF9DEC72BB",
+                              "path":  ".hazlomexa\\runs\\abb787d3-3eb8-48a3-92de-ab4d878d36aa.json"
+                          },
+                          {
+                              "sha256":  "54E015A053F488E501A99E77FEE6D31308D160642215CCB4412BEA111CA42006",
+                              "path":  ".hazlomexa\\runs\\fed9da1f-6d69-4aa6-8ccd-be8fbdd575fc.json"
+                          },
+                          {
+                              "sha256":  "9F9AF1555BD9AB2CCFDADE5FC80BFD74D4A0757C80F6B8E08F9875A74E61BD8B",
+                              "path":  ".hazlomexa\\staging\\2de14c30-e918-4a2f-b911-0e73f9e7c78e\\input.json"
+                          },
+                          {
+                              "sha256":  "22897DA95B428CD8C177CA4CDB60BD8D558B047C56FBDAFBF3DD1FFB0095FFDB",
+                              "path":  ".hazlomexa\\staging\\2de14c30-e918-4a2f-b911-0e73f9e7c78e\\Original.ino"
+                          },
+                          {
+                              "sha256":  "96AE0BCD5841CD8E352C54601AF1862CD9FB80FC6862A9B57C98BDB898B3AF1C",
+                              "path":  ".hazlomexa\\staging\\2de14c30-e918-4a2f-b911-0e73f9e7c78e\\result.json"
+                          },
+                          {
+                              "sha256":  "010D33C1D643B16CAABAB6F54B28E3E5693A35BB986FACCDAE0E4B8B2F68DD59",
+                              "path":  ".hazlomexa\\staging\\2de14c30-e918-4a2f-b911-0e73f9e7c78e\\Sketch.ino"
+                          },
+                          {
+                              "sha256":  "BEE61390FEDBB63A9A9B29FFC64C1073AB70B8FC9145F9F5D61B823BFE521A16",
+                              "path":  ".hazlomexa\\staging\\2de14c30-e918-4a2f-b911-0e73f9e7c78e\\working-copy.json"
+                          }
+                      ]
+}

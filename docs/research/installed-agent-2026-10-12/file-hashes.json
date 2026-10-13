@@ -1,0 +1,198 @@
+[
+  {
+    "path": "fixture-scope.json",
+    "sha256": "ff50ae1a42024e2efdf428c2ff000fc9caa8326176a6e3034134092291ff8624"
+  },
+  {
+    "path": "installed-startup.mjs",
+    "sha256": "0a3f485ebd91d2cf70c82ef95efaff83b418c84a3ad4332d33903f396c6a661b"
+  },
+  {
+    "path": "package-identity.json",
+    "sha256": "c6c4112676ed6e9afda8d4deb570be483a44de7ad3c1f52a45b0cf23966ab57f"
+  },
+  {
+    "path": "previous-package-identity.json",
+    "sha256": "66595e2b4897c0c8d845fdfb81a812568eb2795f2940735889229e304f8ae6ae"
+  },
+  {
+    "path": "probe.ps1",
+    "sha256": "559928f1f96767f6cde2cb14b246fa663a4453daac00037043e90d7e5dbee73f"
+  },
+  {
+    "path": "probe.wsb",
+    "sha256": "220e839e438d2f57b04e96e8e3cb1c18ecdecc3125ab81b0a8e1a587fe390f04"
+  },
+  {
+    "path": "release-inputs.json",
+    "sha256": "c0d0ca6bf1f1812c02af69a424911e0250b174b70dc6ce302155b5524abeaf98"
+  },
+  {
+    "path": "sandbox-agent-workflow.ps1",
+    "sha256": "120ee671f5ec22dc2ca568734acfd8d237fe7fd50a22d15013ee8d399538fde6"
+  },
+  {
+    "path": "sandbox-webview-startup.ps1",
+    "sha256": "51d65336f53fac50c74be5a9f8859f1f44f809a9a471931ecd099979a9f83eae"
+  },
+  {
+    "path": "guest\\agent-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\agent-result.json",
+    "sha256": "d0a67e3e35315ced243bc2d591d1a003d7c7f91efa77c168bbeda32fa04ba598"
+  },
+  {
+    "path": "guest\\agent-runtime-receipt.json",
+    "sha256": "54e2b1fec1ff55c1196fa939ae5668d544c78ef75ec18f527d2c52eb5c1ae95e"
+  },
+  {
+    "path": "guest\\agent-stderr.log",
+    "sha256": "af6bb7892bee2d401deedd4eb4e9a29e0c317179f419972526b2064aba8509cf"
+  },
+  {
+    "path": "guest\\agent-stdout.log",
+    "sha256": "9228f967cbba50494183b835d1b2178b3c032c202d4724761f86e6ba3a142002"
+  },
+  {
+    "path": "guest\\guest-state.json",
+    "sha256": "6a0161f41f572cb614148e67af47caa5e5718b2bb9da8c9ca62ea1747b714136"
+  },
+  {
+    "path": "guest\\installed-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\installed-tools.json",
+    "sha256": "aa7b03f7707cb5c47547b8fcaeee12bc94eca162164751787d3a557f99d6670c"
+  },
+  {
+    "path": "guest\\package-result.json",
+    "sha256": "af86bd3f7503c852d3f7daa35d3b448531ff7c6825a986d968aef3eb822517fd"
+  },
+  {
+    "path": "guest\\startup-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\startup-log.json",
+    "sha256": "b874e467180dc83fff5609116da3807292e07d58c8bedaab2f90deecbcaab530"
+  },
+  {
+    "path": "guest\\updated-tools-error.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\updated-tools.json",
+    "sha256": "aa7b03f7707cb5c47547b8fcaeee12bc94eca162164751787d3a557f99d6670c"
+  },
+  {
+    "path": "guest\\webview-policy-receipt.json",
+    "sha256": "fc4aec2a71e8f60e70b3cb7cbeef517d15a74c90559244dbb21bbd7e8e6213e5"
+  },
+  {
+    "path": "guest\\agent-project\\UserOriginal.ino",
+    "sha256": "22897da95b428cd8c177ca4cdb60bd8d558b047c56fbdafbf3dd1ffb0095ffdb"
+  },
+  {
+    "path": "guest\\startup\\result.json",
+    "sha256": "b717bf3a083e95d42fa8ca1b0de69c1f25a5820e3d11abca51b338beda06c06b"
+  },
+  {
+    "path": "guest\\startup\\startup.png",
+    "sha256": "710758a6808545fc3e87e939992e7d3fb49aaf570bf99f46f79fecf2b80ccb0c"
+  },
+  {
+    "path": "guest\\agent-project\\project\\calls.json",
+    "sha256": "0b63ef8f35a7946b835bdc0c123e9bc2727d2e1763b42a859edb9d2a011b9fe4"
+  },
+  {
+    "path": "guest\\agent-project\\project\\hazlomx.json",
+    "sha256": "3290c52dc9da61ea46b0cdbc0b54c92db602fedec9c5082083aac4fbbaaf9554"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\writer.lock",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\runs\\5501f3d2-d34d-4d5e-87f7-7b363a2b04ae.json",
+    "sha256": "e59d2d1eed2e7648ad32109267bd941735666c56da5f5e799c7ee238afabde90"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\runs\\61a0535e-1e7a-4c1f-8078-07abdca0bc10.json",
+    "sha256": "271d6be4feeeafd186ee4aa9741caaafee35b9e13254127e1c5b24236398eec7"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\runs\\94773771-02d8-4125-9f82-8d2c18c4190e.json",
+    "sha256": "ef0d76ced2374b4979a87fbf81067a4f3b0661f39b0c6779219f7e4581dae38d"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\runs\\a034c9e2-6e6c-49e8-ac30-e38122969f3e.json",
+    "sha256": "a1a33af3e56e2ea1e10be74c354ab5bec37822a2218d85ab207931dda2618ddd"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\staging\\5501f3d2-d34d-4d5e-87f7-7b363a2b04ae\\input.json",
+    "sha256": "2176b3d197cb5580f8fcdd61c9c9b027eaa6d9944e1b10ff8534df0cc40290b5"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\staging\\5501f3d2-d34d-4d5e-87f7-7b363a2b04ae\\Original.ino",
+    "sha256": "22897da95b428cd8c177ca4cdb60bd8d558b047c56fbdafbf3dd1ffb0095ffdb"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\staging\\5501f3d2-d34d-4d5e-87f7-7b363a2b04ae\\result.json",
+    "sha256": "ad4098f6ccf15504486be3bec981e5eff301f307f51233f6afef54e96da46083"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\staging\\5501f3d2-d34d-4d5e-87f7-7b363a2b04ae\\Sketch.ino",
+    "sha256": "010d33c1d643b16caabab6f54b28e3e5693a35bb986faccdae0e4b8b2f68dd59"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\staging\\5501f3d2-d34d-4d5e-87f7-7b363a2b04ae\\working-copy.json",
+    "sha256": "7705eb3171c8c63884627e8bbcdc9f1366a7cb1774781cc413a70d4268c5e01f"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\5501f3d2-d34d-4d5e-87f7-7b363a2b04ae\\keep.txt",
+    "sha256": "a85f35f60b4b56f348b9e18ba2f947fca12c200e2cec7515b2da47300c71c421"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\61a0535e-1e7a-4c1f-8078-07abdca0bc10\\input.json",
+    "sha256": "d69f2a47064b809f2f9155aafccb1ac803869f9d5cdeb988559b8b08b0c4fb65"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\61a0535e-1e7a-4c1f-8078-07abdca0bc10\\Original.ino",
+    "sha256": "22897da95b428cd8c177ca4cdb60bd8d558b047c56fbdafbf3dd1ffb0095ffdb"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\61a0535e-1e7a-4c1f-8078-07abdca0bc10\\result.json",
+    "sha256": "ca82b0ee64fb9bc1cb4c322dc44a1ad47a8c81e8c30355839c521ed860a69597"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\61a0535e-1e7a-4c1f-8078-07abdca0bc10\\Sketch.ino",
+    "sha256": "8b67de3860b79e0e01f33893d031e99687def5b9e853d66391a179dcc85227c6"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\61a0535e-1e7a-4c1f-8078-07abdca0bc10\\working-copy.json",
+    "sha256": "7644452fa80c36d2bbf8a3718cb3bd3541a7402939738b565488ff3c89df31c2"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\94773771-02d8-4125-9f82-8d2c18c4190e\\input.json",
+    "sha256": "1dc35af21a0237bff8cdcaf6f7050e9c00be6998e00fc79615730b88817e90bd"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\94773771-02d8-4125-9f82-8d2c18c4190e\\Original.ino",
+    "sha256": "8b67de3860b79e0e01f33893d031e99687def5b9e853d66391a179dcc85227c6"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\94773771-02d8-4125-9f82-8d2c18c4190e\\result.json",
+    "sha256": "4a54b732e3b64235e882b234d7ca4b0f237505f80d38866960dfe8440a9c3e49"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\94773771-02d8-4125-9f82-8d2c18c4190e\\Sketch.ino",
+    "sha256": "409b6c6d296614856d196e1ca0c45679c0c47db2643b7870d6713e61b290890b"
+  },
+  {
+    "path": "guest\\agent-project\\project\\.hazlomexa\\artifacts\\94773771-02d8-4125-9f82-8d2c18c4190e\\working-copy.json",
+    "sha256": "5dbeb0901bf1855809aebdeb77b0745f38c26d1544d58d32bec0d939593a45d6"
+  }
+]

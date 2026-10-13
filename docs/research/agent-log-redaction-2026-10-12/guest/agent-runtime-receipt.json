@@ -1,0 +1,7 @@
+﻿{
+    "authenticated_health":  true,
+    "pass":  true,
+    "hardware_mutations":  false,
+    "model_inference":  false,
+    "owned_agent_root_stopped":  true
+}

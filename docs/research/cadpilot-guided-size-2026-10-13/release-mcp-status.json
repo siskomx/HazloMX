@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "pre_post_source_hashes": {
+    "apps/desktop/src-tauri/src/host_tools.rs": "ded9f190d0d4b4dd7e25af805ab35447c79209ced4758143abc38a739d30d358",
+    "target/check-guided-box-mcp.cmd": "c6b092575b00f4f4519df0a3b3f676a8f82b18da5b8826afcd77b0d767ed2df2"
+  },
+  "scope": "actual rebuilt helper measured CADPilot MCP/native follow-up; not signed-in or native UI interaction"
+}

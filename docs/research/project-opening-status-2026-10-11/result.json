@@ -1,0 +1,14 @@
+{
+  "regression_failed_before_fix": true,
+  "frontend_fixture_pass": true,
+  "frontend_build_pass": true,
+  "package_build_pass": true,
+  "installer_lifecycle_pass": true,
+  "sha256": "4fede5cb05b32ac8eb8a72e0627345b06baa56dccb6e2b3502d17f68b495908e",
+  "checks": [
+    "Opening failure preserves completed fixture results",
+    "Cancelled picker preserves current project opening result",
+    "Changing project clears old opening result"
+  ],
+  "scope": "Frontend project-state fix and host installer lifecycle. Prior clean-guest CAD/restart evidence identifies the previous installer revision. Remaining second-environment failure/cancellation cases are still pending."
+}

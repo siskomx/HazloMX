@@ -1,0 +1,8 @@
+﻿{
+    "installer_sha256":  "b4bce98f0ff0424f2851f2f380b6d22b02de9d345524e59ee4b5664a27febff6",
+    "pass":  false,
+    "os":  "Microsoft Windows NT 10.0.26100.0",
+    "error":  "Installed binary identity mismatch: hazlomexa.exe",
+    "stage":  "failed",
+    "user":  "WDAGUtilityAccount"
+}

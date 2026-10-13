@@ -1,0 +1,16 @@
+{
+  "version": "0.13.0",
+  "commit": "6bbe3e4f890ba1d37c0e5d5f38ccd03d90958c9e",
+  "asset_url": "https://github.com/mixelpixx/Konnect/releases/download/v0.13.0/konnect-v0.13.0-x86_64-pc-windows-msvc.zip",
+  "asset_bytes": 13354938,
+  "asset_sha256": "9099ad41becbfdbd00263af827a9ebab10d5732a6e42e8dfcff9a1a07dc1f089",
+  "source_url": "https://codeload.github.com/mixelpixx/Konnect/zip/6bbe3e4f890ba1d37c0e5d5f38ccd03d90958c9e",
+  "source_bytes": 4072825,
+  "source_sha256": "a848a8ebeb601bfd8e52d72ddd60ba40122a802bb220a1770dcf91fd3230c20b",
+  "runtime_files": {
+    "konnect.exe": {
+      "bytes": 35495424,
+      "sha256": "09969ec5f05600039e206acedb0b6b785528f1bced2dbe2c7f426483013e4f2c"
+    }
+  }
+}

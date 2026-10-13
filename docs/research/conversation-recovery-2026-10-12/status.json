@@ -1,0 +1,14 @@
+{
+  "source_version": "0.1.0",
+  "local_transcript_recovery": true,
+  "folder_project_and_provider_scoped": true,
+  "fresh_context_without_approval_or_question_restore": true,
+  "provider_reply_scope": true,
+  "byte_limit": 8192,
+  "message_limit": 128,
+  "browser_workflows": 9,
+  "desktop_readiness_tests": 1,
+  "regular_tests": 110,
+  "native_signed_in_recovery": false,
+  "updated_installed_acceptance": false
+}

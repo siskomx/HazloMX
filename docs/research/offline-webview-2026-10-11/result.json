@@ -1,0 +1,12 @@
+{
+  "installed": false,
+  "webview_before": [],
+  "pass": true,
+  "installer_exit": 2,
+  "os": "Microsoft Windows NT 10.0.26100.0",
+  "registration_present": false,
+  "stage": "finished",
+  "user": "WDAGUtilityAccount",
+  "installer_sha256": "16ca459b27b3fb3d8adae3ae9c297d6da008dfb4f732ddc38ddf43bc3c573cfd",
+  "networking": "Disable"
+}
