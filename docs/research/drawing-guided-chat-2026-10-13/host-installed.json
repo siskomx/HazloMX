@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "installer_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "installed_app_sha256": "f46d60bea1f662862e70f4e27202af895571277c29f0cfa630f45a1c84a871c2",
+  "installed_helper_sha256": "973184f5146715f01f1bb1b818271c76b8d12fe2d7b8f8a4e7580122fa6a2ea3",
+  "helper_matches_build": true,
+  "checks": [
+    "installation registered only for current user",
+    "same-version package update succeeds",
+    "installed connector protocol/catalog check passes",
+    "konnect native installed-connector jobs pass",
+    "drawing native installed-connector jobs pass",
+    "installed application remains running after startup",
+    "uninstallation removes application and registration",
+    "app-data marker retained; external project files preserved byte-for-byte"
+  ],
+  "startup_hidden": true,
+  "native_ui_automation": false,
+  "signed_in_agents": false,
+  "ordinary_nonadministrator_account": false,
+  "unelevated_admin_account": true,
+  "second_windows_environment": false,
+  "tool_catalog_hosted_by_current_harness": 17,
+  "native_workflows": {
+    "konnect": {
+      "pass": true,
+      "completed_jobs": 4,
+      "schematic_jobs": 2,
+      "pcb_jobs": 2,
+      "pcb_units": [
+        "in",
+        "mils"
+      ],
+      "konnect_version": "0.13.0",
+      "kicad_version": "10.0.7",
+      "recovery_verified": true,
+      "sources_and_prior_results_preserved": true,
+      "approval_driver": "shared_backend_test",
+      "native_desktop_ui": false,
+      "model_inference": false,
+      "hardware_mutations": false
+    },
+    "drawing": {
+      "pass": true,
+      "completed_jobs": 4,
+      "recovery_verified": true,
+      "approval_driver": "shared_backend_test",
+      "native_desktop_ui": false,
+      "model_inference": false
+    }
+  },
+  "native_completed_jobs": 8,
+  "captured_native_inputs_unchanged": true,
+  "receipt_collector_recovery": "Resolved both the owned evidence path and its junction-bearing parent; completed lifecycle was not rerun for receipt recovery.",
+  "preceding_lifecycle_receipt_collector_failed": true
+}
