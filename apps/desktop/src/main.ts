@@ -2,7 +2,7 @@ import { invoke, Channel } from "@tauri-apps/api/core";
 import "./style.css";
 
 import type { Dimensions, Phase, Snapshot, Job, Inference, DesktopSnapshot, DrawingInput, KicadInput, CheckSummary, SliceInput, CadpilotInput, CadpilotRequest, DiscoveredSchematic, BridgeConfig, ChatView, CodexLoginView, KonnectInput, KonnectPcbInput, DiscoveredPcb, DiscoveredDrawing } from "./contracts";
-import { units, pcbFactors, convertDimensions, dimensionText, conversationPrompt, savedConversation, agentPrompt, solidProjection, guidedBlink, guidedBox, guidedPcb, guidedSchematic, schematicKind, type Unit, type Turn } from "./design";
+import { units, pcbFactors, convertDimensions, dimensionText, conversationPrompt, savedConversation, agentPrompt, solidProjection, guidedBlink, guidedBox, guidedPcb, guidedDrawing, guidedSchematic, schematicKind, type Unit, type Turn } from "./design";
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <header><span class="brand-mark" aria-hidden="true">⬡</span><div><h1>Hazlo Mexa</h1><p>De una idea a un archivo que puedes editar.</p></div><span class="badge">CAD y Arduino · v0.1</span></header>
@@ -104,6 +104,7 @@ let drawingSource:DiscoveredDrawing|undefined;
 let pcbUnit="mm";
 let pcbQuestion:ReturnType<typeof guidedPcb>["awaiting"];
 let drawingCircleUnit:Unit="mm";
+let drawingQuestion:ReturnType<typeof guidedDrawing>["awaiting"];
 let bridgeConfig: BridgeConfig | undefined;
 let assistantProvider="guided";
 let chatChannel:Channel<ChatView>|undefined;
@@ -715,7 +716,7 @@ function applySnapshot(next: DesktopSnapshot) {
     bridgeConfig=undefined;
     element("agent-tools-config").hidden=true;
     element("claude-tools-config").textContent="";element("codex-tools-config").textContent="";
-    drawingSource=undefined;element<HTMLSelectElement>("drawing-unit").value="";
+    drawingSource=undefined;drawingQuestion=undefined;element<HTMLSelectElement>("drawing-unit").value="";
     pcb=undefined;pcbQuestion=undefined;element<HTMLSelectElement>("pcb-component").replaceChildren(new Option("Primero abre una PCB",""));element("pcb-discovery").textContent="";for(const id of ["pcb-x","pcb-y"])element<HTMLInputElement>(id).value="";
     schematic=undefined;
     element<HTMLSelectElement>("schematic-component").replaceChildren(new Option("Primero abre un esquema", ""));
@@ -786,7 +787,7 @@ function chatContext(): Record<string,unknown> {
   return {project_id:project ?? null,workflow:selectedWorkflow,draft_fields:draft,drawing_source:selectedWorkflow==="drawing" && drawingSource && drawingSource.project_id===project ? {selection:drawingSource.id,sha256:drawingSource.inspection.source_sha256} : undefined,cadpilot_source:cad,schematic_source:sheet,pcb_source:board,sketch_source:sketch,
     current_job:job && job.project_id===project ? {id:job.input.job_id,phase:job.phase} : null,source_is_untrusted_data:true};
 }
-element("assistant-provider").addEventListener("change",()=>{pilotQuestion=undefined;pcbQuestion=undefined;assistantProvider=element<HTMLSelectElement>("assistant-provider").value;turns=[];answeredChat=state.chat?.id;newChatSession=false;renderedConversation="";render();});
+element("assistant-provider").addEventListener("change",()=>{pilotQuestion=undefined;pcbQuestion=undefined;drawingQuestion=undefined;assistantProvider=element<HTMLSelectElement>("assistant-provider").value;turns=[];answeredChat=state.chat?.id;newChatSession=false;renderedConversation="";render();});
 element("select-claude").addEventListener("click",()=>void action(async()=>{applySnapshot(await invoke("select_claude"));}));
 
 element("select-codex").addEventListener("click",()=>void action(async()=>{projectRevision++;codexLoginRevision++;applySnapshot(await invoke("select_codex"));}));
@@ -828,7 +829,7 @@ for (const [id, create] of [["create-project", true], ["open-project", false]] a
 element("select-freecad").addEventListener("click", () => void action(async () => { applySnapshot(await invoke("select_freecad")); }));
 element("select-arduino").addEventListener("click", () => void action(async () => { applySnapshot(await invoke("select_arduino")); }));
 element("connect-agent").addEventListener("click", () => void action(async () => { applySnapshot(await invoke("connect_agent")); }));
-element("select-cadcraft").addEventListener("click", () => void action(async () => { drawingSource=undefined;applySnapshot(await invoke("select_cadcraft")); }));
+element("select-cadcraft").addEventListener("click", () => void action(async () => { drawingSource=undefined;drawingQuestion=undefined;applySnapshot(await invoke("select_cadcraft")); }));
 element("select-kicad").addEventListener("click", () => void action(async () => { applySnapshot(await invoke("select_kicad")); }));
 element("select-orca").addEventListener("click", () => void action(async () => { applySnapshot(await invoke("select_orca")); }));
 element("select-pilot-freecad").addEventListener("click",()=>void action(async()=>{applySnapshot(await invoke("select_freecad"));}));
@@ -940,7 +941,7 @@ element("drawing-circle-unit").addEventListener("change",()=>{
 });
 element("discover-drawing").addEventListener("click",()=>void action(async()=>{
   const revision=projectRevision;
-  drawingSource=undefined;
+  drawingSource=undefined;drawingQuestion=undefined;
   for(const id of ["drawing-x","drawing-y","drawing-diameter"])element<HTMLInputElement>(id).value="";
   element<HTMLInputElement>("drawing-add-circle").checked=false;
   element<HTMLSelectElement>("drawing-unit").value="";
@@ -969,7 +970,7 @@ element("select-agent-sketch").addEventListener("click", () => void action(async
 }));
 element("workflow").addEventListener("change", () => {
   pilotQuestion=undefined;
-  pcbQuestion=undefined;
+  pcbQuestion=undefined;drawingQuestion=undefined;
   selectedWorkflow = element<HTMLSelectElement>("workflow").value as typeof selectedWorkflow;
   if(assistantProvider === "guided"){turns = []; resetInference();}
   dirty = false; renderedConversation = "";
@@ -983,7 +984,7 @@ element("unit").addEventListener("change", () => {
 });
 element("new-conversation").addEventListener("click", () => {
   pilotQuestion=undefined;
-  pcbQuestion=undefined;
+  pcbQuestion=undefined;drawingQuestion=undefined;
   newChatSession=true;answeredChat=state.chat?.id;
   turns = []; resetInference(); element<HTMLTextAreaElement>("prompt").value = ""; render();
 });
@@ -1062,7 +1063,14 @@ element("inference-form").addEventListener("submit", event => {
     }
     if (selectedWorkflow === "drawing") {
       if (new TextEncoder().encode(JSON.stringify(nextTurns)).length > 7168) throw new Error("La conversación alcanzó el límite. Empieza una conversación nueva.");
-      turns = [...nextTurns, {role:"assistant",content:"Reunamos el archivo original, el formato que necesitas y sus unidades. Para añadir un círculo, necesitamos su ancho completo (diámetro) y dónde irá su centro. Puedes dar esas medidas en milímetros o pulgadas. Si todavía no las sabes, inspeccionemos primero el dibujo. Selecciona el original; confirmarás la operación antes de crear la copia."}];
+      const locked=state.job?.busy || state.job?.snapshot.phase==="awaiting_approval";
+      const guided:ReturnType<typeof guidedDrawing>=locked ? {reply:"Cancela o termina la propuesta actual antes de cambiar el círculo."} : drawingSource && drawingSource.project_id===state.project?.[0] ? guidedDrawing(content,drawingQuestion) : {reply:"Primero pulsa Abrir dibujo y medir primero. Reuniremos su ancho completo (diámetro) y el centro después de inspeccionar el original; no hace falta conocer sus medidas de antemano."};
+      drawingQuestion=guided.awaiting;
+      if(guided.field && guided.value_mm!==undefined){
+        element<HTMLInputElement>(`drawing-${guided.field}`).value=String(guided.value_mm/units[drawingCircleUnit].factor);
+        element<HTMLInputElement>("drawing-add-circle").checked=true;dirty=true;
+      }
+      turns = [...nextTurns, {role:"assistant",content:guided.reply}];
       element<HTMLTextAreaElement>("prompt").value = "";
       return;
     }

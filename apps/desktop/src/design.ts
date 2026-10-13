@@ -9,6 +9,22 @@ export const units = {
 } as const;
 export type Unit = keyof typeof units;
 export type Turn = { role: "user" | "assistant"; content: string };
+// shortcut: gather one circle measurement per turn; connected agents handle broader drawing intent.
+export function guidedDrawing(content:string, pending?:"diameter"|"x"|"y"): {reply:string;awaiting?:"diameter"|"x"|"y";field?:"diameter"|"x"|"y";value_mm?:number} {
+  const text=content.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+  if(/^(?:cancel(?:a|ar)?|olvida(?:lo|la)?|no (?:quiero|anadas|agregues|hagas)|(?:i )?(?:do not|don't|don’t) (?:add|want))\b/.test(text))return {reply:"Conversación del círculo cancelada. No cambié las medidas del borrador."};
+  const direct=text.match(/^(?:diametro|diameter|ancho completo|full width|centro horizontal|horizontal center|centro vertical|vertical center)\s*(?:a|de|en|is|at|to)?\s+(.+)$/);
+  const field=direct ? /^(?:diametro|diameter|ancho|full)/.test(text) ? "diameter" : /^(?:centro horizontal|horizontal)/.test(text) ? "x" : "y" : pending;
+  const questions={diameter:"¿Qué ancho completo (diámetro) quieres para el círculo? Confirma una medida y su unidad, como «2 cm» o «1 pulgada».",x:"¿A qué distancia horizontal del origen irá el centro? Confirma una medida y su unidad; un valor negativo queda a la izquierda. Si no conoces el origen, inspeccionemos el dibujo primero.",y:"¿A qué distancia vertical del origen irá el centro? Confirma una medida y su unidad; un valor negativo queda debajo del origen. No elegiré la posición por ti."};
+  if(!field)return /\b(?:circulo|circle)\b/.test(text) ? {reply:questions.diameter,awaiting:"diameter"} : {reply:"Reunamos el archivo original, el formato y sus unidades. Para añadir un círculo, confirmaremos su ancho completo (diámetro) y el centro desde el origen. Si no conoces esas medidas, inspeccionemos primero el dibujo."};
+  const measure=(direct?.[1] ?? text).match(/^([+-]?\d+(?:[.,]\d+)?)\s*(mm|milimetros?|millimeters?|cm|centimetros?|centimeters?|m|metros?|meters?|in|inch(?:es)?|pulgadas?|ft|feet|foot|pies?|pie)$/);
+  if(!measure)return {reply:questions[field],awaiting:field};
+  const spelling=measure[2];
+  const unit:Unit=/^(mm|mili|milli)/.test(spelling) ? "mm" : /^(cm|centi)/.test(spelling) ? "cm" : /^m/.test(spelling) ? "m" : /^(in|pulg)/.test(spelling) ? "in" : "ft";
+  const value_mm=Number(measure[1].replace(",","."))*units[unit].factor;
+  if(!Number.isFinite(value_mm) || (field==="diameter" ? value_mm<=0 : false))return {reply:"Confirma una medida finita con su unidad y un diámetro positivo. El borrador no cambió.",awaiting:field};
+  return {field,value_mm,awaiting:field==="diameter" ? "x" : field==="x" ? "y" : undefined,reply:`Anoté ${field==="diameter" ? "el ancho completo" : field==="x" ? "la posición horizontal" : "la posición vertical"}: ${measure[1]} ${spelling}. ${field==="diameter" ? questions.x : field==="x" ? questions.y : "Revisa las tres medidas y prepara la propuesta antes de aprobar. Todavía no se modificó ningún archivo."}`};
+}
 export const pcbFactors:Record<string,number> = {mm:units.mm.factor,in:units.in.factor,mils:units.in.factor/1000};
 type PcbDirection = "right" | "left" | "up" | "down";
 // shortcut: one planar move from the inspected position; connected agents handle broader placement intent.

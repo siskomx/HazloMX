@@ -14,7 +14,16 @@ for(const command of ["discover_drawing","prepare_selected_drawing","read_cadpil
 }
 const source = await readFile(path.join(root, "src/design.ts"), "utf8");
 const { code: js } = await transformWithOxc(source, "design.ts");
-const { convertDimensions, units, conversationPrompt, savedConversation, agentPrompt, solidProjection, guidedBlink, guidedBox, guidedPcb, guidedSchematic, schematicKind } = await import(`data:text/javascript;base64,${Buffer.from(js).toString("base64")}`);
+const { convertDimensions, units, conversationPrompt, savedConversation, agentPrompt, solidProjection, guidedBlink, guidedBox, guidedPcb, guidedDrawing, guidedSchematic, schematicKind } = await import(`data:text/javascript;base64,${Buffer.from(js).toString("base64")}`);
+assert.equal(guidedDrawing("añade un círculo").awaiting,"diameter");
+assert.equal(guidedDrawing("add a circle").value_mm,undefined);
+for(const [request,pending,field,value,next] of [["1 pulgada","diameter","diameter",25.4,"x"],["2 cm","x","x",20,"y"],["-0,5 inches","y","y",-12.7,undefined],["diámetro de 2 cm",undefined,"diameter",20,"x"],["horizontal center at -2 mm",undefined,"x",-2,"y"],["centro vertical en 0 mm",undefined,"y",0,undefined]]){
+  const result=guidedDrawing(request,pending);assert.equal(result.field,field,request);assert.equal(result.value_mm,value,request);assert.equal(result.awaiting,next,request);
+}
+for(const request of ["1","1/2 pulgadas","1e3 mm","0 mm","-1 cm","2 mm y 3 mm","hazlo grande","no quiero añadir un círculo","don't add a circle"]){
+  assert.equal(guidedDrawing(request,"diameter").value_mm,undefined,request);
+}
+assert.equal(guidedDrawing("2 mm").field,undefined,"Unknown intent must not assign a diameter");
 const pcbPosition={x_mm:200.8,y_mm:156.6};
 for(const [request,x,y] of [["muévelo 2 mm a la derecha",202.8,156.6],["move it 0.1 inches left",198.26,156.6],["mueve 100 mils hacia arriba",200.8,154.06],["muévela 0,2 cm abajo",200.8,158.6]]){
   const move=guidedPcb(request,pcbPosition);assert.equal(move.x_mm,x,request);assert.equal(move.y_mm,y,request);assert.equal(move.awaiting,undefined);
@@ -597,6 +606,16 @@ try {
   await page.locator("#drawing-x").fill("50.8");
   await page.locator("#drawing-y").fill("0");
   await page.locator("#drawing-diameter").fill("25.4");
+  for(const [message,field,value] of [["añade un círculo",null,null],["1 pulgada","diameter","25.4"],["2 pulgadas","x","50.8"],["0 mm","y","0"]]){
+    await page.locator("#prompt").fill(message);await page.locator("#infer").click();
+    if(field)assert.equal(await page.locator(`#drawing-${field}`).inputValue(),value);
+    assert.equal(await page.evaluate(()=>window.requests.some(r=>r.command==="prepare_selected_drawing")),false,"Chat only updates the draft");
+  }
+  await page.locator("#prompt").fill("diámetro de 0 mm");await page.locator("#infer").click();
+  assert.equal(await page.locator("#drawing-diameter").inputValue(),"25.4");
+  await page.locator("#new-conversation").click();
+  await page.locator("#prompt").fill("5 cm");await page.locator("#infer").click();
+  assert.equal(await page.locator("#drawing-diameter").inputValue(),"25.4","A new conversation forgets the pending measurement");
   await page.locator("#drawing-circle-unit").selectOption("in");
   assert.equal(await page.locator("#drawing-x").inputValue(),"2");
   assert.equal(await page.locator("#drawing-y").inputValue(),"0");
