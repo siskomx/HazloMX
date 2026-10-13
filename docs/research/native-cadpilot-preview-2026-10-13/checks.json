@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "package_sha256": "07ac4126473b67e3d83fe9a1afc3ac08d306097b8a2ab6ff15582f7d987c30b5",
+  "installed_app_sha256": "d3034b8621f643f7a8297cd91e8abd7c900d5697a990ba0c9fa778dbda20ea3c",
+  "installed_helper_sha256": "23e1cd3b93f8f2a3c435eebcd3baa227440e1254ac9d24f04fd2e4ad5d25b80d",
+  "preserved_project_file_count": 177,
+  "exact_build_match_after_tauri_nsis_marker": true,
+  "captured_tracked_source_entries_unchanged": 6509,
+  "observed": [
+    "measurement-first native source/addon pickers and catalog",
+    "explicit approval of native inspection in previous tested package",
+    "measured-box selection without typing identifier",
+    "relative-height clarification and inch answer in previous tested package",
+    "cancelled old-format unapproved edit",
+    "project/history/conversation recovery after package update",
+    "fresh explicit inch height request in rebuilt package",
+    "corrected 12.7 mm to 25.4 mm approval preview",
+    "explicit native edit approval and successful publication"
+  ],
+  "inspection_package_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "edit_package_sha256": "07ac4126473b67e3d83fe9a1afc3ac08d306097b8a2ab6ff15582f7d987c30b5",
+  "freecad_version": "1.1.4",
+  "cadpilot_version": "0.7.7",
+  "before_mm": {
+    "length": 50.8,
+    "width": 25.4,
+    "height": 12.7
+  },
+  "after_mm": {
+    "length": 50.8,
+    "width": 25.4,
+    "height": 25.4
+  },
+  "saved_fcstd_dimensions_match": true,
+  "native_report_output_hashes_match": true,
+  "source_original_and_inspection_original_hash_match": true,
+  "prior_artifact_files_unchanged": 96,
+  "builder_profile_path_matches_in_two_installed_binaries": 0,
+  "model_inference": false,
+  "unverified": [
+    "new-package guest lifecycle and full integration matrix",
+    "new-package uninstall",
+    "CADPilot add-box/cylinder native UI",
+    "ordinary GUI-saved document fidelity",
+    "live unsaved editing",
+    "signed-in agent conversation",
+    "other five workflow choices through native UI"
+  ]
+}

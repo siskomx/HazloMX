@@ -736,7 +736,7 @@ try {
   await page.locator("#cadpilot-height").fill("0.3");
   await page.locator("#prepare-cadpilot").click();
   assert.match(await page.locator("#operation-preview").innerText(),/Editar caja · Target/);
-  assert.match(await page.locator("#operation-preview").innerText(),/0.5 in → 12.7 mm/);
+  assert.match(await page.locator("#operation-preview").innerText(),/largo: medida nativa anterior no disponible → 12.7 mm \(0.5 in\)/);
   assert.equal(await page.locator("#cadpilot-height").isDisabled(),true);
   const pilotRequest=await page.evaluate(()=>window.requests.filter(r=>r.command==="prepare_cadpilot").at(-1).request);
   assert.deepEqual(pilotRequest,{operation:"edit_box",object:"Target",units:"in",parameters:{length:0.5,width:1,height:0.3}});
@@ -805,6 +805,9 @@ try {
   await page.locator("#prepare-cadpilot").click();
   assert.match(await page.locator("#code-preview").innerText(),/largo × ancho × alto: 10 × 20 × 30 mm/);
   assert.match(await page.locator("#code-preview").innerText(),/extensión en el documento: 21.2132 × 21.2132 × 30 mm/);
+  assert.match(await page.locator("#operation-preview").innerText(),/largo: 10 mm → 12.7 mm \(0.5 in\)/);
+  assert.match(await page.locator("#operation-preview").innerText(),/alto: 30 mm → 38.1 mm \(1.5 in\)/);
+  assert.doesNotMatch(await page.locator("#operation-preview").innerText(),/largo: 21.2132/);
   assert.equal(await page.locator("#cadpilot-component").isDisabled(),true);
   const followup=await page.evaluate(()=>window.requests.filter(r=>r.command==="prepare_cadpilot_followup").at(-1));
   assert.equal(followup.projectId,"other-project");assert.equal(followup.resultSha256,"e".repeat(64));
@@ -838,7 +841,7 @@ try {
   const cylinderRequest=await page.evaluate(()=>window.requests.filter(r=>r.command==="prepare_cadpilot").at(-1).request);
   assert.deepEqual(cylinderRequest,{operation:"add_cylinder",object:"Cylinder",units:"in",parameters:{radius:1,height:1,x:1,y:0,z:0}});
   await page.waitForFunction(()=>document.querySelector("#operation-preview").textContent.includes("Añadir cilindro"));
-  assert.match(await page.locator("#operation-preview").innerText(),/diámetro: 2 in → 50.8 mm/);
+  assert.match(await page.locator("#operation-preview").innerText(),/diámetro: 2 in \(50.8 mm\)/);
   assert.equal(await page.locator("#cadpilot-diameter").isDisabled(),true);
   await page.screenshot({path:path.join(evidence,"cadpilot-cylinder-inputs.png"),fullPage:true});
   await page.locator("#cancel").click();

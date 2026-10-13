@@ -302,7 +302,15 @@ const pilotOperations:Record<CadpilotRequest["operation"],string>={inspect:"Medi
 function pilotDescription(input:CadpilotInput):string {
   const r=input.request;
   const labels:Record<string,string>={length:"largo",width:"ancho",height:"alto",radius:"diámetro",x:"horizontal (X)",y:"profundidad (Y)",z:"elevación (Z)"};
-  const parameters=Object.entries(r.parameters).map(([key,value])=>{const measurement=key==="radius" ? value*2 : value;return `${labels[key] ?? key}: ${measurement} ${r.units} → ${Number((measurement*units[r.units].factor).toPrecision(8))} mm`;}).join(" · ");
+  const parameters=Object.entries(r.parameters).map(([key,value])=>{
+    const measurement=key==="radius" ? value*2 : value;
+    const mm=Number((measurement*units[r.units].factor).toPrecision(8));
+    if(r.operation==="edit_box"){
+      const previous=input.preview.measurements[r.object]?.dimensions_mm?.[key as keyof Dimensions];
+      return `${labels[key] ?? key}: ${previous===undefined ? "medida nativa anterior no disponible" : `${previous} mm`} → ${mm} mm${r.units==="mm" ? "" : ` (${measurement} ${r.units})`}`;
+    }
+    return `${labels[key] ?? key}: ${measurement} ${r.units}${r.units==="mm" ? "" : ` (${mm} mm)`}`;
+  }).join(" · ");
   const count=Object.keys(input.preview.catalog).length;
   return `${input.source_name} · ${pilotOperations[r.operation]}${r.operation==="inspect" ? "" : ` · ${r.object}`} · ${count} ${count===1 ? "objeto medido" : "objetos medidos"}${parameters ? ` · ${parameters}` : ""}`;
 }
