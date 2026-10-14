@@ -1,0 +1,19 @@
+{
+  "runtime_sha256": "09969ec5f05600039e206acedb0b6b785528f1bced2dbe2c7f426483013e4f2c",
+  "server": {
+    "name": "konnect",
+    "version": "0.13.0"
+  },
+  "toolset_loaded": true,
+  "tool": {
+    "name": "get_editor_state",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    }
+  },
+  "editor_calls": 0,
+  "native_ui_actions": 0
+}

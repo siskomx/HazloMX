@@ -54,7 +54,7 @@ try {
       if (command === "select_codex" || command === "select_claude" || command === "select_freecad" || command === "select_cadcraft" || command === "select_arduino" || command === "connect_agent" || command === "select_kicad" || command === "select_konnect" || command === "select_orca") return copy();
       if (command === "discover_schematic") return { id: "selected-sheet", project_id: snapshot.project[0], name: "Circuito.kicad_sch", sha256: "a".repeat(64), components: [] };
       if (command === "discover_pcb") return { id: "selected-board", project_id: window.foreignSource ? "foreign-project" : snapshot.project[0], name: "Placa.kicad_pcb", sha256: "b".repeat(64), components: [] };
-      if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { components_sha256: "d".repeat(64), components: [] } }; }
+      if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { document_sha256: "2".repeat(64), components_sha256: "d".repeat(64), components: [] } }; }
       if (command === "discover_drawing") return { id: "selected-drawing", project_id: snapshot.project[0], inspection: { source_name: "Plano.dxf", source_sha256: "c".repeat(64) } };
       if (command === "discover_cad_document") return { id: "selected-cad-document", project_id: window.foreignCad ? "foreign-project" : snapshot.project[0], inspection: { source_name: "Pieza.FCStd", source_sha256: "1".repeat(64), preview: {catalog:{Target:"Part::Box"},measurements:{Target:{dimensions_mm:{length:10,width:20,height:30}}}} } };
       if (command === "discover_slice") return { id: "selected-slice", project_id: window.foreignSlice ? "foreign-project" : snapshot.project[0], preview: { source_name: "Pieza.stl", source_sha256: "e".repeat(64), selection_sha256: "f".repeat(64), triangles: 12, bounds_file_coordinates: [[0,0,0],[10,10,10]], declared_bed: null, bed_profiles: [] } };
@@ -251,6 +251,7 @@ try {
   assert.equal(nativeContext.desktop_context.live_document_connection, true);
   assert.equal(nativeContext.desktop_context.live_mutations_allowed, false);
   assert.equal(nativeContext.desktop_context.live_pcb_source.selection, "live-board");
+  assert.equal(nativeContext.desktop_context.live_pcb_source.document_sha256, "2".repeat(64));
   assert.equal(nativeContext.desktop_context.pcb_source, undefined);
   assert.equal(nativeContext.desktop_context.current_job, null);
   assert(!JSON.stringify(nativeContext).includes("fixture-api-secret"));

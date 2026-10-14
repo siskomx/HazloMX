@@ -266,7 +266,7 @@ function renderConnections(disabled: boolean) {
       $<HTMLInputElement>("kicad-api-token").value = "";
       const selected = await invoke<DiscoveredLivePcb>("discover_live_pcb", { connection });
       if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto.");
-      sourceContext.live_pcb_source = { selection: selected.id, components_sha256: selected.observation.components_sha256, mutations_allowed: false };
+      sourceContext.live_pcb_source = { selection: selected.id, document_sha256: selected.observation.document_sha256, components_sha256: selected.observation.components_sha256, mutations_allowed: false };
       delete sourceContext.pcb_source; delete sourceContext.schematic_source; sourceNames.kicad = `${selected.name} · lectura nativa`;
     });
   } else {

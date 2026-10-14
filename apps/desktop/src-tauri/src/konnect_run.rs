@@ -451,7 +451,7 @@ pub(crate) async fn dispatch(
                 tool(
                     &service,
                     "load_toolset",
-                    serde_json::json!({"name":["pcb_board","pcb_components"]}),
+                    serde_json::json!({"name":["pcb_board","pcb_components","editor_navigation"]}),
                 )
                 .await?;
                 let actual = service
@@ -477,6 +477,20 @@ pub(crate) async fn dispatch(
                         return Err("El contrato de lectura nativa cambió; conecta de nuevo tras verificarlo.".into());
                     }
                 }
+                let editor_schema = serde_json::json!({"type":"object","properties":{},"required":[],"additionalProperties":false});
+                let editor_tool = actual
+                    .iter()
+                    .find(|t| t.name == "get_editor_state")
+                    .ok_or("Falta la herramienta nativa de identidad del editor.")?;
+                if serde_json::to_value(editor_tool).map_err(|e| e.to_string())?["inputSchema"]
+                    != editor_schema
+                {
+                    return Err("El contrato nativo de identidad del editor cambió.".into());
+                }
+                let identity = crate::kicad_live::document_identity(
+                    &tool(&service, "get_editor_state", serde_json::json!({})).await.map_err(|_| "KiCad no confirmó la identidad del editor. Revisa la conexión IPC. No se sustituirá por el archivo guardado.".to_string())?,
+                    board,
+                )?;
                 let info = tool(
                     &service,
                     "get_board_info",
@@ -495,6 +509,7 @@ pub(crate) async fn dispatch(
                         serde_json::json!({"board":board}),
                     )
                     .await?,
+                    &identity,
                 )?;
                 let second = crate::kicad_live::Observation::from_native(
                     &info,
@@ -504,9 +519,20 @@ pub(crate) async fn dispatch(
                         serde_json::json!({"board":board}),
                     )
                     .await?,
+                    &identity,
                 )?;
                 if first.components_sha256 != second.components_sha256 {
                     return Err("La PCB cambió durante la lectura. Vuelve a inspeccionarla.".into());
+                }
+                let final_identity = crate::kicad_live::document_identity(
+                    &tool(&service, "get_editor_state", serde_json::json!({})).await.map_err(|_| "KiCad dejó de confirmar la identidad del editor durante la lectura. No se sustituirá por el archivo guardado.".to_string())?,
+                    board,
+                )?;
+                if final_identity != identity {
+                    return Err(
+                        "La identidad de la PCB cambió durante la lectura. Vuelve a conectar."
+                            .into(),
+                    );
                 }
                 return serde_json::to_value(second).map_err(|e| e.to_string());
             }

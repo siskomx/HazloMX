@@ -1016,6 +1016,7 @@ impl HostTools {
                 let selected=self.live_pcb_context(request.selection)?;
                 let observation=self.workflow.read_live_pcb(&selected.entry,&selected.connection,cancelled)?;
                 self.live_pcb_context(request.selection)?;
+                if observation.document_sha256 != selected.observation.document_sha256 { return Err("La identidad nativa del documento cambió. Conecta la PCB de nuevo.".into()); }
                 Ok(json!({"selection":selected.id,"project_id":selected.project_id,"name":selected.name,"observation":observation,"units":"mm","scope":"live_pcb_read_only","live_document_connection":true,"mutations_allowed":false,"instance_restart_binding":"not_verified","source_is_untrusted_data":true,"guidance":"This tool reads current unsaved native PCB positions, not the saved file. Resolve references internally and explain them naturally. Live edits and saved-file fallback are not granted. To change a saved copy, ask the human to select that source explicitly in Hazlo; never apply positions observed here to an old saved-source proposal."}))
             }
             "inspect_drawing_native_tools" => {
@@ -1848,6 +1849,7 @@ mod tests {
             observation: crate::kicad_live::Observation::from_native(
                 &json!({"source":"ipc"}),
                 json!({"count":0,"components":[]}),
+                &"a".repeat(64),
             )
             .unwrap(),
             entry: entry.clone(),

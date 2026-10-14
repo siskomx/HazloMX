@@ -2,6 +2,8 @@
 
 October 13, 2026. This follows the chat-first correction and CADCraft native-command slice. An actual selected native document and fresh program readback are required; saved-copy tests do not establish the live gate.
 
+Later source update: [native document identity](kicad-editor-identity-2026-10-13.md) adds the verified Konnect editor-state schema, exact compatible PCB document matching before/after observations and an opaque document/project fingerprint. It supersedes the two-tool-only read description below. Positive native observation and every live-write/session/undo/reconciliation gate remain open. Native transaction-header compatibility findings are recorded there; no write capability is enabled.
+
 ## Evidence affecting the implementation
 
 - CADCraft 0.5.0's [control handler](https://github.com/storytold/cadcraft/blob/315751e3ec98e708bcc831dd7f80ca0433a2e3d0/crates/ui-egui/src/control.rs) dispatches commands to the active session without a conditional document/revision guard. A separate inspection followed by a command does not prove that the same document stayed active. The existing native command plans retain their saved-copy scope.
