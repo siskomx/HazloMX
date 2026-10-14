@@ -25,6 +25,7 @@ try {
       if (command === "discover_pcb") return { id: "selected-board", project_id: window.foreignSource ? "foreign-project" : snapshot.project[0], name: "Placa.kicad_pcb", sha256: "b".repeat(64), components: [] };
       if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { components_sha256: "d".repeat(64), components: [] } }; }
       if (command === "discover_drawing") return { id: "selected-drawing", project_id: snapshot.project[0], inspection: { source_name: "Plano.dxf", source_sha256: "c".repeat(64) } };
+      if (command === "discover_slice") return { id: "selected-slice", project_id: window.foreignSlice ? "foreign-project" : snapshot.project[0], preview: { source_name: "Pieza.stl", source_sha256: "e".repeat(64), selection_sha256: "f".repeat(64), triangles: 12, bounds_file_coordinates: [[0,0,0],[10,10,10]], declared_bed: null, bed_profiles: [] } };
       if (command === "select_agent_sketch") { snapshot.agent_source = { project_id: snapshot.project[0], source_name: "Sketch.ino", source: "void setup() {}" }; return copy(); }
       if (command === "select_project") { snapshot.project = window.otherFolder ? ["project-one", "C:\\owned\\other-folder"] : ["project-one", "C:\\owned\\project"]; snapshot.job = null; if (snapshot.chat) snapshot.chat.text = "PREVIOUS FOLDER RESPONSE"; return copy(); }
       if (command === "start_codex_chat" || command === "start_claude_chat") {
@@ -93,6 +94,23 @@ try {
   }
   assert.equal(await page.locator("#conversation img").count(), 0);
   assert.equal(await page.evaluate(() => window.injection), undefined);
+  for (const provider of ["codex", "claude"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("slice");
+    await page.evaluate(() => { window.foreignSlice = true; });
+    await page.getByRole("button", { name: "Seleccionar modelo y perfiles…", exact: true }).click();
+    assert.match(await page.locator("#error").innerText(), /otro proyecto/);
+    await page.evaluate(() => { window.foreignSlice = false; });
+    await page.getByRole("button", { name: "Seleccionar modelo y perfiles…", exact: true }).click();
+    await send("Quiero preparar este modelo para imprimir, pero todavía no sé su escala. Inspecciona sus perfiles antes de preguntar lo que falte.");
+    const call = await page.evaluate(() => window.calls.filter(call => call.command.startsWith("start_")).at(-1));
+    assert.equal(call.command, provider === "codex" ? "start_codex_chat" : "start_claude_chat");
+    const context = JSON.parse(call.args.prompt).desktop_context;
+    assert.deepEqual(context.slice_source, { selection: "selected-slice", selection_sha256: "f".repeat(64), units_require_confirmation: true });
+    for (const invented of ["units", "bed", "bed_temperature_c", "draft_fields"]) assert.equal(context[invented], undefined);
+    assert.equal(await page.evaluate(() => window.approvals), 0);
+    assert.match(await page.locator("#source-status").innerText(), /sin unidad declarada/);
+  }
   await page.locator("#provider").selectOption("codex");
   await page.locator("#program").selectOption("kicad");
   await page.evaluate(() => { window.foreignSource = true; });
@@ -117,6 +135,12 @@ try {
   await send("Ahora consulta el resultado antes de proponer otro cambio.");
   const followup = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt));
   assert.deepEqual(followup.desktop_context.current_job, { id: "native-job", phase: "completed" });
+  await page.locator("#program").selectOption("slice");
+  await page.getByRole("button", { name: "Seleccionar modelo y perfiles…", exact: true }).click();
+  await send("Este es otro modelo; inspecciónalo antes de preparar su primer laminado.");
+  const initialSlice = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt));
+  assert.equal(initialSlice.desktop_context.current_job, null, "An old job was treated as the selected STL's result");
+  assert.equal(initialSlice.desktop_context.slice_source.units_require_confirmation, true);
   await page.locator("#results > summary").click();
   await page.getByRole("button", { name: "Informe", exact: true }).click();
   assert.match(await page.locator("#report-text").innerText(), /<img/);

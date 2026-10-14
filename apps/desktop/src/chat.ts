@@ -1,6 +1,6 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { agentPrompt, savedConversation, type Turn } from "./design";
-import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, Job, Snapshot } from "./contracts";
+import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import "./chat.css";
 
 const programs = { freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
@@ -153,7 +153,7 @@ function render() {
   $("live-pcb-setup").hidden = program !== "kicad";
   $("document-scope").textContent = native ? "PCB conectada para lectura nativa: las posiciones se consultan en KiCad, incluso antes de guardar. No permite modificar la PCB abierta. Para editar una copia guardada, selecciónala expresamente." : "Las ediciones actuales trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
   $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${provider === "codex" ? "Codex" : "Claude Code"} · ${programs[program]} · ${native ? "lectura nativa de PCB" : "archivos guardados"}`;
-  $("source-status").textContent = sourceNames[program] ?? (program === "slice" ? "La selección inicial del modelo y perfiles para este chat sigue pendiente de integración." : "Selecciona un documento si quieres trabajar sobre uno existente.");
+  $("source-status").textContent = sourceNames[program] ?? (program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
   if (JSON.stringify(messages) !== renderedConversation) {
     renderedConversation = JSON.stringify(messages);
@@ -211,12 +211,22 @@ function renderConnections(disabled: boolean) {
       sourceContext.live_pcb_source = { selection: selected.id, components_sha256: selected.observation.components_sha256, mutations_allowed: false };
       delete sourceContext.pcb_source; delete sourceContext.schematic_source; sourceNames.kicad = `${selected.name} · lectura nativa`;
     });
-  } else connect("Elegir OrcaSlicer…", "select_orca");
+  } else {
+    connect("Elegir OrcaSlicer…", "select_orca");
+    connectionButton("Seleccionar modelo y perfiles…", disabled, async () => {
+      const selected=await invoke<DiscoveredSlice>("discover_slice");
+      if(selected.project_id!==state.project?.[0]) throw Error("El modelo pertenece a otro proyecto.");
+      sourceContext.slice_source={selection:selected.id,selection_sha256:selected.preview.selection_sha256,units_require_confirmation:true};
+      sourceContext.slice_previous_job=state.job?.snapshot.input.job_id ?? null;
+      sourceNames.slice=`${selected.preview.source_name} · STL sin unidad declarada`;
+    });
+  }
 }
 function context() {
-  const job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
+  let job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
+  if (program === "slice" && job?.input.job_id === sourceContext.slice_previous_job) job = undefined;
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
-  const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : {};
+  const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : program === "slice" ? {slice_source:sourceContext.slice_source} : {};
   return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: !native && job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: native ? "live_pcb_read_only" : "saved_files_and_verified_copies", live_document_connection: native, live_mutations_allowed: false };
 }
 async function send(content: string) {

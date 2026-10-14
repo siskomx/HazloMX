@@ -102,6 +102,34 @@ pub struct Settings {
     pub bed_area_mm: Vec<[f64; 2]>,
     pub printable_height_mm: f64,
 }
+#[derive(Debug, Clone, Serialize)]
+pub struct BedProfile {
+    pub bed: Bed,
+    pub settings: Settings,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct Discovery {
+    pub source_name: String,
+    pub source_sha256: String,
+    pub triangles: u32,
+    pub bounds_file_coordinates: [[f64; 3]; 2],
+    pub declared_bed: Option<String>,
+    pub bed_profiles: Vec<BedProfile>,
+    pub selection_sha256: String,
+}
+impl Discovery {
+    pub(crate) fn matches_capture(&self, input: &SliceInput) -> bool {
+        let raw: Vec<_> = input
+            .files
+            .iter()
+            .filter(|f| f.path == "Original.stl" || f.path.starts_with("ProfileSources/"))
+            .cloned()
+            .collect();
+        serde_json::to_vec(&raw)
+            .ok()
+            .is_some_and(|bytes| files::digest(&bytes) == self.selection_sha256)
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SliceInput {
@@ -626,6 +654,102 @@ pub(crate) fn shape_signature(
     }
     Ok(format!("{:x}", hash.finalize()))
 }
+pub fn discover(
+    profile_root: &Path,
+    model: &Path,
+    profiles: [PathBuf; 3],
+    output: &Path,
+    cancel: Arc<AtomicBool>,
+) -> Result<Discovery, String> {
+    stop(&cancel)?;
+    crate::project::valid_location(model).map_err(|e| e.to_string())?;
+    let source_name = model
+        .file_name()
+        .and_then(|v| v.to_str())
+        .filter(|s| {
+            s.len() <= 255
+                && s.to_ascii_lowercase().ends_with(".stl")
+                && !s.chars().any(char::is_control)
+        })
+        .ok_or("Selecciona un STL local válido.")?
+        .to_string();
+    let mut pins = crate::project::pin_lineage(profile_root).map_err(|e| e.to_string())?;
+    pins.extend(
+        crate::project::pin_lineage(model.parent().ok_or("Falta la carpeta del STL.")?)
+            .map_err(|e| e.to_string())?,
+    );
+    let mut file = files::open_regular(model, MODEL_LIMIT)?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).map_err(|e| e.to_string())?;
+    pins.push(file);
+    // Scale 1 reads STL coordinates only; no physical unit is selected or inferred here.
+    let raw = mesh(&bytes, Units::Mm)?.0;
+    fs::create_dir(output).map_err(|e| e.to_string())?;
+    files::write_new(&output.join("Original.stl"), &bytes)?;
+    let source_sha256 = files::digest(&bytes);
+    let mut captured = BTreeMap::from([(
+        "Original.stl".into(),
+        CapturedFile {
+            path: "Original.stl".into(),
+            sha256: source_sha256.clone(),
+            bytes: bytes.len() as u64,
+        },
+    )]);
+    let mut maps = Vec::new();
+    for (kind, path) in ["machine", "process", "filament"].into_iter().zip(profiles) {
+        let map = profile(
+            profile_root,
+            &path,
+            output,
+            &mut captured,
+            &mut pins,
+            &mut BTreeSet::new(),
+            &cancel,
+        )?;
+        if map.get("type").and_then(Value::as_str) != Some(kind) {
+            return Err("Selecciona el tipo de perfil solicitado.".into());
+        }
+        maps.push(map);
+    }
+    let mut bed_profiles = Vec::new();
+    for bed in [Bed::Cool, Bed::Textured, Bed::Smooth] {
+        if maps[2].contains_key(bed.temperature_key()) {
+            bed_profiles.push(BedProfile {
+                bed,
+                settings: settings(&maps[0], &maps[1], &maps[2], bed)?,
+            });
+        }
+    }
+    if bed_profiles.is_empty() {
+        return Err("El material no contiene una temperatura inicial para una cama compatible; revísalo en OrcaSlicer.".into());
+    }
+    let declared_bed = maps[0]
+        .get("curr_bed_type")
+        .map(|value| {
+            value
+                .as_str()
+                .filter(|s| s.len() <= 255 && !s.chars().any(char::is_control))
+                .map(str::to_string)
+                .ok_or("Tipo de cama declarado no válido.")
+        })
+        .transpose()?;
+    let files: Vec<_> = captured.into_values().collect();
+    if files.len() > 64 || files.iter().map(|f| f.bytes).sum::<u64>() > 64 * 1024 * 1024 {
+        return Err("Las fuentes seleccionadas superan el límite de captura.".into());
+    }
+    let selection_sha256 = files::digest(&serde_json::to_vec(&files).map_err(|e| e.to_string())?);
+    stop(&cancel)?;
+    Ok(Discovery {
+        source_name,
+        source_sha256,
+        triangles: raw.triangles,
+        bounds_file_coordinates: raw.bounds_mm,
+        declared_bed,
+        bed_profiles,
+        selection_sha256,
+    })
+}
+
 pub fn capture(
     profile_root: &Path,
     model: &Path,
@@ -893,6 +1017,128 @@ pub(crate) mod tests {
             path
         });
         (root, model, paths)
+    }
+    #[test]
+    fn source_discovery_does_not_choose_units_or_override_profile_settings() {
+        let (root, model, profiles) = fixture();
+        let original = fs::read(&model).unwrap();
+        let material = fs::read(&profiles[2]).unwrap();
+        let preview = discover(
+            &root.join("profiles"),
+            &model,
+            profiles.clone(),
+            &root.join("discovery"),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        assert_eq!(preview.triangles, 12);
+        assert_eq!(
+            preview.bounds_file_coordinates,
+            [[100., 100., 0.], [110., 110., 10.]]
+        );
+        let value = serde_json::to_value(&preview).unwrap();
+        assert!(value.get("units").is_none());
+        assert!(value.get("bounds_mm").is_none());
+        let material_map: Map<String, Value> = serde_json::from_slice(&material).unwrap();
+        for bed in &preview.bed_profiles {
+            assert_eq!(
+                bed.settings.bed_c,
+                number(&material_map, bed.bed.temperature_key(), true).unwrap()
+            );
+        }
+        assert!(!root.join("discovery/Machine.json").exists());
+        assert!(!root.join("discovery/Sliced.3mf").exists());
+        assert_eq!(fs::read(&model).unwrap(), original);
+        assert_eq!(fs::read(&profiles[2]).unwrap(), material);
+        let captured = capture(
+            &root.join("profiles"),
+            &model,
+            profiles.clone(),
+            &root.join("confirmed"),
+            Uuid::new_v4(),
+            Request {
+                units: Units::Mm,
+                bed: Bed::Textured,
+                bed_temperature_c: 47.,
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        assert!(preview.matches_capture(&captured));
+        assert_eq!(captured.settings.bed_c, 47.);
+        assert!(discover(
+            &root.join("profiles"),
+            &model,
+            profiles,
+            &root.join("cancelled-discovery"),
+            Arc::new(AtomicBool::new(true))
+        )
+        .is_err());
+        assert!(!root.join("cancelled-discovery").exists());
+    }
+    #[test]
+    fn discovery_binds_inherited_profiles_and_never_fills_missing_bed_values() {
+        let (root, model, profiles) = fixture();
+        let parent = profiles[2].with_file_name("Parent.json");
+        fs::copy(&profiles[2], &parent).unwrap();
+        fs::write(
+            &profiles[2],
+            br#"{"name":"Selected material","type":"filament","inherits":"Parent"}"#,
+        )
+        .unwrap();
+        let first = discover(
+            &root.join("profiles"),
+            &model,
+            profiles.clone(),
+            &root.join("before"),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        let mut map: Map<String, Value> =
+            serde_json::from_slice(&fs::read(&parent).unwrap()).unwrap();
+        map.insert(
+            "nozzle_temperature_initial_layer".into(),
+            serde_json::json!(["216"]),
+        );
+        fs::write(&parent, serde_json::to_vec(&map).unwrap()).unwrap();
+        let current = discover(
+            &root.join("profiles"),
+            &model,
+            profiles.clone(),
+            &root.join("after"),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        assert_ne!(first.selection_sha256, current.selection_sha256);
+        let captured = capture(
+            &root.join("profiles"),
+            &model,
+            profiles.clone(),
+            &root.join("confirmed-after"),
+            Uuid::new_v4(),
+            Request {
+                units: Units::Mm,
+                bed: Bed::Textured,
+                bed_temperature_c: 45.,
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        assert!(!first.matches_capture(&captured));
+        assert!(current.matches_capture(&captured));
+        for bed in [Bed::Cool, Bed::Textured, Bed::Smooth] {
+            map.remove(bed.temperature_key());
+        }
+        fs::write(&parent, serde_json::to_vec(&map).unwrap()).unwrap();
+        assert!(discover(
+            &root.join("profiles"),
+            &model,
+            profiles,
+            &root.join("missing-bed"),
+            Arc::new(AtomicBool::new(false))
+        )
+        .unwrap_err()
+        .contains("no contiene una temperatura"));
     }
     #[test]
     fn captured_profiles_units_and_sources_are_bound_to_the_proposal() {

@@ -5,7 +5,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use hazlomexa::{
         host_tools::HostTools,
         jobs::Workflow,
-        orca::{Bed, Request, Units},
         orca_run::SliceResult,
         project::{ArtifactFormat, OperationInput, Phase, Project, RunSource},
         tool_bridge::ToolBridge,
@@ -18,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Pass connector, identified OrcaSlicer, explicit Prusa profile folder, source fixtures and fresh project folder".into());
     };
     fs::create_dir(root)?;
-    for (name, units, label) in [("metric", Units::Mm, "mm"), ("imperial", Units::In, "in")] {
+    for (name, label) in [("metric", "mm"), ("imperial", "in")] {
         let source = sources.join(format!("{name}.stl"));
         let original = fs::read(&source)?;
         let selected = [
@@ -40,16 +39,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?);
         workflow.select_project(project)?;
         workflow.set_orca(cli.clone())?;
-        let proposal = workflow.propose_slice(
-            profiles.clone(),
-            source.clone(),
-            selected,
-            Request {
-                units,
-                bed: Bed::Textured,
-                bed_temperature_c: 45.,
-            },
-        )?;
+        let host = Arc::new(HostTools::new(workflow.clone()));
+        let selection =
+            host.select_slice(project_id, profiles.clone(), source.clone(), selected)?;
+        assert!(workflow.view()?.job.is_none());
+        let bridge = ToolBridge::start_project(host.clone(), helper, project_id)?;
+        let config = bridge.config()?;
+        let mut command = tokio::process::Command::new(&config.command);
+        command
+            .env_clear()
+            .envs(hazlomexa::claude::environment())
+            .envs(&config.env)
+            .creation_flags(0x08000000)
+            .kill_on_drop(true);
+        let client = ().serve(rmcp::transport::TokioChildProcess::new(command)?).await?;
+        let inspected = client
+            .call_tool(
+                CallToolRequestParams::new("inspect_selected_slice_sources").with_arguments(
+                    json!({"selection":selection.id})
+                        .as_object()
+                        .unwrap()
+                        .clone(),
+                ),
+            )
+            .await?;
+        assert_ne!(inspected.is_error, Some(true));
+        let inspection = inspected
+            .structured_content
+            .ok_or("Missing source inspection")?;
+        assert_eq!(inspection["units_require_confirmation"], true);
+        assert!(inspection["stl_units"].is_null());
+        let initial=client.call_tool(CallToolRequestParams::new("propose_selected_slice").with_arguments(json!({"selection":selection.id,"request":{"units":label,"bed":"textured","bed_temperature_c":45.}}).as_object().unwrap().clone())).await?;
+        assert_ne!(initial.is_error, Some(true));
+        let initial_proposal = initial
+            .structured_content
+            .ok_or("Missing initial proposal")?;
+        assert_eq!(initial_proposal["human_approval_required"], true);
+        assert!(initial_proposal.get("approval_id").is_none());
+        let proposal = workflow
+            .view()?
+            .job
+            .ok_or("Missing reviewed initial proposal")?;
         let first =
             workflow.execute(workflow.begin(proposal.approval_id.ok_or("Missing approval")?)?)?;
         assert_eq!(first.snapshot.phase, Phase::Completed, "{:?}", first.error);
@@ -61,16 +91,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok((path.clone(), fs::read(path).map_err(|e| e.to_string())?))
             })
             .collect::<Result<Vec<_>, String>>()?;
-        let host = Arc::new(HostTools::new(workflow.clone()));
-        let bridge = ToolBridge::start_project(host.clone(), helper, project_id)?;
-        let config = bridge.config()?;
-        let mut command = tokio::process::Command::new(&config.command);
-        command
-            .env_clear()
-            .envs(hazlomexa::claude::environment())
-            .envs(&config.env)
-            .kill_on_drop(true);
-        let client = ().serve(rmcp::transport::TokioChildProcess::new(command)?).await?;
         let reply = client
             .call_tool(
                 CallToolRequestParams::new("read_verified_result")
@@ -159,7 +179,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         fs::write(
             project_root.join("calls.json"),
             serde_json::to_vec_pretty(
-                &json!({"first_read":read,"proposal":proposed,"final_read":final_read}),
+                &json!({"inspection":inspection,"initial_proposal":initial_proposal,"first_read":read,"proposal":proposed,"final_read":final_read}),
             )?,
         )?;
         client.cancel().await?;

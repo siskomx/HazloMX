@@ -87,6 +87,8 @@ if online:
 shutil.copy2(Path(os.environ['SystemRoot'])/'System32/vcruntime140.dll', root/'input/vcruntime140.dll')
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+catalog = json.loads(subprocess.run([str(root/'input/installed-tools-protocol.exe'), '--catalog'], capture_output=True, text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW).stdout)
+assert catalog['catalog_only'] and catalog['tool_count'] == len(catalog['tools']) and len(set(catalog['tools'])) == catalog['tool_count']
 app = Path('target/release/hazlomexa.exe').read_bytes()
 marker = b'__TAURI_BUNDLE_TYPE_VAR_UNK'
 assert app.count(marker) == 1, 'Unexpected Tauri bundle marker'
@@ -99,7 +101,7 @@ identity = {
     'helper_sha256': digest('target/release/hazlomexa-tools.exe'),
     'harness_sha256': digest(root/'input/installed-tools-protocol.exe'),
     'version': '0.1.0',
-    'tool_count': 17,
+    'tool_count': catalog['tool_count'],
     'networking': 'enabled' if online else 'disabled',
 }
 if online:

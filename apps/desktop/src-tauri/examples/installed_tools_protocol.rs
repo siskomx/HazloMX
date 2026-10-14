@@ -11,6 +11,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use rmcp::{model::CallToolRequestParams, ServiceExt};
     use serde_json::json;
     use std::{path::PathBuf, sync::Arc};
+    if std::env::args().skip(1).collect::<Vec<_>>() == ["--catalog"] {
+        let names: Vec<_> = catalog().iter().map(|tool| tool.name.to_string()).collect();
+        println!(
+            "{}",
+            json!({"catalog_only":true,"tool_count":names.len(),"tools":names})
+        );
+        return Ok(());
+    }
     let mut args = std::env::args_os().skip(1);
     let helper = PathBuf::from(args.next().ok_or("Pass installed hazlomexa-tools.exe")?);
     let root = PathBuf::from(args.next().ok_or("Pass owned test project folder")?);
@@ -34,6 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .env_clear()
         .envs(hazlomexa::claude::environment())
         .envs(&config.env)
+        .creation_flags(0x08000000)
         .kill_on_drop(true);
     let service = ().serve(rmcp::transport::TokioChildProcess::new(command)?).await?;
     let actual = service.list_all_tools().await?;

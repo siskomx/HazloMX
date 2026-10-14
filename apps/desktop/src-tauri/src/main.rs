@@ -5,7 +5,8 @@ mod desktop_codex;
 use hazlomexa::{
     agent, cadcraft, cadpilot, claude, codex,
     host_tools::{
-        DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, HostTools,
+        DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice,
+        HostTools,
     },
     jobs::{AgentSource, ArduinoRuntime, InferenceView, JobView, ModelProfile, Workflow},
     kicad, orca,
@@ -425,16 +426,71 @@ async fn prepare_slice(
 ) -> Result<DesktopSnapshot, String> {
     let workflow = state.workflow.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let model=app.dialog().file().set_title("Seleccione el STL original; confirme sus unidades en la propuesta").add_filter("STL",&["stl"]).blocking_pick_file().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
-        let root=app.dialog().file().set_title("Seleccione la carpeta de perfiles que contiene machine, process y filament (por ejemplo Prusa)").blocking_pick_folder().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
-        let mut selected=Vec::new();
-        for (kind,label) in [("machine","máquina y boquilla"),("process","proceso"),("filament","material")] {
-            let path=app.dialog().file().set_directory(root.join(kind)).set_title(format!("Seleccione el perfil JSON de {label}")).add_filter("Perfil JSON",&["json"]).blocking_pick_file().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
-            selected.push(path);
-        }
-        workflow.propose_slice(root,model,selected.try_into().map_err(|_|"Faltan perfiles seleccionados.")?,request)
-    }).await.map_err(|e|e.to_string())??;
+        let (root, model, profiles) = pick_slice_sources(&app)?;
+        workflow.propose_slice(root, model, profiles, request)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
     snapshot(&state)
+}
+
+fn pick_slice_sources(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf, [PathBuf; 3]), String> {
+    let model = app
+        .dialog()
+        .file()
+        .set_title(
+            "Seleccione el STL para inspeccionarlo; su escala se confirmará en la conversación",
+        )
+        .add_filter("STL", &["stl"])
+        .blocking_pick_file()
+        .ok_or("Selección cancelada.")?
+        .into_path()
+        .map_err(|e| e.to_string())?;
+    let root=app.dialog().file().set_title("Seleccione la carpeta de perfiles de OrcaSlicer que contiene machine, process y filament").blocking_pick_folder().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
+    let mut selected = Vec::new();
+    for (kind, label) in [
+        ("machine", "máquina y boquilla"),
+        ("process", "proceso"),
+        ("filament", "material"),
+    ] {
+        let path = app
+            .dialog()
+            .file()
+            .set_directory(root.join(kind))
+            .set_title(format!("Seleccione el perfil JSON de {label}"))
+            .add_filter("Perfil JSON", &["json"])
+            .blocking_pick_file()
+            .ok_or("Selección cancelada.")?
+            .into_path()
+            .map_err(|e| e.to_string())?;
+        selected.push(path);
+    }
+    Ok((
+        root,
+        model,
+        selected
+            .try_into()
+            .map_err(|_| "Faltan perfiles seleccionados.")?,
+    ))
+}
+#[tauri::command]
+async fn discover_slice(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<DiscoveredSlice, String> {
+    let project_id = state
+        .workflow
+        .view()?
+        .project
+        .ok_or("Selecciona un proyecto.")?
+        .0;
+    let tools = state.tools.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let (root, model, profiles) = pick_slice_sources(&app)?;
+        tools.select_slice(project_id, root, model, profiles)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -1129,7 +1185,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 

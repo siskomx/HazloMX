@@ -1011,9 +1011,68 @@ impl Workflow {
         profiles: [PathBuf; 3],
         request: orca::Request,
     ) -> Result<JobView, String> {
-        if self.orca_runtime()?.is_none() {
-            return Err("Seleccione OrcaSlicer antes de importar.".into());
+        self.propose_slice_bound(
+            profile_root,
+            model,
+            profiles,
+            request,
+            None,
+            RunSource::Manual,
+            Arc::new(AtomicBool::new(false)),
+        )
+    }
+    pub(crate) fn discover_slice(
+        &self,
+        profile_root: &std::path::Path,
+        model: &std::path::Path,
+        profiles: [PathBuf; 3],
+        cancel: Arc<AtomicBool>,
+    ) -> Result<orca::Discovery, String> {
+        let project = self.view()?.project.ok_or("Selecciona un proyecto.")?;
+        let output = self
+            .profiles
+            .join(format!("slice-discovery-{}", Uuid::new_v4()));
+        let discovered = orca::discover(profile_root, model, profiles, &output, cancel)?;
+        if self.view()?.project != Some(project) {
+            return Err(
+                "El proyecto cambió durante la lectura; selecciona las fuentes de nuevo.".into(),
+            );
         }
+        Ok(discovered)
+    }
+    pub(crate) fn propose_discovered_slice(
+        &self,
+        profile_root: PathBuf,
+        model: PathBuf,
+        profiles: [PathBuf; 3],
+        request: orca::Request,
+        binding: (Uuid, PathBuf, orca::Discovery),
+        cancel: Arc<AtomicBool>,
+    ) -> Result<JobView, String> {
+        self.propose_slice_bound(
+            profile_root,
+            model,
+            profiles,
+            request,
+            Some(binding),
+            RunSource::Mcp,
+            cancel,
+        )
+    }
+    fn propose_slice_bound(
+        &self,
+        profile_root: PathBuf,
+        model: PathBuf,
+        profiles: [PathBuf; 3],
+        request: orca::Request,
+        binding: Option<(Uuid, PathBuf, orca::Discovery)>,
+        origin: RunSource,
+        cancel: Arc<AtomicBool>,
+    ) -> Result<JobView, String> {
+        orca::stop(&cancel)?;
+        let runtime = self
+            .orca_runtime()?
+            .ok_or("Seleccione OrcaSlicer antes de importar.")?;
         let state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
         if state.job.as_ref().is_some_and(|j| {
@@ -1026,6 +1085,12 @@ impl Workflow {
             return Err("Cancele o termine la operación actual primero.".into());
         }
         let project = state.project.clone().ok_or("Seleccione un proyecto.")?;
+        if binding
+            .as_ref()
+            .is_some_and(|(id, root, _)| project.id != *id || project.root != *root)
+        {
+            return Err("El proyecto cambió; selecciona el modelo de nuevo.".into());
+        }
         drop(state);
         let id = Uuid::new_v4();
         let input = orca::capture(
@@ -1035,14 +1100,26 @@ impl Workflow {
             &project.captured_source(id),
             id,
             request,
-            Arc::new(AtomicBool::new(false)),
+            cancel.clone(),
         )?;
+        orca::stop(&cancel)?;
+        if binding
+            .as_ref()
+            .is_some_and(|(_, _, discovery)| !discovery.matches_capture(&input))
+        {
+            return Err("El modelo o sus perfiles cambiaron. Selecciónalos e inspecciónalos de nuevo antes de proponer.".into());
+        }
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
-        if state.project.as_ref().is_none_or(|p| p.id != project.id) {
+        if state
+            .project
+            .as_ref()
+            .is_none_or(|p| p.id != project.id || p.root != project.root)
+            || self.orca_runtime()?.as_ref() != Some(&runtime)
+        {
             return Err("El proyecto cambió durante la importación.".into());
         }
-        Self::propose_operation_locked(&mut state, OperationInput::Orca(input), RunSource::Manual)
+        Self::propose_operation_locked(&mut state, OperationInput::Orca(input), origin)
     }
     pub fn propose_cadpilot(
         &self,
