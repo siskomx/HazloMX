@@ -199,6 +199,7 @@ pub enum ArtifactFormat {
     Hex,
     Elf,
     Sketch,
+    CompileReport,
     OriginalSketch,
     Drawing,
     OriginalDrawing,
@@ -544,6 +545,7 @@ impl Project {
             (OperationInput::Arduino(_), ArtifactFormat::Hex) => "firmware.hex".into(),
             (OperationInput::Arduino(_), ArtifactFormat::Elf) => "firmware.elf".into(),
             (OperationInput::Arduino(_), ArtifactFormat::Sketch) => "Sketch.ino".into(),
+            (OperationInput::Arduino(_), ArtifactFormat::CompileReport) => "result.json".into(),
             (OperationInput::Agent(_), ArtifactFormat::Sketch) => "Sketch.ino".into(),
             (OperationInput::Agent(_), ArtifactFormat::OriginalSketch) => "Original.ino".into(),
             (OperationInput::Drawing(input), ArtifactFormat::Drawing) => {

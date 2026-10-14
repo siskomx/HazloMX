@@ -1167,6 +1167,7 @@ fn open_artifact(
     if matches!(
         format,
         ArtifactFormat::Sketch
+            | ArtifactFormat::CompileReport
             | ArtifactFormat::SolidReport
             | ArtifactFormat::OriginalSketch
             | ArtifactFormat::DrawingReport

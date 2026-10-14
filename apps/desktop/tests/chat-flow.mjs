@@ -331,6 +331,18 @@ try {
       await send("Lee el resultado verificado de este programa.");
       const lastContext = () => page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat" || call.command === "start_claude_chat").at(-1).args.prompt).desktop_context);
       assert.deepEqual((await lastContext()).current_job, { id: job.job_id, phase: "completed" });
+      if(program==="arduino") {
+        if(await page.locator("#results").getAttribute("open")===null) await page.locator("#results > summary").click();
+        const before = await page.evaluate(()=>window.calls.filter(call=>call.command.startsWith("start_")).length);
+        await page.getByRole("button",{name:"Informe de compilación",exact:true}).click();
+        await page.locator("#report:visible").waitFor();
+        assert.match(await page.locator("#report-text").innerText(),/Resultado <img/);
+        assert.equal(await page.locator("#report img").count(),0);
+        const call = await page.evaluate(()=>window.calls.filter(call=>call.command==="open_artifact").at(-1));
+        assert.deepEqual(call.args,{jobId:job.job_id,format:"compile_report"});
+        assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command.startsWith("start_")).length),before);
+        await page.locator("#report button").click();
+      }
       await page.locator("#program").selectOption(program === "freecad" ? "drawing" : "freecad");
       await send("Consulta este otro programa.");
       assert.equal((await lastContext()).current_job, null, `${provider}: unrelated ${program} job leaked`);

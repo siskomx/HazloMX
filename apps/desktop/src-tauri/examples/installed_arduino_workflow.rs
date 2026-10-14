@@ -11,6 +11,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     use rmcp::{model::CallToolRequestParams, ServiceExt};
     use serde_json::json;
+    use sha2::{Digest, Sha256};
     use std::{fs, path::PathBuf, sync::Arc};
     let args: Vec<_> = std::env::args_os().skip(1).map(PathBuf::from).collect();
     let [helper, cli, data, root] = args.as_slice() else {
@@ -98,10 +99,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let read = read.structured_content.ok_or("Missing saved sketch")?;
         assert_eq!(read["content"], arguments["source"]);
         assert_eq!(read["source_name"], "Sketch.ino");
+        assert_eq!(read["compilation"]["operation"], "compile_only");
+        let report = workflow
+            .artifact(id, ArtifactFormat::CompileReport)?
+            .read_text()?;
+        let verified: arduino::CompileResult = serde_json::from_str(&report)?;
+        assert!(verified.flash_bytes > 0);
+        assert_eq!(verified.job_id, id);
+        assert_eq!(verified.fqbn, arduino::FQBN);
+        assert_eq!(
+            read["compilation"]["report"],
+            serde_json::to_value(verified)?
+        );
+        assert_eq!(
+            read["compilation"]["report_sha256"],
+            format!("{:x}", Sha256::digest(report.as_bytes()))
+        );
+        assert_eq!(
+            read["sha256"],
+            format!(
+                "{:x}",
+                Sha256::digest(
+                    read["content"]
+                        .as_str()
+                        .ok_or("Missing verified source")?
+                        .as_bytes()
+                )
+            )
+        );
         for format in [
             ArtifactFormat::Sketch,
             ArtifactFormat::Hex,
             ArtifactFormat::Elf,
+            ArtifactFormat::CompileReport,
         ] {
             let path = workflow.artifact(id, format)?.path;
             preserved.push((path.clone(), fs::read(path)?));
@@ -164,6 +194,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let final_read = HostTools::new(Arc::new(restored))
         .call("read_verified_result", json!({"job_id":completed_ids[1]}))?;
     assert_eq!(final_read["sha256"], records[1]["readback"]["sha256"]);
+    assert_eq!(
+        final_read["compilation"],
+        records[1]["readback"]["compilation"]
+    );
     for (path, bytes) in preserved {
         assert_eq!(fs::read(path)?, bytes);
     }

@@ -156,7 +156,7 @@ function artifactActions(run: Snapshot): [string, string][] {
   if (input.cadcraft_version) return [["Dibujo", "drawing"], ["Vista", "drawing_preview"], ["Informe", "drawing_report"]];
   if (input.agent_version) return [["Sketch original", "original_sketch"], ["Sketch verificado", "sketch"]];
   if (input.dimensions_mm) return [["Abrir en FreeCAD", "fcstd"], ["STEP", "step"], ["Informe", "solid_report"]];
-  return [["Sketch", "sketch"], ["HEX", "hex"], ["ELF", "elf"]];
+  return [["Sketch", "sketch"], ["Informe de compilación", "compile_report"], ["HEX", "hex"], ["ELF", "elf"]];
 }
 function renderHistory() {
   $("history").replaceChildren();
