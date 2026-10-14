@@ -643,6 +643,25 @@ pub fn capture(
     units: Units,
     cancel: Arc<AtomicBool>,
 ) -> Result<KicadInput, String> {
+    source(root, entry, Some(destination), job_id, units, cancel)
+}
+pub(crate) fn inspect(
+    root: &Path,
+    entry: &Path,
+    cancel: Arc<AtomicBool>,
+) -> Result<KicadInput, String> {
+    // This unit is internal metadata only; native geometry/source bytes are never scaled.
+    source(root, entry, None, Uuid::new_v4(), Units::Mm, cancel)
+}
+fn source(
+    root: &Path,
+    entry: &Path,
+    destination: Option<&Path>,
+    job_id: Uuid,
+    units: Units,
+    cancel: Arc<AtomicBool>,
+) -> Result<KicadInput, String> {
+    stop(&cancel)?;
     let _root_pins = pin_lineage(root).map_err(|e| e.to_string())?;
     let entry = normalize(entry)?;
     if !entry.starts_with(root)
@@ -775,10 +794,12 @@ pub fn capture(
         layers,
     };
     input.validate()?;
-    fs::create_dir(destination).map_err(|e| e.to_string())?;
-    for (name, data) in &bytes {
-        stop(&cancel)?;
-        write_new(&destination.join(relative(name)?), data)?;
+    if let Some(destination) = destination {
+        fs::create_dir(destination).map_err(|e| e.to_string())?;
+        for (name, data) in &bytes {
+            stop(&cancel)?;
+            write_new(&destination.join(relative(name)?), data)?;
+        }
     }
     Ok(input)
 }

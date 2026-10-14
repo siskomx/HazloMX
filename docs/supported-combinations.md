@@ -2,7 +2,7 @@
 
 ## Current chat source scope — October 13, 2026
 
-The production screen is a single natural-language chat with Codex, Claude Code and the existing Ollama local/cloud profiles. The shared catalog has 22 tools. Current source/browser/backend evidence must be distinguished from the older installed packages below. The current screen has not passed native/signed-in/updated-installer acceptance, and saved-copy execution does not establish live editing.
+The production screen is a single natural-language chat with Codex, Claude Code and the existing Ollama local/cloud profiles. The shared catalog has 24 tools. Current source/browser/backend evidence must be distinguished from the older installed packages below. The current screen has not passed native/signed-in/updated-installer acceptance, and saved-copy execution does not establish live editing.
 
 | Program | Current source capability | Remaining native boundary |
 |---|---|---|
@@ -10,7 +10,7 @@ The production screen is a single natural-language chat with Codex, Claude Code 
 | CADCraft 0.5.0 | Saved-source native catalog/entities and approved plans from 33 reviewed command IDs; metric/inch copy readback | Full parameter coverage and live active-window/document binding |
 | Arduino CLI | Approved Uno compilation with source/HEX/ELF checks | Broader boards/libraries and full signed-in chat acceptance; firmware upload excluded |
 | Arduino Agent | Authenticated selected saved-sketch copy editing and native/disk readback | Unsaved-buffer/live editor proof; hardware mutation excluded |
-| KiCad 10.0.7 / Konnect 0.13.0 | Saved schematic value changes, PCB moves, checks/exports and verified-result follow-ups; optional IPC-only live PCB reading | Initial chat check selection, positive live-session observation, live writes/undo/reconciliation; live schematic API unavailable in this selected KiCad generation |
+| KiCad 10.0.7 / Konnect 0.13.0 | Initial saved-source/dependency inspection and approved checks/exports from chat, schematic value changes, PCB moves and verified-result follow-ups; optional IPC-only live PCB reading | Real signed-in/native-UI checks, positive live-session observation, live writes/undo/reconciliation; live schematic API unavailable in this selected KiCad generation |
 | OrcaSlicer 2.4.2 | Select STL/profiles before scale clarification; approved metric/imperial file slicing and verified settings follow-up | Native pickers/signed-in acceptance of new chat and broader profiles; live GUI editing/printer control excluded from this adapter |
 
 [Ollama HTTP and native drawing fixtures](research/ollama-chat-tools-2026-10-13.md) verify the local/cloud tool protocol and two actual headless CADCraft jobs with scripted model responses/backend approval. They do not prove real model tool behavior. [CADCraft native-tool](research/native-drawing-tools-2026-10-13/README.md), [Orca source-first](research/orca-source-chat-2026-10-13.md) and [read-only PCB](research/native-editor-connections-2026-10-13.md) evidence retain their exact scopes. Further model benchmarking/downloads remain deferred. Native UI automation remains stopped after Escape.

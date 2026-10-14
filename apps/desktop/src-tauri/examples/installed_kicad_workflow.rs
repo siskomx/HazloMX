@@ -5,7 +5,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use hazlomexa::{
         host_tools::HostTools,
         jobs::Workflow,
-        kicad::Units,
         project::{ArtifactFormat, Phase, Project, RunSource},
         tool_bridge::ToolBridge,
     };
@@ -31,11 +30,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?);
     workflow.select_project(project)?;
     workflow.set_kicad(cli.clone())?;
-    let first = workflow.propose_kicad(
+    let host = Arc::new(HostTools::new(workflow.clone()));
+    let selected = host.select_schematic(
+        project_id,
         source.clone(),
         source.join("basic_test.kicad_sch"),
-        Units::In,
     )?;
+    let bridge = ToolBridge::start_project(host.clone(), helper, project_id)?;
+    let config = bridge.config()?;
+    let mut command = tokio::process::Command::new(&config.command);
+    command
+        .env_clear()
+        .envs(hazlomexa::claude::environment())
+        .envs(&config.env)
+        .creation_flags(0x08000000)
+        .kill_on_drop(true);
+    let service = ().serve(rmcp::transport::TokioChildProcess::new(command)?).await?;
+    let inspection = service
+        .call_tool(
+            CallToolRequestParams::new("inspect_selected_kicad_check_source").with_arguments(
+                json!({"selection":selected.id})
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+            ),
+        )
+        .await?;
+    assert_ne!(inspection.is_error, Some(true), "{:?}", inspection.content);
+    let inspection = inspection
+        .structured_content
+        .ok_or("Missing source inspection")?;
+    assert_eq!(inspection["report_units_require_confirmation"], true);
+    assert!(workflow.view()?.job.is_none());
+    let initial = service.call_tool(CallToolRequestParams::new("propose_selected_kicad_check").with_arguments(json!({"selection":selected.id,"source_set_sha256":inspection["source_set_sha256"],"units":"in"}).as_object().unwrap().clone())).await?;
+    assert_ne!(initial.is_error, Some(true), "{:?}", initial.content);
+    let initial = initial
+        .structured_content
+        .ok_or("Missing initial check proposal")?;
+    assert_eq!(initial["human_approval_required"], true);
+    assert!(initial.get("approval_id").is_none());
+    let first = workflow.view()?.job.ok_or("Missing initial approval")?;
     let completed =
         workflow.execute(workflow.begin(first.approval_id.ok_or("Missing initial approval")?)?)?;
     assert_eq!(
@@ -49,16 +83,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .artifact(first_id, ArtifactFormat::KicadSource)?
         .path;
     let saved_bytes = fs::read(&saved_path)?;
-    let host = Arc::new(HostTools::new(workflow.clone()));
-    let bridge = ToolBridge::start_project(host.clone(), helper, project_id)?;
-    let config = bridge.config()?;
-    let mut command = tokio::process::Command::new(&config.command);
-    command
-        .env_clear()
-        .envs(hazlomexa::claude::environment())
-        .envs(&config.env)
-        .kill_on_drop(true);
-    let service = ().serve(rmcp::transport::TokioChildProcess::new(command)?).await?;
     let read = service
         .call_tool(
             CallToolRequestParams::new("read_verified_result")
@@ -111,7 +135,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::write(
         root.join("calls.json"),
         serde_json::to_vec_pretty(
-            &json!({"first_read":read,"proposal":proposed,"final_read":final_read}),
+            &json!({"source_inspection":inspection,"initial_proposal":initial,"first_read":read,"proposal":proposed,"final_read":final_read}),
         )?,
     )?;
     service.cancel().await?;
@@ -132,7 +156,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "{}",
         serde_json::to_string(
-            &json!({"pass":true,"kicad_version":"10.0.7","completed_jobs":2,"initial_coordinate_units":"in","followup_coordinate_units":"mils","native_errors":2,"originals_and_first_result_preserved":true,"recovery_verified":true,"installed_connector":true,"approval_driver":"shared_backend_test","native_desktop_ui":false,"model_inference":false})
+            &json!({"pass":true,"kicad_version":"10.0.7","completed_jobs":2,"initial_coordinate_units":"in","followup_coordinate_units":"mils","initial_source_first_mcp":true,"native_errors":2,"originals_and_first_result_preserved":true,"recovery_verified":true,"installed_connector":true,"approval_driver":"shared_backend_test","native_desktop_ui":false,"model_inference":false})
         )?
     );
     Ok(())

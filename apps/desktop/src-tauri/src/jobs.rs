@@ -1444,6 +1444,7 @@ impl Workflow {
             .as_ref()
             .filter(|p| p.id == project_id)
             .ok_or("El proyecto cambió. Lee el resultado de nuevo.")?;
+        let project_root = project.root.clone();
         let history = project.history().map_err(|e| e.to_string())?;
         let run = history
             .iter()
@@ -1501,17 +1502,42 @@ impl Workflow {
             root,
             entry.path.clone(),
             units,
-            Some((project_id, expected)),
+            Some((project_id, project_root, expected)),
             RunSource::Mcp,
             cancelled,
         )
+    }
+    pub(crate) fn discover_kicad(
+        &self,
+        root: &std::path::Path,
+        entry: &std::path::Path,
+        cancelled: Arc<AtomicBool>,
+    ) -> Result<kicad_project::KicadInput, String> {
+        let project = self.view()?.project.ok_or("Selecciona un proyecto.")?;
+        let input = kicad_project::inspect(root, entry, cancelled)?;
+        if self.view()?.project != Some(project) {
+            return Err(
+                "El proyecto cambió durante la lectura. Selecciona la fuente de nuevo.".into(),
+            );
+        }
+        Ok(input)
+    }
+    pub(crate) fn propose_selected_kicad(
+        &self,
+        root: PathBuf,
+        entry: PathBuf,
+        units: crate::kicad::Units,
+        binding: (Uuid, PathBuf, Vec<kicad_project::CapturedFile>),
+        cancelled: Arc<AtomicBool>,
+    ) -> Result<JobView, String> {
+        self.propose_kicad_bound(root, entry, units, Some(binding), RunSource::Mcp, cancelled)
     }
     fn propose_kicad_bound(
         &self,
         root: PathBuf,
         entry: PathBuf,
         units: crate::kicad::Units,
-        binding: Option<(Uuid, Vec<kicad_project::CapturedFile>)>,
+        binding: Option<(Uuid, PathBuf, Vec<kicad_project::CapturedFile>)>,
         origin: RunSource,
         cancelled: Arc<AtomicBool>,
     ) -> Result<JobView, String> {
@@ -1533,7 +1559,10 @@ impl Workflow {
             return Err("Cancele o termine la operación actual primero.".into());
         }
         let project = state.project.clone().ok_or("Seleccione un proyecto.")?;
-        if binding.as_ref().is_some_and(|(id, _)| *id != project.id) {
+        if binding
+            .as_ref()
+            .is_some_and(|(id, folder, _)| *id != project.id || *folder != project.root)
+        {
             return Err("El proyecto cambió. Lee el resultado de nuevo.".into());
         }
         drop(state);
@@ -1551,7 +1580,7 @@ impl Workflow {
         }
         if binding
             .as_ref()
-            .is_some_and(|(_, expected)| *expected != input.files)
+            .is_some_and(|(_, _, expected)| *expected != input.files)
         {
             return Err(
                 "Las fuentes cambiaron durante la captura. Lee el resultado de nuevo.".into(),
@@ -1559,7 +1588,10 @@ impl Workflow {
         }
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
-        if state.project.as_ref().is_none_or(|v| v.id != project.id)
+        if state
+            .project
+            .as_ref()
+            .is_none_or(|v| v.id != project.id || v.root != project.root)
             || self.kicad_runtime()?.as_ref() != Some(&runtime)
         {
             return Err("El proyecto cambió durante la importación.".into());
