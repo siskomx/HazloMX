@@ -1,5 +1,7 @@
 # Ollama conversation and shared tools — October 13, 2026
 
+Later acceptance: the [real existing cloud schematic conversation](ollama-real-schematic-chat-2026-10-13.md) passes five actual provider turns and two native jobs with backend fixture approval. The scripted protocol evidence below keeps its original scope; desktop/native-UI/installer and other-program real-agent gates remain open.
+
 The production chat now supports the existing pinned `qwen3:4b` local experimental profile and `kimi-k2.7-code:cloud` profile alongside installed Codex and Claude Code. This closes the missing Ollama **protocol implementation** in the revised chat screen; model quality and real signed-in acceptance are not established by these tests.
 
 ## Native protocol and application boundary
