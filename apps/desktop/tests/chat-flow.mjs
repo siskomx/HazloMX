@@ -285,6 +285,9 @@ try {
   assert.equal(await page.locator("#change-summary img").count(), 0);
   assert.match(await page.locator("#change-details").textContent(), /"command": "move"/);
   assert.match(await page.locator("#change-details").textContent(), /"current_entities"/);
+  assert.match(await page.locator("#change-facts").innerText(), /Unidades del dibujo: milímetros/);
+  assert.match(await page.locator("#change-facts").innerText(), /1\. Mover elementos/);
+  assert.equal(await page.locator("#change-facts img").count(), 0);
   assert.equal(await page.locator("#approval input, #approval textarea").count(), 0);
   assert.equal(await page.evaluate(() => window.approvals), 1, "A native tool plan was automatically approved");
   await page.locator("#approve").click();
@@ -311,14 +314,14 @@ try {
   assert(!await page.locator("#conversation").innerText().then(text => text.includes("Conversación del otro proyecto")));
   const cases = [
     ["freecad", { dimensions_mm: { length: 10, width: 10, height: 10 } }, "Seleccionar documento guardado e inspeccionar…"],
-    ["freecad", { cadpilot_version: "fixture", source_name: "Part.FCStd", request: { operation: "inspect" }, preview: { measurements: {} } }, "Seleccionar documento guardado e inspeccionar…"],
-    ["drawing", { cadcraft_version: "fixture", source_name: "Plano.dxf", output_format: "dxf" }, "Seleccionar dibujo…"],
+    ["freecad", { cadpilot_version: "fixture", source_name: "Part.FCStd", request: { operation: "inspect", object: "Target", units: "mm", parameters: {} }, preview: { measurements: {} } }, "Seleccionar documento guardado e inspeccionar…"],
+    ["drawing", { cadcraft_version: "fixture", source_name: "Plano.dxf", units: "in", output_format: "dxf" }, "Seleccionar dibujo…"],
     ["arduino", { fqbn: "arduino:avr:uno", source: "void setup() {}" }],
     ["agent", { agent_version: "fixture", source_name: "Sketch.ino", original_source: "void setup() {}", source: "void setup() {}" }, "Seleccionar sketch…"],
     ["kicad", { kicad_version: "10.0.7", entry: "Board.kicad_pcb", units: "mm", files: [] }, "Seleccionar PCB…"],
-    ["kicad", { konnect_version: "fixture", edit: { reference: "R1", expected_value: "1k", value: "2k" } }, "Seleccionar esquema…"],
-    ["kicad", { konnect_version: "fixture", pcb_move: { reference: "R1", expected_x_mm: 10, expected_y_mm: 10, x_mm: 20, y_mm: 10 } }, "Seleccionar PCB…"],
-    ["slice", { orca_version: "fixture", source_name: "Part.stl", units: "mm", mesh: { bounds_mm: [[0,0,0],[10,10,10]] }, settings: { machine: "Printer", filament: "PLA" } }, "Seleccionar modelo y perfiles…"],
+    ["kicad", { konnect_version: "fixture", source: {entry:"Circuit.kicad_sch"}, edit: { reference: "R1", expected_value: "1k", value: "2k" } }, "Seleccionar esquema…"],
+    ["kicad", { konnect_version: "fixture", source: {entry:"Board.kicad_pcb"}, pcb_move: { reference: "R1", expected_x_mm: 10, expected_y_mm: 10, x_mm: 20, y_mm: 10 } }, "Seleccionar PCB…"],
+    ["slice", { orca_version: "fixture", source_name: "Part.stl", units: "mm", mesh: { bounds_mm: [[0,0,0],[10,10,10]] }, settings: { machine: "Printer", filament: "PLA", process:"0.20 mm", nozzle_mm:0.4, layer_mm:0.2, nozzle_c:210, bed_c:60 } }, "Seleccionar modelo y perfiles…"],
   ];
   for (const provider of ["codex", "claude"]) {
     await page.locator("#provider").selectOption(provider);
@@ -419,6 +422,8 @@ try {
       await page.evaluate(input => window.setPendingJob(input),{schema_version:1,job_id:jobId,...fields});
       await page.locator("#program-actions button").first().click();
       await page.locator("#approve:enabled").waitFor();
+      assert.match(await page.locator("#change-facts").innerText(),/El resultado se guarda en el proyecto/);
+      assert(!/undefined|NaN/.test(await page.locator("#change-facts").innerText()));
       assert.match(await page.locator("#approve").innerText(),/pedir revisión/);
       const before = (await chatCalls()).length;
       await page.locator("#approve").click(); await page.locator("#send:enabled").waitFor();

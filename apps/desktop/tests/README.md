@@ -1,5 +1,7 @@
 # Current Windows package acceptance
 
+Current chat approval descriptions: run `rtk proxy node apps/desktop/tests/proposal-review.mjs` for source-derived Spanish facts across all operation variants, metric/imperial labels and the 33 reviewed native drawing actions. `rtk proxy node apps/desktop/tests/chat-flow.mjs` checks their escaped display and 36 explicit approval/result-review handoffs in headless IPC fixtures. These do not certify native UI or the installed package. Technical command parameters and source code remain available in expandable details.
+
 [Drawing source-first evidence](../../../docs/research/drawing-source-first-2026-10-13/README.md) covers five native discovery cases, selected-source proposal/approval/readback and source/project boundaries, plus existing conversion/circle/loss regressions. Frontend verification now expects 22 Claude/Codex context cases. Serial backend validation passes 116 tests/43 ignored; native UI and installed acceptance of this change remain unfinished.
 
 [PCB native SDK read cancellation/deadline/recovery](../../../docs/research/pcb-sdk-interruption-2026-10-13/README.md) runs from the repository root with `rtk proxy python tests/konnect/verify_blocked_read.py --pcb-sdk`. Its test-only checkpoint holds the actual get_board_info file read after host validation; no release checkpoint is compiled. --pcb remains the separate host-read refusal gate; --workflow remains schematic interruption. The initial parallel timing failure is retained; serial regular validation passes 116 tests/41 ignored without relaxing bounds.

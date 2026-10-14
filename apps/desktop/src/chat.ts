@@ -1,6 +1,7 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { agentPrompt, savedConversation, type Turn } from "./design";
 import { legacyConversations } from "./chat-history";
+import { proposalFacts } from "./proposal-review";
 import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import "./chat.css";
 
@@ -24,7 +25,7 @@ document.querySelector("#app")!.innerHTML = `
   <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
     <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
     <form id="chat-form"><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p>
-    <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><p class="fine">Esta propuesta trabaja con una copia guardada. Revisa el destino y el cambio antes de aprobar.</p><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
+    <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
     <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
   <details id="past-chats" class="panel" hidden><summary>Conversaciones de la versión anterior</summary><p class="fine">Puedes leerlas sin enviarlas a una IA. Para continuar con sus mensajes, empieza una conversación vacía y elige la IA con la que seguirás. Solo se enviarán cuando pulses Enviar. No se restauran documentos, medidas ni aprobaciones; inspeccionaremos de nuevo la selección actual.</p><div id="past-chat-list"></div></details>
@@ -134,7 +135,7 @@ function summary(run: Snapshot): string {
   if (input.cadcraft_version) return input.native_tools ? `CADCraft · ${input.source_name} · ${input.native_tools.intent}` : `CADCraft · ${input.source_name} → ${input.output_format.toUpperCase()}`;
   if (input.agent_version) return `Arduino Agent · cambios en ${input.source_name}`;
   if (input.dimensions_mm) { const d = input.dimensions_mm; return `FreeCAD · ${d.length} × ${d.width} × ${d.height} mm`; }
-  return `Arduino · compilar para ${input.fqbn}`;
+  return `Arduino · compilar para ${input.fqbn === "arduino:avr:uno" ? "Arduino Uno" : input.fqbn}`;
 }
 function changeDetails(run: Snapshot): string {
   const input = run.input;
@@ -227,7 +228,10 @@ function render() {
   $("login-status").textContent = ollama ? `Usa Ollama 0.35.1 en este equipo y el perfil ${provider === "ollama_local" ? "qwen3:4b" : "kimi-k2.7-code:cloud"} ya instalado y conectado. Comprobamos su identidad y soporte de herramientas antes de enviar. No se descargan modelos. ${provider === "ollama_cloud" ? "Este perfil envía el contexto al servicio cloud de Ollama." : "La calidad de este perfil local sigue siendo experimental."}` : provider === "claude" ? state.claude ? `Claude Code ${state.claude.version}. Usa su inicio de sesión existente.` : "Elige el cliente Claude Code instalado." : state.codex_login?.error ?? (state.codex_login?.connected ? "Cuenta Codex conectada." : state.codex_login?.busy ? "Completa personalmente la conexión con Codex." : "Elige Codex y conecta tu cuenta.");
   const active = state.job?.snapshot.phase === "awaiting_approval";
   $("approval").hidden = !active;
-  if (state.job) { $("change-summary").textContent = summary(state.job.snapshot); $("change-details").textContent = changeDetails(state.job.snapshot); }
+  if (state.job) {
+    $("change-summary").textContent = summary(state.job.snapshot); $("change-details").textContent = changeDetails(state.job.snapshot);
+    $("change-facts").replaceChildren(...(active ? proposalFacts(state.job.snapshot) : []).map(text => { const item = document.createElement("li"); item.textContent = text; return item; }));
+  }
   $<HTMLButtonElement>("approve").disabled = busy || !active || !state.job?.approval_id;
   $("approve").textContent = `Aprobar y pedir revisión a ${providerNames[provider]}`;
   $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;

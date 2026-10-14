@@ -2,6 +2,8 @@
 
 ## Current chat source scope — October 13, 2026
 
+[Spanish approval reviews](research/chat-approval-language-2026-10-13.md) now show facts from the actual pending operation: explicit units/measurements, old/new values or positions, native action names and compile/file-generation scope. Focused/build/browser checks pass; technical parameters stay expandable and native/installed acceptance remains pending.
+
 [Real existing Ollama cloud schematic conversation](research/ollama-real-schematic-chat-2026-10-13.md) now passes five provider turns, native inspection/clarification, two approved saved-copy edits, result-derived follow-up and project recovery. Approvals are backend fixtures; desktop approval handoff, native UI, installed acceptance, other programs/providers and live editing remain unverified. Claude Code still reports signed out.
 
 [Initial source inspections can be stopped from chat](research/source-inspection-cancellation-2026-10-13.md) for FreeCAD, CADCraft, Orca metadata and native PCB reads. Cancellation/publication races and all four browser flows pass; actual FreeCAD/Konnect cancellation preserves prior selection and creates no job. Native UI/installed Stop interaction and native CADCraft source-reader cancellation remain unverified.

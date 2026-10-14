@@ -12,6 +12,8 @@ Keep the existing connector work, project/source binding, approvals, supervision
 
 ### Implementation and acceptance order
 
+Current approval review: [source-derived Spanish change facts](research/chat-approval-language-2026-10-13.md) show measurements/units, actual old/new values or positions, native drawing action names, compilation/slicing scope and the relative result folder before approval. Technical parameters/code remain expandable. Focused/build/browser checks pass; native UI/current installed acceptance remains open.
+
 1. Make the existing configured agent routes drive a single chat-to-tool conversation. Reuse Claude Code, Codex and existing Ollama support; provider benchmarking and additional providers remain deferred. Expose the selected program's verified capabilities and document context through its connector, using upstream tools and schemas rather than reducing the product to Hazlo's fixed shape/edit menu.
 2. Move integration-specific editing forms out of the primary flow. Gather intent first; ask only questions needed for the requested action. Present a human-readable target/current-state/change summary when approval is needed. Preserve exact application/document binding and avoid retrying an uncertain mutation before re-reading native state.
 3. Prove one complete conversational edit through the actual native application: inspect, clarify missing inputs, propose, approve, execute with the application's tools, observe the change there, re-read it, and perform a follow-up using that updated state. A browser fixture, direct backend approval or form-populated job alone does not close this gate.

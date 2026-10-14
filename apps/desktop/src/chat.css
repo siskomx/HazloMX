@@ -28,6 +28,7 @@ details > summary { cursor: pointer; font-weight: 600; }
 #prompt { margin: 15px 0 10px; min-height: 90px; }
 .status { white-space: pre-wrap; overflow-wrap: anywhere; }
 #approval { border-left: 4px solid #bd562c; }
+#change-facts { padding-left: 22px; line-height: 1.7; overflow-wrap: anywhere; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 45vh; overflow: auto; font-size: 12px; }
 #history article { border-top: 1px solid #e3e8de; padding: 16px 0; }
 #error { color: #8b2c20; background: #fff3ed; padding: 14px; border-radius: 9px; }
