@@ -2,6 +2,8 @@
 
 ## Current chat source scope — October 14, 2026
 
+The current user path is the [simple-chat demo](first-workflow-demo.md), with [program/AI connection steps](agent-tools-setup.md). Historical form-based and installed receipts below retain their original scopes. Current unsigned installer **6a2f7ef9…** builds with 26 tools, passes privacy scans and actual release-helper checks, and has a fresh unlaunched guest package. [Real PCB conversation and package evidence](research/pcb-real-chat-2026-10-14.md) passes connector clarification, inch placement, metric follow-up, actual saved readback, preservation and recovery. Arduino Agent conversation and current native/installed acceptance remain open.
+
 [Real Orca existing-cloud file conversation](research/orca-real-chat-2026-10-14.md) passes explicit scale/bed clarification, two native file-generation jobs, temperature-only follow-up, preservation and recovery. The approval summary now shows the selected native bed name. This remains backend fixture approval; native/installed/ordinary-user, other-provider and broader-profile acceptance is unfinished, and no printer is controlled.
 
 October 14 Arduino CLI: [real existing-cloud compile conversation](research/arduino-real-chat-2026-10-14.md) passes board/timing clarification, two Uno code proposals/native compilations, verified compiler metadata, result-derived revision, preservation and recovery. Compiler and Agent guidance distinguish the requested workflows after a real misrouting failure. This is backend fixture approval, not Arduino Agent/native UI/installed/other-provider or hardware acceptance.

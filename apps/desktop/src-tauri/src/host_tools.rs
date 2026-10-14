@@ -1668,7 +1668,7 @@ mod tests {
         assert!(workflow.view().unwrap().history.is_empty());
     }
     #[test]
-    #[ignore = "Actual source-inspection cancellation of owned FreeCAD and Konnect processes; run serially"]
+    #[ignore = "Actual source-inspection cancellation of owned FreeCAD, Konnect and CADCraft processes; run serially"]
     fn actual_source_inspection_cancellation_stops_native_readers_without_selecting() {
         let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .ancestors()
@@ -1682,18 +1682,29 @@ mod tests {
         workflow
             .set_konnect(workspace.join("target/konnect-probe/runtime/konnect.exe"))
             .unwrap();
+        workflow.set_cadcraft(workspace.join("target/cadcraft-probe/runtime/cadcraft-0.5.0-windows-x64-portable/cadcraft-cli.exe")).unwrap();
         let project_id = workflow.view().unwrap().project.unwrap().0;
-        for process in ["FreeCADCmd.exe", "konnect.exe"] {
+        let drawing_bytes = include_bytes!("../../../../docs/research/cadcraft-runtime-2026-10-11/metric.dxf");
+        let previous_drawing = root.join("Previous.dxf");
+        fs::write(&previous_drawing, drawing_bytes).unwrap();
+        let original_drawing = host
+            .select_drawing(project_id, previous_drawing.clone(), Arc::new(AtomicBool::new(false)))
+            .unwrap();
+        for process in ["FreeCADCmd.exe", "konnect.exe", "cadcraft-cli.exe"] {
             assert!(crate::process::tests::child_processes(process).is_empty());
             let source = if process == "FreeCADCmd.exe" {
                 root.join("Selected.FCStd")
-            } else {
+            } else if process == "konnect.exe" {
                 root.join("Selected.kicad_pcb")
+            } else {
+                root.join("Selected.dxf")
             };
             let bytes: &[u8] = if process == "FreeCADCmd.exe" {
                 include_bytes!("../../../../docs/research/cadpilot-primitives-2026-10-11/artifacts/Original.FCStd")
-            } else {
+            } else if process == "konnect.exe" {
                 include_bytes!("../../../../docs/research/konnect-pcb-2026-10-12/Original/basic_test.kicad_pcb")
+            } else {
+                drawing_bytes
             };
             fs::write(&source, bytes).unwrap();
             let inspection = host.begin_source_inspection().unwrap();
@@ -1708,7 +1719,7 @@ mod tests {
             let thread = std::thread::spawn(move || {
                 let result = if process == "FreeCADCmd.exe" {
                     worker.select_cad_document(project_id,entry,workspace.join("target/cadpilot-probe/source/cadpilot-58bfee4d45061e55c158a5fd4786ab98a427f7f6/addon/CADPilot"),inspection.cancelled.clone()).map(|_|())
-                } else {
+                } else if process == "konnect.exe" {
                     worker
                         .select_live_pcb(
                             project_id,
@@ -1720,6 +1731,8 @@ mod tests {
                             inspection.cancelled.clone(),
                         )
                         .map(|_| ())
+                } else {
+                    worker.select_drawing(project_id, entry, inspection.cancelled.clone()).map(|_| ())
                 };
                 drop(inspection);
                 result
@@ -1749,6 +1762,8 @@ mod tests {
             assert_eq!(fs::read(&source).unwrap(), bytes);
             assert!(host.cad_document.lock().unwrap().is_none());
             assert!(host.live_pcb.lock().unwrap().is_none());
+            assert_eq!(host.drawing.lock().unwrap().as_ref().unwrap().id, original_drawing.id);
+            assert_eq!(fs::read(&previous_drawing).unwrap(), drawing_bytes);
             assert_eq!(
                 host.schematic.lock().unwrap().as_ref().unwrap().id,
                 original_selection.id
