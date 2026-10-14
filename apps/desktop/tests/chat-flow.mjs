@@ -46,6 +46,7 @@ try {
     window.setCompletedJob = input => {
       snapshot.job = { snapshot: { schema_version: 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
     };
+    window.setPendingJob = input => { window.setCompletedJob(input); snapshot.job.snapshot.phase = "awaiting_approval"; snapshot.job.approval_id = "private-approval"; };
     window.calls = []; window.approvals = 0;
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
@@ -90,11 +91,14 @@ try {
       if (command === "cancel_chat") { snapshot.chat.sequence++; snapshot.chat.cancelled = true; snapshot.chat.busy = false; snapshot.chat.question = null; return copy().chat; }
       if (command === "approve_operation") {
         if (args.approvalId !== "private-approval" || snapshot.job.snapshot.phase !== "awaiting_approval") throw Error("Approval replay");
+        if (window.rejectApproval) throw Error("Fixture approval failed");
         window.approvals++; const running = copy().job; running.sequence++; running.busy = true; running.snapshot.phase = "running";
-        snapshot.job = structuredClone(running); snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = "completed"; snapshot.job.snapshot.audit.files_verified = true; snapshot.job.approval_id = null;
-        args.events.onmessage(copy().job); return running;
+        snapshot.job = structuredClone(running);
+        window.finishJob = () => { snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = window.jobOutcome ?? "completed"; snapshot.job.snapshot.audit.files_verified = snapshot.job.snapshot.phase === "completed"; snapshot.job.approval_id = null; args.events.onmessage(copy().job); };
+        if (!window.delayJob) window.finishJob();
+        return running;
       }
-      if (command === "cancel_job") { snapshot.job.sequence++; snapshot.job.snapshot.phase = "cancelled"; snapshot.job.approval_id = null; return copy().job; }
+      if (command === "cancel_job") { snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = "cancelled"; snapshot.job.approval_id = null; return copy().job; }
       if (command === "open_artifact") return "Resultado <img src=x onerror=window.reportInjection=true>";
       throw Error(`Unexpected IPC: ${command}`);
     } };
@@ -311,9 +315,64 @@ try {
       }
     }
   }
+  const chatCalls = () => page.evaluate(() => window.calls.filter(call => ["start_codex_chat","start_claude_chat","start_ollama_chat"].includes(call.command)));
+  for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    for (const [index,[program,fields]] of cases.entries()) {
+      await page.locator("#new-chat").click(); await page.locator("#program").selectOption(program);
+      const jobId = `review-${provider}-${index}`;
+      await page.evaluate(input => window.setPendingJob(input),{schema_version:1,job_id:jobId,...fields});
+      await page.locator("#program-actions button").first().click();
+      await page.locator("#approve:enabled").waitFor();
+      assert.match(await page.locator("#approve").innerText(),/pedir revisión/);
+      const before = (await chatCalls()).length;
+      await page.locator("#approve").click(); await page.locator("#send:enabled").waitFor();
+      const calls = await chatCalls(); assert.equal(calls.length,before+1,"Approval must request exactly one result review");
+      const prompt = JSON.parse(calls.at(-1).args.prompt);
+      assert.deepEqual(prompt.desktop_context.current_job,{id:jobId,phase:"completed"});
+      assert.match(prompt.user_request,/Lee read_verified_result/); assert(prompt.user_request.includes(jobId));
+      assert.match(prompt.user_request,/No prepares ni ejecutes otro cambio/);
+      assert(!JSON.stringify(prompt).includes("private-approval"));
+      const approvals = await page.evaluate(()=>window.approvals);
+      await page.evaluate(()=>window.finishJob());
+      assert.equal((await chatCalls()).length,before+1,"Duplicate completion replayed the review");
+      assert.equal(await page.evaluate(()=>window.approvals),approvals,"Review automatically approved another operation");
+    }
+  }
+  await page.locator("#program").selectOption("freecad");
+  for (const outcome of ["completed","failed","cancelled","rejected","cancel-running"]) {
+    await page.locator("#new-chat").click();
+    await page.evaluate(outcome=>{window.delayJob=true;window.rejectApproval=outcome==="rejected";window.jobOutcome=outcome;window.setPendingJob({schema_version:1,job_id:`late-${outcome}`,dimensions_mm:{length:10,width:10,height:10}});},outcome);
+    await page.locator("#program-actions button").first().click(); await page.locator("#approve:enabled").waitFor();
+    const before = (await chatCalls()).length;
+    await page.locator("#approve").click();
+    if(outcome==="rejected") { await page.locator("#error:visible").waitFor(); await page.locator("#cancel-job").click(); }
+    else {
+      await page.locator("#cancel-running:enabled").waitFor();
+      assert.equal((await chatCalls()).length,before,"Review started before the native operation finished");
+      if(outcome==="cancel-running") await page.locator("#cancel-running").click();
+      else await page.evaluate(()=>window.finishJob());
+    }
+    await page.locator("#send:enabled").waitFor();
+    assert.equal((await chatCalls()).length,before+(outcome==="completed"?1:0),`Incorrect review for ${outcome}`);
+  }
+  await page.evaluate(()=>{window.delayJob=false;window.rejectApproval=false;delete window.jobOutcome;});
+  await page.locator("#new-chat").click();
+  await page.evaluate(()=>{window.holdChat=true;window.setPendingJob({schema_version:1,job_id:"cancel-result-review",dimensions_mm:{length:10,width:10,height:10}});});
+  await page.locator("#program-actions button").first().click(); await page.locator("#approve:enabled").waitFor();
+  const beforeReviewCancel = (await chatCalls()).length;
+  await page.locator("#approve").click(); await page.locator("#stop:enabled").waitFor();
+  await page.locator("#stop").click(); await page.locator("#send:enabled").waitFor();
+  await page.evaluate(()=>window.finishJob());
+  assert.equal((await chatCalls()).length,beforeReviewCancel+1,"Cancelled result review was retried");
+  assert.match(await page.locator("#conversation").innerText(),/Conversación detenida/);
+  await page.evaluate(()=>{window.holdChat=false;});
+  const beforeRecovered = (await chatCalls()).length;
+  await page.locator("#program-actions button").first().click(); await page.locator("#send:enabled").waitFor();
+  assert.equal((await chatCalls()).length,beforeRecovered,"An existing completed result started a new review");
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry, Codex/Claude and both Ollama profiles across all six program groups, selected document context, no form defaults or automatic approvals, completed-event ordering, verified-result access, question privacy, cancellation, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 explicit-approval result-review handoffs; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

@@ -2,6 +2,8 @@
 
 ## Current chat source scope — October 13, 2026
 
+[Approval-to-result handoff](research/chat-result-handoff-2026-10-13.md) requests one AI result review after an explicitly approved operation succeeds across all four AI choices and nine operation variants. Browser ordering/failure/cancellation checks pass; actual agent readback and installed acceptance remain unverified.
+
 [Previous conversations](research/chat-history-preservation-2026-10-13.md) are available locally in a separate archive for the eleven known project/folder scopes. Explicit message-only copying into an empty chat passes browser checks across all four AI choices; original storage is unchanged. Native WebView/installed migration remains unverified, and the prepared installer predates this change.
 
 The production screen is a single natural-language chat with Codex, Claude Code and the existing Ollama local/cloud profiles. The shared catalog has 24 tools. Current source/browser/backend evidence must be distinguished from the older installed packages below. The current screen has not passed native/signed-in/updated-installer acceptance, and saved-copy execution does not establish live editing.

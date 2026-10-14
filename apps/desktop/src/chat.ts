@@ -41,6 +41,7 @@ let sourceContext: Record<string, unknown> = {};
 let sourceNames: Partial<Record<Program, string>> = {};
 let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
 let renderedLegacy = "";
+let resultReview: { revision: number; project: string; provider: Provider; program: Program; jobId: string } | undefined;
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
@@ -104,12 +105,23 @@ function apply(next: DesktopSnapshot) {
     answeredChat = chat.id; persist();
   }
   render();
+  reviewCompletedResult();
 }
 async function action(work: () => Promise<void>) {
   if (commandBusy) return;
   commandBusy = true; $("error").hidden = true; render();
   try { await work(); } catch (e) { if (String(e) !== "Selección cancelada.") error(e); }
-  finally { commandBusy = false; render(); }
+  finally { commandBusy = false; render(); reviewCompletedResult(); }
+}
+function reviewCompletedResult() {
+  const pending = resultReview;
+  if (!pending || commandBusy || state.chat?.busy || state.job?.busy) return;
+  const job = state.job;
+  if (!job || pending.revision !== revision || pending.project !== JSON.stringify(state.project) || pending.provider !== provider || pending.program !== program || job.snapshot.project_id !== state.project?.[0] || jobProgram(job.snapshot) !== program || job.snapshot.input.job_id !== pending.jobId) { resultReview = undefined; return; }
+  if (["awaiting_approval", "running"].includes(job.snapshot.phase)) return;
+  resultReview = undefined;
+  if (job.snapshot.phase !== "completed" || job.error) return;
+  void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId} y explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`));
 }
 function summary(run: Snapshot): string {
   const input = run.input;
@@ -214,6 +226,7 @@ function render() {
   $("approval").hidden = !active;
   if (state.job) { $("change-summary").textContent = summary(state.job.snapshot); $("change-details").textContent = changeDetails(state.job.snapshot); }
   $<HTMLButtonElement>("approve").disabled = busy || !active || !state.job?.approval_id;
+  $("approve").textContent = `Aprobar y pedir revisión a ${providerNames[provider]}`;
   $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;
   $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = commandBusy;
   const job = state.job;
@@ -324,11 +337,14 @@ $("question-form").onsubmit = event => {
 $("approve").onclick = () => void action(async () => {
   if (state.job?.snapshot.phase !== "awaiting_approval" || !state.job.approval_id) return;
   const token = revision, jobId = state.job.snapshot.input.job_id, events = new Channel<Job>();
+  resultReview = { revision: token, project: JSON.stringify(state.project), provider, program, jobId };
   events.onmessage = job => { if (token === revision && state.job?.snapshot.input.job_id === jobId) apply({ ...state, job }); };
-  const job = await invoke<Job>("approve_operation", { approvalId: state.job.approval_id, events });
+  let job: Job;
+  try { job = await invoke<Job>("approve_operation", { approvalId: state.job.approval_id, events }); }
+  catch (e) { resultReview = undefined; throw e; }
   if (token === revision && state.job?.snapshot.input.job_id === jobId) apply({ ...state, job });
 });
-for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => void action(async () => { if (state.job) apply({ ...state, job: await invoke<Job>("cancel_job", { jobId: state.job.snapshot.input.job_id }) }); });
+for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => void action(async () => { resultReview = undefined; if (state.job) apply({ ...state, job: await invoke<Job>("cancel_job", { jobId: state.job.snapshot.input.job_id }) }); });
 void action(async () => apply(await invoke<DesktopSnapshot>("get_snapshot")));
 setInterval(() => {
   const token = revision;
