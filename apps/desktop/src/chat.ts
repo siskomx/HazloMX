@@ -1,7 +1,7 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { agentPrompt, savedConversation, type Turn } from "./design";
 import { legacyConversations } from "./chat-history";
-import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
+import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import "./chat.css";
 
 const programs = { freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
@@ -244,7 +244,12 @@ function renderConnections(disabled: boolean) {
   const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
   if (program === "freecad") {
     connect("Elegir FreeCAD…", "select_freecad");
-    connectionButton("Seleccionar documento guardado e inspeccionar…", disabled, async () => apply(await invoke<DesktopSnapshot>("prepare_cadpilot", { request: { operation: "inspect", object: "Document", units: "mm", parameters: {} } })));
+    connectionButton("Seleccionar documento guardado e inspeccionar…", disabled, async () => {
+      const selected = await invoke<DiscoveredCadDocument>("discover_cad_document");
+      if (selected.project_id !== state.project?.[0]) throw Error("El documento pertenece a otro proyecto.");
+      sourceContext.cad_document_source = { selection: selected.id, source_sha256: selected.inspection.source_sha256 };
+      sourceNames.freecad = selected.inspection.source_name; selectedNewSource("freecad");
+    });
   } else if (program === "drawing") {
     connect("Elegir CADCraft…", "select_cadcraft");
     connectionButton("Seleccionar dibujo…", disabled, async () => { const selected = await invoke<DiscoveredDrawing>("discover_drawing"); if (selected.project_id !== state.project?.[0]) throw Error("El dibujo pertenece a otro proyecto."); sourceContext.drawing_source = { selection: selected.id, sha256: selected.inspection.source_sha256 }; sourceNames.drawing = selected.inspection.source_name; selectedNewSource("drawing"); });
@@ -288,7 +293,7 @@ function context() {
   let job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
   if (job && (jobProgram(job) !== program || job.input.job_id === sourcePreviousJobs[program])) job = undefined;
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
-  const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : program === "slice" ? {slice_source:sourceContext.slice_source} : {};
+  const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : program === "slice" ? {slice_source:sourceContext.slice_source} : program === "freecad" ? {cad_document_source:sourceContext.cad_document_source} : {};
   return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: !native && job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: native ? "live_pcb_read_only" : "saved_files_and_verified_copies", live_document_connection: native, live_mutations_allowed: false };
 }
 async function send(content: string) {

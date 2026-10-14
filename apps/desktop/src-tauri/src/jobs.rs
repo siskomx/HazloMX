@@ -1138,6 +1138,88 @@ impl Workflow {
             Arc::new(AtomicBool::new(false)),
         )
     }
+    pub(crate) fn discover_cadpilot(
+        &self,
+        source: &std::path::Path,
+        addon: &std::path::Path,
+        cancelled: Arc<AtomicBool>,
+    ) -> Result<cadpilot::Discovery, String> {
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        inference_idle(&state)?;
+        if state.job.as_ref().is_some_and(|job| {
+            job.view.busy
+                || matches!(
+                    job.view.snapshot.phase,
+                    Phase::Running | Phase::AwaitingApproval
+                )
+        }) {
+            return Err("Cancela o termina la operación actual primero.".into());
+        }
+        let project = state.project.clone().ok_or("Selecciona un proyecto.")?;
+        let executable = self.executable.lock().map_err(|e| e.to_string())?.clone();
+        drop(state);
+        let id = Uuid::new_v4();
+        let directory = self.profiles.join(format!("cadpilot-discovery-{id}"));
+        fs::create_dir(&directory).map_err(|e| e.to_string())?;
+        let input = cadpilot::capture(
+            source,
+            addon,
+            &directory.join("source"),
+            id,
+            cadpilot::Request {
+                operation: cadpilot::Operation::Inspect,
+                object: "Document".into(),
+                units: orca::Units::Mm,
+                parameters: Default::default(),
+            },
+            cancelled.clone(),
+        )?;
+        let stage = directory.join("stage");
+        fs::create_dir(&stage).map_err(|e| e.to_string())?;
+        let result = cadpilot::run(
+            &executable,
+            &directory.join("source"),
+            &stage,
+            &directory.join("native"),
+            &input,
+            cancelled.clone(),
+        )?;
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        if cancelled.load(Ordering::SeqCst)
+            || state
+                .project
+                .as_ref()
+                .is_none_or(|p| p.id != project.id || p.root != project.root)
+            || *self.executable.lock().map_err(|e| e.to_string())? != executable
+        {
+            return Err("El proyecto o FreeCAD cambió, o la inspección se detuvo. Selecciona el documento de nuevo.".into());
+        }
+        Ok(cadpilot::Discovery {
+            source_name: input.source_name,
+            source_sha256: result.source_sha256,
+            preview: cadpilot::Preview {
+                catalog: result.catalog,
+                measurements: result.before,
+            },
+        })
+    }
+    pub(crate) fn propose_selected_cadpilot(
+        &self,
+        source: PathBuf,
+        addon: PathBuf,
+        request: cadpilot::Request,
+        binding: (Uuid, PathBuf, String),
+        cancelled: Arc<AtomicBool>,
+    ) -> Result<JobView, String> {
+        self.propose_cadpilot_bound(
+            source,
+            addon,
+            request,
+            Some(binding),
+            RunSource::Mcp,
+            cancelled,
+        )
+    }
     pub fn propose_tool_slice(
         &self,
         project_id: Uuid,
@@ -1288,12 +1370,13 @@ impl Workflow {
             32 * 1024 * 1024,
         )?);
         let addon = project.captured_source(base_job).join("addon");
+        let project_root = project.root.clone();
         drop(state);
         self.propose_cadpilot_bound(
             source.path.clone(),
             addon,
             request,
-            Some((project_id, source_hash)),
+            Some((project_id, project_root, source_hash)),
             origin,
             cancelled,
         )
@@ -1303,7 +1386,7 @@ impl Workflow {
         source: PathBuf,
         addon: PathBuf,
         request: cadpilot::Request,
-        binding: Option<(Uuid, String)>,
+        binding: Option<(Uuid, PathBuf, String)>,
         origin: RunSource,
         cancelled: Arc<AtomicBool>,
     ) -> Result<JobView, String> {
@@ -1322,7 +1405,10 @@ impl Workflow {
             return Err("Cancele o termine la operación actual primero.".into());
         }
         let project = state.project.clone().ok_or("Seleccione un proyecto.")?;
-        if binding.as_ref().is_some_and(|(id, _)| *id != project.id) {
+        if binding
+            .as_ref()
+            .is_some_and(|(id, root, _)| *id != project.id || *root != project.root)
+        {
             return Err("El proyecto cambió. Conecta el agente de nuevo.".into());
         }
         let executable = self.executable.lock().map_err(|e| e.to_string())?.clone();
@@ -1336,7 +1422,7 @@ impl Workflow {
             request,
             cancelled.clone(),
         )?;
-        if binding.as_ref().is_some_and(|(_, hash)| {
+        if binding.as_ref().is_some_and(|(_, _, hash)| {
             input
                 .files
                 .iter()
@@ -1391,7 +1477,10 @@ impl Workflow {
         }
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
-        if state.project.as_ref().is_none_or(|p| p.id != project.id)
+        if state
+            .project
+            .as_ref()
+            .is_none_or(|p| p.id != project.id || p.root != project.root)
             || *self.executable.lock().map_err(|e| e.to_string())? != executable
         {
             return Err(

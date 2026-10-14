@@ -104,6 +104,12 @@ pub struct Preview {
     pub catalog: BTreeMap<String, String>,
     pub measurements: BTreeMap<String, Value>,
 }
+#[derive(Debug, Clone, Serialize)]
+pub struct Discovery {
+    pub source_name: String,
+    pub source_sha256: String,
+    pub preview: Preview,
+}
 fn modules() -> Result<BTreeMap<String, String>, String> {
     let manifest: Value = serde_json::from_str(MODULE_MANIFEST).map_err(|e| e.to_string())?;
     serde_json::from_value(manifest["module_hashes"].clone()).map_err(|e| e.to_string())

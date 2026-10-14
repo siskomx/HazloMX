@@ -56,6 +56,7 @@ try {
       if (command === "discover_pcb") return { id: "selected-board", project_id: window.foreignSource ? "foreign-project" : snapshot.project[0], name: "Placa.kicad_pcb", sha256: "b".repeat(64), components: [] };
       if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { components_sha256: "d".repeat(64), components: [] } }; }
       if (command === "discover_drawing") return { id: "selected-drawing", project_id: snapshot.project[0], inspection: { source_name: "Plano.dxf", source_sha256: "c".repeat(64) } };
+      if (command === "discover_cad_document") return { id: "selected-cad-document", project_id: window.foreignCad ? "foreign-project" : snapshot.project[0], inspection: { source_name: "Pieza.FCStd", source_sha256: "1".repeat(64), preview: {catalog:{Target:"Part::Box"},measurements:{Target:{dimensions_mm:{length:10,width:20,height:30}}}} } };
       if (command === "discover_slice") return { id: "selected-slice", project_id: window.foreignSlice ? "foreign-project" : snapshot.project[0], preview: { source_name: "Pieza.stl", source_sha256: "e".repeat(64), selection_sha256: "f".repeat(64), triangles: 12, bounds_file_coordinates: [[0,0,0],[10,10,10]], declared_bed: null, bed_profiles: [] } };
       if (command === "select_agent_sketch") { snapshot.agent_source = { project_id: snapshot.project[0], source_name: "Sketch.ino", source: "void setup() {}" }; return copy(); }
       if (command === "select_project") { snapshot.project = window.otherFolder ? ["project-one", "C:\\owned\\other-folder"] : ["project-one", "C:\\owned\\project"]; snapshot.job = null; if (snapshot.chat) snapshot.chat.text = "PREVIOUS FOLDER RESPONSE"; return copy(); }
@@ -181,6 +182,22 @@ try {
   assert.equal(board.desktop_context.schematic_source, undefined);
   assert(!JSON.stringify(board).includes("private-approval"));
   await page.locator("#program").selectOption("freecad");
+  await page.getByRole("button",{name:"Seleccionar documento guardado e inspeccionar…",exact:true}).click();
+  assert.equal(await page.locator("#approval").isVisible(),false,"Selecting FreeCAD created an inspection proposal");
+  await send("Todavía no conozco sus medidas; revisa lo que hay y pregunta para qué lo necesito.");
+  const cadSource = await page.evaluate(()=>JSON.parse(window.calls.filter(call=>call.command==="start_codex_chat").at(-1).args.prompt).desktop_context);
+  assert.deepEqual(cadSource.cad_document_source,{selection:"selected-cad-document",source_sha256:"1".repeat(64)});
+  assert.equal(cadSource.current_job,null);
+  assert.equal(cadSource.live_document_connection,false);
+  assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="prepare_cadpilot").length),0);
+  const sourcePick = await page.evaluate(()=>window.calls.filter(call=>call.command==="discover_cad_document").at(-1));
+  assert.deepEqual(sourcePick.args,{},"Source selection invented user measurements or units");
+  await page.evaluate(()=>{window.foreignCad=true;});
+  await page.getByRole("button",{name:"Seleccionar documento guardado e inspeccionar…",exact:true}).click();
+  await page.locator("#error:visible").waitFor();
+  assert.match(await page.locator("#error").innerText(),/otro proyecto/);
+  assert.equal(await page.locator("#approval").isVisible(),false);
+  await page.evaluate(()=>{window.foreignCad=false;});
   await page.evaluate(() => { window.makeProposal = true; });
   await send("Prepara un cambio que pueda revisar.");
   await page.locator("#approval:visible").waitFor();
@@ -279,8 +296,8 @@ try {
   await page.locator("#new-chat").click();
   assert(!await page.locator("#conversation").innerText().then(text => text.includes("Conversación del otro proyecto")));
   const cases = [
-    ["freecad", { dimensions_mm: { length: 10, width: 10, height: 10 } }],
-    ["freecad", { cadpilot_version: "fixture", source_name: "Part.FCStd", request: { operation: "inspect" }, preview: { measurements: {} } }],
+    ["freecad", { dimensions_mm: { length: 10, width: 10, height: 10 } }, "Seleccionar documento guardado e inspeccionar…"],
+    ["freecad", { cadpilot_version: "fixture", source_name: "Part.FCStd", request: { operation: "inspect" }, preview: { measurements: {} } }, "Seleccionar documento guardado e inspeccionar…"],
     ["drawing", { cadcraft_version: "fixture", source_name: "Plano.dxf", output_format: "dxf" }, "Seleccionar dibujo…"],
     ["arduino", { fqbn: "arduino:avr:uno", source: "void setup() {}" }],
     ["agent", { agent_version: "fixture", source_name: "Sketch.ino", original_source: "void setup() {}", source: "void setup() {}" }, "Seleccionar sketch…"],

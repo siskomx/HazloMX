@@ -33,6 +33,7 @@ fn main() {
             "prepare_slice",
             "discover_slice",
             "prepare_cadpilot",
+            "discover_cad_document",
             "read_cadpilot_result",
             "prepare_cadpilot_followup",
             "prepare_kicad",

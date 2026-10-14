@@ -1,5 +1,7 @@
 # Chat-first installer candidate — October 13, 2026
 
+The later [FreeCAD source-first implementation](freecad-source-chat-2026-10-13.md) adds two tools and a source-selection command after these builds. The 26-tool source needs a fresh installer and acceptance package. The candidate/receipts below remain exact historical build evidence; they do not certify that later source or authorize native automation.
+
 ## Current candidate — source `bae7ed1`
 
 The replacement privacy-remapped NSIS build includes the [previous-conversation archive](chat-history-preservation-2026-10-13.md) and [approval-to-result handoff](chat-result-handoff-2026-10-13.md). The release build passes in 242.88 seconds; all **6,553 captured tracked inputs** remain unchanged. Both shipped executables have zero matches for the checked builder-profile root spellings. Raw logs, manifests, binaries and prepared test directories remain private.

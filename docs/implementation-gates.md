@@ -1,5 +1,7 @@
 # Hazlo Mexa implementation gates
 
+**FreeCAD before the first proposal:** [selected saved-document inspection](research/freecad-source-chat-2026-10-13.md) creates no job/approval and exposes measured native context through two source-bound tools. Four actual headless MCP edit/follow-up jobs pass in metric/inches with original/prior-output preservation and recovery. Regular/browser/desktop checks pass; catalog count is 26. No native GUI or actual agent inference is claimed. The prior 24-tool installer/prepared package predates this change and must be rebuilt before current-source acceptance.
+
 **Updated build candidate:** the [source `bae7ed1` installer `c0854251…`](research/chat-installer-candidate-2026-10-13.md) includes both conversation preservation and the result-review handoff. Release build, 6,553 unchanged-input checks, targeted binary path scans, actual 24-tool release-helper SDK and exact-identity package preparation pass. No guest/native UI/installed acceptance ran. This supersedes the earlier build-only `4af5549a…` candidate, not the unfinished acceptance gates below.
 
 **Approval-to-result conversation:** the [explicit approval handoff](research/chat-result-handoff-2026-10-13.md) requests one result-reading turn from the selected AI after successful native completion, bound to project/folder/provider/program/job. The 36-case browser matrix, delayed/duplicate completion, failure, rejection and cancellation checks pass. No automatic approval or execution is granted. Actual agent readback/native UI/current installer acceptance remains open.

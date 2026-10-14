@@ -6,8 +6,8 @@ mod desktop_ollama;
 use hazlomexa::{
     agent, cadcraft, cadpilot, claude, codex,
     host_tools::{
-        DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice,
-        HostTools,
+        DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb,
+        DiscoveredSchematic, DiscoveredSlice, HostTools,
     },
     jobs::{AgentSource, ArduinoRuntime, InferenceView, JobView, ModelProfile, Workflow},
     kicad, orca,
@@ -522,6 +522,42 @@ async fn prepare_cadpilot_followup(
     .await
     .map_err(|e| e.to_string())??;
     snapshot(&state)
+}
+
+#[tauri::command]
+async fn discover_cad_document(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<DiscoveredCadDocument, String> {
+    let project_id = state
+        .workflow
+        .view()?
+        .project
+        .ok_or("Selecciona un proyecto.")?
+        .0;
+    let tools = state.tools.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let source = app
+            .dialog()
+            .file()
+            .set_title("Selecciona el documento FreeCAD guardado para inspeccionar")
+            .add_filter("FreeCAD", &["FCStd"])
+            .blocking_pick_file()
+            .ok_or("Selección cancelada.")?
+            .into_path()
+            .map_err(|e| e.to_string())?;
+        let addon = app
+            .dialog()
+            .file()
+            .set_title("Selecciona el paquete CADPilot 0.7.7")
+            .blocking_pick_folder()
+            .ok_or("Selección cancelada.")?
+            .into_path()
+            .map_err(|e| e.to_string())?;
+        tools.select_cad_document(project_id, source, addon)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -1186,7 +1222,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, discover_cad_document, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 

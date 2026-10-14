@@ -19,6 +19,8 @@ Keep the existing connector work, project/source binding, approvals, supervision
 
 ### Refactor started — October 13, 2026
 
+Current FreeCAD update: [saved-source inspection before the first proposal](research/freecad-source-chat-2026-10-13.md) replaces the automatic inspection proposal when selecting a document. The chat agent can read its measured native catalog and prepare an explicit source-bound change without asking the user for internal names or all dimensions first. The 26-tool source passes four actual headless metric/inch edit/follow-up jobs, regular/browser/desktop checks and recovery. Saved-copy limitations, broader native tools, live editing and real-agent/native-UI/installed gates remain unfinished. The older 24-tool installer below predates this change and needs rebuilding.
+
 Current release update: the [replacement build `c0854251…`](research/chat-installer-candidate-2026-10-13.md) from `bae7ed1` includes both updates below and passes build/input-preservation/path-scan checks, actual release-helper SDK and exact-identity package preparation. It supersedes older statements requiring a rebuild for these changes. Native UI/guest/installed acceptance and actual agent readback remain unfinished.
 
 Current result-loop update: [approval-to-result handoff](research/chat-result-handoff-2026-10-13.md) explicitly requests one AI review after the approved native operation completes. It asks the selected AI to read the exact verified result and explain it without another change. The 36-case program/provider browser matrix and failure/cancellation/ordering checks pass; actual agent tool use and native/installed acceptance remain unfinished.

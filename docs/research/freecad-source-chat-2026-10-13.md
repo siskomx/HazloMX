@@ -1,0 +1,20 @@
+# FreeCAD source-first conversation — October 13, 2026
+
+Selecting an existing saved FreeCAD document in the production chat now measures it without creating an inspection job or approval card. The existing identified FreeCAD 1.1.4/CADPilot 0.7.7 runner captures the document and pinned addon into a private inspection directory, reads its supported native catalog and actual geometry, validates the report and leaves project history untouched. Millimeters in this report describe FreeCAD's native geometry; they are not an assumed unit for the user's requested change.
+
+The agent receives an opaque selected-document capability through desktop context. `inspect_selected_cad_document` returns the measured catalog and dimensions after checking the selected file's hash. `propose_selected_cad_document_change` requires that selection, source hash and an explicit typed request. The existing proposal runner recaptures and measures the source, validates the target and shows current/proposed values for human approval. The agent is instructed to resolve names internally, ask about intent before unknown measurements, preserve dimensions that need no change, and confirm missing units. No user engineering form or automatic inspection proposal is required.
+
+Selection binds the project UUID **and folder**. Original source/addon/project paths stay private; agent-facing results contain names, measurements and opaque IDs. Changed files, unknown capabilities, additional path fields, missing request units and stale hashes are refused. The existing CADPilot proposal boundary and result-derived follow-ups now also retain/check the exact project folder before capture and after native inspection. Completed follow-ups use `read_verified_result` and the existing report-bound `propose_cad_document_change`, so they derive from the edited copy rather than the original selection.
+
+## Verification
+
+- Regular suite: **136 pass, 51 ignored**. The new unit checks cached-source privacy, source/hash/cancellation refusal, exact-folder separation even with a copied UUID, and no job/history after refusal.
+- Actual headless FreeCAD/MCP gate: selection and tool inspection create zero jobs; metric and inch requests each produce an approved native edit plus a result-derived follow-up. All **four native jobs** complete and recover. Native final reports confirm heights and that follow-up before-state equals the preceding after-state. Originals and earlier edited outputs remain byte-identical during editing. An intentional source-change negative check is refused. Approval is supplied by the backend test fixture, not a native UI or model.
+- Production browser gate: new command/manifest/main-capability correspondence, source selection without measurements or a proposal, exact source context, foreign-project refusal, replaced-source suppression and new-result reuse. Existing four-provider/nine-operation result handoffs, cancellation, history and privacy assertions remain covered. The separate history suite and production typecheck/build pass.
+- `cargo check --features desktop --bins --examples` and desktop binary/example Clippy with warnings denied pass.
+
+The shared catalog has **26 tools**. The prior installer `c0854251…` has 24 tools and predates this source change; it needs rebuilding and fresh acceptance. Raw native logs/captured projects stay private. No native UI automation, real model turn, live editor connection or hardware action ran.
+
+## Remaining boundaries
+
+This still uses saved copies and the existing reviewed independent native primitives. Broader upstream operations, arbitrary feature-tree/GUI-save fidelity, live document/session editing, actual signed-in clarification and native picker/approval/installed acceptance remain unfinished. Initial picker inspection retains the existing 120-second native deadline and has no separate UI cancellation handle yet; cancelled agent proposal calls reuse the existing cancellation boundary. Native UI automation remains paused after Escape. This slice does not close the full application goal.

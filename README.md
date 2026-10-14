@@ -4,7 +4,7 @@ A Windows-first, open-source desktop interface for AI-assisted DIY and engineeri
 
 ## Status
 
-A Windows 11 x64 desktop alpha is implemented in [apps/desktop](apps/desktop/README.md): manual dimensions or an explicitly selected Ollama profile → validated rectangular-solid proposal → editable approval → verified FreeCAD FCStd/STEP files → explicit opening. Streaming, cancellation, persisted history, and crash recovery are implemented. The local Qwen3 profile remains experimental; the tested Kimi cloud profile passed the frozen Spanish cases.
+A Windows 11 x64 desktop alpha is implemented in [apps/desktop](apps/desktop/README.md). Its primary screen is one Spanish natural-language chat: describe the intended change, inspect the selected document, clarify missing information, review a proposal, approve the program's operation and request a verified-result explanation. Native programs own editing and documents. Current editing adapters work on saved copies; optional live KiCad PCB access is read-only. Actual signed-in conversations and current native/installed acceptance remain unfinished.
 
 The desktop source includes all nine planned engineering workflows, with Spanish chat, metric/imperial inputs, explicit approvals, native result readback and project recovery. Claude Code and Codex share Hazlo’s tools alongside the existing Ollama option. Completion still requires the remaining Windows, native GUI and signed-in acceptance gates:
 
@@ -12,8 +12,8 @@ The desktop source includes all nine planned engineering workflows, with Spanish
 |---|---|---|
 | Arduino CLI / Arduino Agent | Create a valid sketch and compile with an explicitly selected board/core; interactive agent tools follow | Native and installed Uno compilation and Agent copy-editing backend checks pass; wider boards/libraries and signed-in/native GUI acceptance remain unfinished |
 | KiCad / Konnect | Schematic/PCB checks and exports on project copies; editing tools follow | KiCad checks/exports and Konnect schematic/PCB copy edits support inspection, approval, saved-state verification and recovery; broader native GUI acceptance remains unfinished |
-| CADCraft | Inspect and convert drawing copies | [Inspect first](docs/research/drawing-source-first-2026-10-13/README.md), DXF/DWG/PNG conversion and approved circle edits pass scoped native checks; current guest and native GUI acceptance remain pending |
-| CADPilot | Measure and edit a selected FreeCAD document with explicit approval and recovery | Native inspection, box edits and box/cylinder additions on copies pass scoped backend checks; native GUI/live-document acceptance remains unfinished |
+| CADCraft | Inspect and convert drawing copies | Native catalog/entity inspection, reviewed geometry command plans and DXF/DWG/PNG conversion pass scoped native checks; current guest and native GUI acceptance remain pending |
+| CADPilot | Measure and edit a selected FreeCAD document with explicit approval and recovery | [Inspect before proposing](docs/research/freecad-source-chat-2026-10-13.md), metric/inch box changes and result-derived follow-ups pass native MCP checks; broader operations and native GUI/live-document acceptance remain unfinished |
 | OrcaSlicer | Verify profiles and slice to a project file | Captured machine/process/material profiles, metric/inch meshes and verified slicing files pass scoped native checks; wider profile/native GUI acceptance remains unfinished |
 
 These tracks reuse project selection, explicit approvals, owned-process cancellation, artifact verification and recovery. Each requires its own adapter and Windows acceptance evidence. The initial FreeCAD goal and its unresolved local-model benchmark do not represent completion of this broader application.
