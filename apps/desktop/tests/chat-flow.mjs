@@ -3,6 +3,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { createServer } from "vite";
 import { chromium } from "playwright-core";
+import {checkInitialChat} from "./initial-chat-check.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const mainSource = await readFile(path.join(root, "src-tauri/src/main.rs"), "utf8");
@@ -19,6 +20,23 @@ let browser;
 try {
   await server.listen();
   browser = await chromium.launch({ executablePath: process.env.HAZLOMEXA_TEST_BROWSER ?? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe", headless: true });
+  const initialPage = await browser.newPage();
+  await initialPage.addInitScript(() => {
+    window.initialCalls = [];
+    const snapshot = {project:null,job:null,inference:null,recovered:[],freecad:"",freecad_available:false};
+    window.__TAURI_INTERNALS__ = {transformCallback:()=>1,unregisterCallback:()=>{},invoke:async command=>{
+      window.initialCalls.push(command);
+      if(command!=="get_snapshot") throw Error("Initial chat dispatched an unexpected command");
+      return structuredClone(snapshot);
+    }};
+  });
+  for (let reload = 0; reload < 2; reload++) {
+    if (reload) await initialPage.reload(); else await initialPage.goto(server.resolvedUrls.local[0]);
+    await initialPage.locator("#open-project:enabled").waitFor({state:"attached"});
+    await checkInitialChat(initialPage,await initialPage.evaluate(()=>window.__TAURI_INTERNALS__.invoke("get_snapshot")));
+    assert((await initialPage.evaluate(()=>window.initialCalls)).every(command=>command==="get_snapshot"));
+  }
+  await initialPage.close();
   const page = await browser.newPage({ viewport: { width: 1200, height: 1000 } });
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   await page.addInitScript(() => {

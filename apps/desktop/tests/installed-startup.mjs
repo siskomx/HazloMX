@@ -4,6 +4,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import net from "node:net";
+import {checkInitialChat} from "./initial-chat-check.mjs";
 const {chromium}=await import(process.env.HAZLOMEXA_TEST_PLAYWRIGHT ?? "playwright-core");
 const [executable,output,sandboxArgument]=process.argv.slice(2);
 assert(executable && output,"Pass installed release app and fresh output folder");
@@ -32,21 +33,14 @@ try{
   const pageDeadline=Date.now()+15000;
   while(!main && Date.now()<pageDeadline){for(const page of browser.contexts()[0].pages()){if(await page.evaluate(()=>window.__TAURI_INTERNALS__?.metadata?.currentWebview?.label).catch(()=>undefined)==="main")main=page;}if(!main)await new Promise(resolve=>setTimeout(resolve,100));}
   assert(main,"Installed main WebView missing");main.setDefaultTimeout(10000);
-  await main.waitForFunction(()=>document.getElementById("conversation")?.textContent.includes("construir o recrear"));
+  await main.locator("#open-project:enabled").waitFor({state:"attached"});
   const snapshot=await main.evaluate(()=>window.__TAURI_INTERNALS__.invoke("get_snapshot"));
-  assert.equal(snapshot.project,null);assert.equal(snapshot.job,null);
-  for(const id of ["length","width","height"])assert.equal(await main.locator(`#${id}`).inputValue(),"");
-  assert.equal(await main.locator("#prepare").isDisabled(),true);
-  assert.equal(await main.locator("#approve").isDisabled(),true);
-  assert.equal(await main.locator(".preview svg").isVisible(),false);
-  assert.equal(await main.locator("#workflow option").count(),9);
-  assert.equal(await main.locator("#create-project").isDisabled(),false);
-  assert.equal(await main.locator("#open-project").isDisabled(),false);
+  const initial=await checkInitialChat(main,snapshot);
   await main.screenshot({path:path.join(output,"startup.png"),fullPage:true});
-  await main.reload();await main.waitForFunction(()=>document.getElementById("conversation")?.textContent.includes("construir o recrear"));
-  for(const id of ["length","width","height"])assert.equal(await main.locator(`#${id}`).inputValue(),"");
-  const result={pass:true,scope:"installed release native initial UI and read-only IPC",empty_dimensions:true,no_implicit_proposal:true,
-    workflows:9,reload_preserves_unknown_inputs:true,webview_version:browser.version(),elevated_host:elevated,debugger_configuration:sandboxPort===undefined ? "environment" : "disposable guest per-app policy",project_pickers_operated:false,engineering_ui_workflow:false,model_inference:false};
+  await main.reload();await main.locator("#open-project:enabled").waitFor({state:"attached"});
+  await checkInitialChat(main,await main.evaluate(()=>window.__TAURI_INTERNALS__.invoke("get_snapshot")));
+  const result={pass:true,scope:"installed release native initial chat UI and read-only IPC",...initial,
+    reload_preserves_initial_chat:true,webview_version:browser.version(),elevated_host:elevated,debugger_configuration:sandboxPort===undefined ? "environment" : "disposable guest per-app policy",project_pickers_operated:false,engineering_ui_workflow:false,model_inference:false};
   await fs.writeFile(path.join(output,"result.json"),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
 }catch(error){await fs.writeFile(path.join(output,"failure.json"),JSON.stringify({error:String(error),log,lastConnectionError,port,root,app_pid:child.pid,exit_code:child.exitCode},null,2));throw error;}
 finally{if(browser)await browser.close().catch(()=>{});if(child.exitCode===null){const ended=new Promise(resolve=>child.once("exit",resolve));child.kill();await ended;}}

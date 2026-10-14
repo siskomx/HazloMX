@@ -21,6 +21,7 @@ if online:
     tree.getroot().find('Networking').text='Enable'
     tree.write(root/'probe.wsb',encoding='utf-8',xml_declaration=True)
     shutil.copy2('apps/desktop/tests/installed-startup.mjs',root/'input/installed-startup.mjs')
+    shutil.copy2('apps/desktop/tests/initial-chat-check.mjs',root/'input/initial-chat-check.mjs')
     shutil.copy2('apps/desktop/tests/sandbox-webview-startup.ps1',root/'input/sandbox-webview-startup.ps1')
     for host,guest in [(Path(shutil.which('node')).resolve().parent,'C:\\NodeRO'),(Path('apps/desktop/node_modules/playwright-core').resolve(strict=True),'C:\\ModulesRO')]:
         folder=ET.SubElement(tree.getroot().find('MappedFolders'),'MappedFolder')
