@@ -2,6 +2,8 @@
 
 ## Current chat source scope — October 13, 2026
 
+October 14 CADCraft: [real existing-cloud native-tool conversation](research/drawing-real-chat-2026-10-14.md) passes five turns, native target resolution without user-supplied handles, imperial-to-metric movement and result-derived follow-up, exact unrelated-entity preservation and two-job recovery. Shared instructions now distinguish preparing a requested proposal from approving execution; only backend fixture approval is exercised. Native UI/current installer, broader parameter coverage, other providers and live editing stay open.
+
 October 14: [real FreeCAD cloud backend conversation](research/freecad-real-chat-2026-10-14.md) passes five turns, imperial input/metric follow-up, two native saved-copy jobs, preservation and recovery. A real malformed-proposal failure is fixed through schema-only correction errors shared by all providers; real first/follow-up calls recover without loosening validation. Regular suite: 141 pass/52 ignored. Native UI/desktop approval handoff/current installer/live editing and remaining program/provider conversations stay unverified.
 
 [Spanish approval reviews](research/chat-approval-language-2026-10-13.md) now show facts from the actual pending operation: explicit units/measurements, old/new values or positions, native action names and compile/file-generation scope. Focused/build/browser checks pass; technical parameters stay expandable and native/installed acceptance remains pending.
@@ -19,7 +21,7 @@ The production screen is a single natural-language chat with Codex, Claude Code 
 | Program | Current source capability | Remaining native boundary |
 |---|---|---|
 | FreeCAD 1.1.4 / CADPilot 0.7.7 | Select saved FCStd and inspect native measurements before any job; approved typed box/cylinder copy changes, FCStd/STEP verification and result-derived follow-ups; real cloud backend conversation with imperial request/metric follow-up and fixture approvals | Broader upstream tools, ordinary GUI-save fidelity, live document/session editing and source-picker/native chat acceptance |
-| CADCraft 0.5.0 | Saved-source native catalog/entities and approved plans from 33 reviewed command IDs; metric/inch copy readback | Full parameter coverage and live active-window/document binding |
+| CADCraft 0.5.0 | Saved-source native catalog/entities and approved plans from 33 reviewed command IDs; metric/inch copy readback; real cloud backend native-movement conversation with fixture approvals and result-derived follow-up | Full parameter coverage, other providers, native/installed chat and live active-window/document binding |
 | Arduino CLI | Approved Uno compilation with source/HEX/ELF checks; [verified compiler metadata/report hash](research/arduino-compiler-readback-2026-10-13.md) for the agent and read-only report viewing | Broader boards/libraries and full signed-in/native-UI/current-installed chat acceptance; firmware upload excluded |
 | Arduino Agent | Authenticated selected saved-sketch copy editing and native/disk readback | Unsaved-buffer/live editor proof; hardware mutation excluded |
 | KiCad 10.0.7 / Konnect 0.13.0 | Initial saved-source/dependency inspection and approved checks/exports from chat, schematic value changes, PCB moves and verified-result follow-ups; real Ollama cloud schematic backend loop with fixture approval; optional IPC-only live PCB reading | Desktop signed-in/native-UI checks, positive live-session observation, live writes/undo/reconciliation; live schematic API unavailable in this selected KiCad generation |
