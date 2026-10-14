@@ -147,7 +147,8 @@ const coordinates = projected.top.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/g).map(Nu
 const edgeLength = Math.hypot(coordinates[2] - coordinates[0], coordinates[3] - coordinates[1]);
 const edgeWidth = Math.hypot(coordinates[4] - coordinates[2], coordinates[5] - coordinates[3]);
 assert(Math.abs(edgeLength / edgeWidth - 2) < 1e-10, 'Preview does not preserve the 2:1 dimension ratio');
-const server = await createServer({ root, server: { host: "127.0.0.1", port: 0 } });
+// Retain the previous form UI only as a regression fixture; production loads chat.ts.
+const server = await createServer({ root, plugins: [{ name: "legacy-form-fixture", transformIndexHtml: html => html.replace('src="/src/chat.ts"', 'src="/src/main.ts"') }], server: { host: "127.0.0.1", port: 0 } });
 let browser;
 try {
   await server.listen();

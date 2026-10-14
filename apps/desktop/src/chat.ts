@@ -1,0 +1,264 @@
+import { invoke, Channel } from "@tauri-apps/api/core";
+import { agentPrompt, savedConversation, type Turn } from "./design";
+import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredDrawing, DiscoveredPcb, DiscoveredSchematic, Job, Snapshot } from "./contracts";
+import "./chat.css";
+
+const programs = { freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
+const phases: Record<Snapshot["phase"], string> = { awaiting_approval: "Pendiente de aprobación", running: "En curso", cancelled: "Cancelada", failed: "Falló", interrupted: "Interrumpida", completed: "Completada" };
+type Program = keyof typeof programs;
+type Provider = "codex" | "claude";
+const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+document.querySelector("#app")!.innerHTML = `
+  <header><div><h1>Hazlo Mexa</h1><span class="fine">Cuéntame qué quieres crear o cambiar.</span></div><button id="setup" class="secondary">Conexiones</button></header>
+  <details id="connections" class="panel"><summary>Tu IA, programas y documentos</summary>
+    <label for="provider">IA que usará las herramientas</label><select id="provider"><option value="codex">Codex instalado</option><option value="claude">Claude Code instalado</option><option disabled>Ollama · chat con herramientas pendiente</option></select>
+    <p class="fine">Tu mensaje y los documentos seleccionados pueden enviarse al servicio de la IA y consumir tu plan. Inicia sesión personalmente cuando el cliente lo solicite.</p>
+    <div class="actions"><button id="select-client" class="secondary">Elegir cliente instalado…</button><button id="connect-account">Conectar cuenta</button><button id="open-login" class="secondary" hidden>Abrir inicio de sesión</button><button id="cancel-login" class="secondary" hidden>Detener conexión</button></div><p id="login-status" class="status fine"></p>
+    <label for="program">Programa con el que trabajaremos</label><select id="program"></select><div id="program-actions" class="actions"></div><p id="source-status" class="status fine"></p>
+    <p class="fine">Las conexiones actuales trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento. La conexión a documentos vivos sigue pendiente.</p>
+    <h2>Proyecto local</h2><p id="project-name" class="fine"></p><div class="actions"><button id="create-project" class="secondary">Crear proyecto…</button><button id="open-project" class="secondary">Abrir proyecto…</button></div>
+  </details>
+  <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
+    <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
+    <form id="chat-form"><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p>
+    <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><p class="fine">Esta propuesta trabaja con una copia guardada. Revisa el destino y el cambio antes de aprobar.</p><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
+    <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
+  </section>
+  <details id="results" class="panel"><summary>Resultados e historial verificados</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
+  <p id="error" role="alert" hidden></p><dialog id="report"><h2>Resultado guardado · solo lectura</h2><pre id="report-text"></pre><form method="dialog"><button>Cerrar</button></form></dialog>`;
+for (const [value, label] of Object.entries(programs)) $("program").append(new Option(label, value));
+
+let state: DesktopSnapshot = { project: null, job: null, inference: null, recovered: [], freecad: "", freecad_available: false };
+let program: Program = "freecad", provider: Provider = "codex";
+let commandBusy = false, revision = 0, newSession = true;
+let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
+let renderedConversation = "";
+let sourceContext: Record<string, unknown> = {};
+let sourceNames: Partial<Record<Program, string>> = {};
+
+function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
+function persist() {
+  if (!storageKey) return;
+  const saved = JSON.stringify({ version: 1, turns, answeredChat });
+  try {
+    if (new TextEncoder().encode(saved).length > 8192) throw Error("La conversación es larga; inicia otra para guardar el nuevo contexto.");
+    localStorage.setItem(storageKey, saved); $("storage-status").textContent = "Conversación guardada localmente en este proyecto y para esta IA.";
+  } catch { $("storage-status").textContent = "No se pudo guardar esta conversación. Conserva lo importante antes de cerrar."; }
+}
+function restore() {
+  const key = state.project ? `hazlomexa.chat.v2:${JSON.stringify([...state.project, provider])}` : "";
+  if (key === storageKey) return;
+  persist(); storageKey = key; turns = []; answeredChat = undefined; newSession = true;
+  try { const saved = savedConversation(key ? localStorage.getItem(key) : null); if (saved) { turns = saved.turns; answeredChat = saved.answeredChat; } } catch { /* Storage failure must not prevent using the chat. */ }
+}
+function apply(next: DesktopSnapshot) {
+  const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
+  if (projectChanged) { revision++; sourceContext = {}; sourceNames = {}; }
+  if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
+  if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
+  if (next.codex_login && state.codex_login?.id === next.codex_login.id && state.codex_login.sequence > next.codex_login.sequence) next.codex_login = state.codex_login;
+  state = next; restore();
+  const chat = state.chat;
+  // A chat view carries a project UUID, not its folder; copied projects can share that UUID.
+  if (projectChanged && chat) answeredChat = chat.id;
+  if (chat && chat.provider === provider && !chat.busy && chat.id !== answeredChat && chat.project_id === state.project?.[0]) {
+    if (chat.text) turns.push({ role: "assistant", content: chat.text });
+    else if (chat.cancelled) turns.push({ role: "assistant", content: "Conversación detenida." });
+    if (chat.error) error(chat.error);
+    answeredChat = chat.id; persist();
+  }
+  render();
+}
+async function action(work: () => Promise<void>) {
+  if (commandBusy) return;
+  commandBusy = true; $("error").hidden = true; render();
+  try { await work(); } catch (e) { if (String(e) !== "Selección cancelada.") error(e); }
+  finally { commandBusy = false; render(); }
+}
+function summary(run: Snapshot): string {
+  const input = run.input;
+  if (input.konnect_version) return input.pcb_move ? `KiCad · ${input.pcb_move.reference}: (${input.pcb_move.expected_x_mm}, ${input.pcb_move.expected_y_mm}) → (${input.pcb_move.x_mm}, ${input.pcb_move.y_mm}) mm` : `KiCad · ${input.edit.reference}: ${input.edit.expected_value} → ${input.edit.value}`;
+  if (input.cadpilot_version) return `FreeCAD · ${input.source_name} · ${input.request.operation === "inspect" ? "Inspeccionar y medir" : "Cambiar documento"}`;
+  if (input.orca_version) return `OrcaSlicer · ${input.source_name} · ${input.settings.machine} · ${input.settings.filament}`;
+  if (input.kicad_version) return `KiCad · revisar ${input.entry}`;
+  if (input.cadcraft_version) return `CADCraft · ${input.source_name} → ${input.output_format.toUpperCase()}`;
+  if (input.agent_version) return `Arduino Agent · cambios en ${input.source_name}`;
+  if (input.dimensions_mm) { const d = input.dimensions_mm; return `FreeCAD · ${d.length} × ${d.width} × ${d.height} mm`; }
+  return `Arduino · compilar para ${input.fqbn}`;
+}
+function changeDetails(run: Snapshot): string {
+  const input = run.input;
+  if (input.agent_version) return `Original:\n${input.original_source}\n\nCambio propuesto:\n${input.source}`;
+  if (typeof input.source === "string") return input.source;
+  if (input.konnect_version) return JSON.stringify(input.pcb_move ?? input.edit, null, 2);
+  if (input.cadpilot_version) return JSON.stringify({ document: input.source_name, change: input.request, measurements: input.preview.measurements }, null, 2);
+  if (input.orca_version) return JSON.stringify({ model: input.source_name, units: input.units, dimensions_mm: input.mesh.bounds_mm, settings: input.settings }, null, 2);
+  if (input.kicad_version) return JSON.stringify({ document: input.entry, report_units: input.units, captured_files: input.files.map(file => file.path) }, null, 2);
+  if (input.cadcraft_version) return JSON.stringify({ document: input.source_name, units: input.units, output: input.output_format, circle: input.circle, accepted_loss: input.allow_loss }, null, 2);
+  return JSON.stringify(input.dimensions_mm, null, 2);
+}
+function artifactActions(run: Snapshot): [string, string][] {
+  const input = run.input;
+  if (input.konnect_version) return [["Original", "konnect_original"], ["Resultado guardado", "konnect_edited"], ["Informe", "konnect_report"], ...(input.pcb_move ? [["Revisión KiCad", "kicad_report"], ["Exportaciones", "kicad_outputs"]] : input.schema_version === 2 ? [["Netlist", "konnect_netlist"]] : [])] as [string, string][];
+  if (input.cadpilot_version) return [["Original", "original_cad"], ["Mediciones e informe", "cadpilot_report"], ...(input.request.operation === "inspect" ? [] : [["Abrir en FreeCAD", "fcstd"], ["STEP", "step"]])] as [string, string][];
+  if (input.orca_version) return [["3MF", "sliced"], ["G-code", "gcode"], ["Informe", "slice_report"]];
+  if (input.kicad_version) return [["Documento revisado", "kicad_source"], ["Exportaciones", "kicad_outputs"], ["Informe", "kicad_report"]];
+  if (input.cadcraft_version) return [["Dibujo", "drawing"], ["Vista", "drawing_preview"], ["Informe", "drawing_report"]];
+  if (input.agent_version) return [["Sketch original", "original_sketch"], ["Sketch verificado", "sketch"]];
+  if (input.dimensions_mm) return [["Abrir en FreeCAD", "fcstd"], ["STEP", "step"], ["Informe", "solid_report"]];
+  return [["Sketch", "sketch"], ["HEX", "hex"], ["ELF", "elf"]];
+}
+function renderHistory() {
+  $("history").replaceChildren();
+  const runs = new Map(state.recovered.map(run => [run.input.job_id, run]));
+  if (state.job) runs.set(state.job.snapshot.input.job_id, state.job.snapshot);
+  for (const run of [...runs.values()].sort((a, b) => (b.audit?.created_unix_ms ?? 0) - (a.audit?.created_unix_ms ?? 0) || a.input.job_id.localeCompare(b.input.job_id))) {
+    const row = document.createElement("article"), title = document.createElement("p"); title.textContent = `${summary(run)} · ${phases[run.phase]}`; row.append(title);
+    if (run.phase === "completed") {
+      const actions = document.createElement("div"); actions.className = "actions";
+      for (const [label, format] of artifactActions(run)) {
+        const button = document.createElement("button"); button.className = "secondary"; button.textContent = label; button.disabled = commandBusy;
+        button.onclick = () => void action(async () => {
+          const content = await invoke<string | null>("open_artifact", { jobId: run.input.job_id, format });
+          if (content !== null) { $("report-text").textContent = content; $<HTMLDialogElement>("report").showModal(); }
+          $("opening-status").textContent = content !== null ? "Informe guardado abierto en modo de solo lectura." : "Se solicitó abrir el archivo verificado en Windows.";
+        }); actions.append(button);
+      } row.append(actions);
+    } $("history").append(row);
+  }
+}
+function renderQuestion() {
+  const chat = state.chat?.provider === provider ? state.chat : null;
+  const question = chat?.busy && !chat.cancelled ? chat.question : null;
+  $("question-form").hidden = !question;
+  $<HTMLButtonElement>("answer-question").disabled = commandBusy;
+  if (!question) { questionId = undefined; $("question-fields").replaceChildren(); return; }
+  if (question.id === questionId) return;
+  questionId = question.id; $("question-fields").replaceChildren();
+  for (const item of question.questions) {
+    const label = document.createElement("label"); label.textContent = item.question;
+    if (item.options?.length && !item.isOther && !item.isSecret) {
+      const select = document.createElement("select"); select.name = item.id; select.required = true; select.add(new Option("Elige una respuesta", ""));
+      for (const option of item.options) select.add(new Option(`${option.label} · ${option.description}`, option.label)); label.append(select);
+    } else { const input = document.createElement("input"); input.name = item.id; input.required = true; input.type = item.isSecret ? "password" : "text"; input.autocomplete = "off"; label.append(input); }
+    $("question-fields").append(label);
+  }
+}
+function render() {
+  const busy = commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
+  const clientReady = provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected;
+  $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
+  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${provider === "codex" ? "Codex" : "Claude Code"} · ${programs[program]} · archivos guardados`;
+  $("source-status").textContent = sourceNames[program] ?? (program === "slice" ? "La selección inicial del modelo y perfiles para este chat sigue pendiente de integración." : "Selecciona un documento si quieres trabajar sobre uno existente.");
+  const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
+  if (JSON.stringify(messages) !== renderedConversation) {
+    renderedConversation = JSON.stringify(messages);
+    const log = $("conversation"), follow = log.scrollHeight - log.scrollTop - log.clientHeight < 48;
+    log.replaceChildren();
+    for (const message of messages) { const row = document.createElement("p"); row.className = `message ${message.role}`; row.textContent = `${message.role === "user" ? "Tú" : "Hazlo Mexa"}: ${message.content}`; log.append(row); }
+    if (follow) log.scrollTop = log.scrollHeight;
+  }
+  $("chat-progress").textContent = state.chat?.provider === provider && state.chat.busy ? state.chat.cancelled ? "Deteniendo conversación…" : state.chat.text || "Consultando a tu IA…" : "";
+  for (const id of ["send", "new-chat"]) $<HTMLButtonElement>(id).disabled = busy || !state.project || !clientReady;
+  $<HTMLTextAreaElement>("prompt").disabled = busy;
+  $<HTMLButtonElement>("stop").disabled = commandBusy || !state.chat?.busy || !!state.chat.cancelled;
+  for (const id of ["provider", "program"]) $<HTMLSelectElement>(id).disabled = busy || state.job?.snapshot.phase === "awaiting_approval";
+  for (const id of ["select-client", "create-project", "open-project"]) $<HTMLButtonElement>(id).disabled = busy;
+  $<HTMLButtonElement>("connect-account").hidden = provider !== "codex";
+  $<HTMLButtonElement>("connect-account").disabled = busy || !state.codex;
+  $("open-login").hidden = !state.codex_login?.busy || !state.codex_login.auth_url || !!state.codex_login.cancelled;
+  $("cancel-login").hidden = !state.codex_login?.busy || !!state.codex_login.cancelled;
+  $("login-status").textContent = provider === "claude" ? state.claude ? `Claude Code ${state.claude.version}. Usa su inicio de sesión existente.` : "Elige el cliente Claude Code instalado." : state.codex_login?.error ?? (state.codex_login?.connected ? "Cuenta Codex conectada." : state.codex_login?.busy ? "Completa personalmente la conexión con Codex." : "Elige Codex y conecta tu cuenta.");
+  const active = state.job?.snapshot.phase === "awaiting_approval";
+  $("approval").hidden = !active;
+  if (state.job) { $("change-summary").textContent = summary(state.job.snapshot); $("change-details").textContent = changeDetails(state.job.snapshot); }
+  $<HTMLButtonElement>("approve").disabled = busy || !active || !state.job?.approval_id;
+  $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;
+  $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = commandBusy;
+  const job = state.job;
+  $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
+  renderConnections(busy || !!active); renderQuestion(); renderHistory();
+}
+function connectionButton(label: string, disabled: boolean, work: () => Promise<void>) {
+  const button = document.createElement("button"); button.textContent = label; button.className = "secondary"; button.disabled = disabled || !state.project; button.onclick = () => void action(work); $("program-actions").append(button);
+}
+function renderConnections(disabled: boolean) {
+  $("program-actions").replaceChildren();
+  const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
+  if (program === "freecad") {
+    connect("Elegir FreeCAD…", "select_freecad");
+    connectionButton("Seleccionar documento guardado e inspeccionar…", disabled, async () => apply(await invoke<DesktopSnapshot>("prepare_cadpilot", { request: { operation: "inspect", object: "Document", units: "mm", parameters: {} } })));
+  } else if (program === "drawing") {
+    connect("Elegir CADCraft…", "select_cadcraft");
+    connectionButton("Seleccionar dibujo…", disabled, async () => { const selected = await invoke<DiscoveredDrawing>("discover_drawing"); if (selected.project_id !== state.project?.[0]) throw Error("El dibujo pertenece a otro proyecto."); sourceContext.drawing_source = { selection: selected.id, sha256: selected.inspection.source_sha256 }; sourceNames.drawing = selected.inspection.source_name; });
+  } else if (program === "arduino") connect("Elegir Arduino CLI y su entorno…", "select_arduino");
+  else if (program === "agent") {
+    connect("Conectar Arduino Agent", "connect_agent");
+    connectionButton("Seleccionar sketch…", disabled, async () => { apply(await invoke<DesktopSnapshot>("select_agent_sketch")); sourceNames.agent = state.agent_source?.source_name; sourceContext.sketch_source = { name: state.agent_source?.source_name }; });
+  } else if (program === "kicad") {
+    connect("Elegir KiCad…", "select_kicad"); connect("Elegir Konnect…", "select_konnect");
+    connectionButton("Seleccionar esquema…", disabled, async () => { const selected = await invoke<DiscoveredSchematic>("discover_schematic"); if (selected.project_id !== state.project?.[0]) throw Error("El esquema pertenece a otro proyecto."); sourceContext.schematic_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.pcb_source; sourceNames.kicad = selected.name; });
+    connectionButton("Seleccionar PCB…", disabled, async () => { const selected = await invoke<DiscoveredPcb>("discover_pcb"); if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto."); sourceContext.pcb_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.schematic_source; sourceNames.kicad = selected.name; });
+  } else connect("Elegir OrcaSlicer…", "select_orca");
+}
+function context() {
+  const job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
+  const selected = program === "kicad" ? sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : {};
+  return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: "saved_files_and_verified_copies", live_document_connection: false };
+}
+async function send(content: string) {
+  const token = ++revision;
+  const ready = provider === "codex" ? state.codex_conversation_ready : state.claude_conversation_ready;
+  const startNew = newSession || !ready;
+  const prompt = agentPrompt(content, startNew ? turns : [], context());
+  const events = new Channel<ChatView>();
+  events.onmessage = chat => {
+    if (token !== revision || chat.project_id !== state.project?.[0] || chat.provider !== provider) return;
+    apply({ ...state, chat });
+    if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
+  };
+  turns.push({ role: "user", content }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; render();
+  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : "start_claude_chat", { prompt, newSession: startNew, events });
+  if (token === revision) { newSession = false; apply(next); }
+}
+$("setup").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("provider").focus(); };
+$("provider").onchange = () => { persist(); revision++; provider = $<HTMLSelectElement>("provider").value as Provider; storageKey = ""; turns = []; answeredChat = undefined; restore(); render(); };
+$("program").onchange = () => { program = $<HTMLSelectElement>("program").value as Program; $("opening-status").textContent = ""; render(); };
+$("select-client").onclick = () => void action(async () => { revision++; apply(await invoke<DesktopSnapshot>(provider === "codex" ? "select_codex" : "select_claude")); });
+$("connect-account").onclick = () => void action(async () => {
+  const token = ++revision, events = new Channel<CodexLoginView>();
+  events.onmessage = login => { if (token !== revision || (state.codex_login?.id === login.id && state.codex_login.sequence > login.sequence)) return; state.codex_login = login; render(); };
+  const next = await invoke<DesktopSnapshot>("connect_codex", { events });
+  if (token === revision) { if (next.codex_login?.id === state.codex_login?.id && next.codex_login && state.codex_login && next.codex_login.sequence < state.codex_login.sequence) next.codex_login = state.codex_login; apply(next); }
+});
+$("open-login").onclick = () => void action(async () => { if (state.codex_login) await invoke("open_codex_login", { id: state.codex_login.id }); });
+$("cancel-login").onclick = () => void action(async () => { if (state.codex_login) { const login = await invoke<CodexLoginView>("cancel_codex_login", { id: state.codex_login.id }); if (state.codex_login.id === login.id && state.codex_login.sequence <= login.sequence) state.codex_login = login; } });
+for (const [id, create] of [["create-project", true], ["open-project", false]] as const) $(id).onclick = () => void action(async () => { revision++; apply(await invoke<DesktopSnapshot>("select_project", { create })); $("opening-status").textContent = ""; });
+$("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if (content) void action(() => send(content)); };
+$("new-chat").onclick = () => { if (state.chat?.busy || commandBusy) return; revision++; turns = []; answeredChat = state.chat?.id; newSession = true; persist(); render(); };
+$("stop").onclick = () => void action(async () => { if (state.chat) apply({ ...state, chat: await invoke<ChatView>("cancel_chat", { id: state.chat.id }) }); });
+$("question-form").onsubmit = event => {
+  event.preventDefault(); const chat = state.chat, question = chat?.question;
+  if (!chat?.busy || chat.cancelled || !question || commandBusy) return;
+  const answers = Object.fromEntries(new FormData($<HTMLFormElement>("question-form")).entries());
+  void action(async () => {
+    const token = revision;
+    turns.push({ role: "user", content: question.questions.map(item => `${item.question}\n${item.isSecret ? "Respuesta privada enviada." : answers[item.id]}`).join("\n\n") }); persist();
+    const reply = await invoke<ChatView>("answer_codex_question", { id: chat.id, questionId: question.id, answers });
+    if (token !== revision) return;
+    apply({ ...state, chat: reply });
+  });
+};
+$("approve").onclick = () => void action(async () => {
+  if (state.job?.snapshot.phase !== "awaiting_approval" || !state.job.approval_id) return;
+  const token = revision, jobId = state.job.snapshot.input.job_id, events = new Channel<Job>();
+  events.onmessage = job => { if (token === revision && state.job?.snapshot.input.job_id === jobId) apply({ ...state, job }); };
+  const job = await invoke<Job>("approve_operation", { approvalId: state.job.approval_id, events });
+  if (token === revision && state.job?.snapshot.input.job_id === jobId) apply({ ...state, job });
+});
+for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => void action(async () => { if (state.job) apply({ ...state, job: await invoke<Job>("cancel_job", { jobId: state.job.snapshot.input.job_id }) }); });
+void action(async () => apply(await invoke<DesktopSnapshot>("get_snapshot")));
+setInterval(() => {
+  const token = revision;
+  if (!commandBusy && (state.chat?.busy || state.job?.busy || state.codex_login?.busy)) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
+}, 1000);

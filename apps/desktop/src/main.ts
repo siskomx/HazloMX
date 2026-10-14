@@ -1,3 +1,4 @@
+// Legacy form UI exercised by design-flow.mjs; production starts in chat.ts.
 import { invoke, Channel } from "@tauri-apps/api/core";
 import "./style.css";
 
