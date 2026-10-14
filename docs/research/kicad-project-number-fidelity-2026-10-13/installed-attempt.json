@@ -1,0 +1,58 @@
+{
+  "pass": false,
+  "installer_sha256": "07ac4126473b67e3d83fe9a1afc3ac08d306097b8a2ab6ff15582f7d987c30b5",
+  "native_ui_catalog_components": 13,
+  "native_ui_ambiguous_matches": 3,
+  "ambiguous_request_did_not_change_draft": true,
+  "selected_component_without_typing_reference": true,
+  "contextual_chat_request": "c\u00e1mbiala a 22k",
+  "native_ui_preview_and_explicit_approval": true,
+  "backend_job_completed": true,
+  "saved_schematic_only_value_changed": true,
+  "saved_netlist_value": "22k",
+  "native_ui_read_only_report_opened": true,
+  "source_files_unchanged": 4,
+  "prior_artifact_files_unchanged": 121,
+  "report_file_hashes_match": 11,
+  "failure": "Independent project JSON comparison found unrequested numeric rounding",
+  "unrequested_numeric_changes": [
+    {
+      "field": "board.design_settings.rules.min_microvia_diameter",
+      "before": "0.19999999999999998",
+      "after": "0.2"
+    },
+    {
+      "field": "board.design_settings.rules.min_microvia_drill",
+      "before": "0.09999999999999999",
+      "after": "0.1"
+    },
+    {
+      "field": "board.design_settings.rules.min_via_annular_width",
+      "before": "0.09999999999999999",
+      "after": "0.1"
+    },
+    {
+      "field": "board.design_settings.defaults.board_outline_line_width",
+      "before": "0.09999999999999999",
+      "after": "0.1"
+    },
+    {
+      "field": "board.design_settings.defaults.copper_line_width",
+      "before": "0.19999999999999998",
+      "after": "0.2"
+    },
+    {
+      "field": "board.design_settings.defaults.courtyard_line_width",
+      "before": "0.049999999999999996",
+      "after": "0.05"
+    },
+    {
+      "field": "board.design_settings.defaults.fab_line_width",
+      "before": "0.09999999999999999",
+      "after": "0.1"
+    }
+  ],
+  "new_installer_or_native_ui_fix_verified": false,
+  "model_inference": false,
+  "hardware_mutations": false
+}

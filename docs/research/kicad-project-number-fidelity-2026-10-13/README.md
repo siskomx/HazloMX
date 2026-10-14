@@ -1,0 +1,28 @@
+# Preserve KiCad project numbers during copy editing
+
+The installed schematic UI test uncovered a fidelity defect in package `07ac4126…`: Hazlo parsed and reserialized `.kicad_pro` files while making their references portable, rounding seven board settings even though only a resistor Value was approved. For example, `0.19999999999999998` became `0.2`. The source now preserves the number literals in new captures. **The installed package predates this fix; its schematic workflow is not accepted as a full fidelity pass.**
+
+## Native installed attempt
+
+The real installed Hazlo window passed the Konnect/KiCad runtime pickers, source-folder/schematic pickers and a 13-component catalog. The request **cambia la resistencia de 10k a 22k** correctly found three matches and left the draft unchanged. Choosing a resistor from the list and saying **cámbiala a 22k** filled its draft without typing a reference. The approval preview showed the selected file, R1, actual 10k → proposed 22k and four captured files. Explicit approval completed the native edit; the read-only report opened.
+
+An independent schematic AST comparison confirmed that only R1's Value changed, and the saved KiCad netlist contains 22k. All four source files and 121 prior artifact files are unchanged; eleven report hashes match disk. However, independent decimal comparison of the entire project JSON found the seven unrequested numeric changes retained in `installed-attempt.json`. Backend completion and its existing validators did not catch this: both generation and validation used the same lossy serializer. The attempted edited-file reveal did not establish an Explorer selection; it is not claimed.
+
+## Source fix and compatibility
+
+`kicad_project::portable_files` serves KiCad checks/exports, Konnect schematic edits and Konnect PCB edits. New captures use source schema 2. They retain the existing full JSON/depth validation, relocate only validated worksheet references, and serialize raw JSON leaves so that numbers avoid floating-point conversion. Objects/arrays are traversed through the existing JSON library, rather than a new lexer. This uses the already pinned serde_json 1.0.152 with its `raw_value` feature; no dependency version changes. [RawValue's documented serialization behavior](https://docs.rs/serde_json/latest/serde_json/value/struct.RawValue.html) explains why unchanged leaves keep their numeric text.
+
+Source schema 1 keeps the exact old serializer for existing saved results. Changing every parser globally would invalidate their expected project bytes. Unknown source schema versions remain rejected; other operation and result schemas are unchanged. No historical engineering files are rewritten.
+
+## Validation
+
+- The copy-format regression checks raw nested number fields, a long decimal exponent, an integer above 2⁵³, a numeric-looking string, booleans/null, absolute worksheet relocation in objects/arrays, unchanged captures, legacy serialization and refusal of an unknown schema.
+- The regular Rust library suite passes **118 tests**, with 44 separately scoped ignored entries. Desktop/custom-protocol Clippy over all targets passes with warnings denied.
+- The expanded real `actual_konnect_captured_copy_adapter` test includes the schematic, PCB, project and worksheet instead of only the schematic. Actual Konnect 0.13.0 / KiCad CLI 10.0.7 editing/readback/publication passes, and its seven affected project fields preserve their raw literals. An independent Python decimal comparison verifies the entire saved project, source preservation, eleven report hashes, the schematic-only 10k → 12.34k edit and native netlist value. `native-adapter.json` records this source-backend scope; it is not native UI or installed-release proof.
+- `retained_legacy_project_number_format_recovery` opens a private copy of the earlier native engineering project, requires a completed source-schema-1 Konnect result and compares every recovered record. It passes; all **228 persistent copied project files** retain their hashes. The original host project is not opened by that test. `legacy-recovery.json` records the result.
+
+Commands: `rtk cargo test -p hazlomexa --lib`; `rtk cargo test -p hazlomexa --lib actual_konnect_captured_copy_adapter -- --ignored --nocapture`; `rtk cargo test -p hazlomexa --lib retained_legacy_project_number_format_recovery -- --ignored`; `rtk cargo clippy -p hazlomexa --features custom-protocol --all-targets -- -D warnings`. The last recovery test requires an owned legacy project copy at `target/kicad-number-fidelity/legacy-project`, without its writer lock; it is not a user-project migration command. Raw native logs and fixture paths remain private.
+
+## Still unfinished
+
+Rebuild/package the fix and retest the installed schematic workflow, its result-opening controls and native restart recovery. The other three workflow choices (Konnect PCB, Arduino Agent and OrcaSlicer) still need their native UI passes, so the full goal still has four unfinished native choices. Chronological history ordering and stale generic result messages also need UI fixes. Signed-in conversations, broader CAD fidelity and live unsaved editing remain open. No model inference, firmware upload or hardware/printer control ran here.

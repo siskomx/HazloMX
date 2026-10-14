@@ -992,12 +992,36 @@ mod tests {
             .unwrap();
         let (root, mut input) = fixture();
         input.schema_version = 2;
+        let sources = root.join("Sources");
+        for name in [
+            "basic_test.kicad_pro",
+            "basic_test.kicad_pcb",
+            "custom_ds.kicad_wks",
+        ] {
+            fs::copy(
+                workspace
+                    .join("docs/research/konnect-runtime-2026-10-11/raw/Original")
+                    .join(name),
+                sources.join(name),
+            )
+            .unwrap();
+        }
+        let captured = root.join("FullCapture");
+        input.source = source::capture(
+            &sources,
+            &sources.join("basic_test.kicad_sch"),
+            &captured,
+            input.job_id,
+            crate::kicad::Units::In,
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
         let stage = root.join("Stage");
         fs::create_dir(&stage).unwrap();
         let result = run(
             &workspace.join("target/konnect-probe/runtime/konnect.exe"),
             &workspace.join("target/kicad-probe/runtime/bin/kicad-cli.exe"),
-            &root.join("Capture"),
+            &captured,
             &stage,
             &root.join("Profile"),
             &input,
@@ -1005,6 +1029,30 @@ mod tests {
         )
         .unwrap();
         validate_artifacts(&stage, &input, &result).unwrap();
+        fn raw_field(bytes: &[u8], keys: &[&str]) -> String {
+            use serde_json::value::RawValue;
+            let mut raw: Box<RawValue> = serde_json::from_slice(bytes).unwrap();
+            for key in keys {
+                let mut fields: std::collections::BTreeMap<String, Box<RawValue>> =
+                    serde_json::from_str(raw.get()).unwrap();
+                raw = fields.remove(*key).unwrap();
+            }
+            raw.get().to_owned()
+        }
+        let original = fs::read(captured.join("basic_test.kicad_pro")).unwrap();
+        let edited = fs::read(stage.join("Edited/basic_test.kicad_pro")).unwrap();
+        for (group, field) in [
+            ("rules", "min_microvia_diameter"),
+            ("rules", "min_microvia_drill"),
+            ("rules", "min_via_annular_width"),
+            ("defaults", "board_outline_line_width"),
+            ("defaults", "copper_line_width"),
+            ("defaults", "courtyard_line_width"),
+            ("defaults", "fab_line_width"),
+        ] {
+            let keys = ["board", "design_settings", group, field];
+            assert_eq!(raw_field(&original, &keys), raw_field(&edited, &keys));
+        }
         assert_eq!(
             fs::read(root.join("Sources/basic_test.kicad_sch")).unwrap(),
             fs::read(root.join("Capture/basic_test.kicad_sch")).unwrap()

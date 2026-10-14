@@ -74,7 +74,7 @@ impl KicadInput {
     pub fn validate(&self) -> Result<(), String> {
         relative(&self.entry)?;
         crate::project::valid_location(Path::new(&self.source_root)).map_err(|e| e.to_string())?;
-        if self.schema_version != 1
+        if !matches!(self.schema_version, 1 | 2)
             || self.job_id.is_nil()
             || self.kicad_version != crate::kicad::VERSION
             || !(self.entry.ends_with(".kicad_sch") || self.is_board())
@@ -586,6 +586,54 @@ fn relocate_project(
     Ok(())
 }
 
+fn relocate_project_raw(
+    raw: &serde_json::value::RawValue,
+    root: &Path,
+    owner: &Path,
+    vars: &BTreeMap<String, String>,
+) -> Result<Box<serde_json::value::RawValue>, String> {
+    use serde_json::value::{to_raw_value, RawValue};
+    match raw.get().as_bytes().first() {
+        Some(b'{') => {
+            let mut values: BTreeMap<String, Box<RawValue>> =
+                serde_json::from_str(raw.get()).map_err(|e| e.to_string())?;
+            for (key, value) in &mut values {
+                if key == "page_layout_descr_file" {
+                    if let Ok(path) = serde_json::from_str::<String>(value.get()) {
+                        if !path.is_empty() {
+                            let atom = Atom {
+                                value: path,
+                                start: 0,
+                                end: 0,
+                            };
+                            if let Some(path) = source_path(root, &root.join(owner), &atom, vars)? {
+                                *value = to_raw_value(&relocated(
+                                    path.strip_prefix(root)
+                                        .map_err(|_| "Recurso fuera del proyecto.")?,
+                                    owner,
+                                )?)
+                                .map_err(|e| e.to_string())?;
+                            }
+                        }
+                    }
+                } else {
+                    *value = relocate_project_raw(value, root, owner, vars)?;
+                }
+            }
+            to_raw_value(&values).map_err(|e| e.to_string())
+        }
+        Some(b'[') => {
+            let mut values: Vec<Box<RawValue>> =
+                serde_json::from_str(raw.get()).map_err(|e| e.to_string())?;
+            for value in &mut values {
+                *value = relocate_project_raw(value, root, owner, vars)?;
+            }
+            to_raw_value(&values).map_err(|e| e.to_string())
+        }
+        _ => Ok(raw.to_owned()),
+    }
+}
+
 /// Keep all source readers pinned while discovering dependencies and copying the captured bytes.
 pub fn capture(
     root: &Path,
@@ -710,7 +758,7 @@ pub fn capture(
         bytes.insert(name, data);
     }
     let input = KicadInput {
-        schema_version: 1,
+        schema_version: 2,
         job_id,
         kicad_version: crate::kicad::VERSION.into(),
         source_root: slash(root)?,
@@ -816,8 +864,19 @@ pub(crate) fn portable_files(
         } else if rel.extension().is_some_and(|v| v == "kicad_pro") {
             let mut value: serde_json::Value =
                 serde_json::from_slice(&bytes).map_err(|_| "Proyecto KiCad no válido.")?;
-            relocate_project(&mut value, source_root, &rel, &vars)?;
-            bytes = serde_json::to_vec_pretty(&value).map_err(|e| e.to_string())?;
+            if input.schema_version == 1 {
+                // Keep the original serializer for validation of already-published copies.
+                relocate_project(&mut value, source_root, &rel, &vars)?;
+                bytes = serde_json::to_vec_pretty(&value).map_err(|e| e.to_string())?;
+            } else {
+                // Value above retains the existing JSON/depth validation; raw leaves preserve numbers.
+                let raw: Box<serde_json::value::RawValue> =
+                    serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+                bytes = relocate_project_raw(&raw, source_root, &rel, &vars)?
+                    .get()
+                    .as_bytes()
+                    .to_vec();
+            }
         }
         consume(&rel, &bytes)?;
     }
@@ -970,6 +1029,69 @@ mod tests {
             fs::read(imported.join("main.kicad_pro")).unwrap(),
             fs::read(source.join("main.kicad_pro")).unwrap()
         );
+    }
+    #[test]
+    fn working_project_preserves_number_literals_and_legacy_copy_format() {
+        let temp = root();
+        let source = temp.join("sources");
+        fs::create_dir(&source).unwrap();
+        let worksheet = source.join("custom.kicad_wks");
+        fs::write(&worksheet, "(kicad_wks)").unwrap();
+        fs::write(source.join("main.kicad_sch"), "(kicad_sch)").unwrap();
+        let path = serde_json::to_string(&slash(&worksheet).unwrap()).unwrap();
+        let settings = format!(
+            r#"{{"board":{{"min":0.19999999999999998}},"schematic":{{"page_layout_descr_file":{path}}},"nested":[{{"page_layout_descr_file":{path},"width":0.049999999999999996}}],"scale":1.234567890123456789e-6,"id":9007199254740993,"label":"0.19999999999999998","enabled":true,"empty":null}}"#
+        );
+        fs::write(source.join("main.kicad_pro"), &settings).unwrap();
+        let captured = temp.join("capture");
+        let input = capture(
+            &source,
+            &source.join("main.kicad_sch"),
+            &captured,
+            Uuid::new_v4(),
+            Units::Mm,
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        let working = temp.join("working");
+        working_copy(&captured, &working, &input, &AtomicBool::new(false)).unwrap();
+        let output = fs::read_to_string(working.join("main.kicad_pro")).unwrap();
+        use serde_json::value::RawValue;
+        let fields: BTreeMap<String, &RawValue> = serde_json::from_str(&output).unwrap();
+        let board: BTreeMap<String, &RawValue> =
+            serde_json::from_str(fields["board"].get()).unwrap();
+        let nested: Vec<BTreeMap<String, &RawValue>> =
+            serde_json::from_str(fields["nested"].get()).unwrap();
+        assert_eq!(board["min"].get(), "0.19999999999999998");
+        assert_eq!(nested[0]["width"].get(), "0.049999999999999996");
+        assert_eq!(fields["scale"].get(), "1.234567890123456789e-6");
+        assert_eq!(fields["id"].get(), "9007199254740993");
+        assert_eq!(fields["label"].get(), "\"0.19999999999999998\"");
+        assert_eq!(fields["enabled"].get(), "true");
+        assert_eq!(fields["empty"].get(), "null");
+        let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+        assert_eq!(
+            parsed["schematic"]["page_layout_descr_file"],
+            "custom.kicad_wks"
+        );
+        assert_eq!(
+            parsed["nested"][0]["page_layout_descr_file"],
+            "custom.kicad_wks"
+        );
+        assert_eq!(
+            fs::read_to_string(captured.join("main.kicad_pro")).unwrap(),
+            settings
+        );
+        assert_eq!(input.schema_version, 2);
+        let mut unsupported = input.clone();
+        unsupported.schema_version = 3;
+        assert!(unsupported.validate().is_err());
+        let mut legacy = input;
+        legacy.schema_version = 1;
+        let working = temp.join("legacy");
+        working_copy(&captured, &working, &legacy, &AtomicBool::new(false)).unwrap();
+        let output = fs::read_to_string(working.join("main.kicad_pro")).unwrap();
+        assert!(output.contains("\"min\": 0.2"));
     }
     #[test]
     fn rejects_missing_outside_remote_and_builtin_escape_dependencies() {

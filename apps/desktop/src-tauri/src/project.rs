@@ -903,6 +903,29 @@ pub(crate) mod tests {
     use super::*;
     use crate::{freecad::Geometry, Dimensions};
 
+    #[test]
+    #[ignore = "Retained owned legacy native project fixture required; never run on a user project"]
+    fn retained_legacy_project_number_format_recovery() {
+        let workspace = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(3)
+            .unwrap();
+        let project =
+            Project::open(&workspace.join("target/kicad-number-fidelity/legacy-project")).unwrap();
+        let before = project.history().unwrap();
+        assert!(before.iter().any(|snapshot| snapshot.phase == Phase::Completed
+            && matches!(&snapshot.input, OperationInput::Konnect(input) if input.source.schema_version == 1)));
+        let by_id = |snapshots: Vec<Snapshot>| {
+            snapshots
+                .into_iter()
+                .map(|s| (s.input.job_id(), serde_json::to_vec(&s).unwrap()))
+                .collect::<std::collections::BTreeMap<_, _>>()
+        };
+        let count = before.len();
+        assert_eq!(by_id(before), by_id(project.recover().unwrap()));
+        println!("Legacy completed project recovery verified: {count} records");
+    }
+
     fn root() -> PathBuf {
         let path = std::env::temp_dir().join(format!("Hazlo proyecto á's {}", Uuid::new_v4()));
         fs::create_dir(&path).unwrap();
