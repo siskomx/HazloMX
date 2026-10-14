@@ -50,8 +50,9 @@ for (const command of commands) {
 const unknown=review({...drawing,native_tools:{intent:"untrusted",calls:[{command:"constructor",params:{}}]}});
 assert.match(unknown,/1\. constructor\./);
 assert(!unknown.includes("function Object"));
-const slice=review({orca_version:"2.4.2",source_name:"Part.stl",units:"in",mesh:{bounds_mm:[[-25.4,0,-1],[0,50.8,2]]},settings:{machine:"Printer",filament:"PLA",process:"Fine",nozzle_mm:0.4,layer_mm:0.2,nozzle_c:210,bed_c:60}});
+const slice=review({orca_version:"2.4.2",source_name:"Part.stl",units:"in",mesh:{bounds_mm:[[-25.4,0,-1],[0,50.8,2]]},settings:{machine:"Printer",filament:"PLA",process:"Fine",bed:"High Temp Plate",nozzle_mm:0.4,layer_mm:0.2,nozzle_c:210,bed_c:60}});
 assert.match(slice,/archivo en pulgadas/);
+assert.match(slice,/Cama seleccionada: High Temp Plate/);
 assert.match(slice,/interpretado en milímetros: largo 25.4, ancho 50.8, alto 3/);
 assert.match(slice,/Boquilla: 0.4 mm\. Altura de capa: 0.2 mm/);
 assert.match(slice,/no se envían a una impresora/);

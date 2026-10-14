@@ -1,5 +1,7 @@
 # Current Windows package acceptance
 
+For the [real OrcaSlicer file conversation](../../../docs/research/orca-real-chat-2026-10-14.md), build `ollama_slice_chat` and explicitly run `rtk proxy python apps/desktop/tests/ollama-native-chat.py --run-real-cloud --program slice`. It uses the selected inch STL/Prusa profiles and identified file-only slicer with backend fixture approvals. Geometry/settings/artifact checks do not establish native UI, live editing or print quality; no printer is controlled.
+
 For the [real Arduino compile conversation](../../../docs/research/arduino-real-chat-2026-10-14.md), build `ollama_arduino_chat` and explicitly run `rtk proxy python apps/desktop/tests/ollama-native-chat.py --run-real-cloud --program arduino`. It uses the existing cloud route and provisioned Uno CLI/core with backend fixture approvals. Source/compiler report/HEX/ELF checks do not establish physical behavior, and no firmware is uploaded.
 
 For the [real CADCraft conversation](../../../docs/research/drawing-real-chat-2026-10-14.md), build `ollama_drawing_chat` and explicitly run `rtk proxy python apps/desktop/tests/ollama-native-chat.py --run-real-cloud --program drawing`. This uses the identified headless CADCraft CLI and existing cloud route, with fixture approvals; it does not resume native UI automation or prove live editing. The receipt distinguishes the first failed conversation from subsequent verification.

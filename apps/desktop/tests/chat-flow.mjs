@@ -321,7 +321,7 @@ try {
     ["kicad", { kicad_version: "10.0.7", entry: "Board.kicad_pcb", units: "mm", files: [] }, "Seleccionar PCB…"],
     ["kicad", { konnect_version: "fixture", source: {entry:"Circuit.kicad_sch"}, edit: { reference: "R1", expected_value: "1k", value: "2k" } }, "Seleccionar esquema…"],
     ["kicad", { konnect_version: "fixture", source: {entry:"Board.kicad_pcb"}, pcb_move: { reference: "R1", expected_x_mm: 10, expected_y_mm: 10, x_mm: 20, y_mm: 10 } }, "Seleccionar PCB…"],
-    ["slice", { orca_version: "fixture", source_name: "Part.stl", units: "mm", mesh: { bounds_mm: [[0,0,0],[10,10,10]] }, settings: { machine: "Printer", filament: "PLA", process:"0.20 mm", nozzle_mm:0.4, layer_mm:0.2, nozzle_c:210, bed_c:60 } }, "Seleccionar modelo y perfiles…"],
+    ["slice", { orca_version: "fixture", source_name: "Part.stl", units: "mm", mesh: { bounds_mm: [[0,0,0],[10,10,10]] }, settings: { machine: "Printer", filament: "PLA", process:"0.20 mm", bed:"High Temp Plate", nozzle_mm:0.4, layer_mm:0.2, nozzle_c:210, bed_c:60 } }, "Seleccionar modelo y perfiles…"],
   ];
   for (const provider of ["codex", "claude"]) {
     await page.locator("#provider").selectOption(provider);
@@ -424,6 +424,7 @@ try {
       await page.locator("#approve:enabled").waitFor();
       assert.match(await page.locator("#change-facts").innerText(),/El resultado se guarda en el proyecto/);
       assert(!/undefined|NaN/.test(await page.locator("#change-facts").innerText()));
+      if(program==="slice") assert.match(await page.locator("#change-facts").innerText(),/Cama seleccionada: High Temp Plate/);
       assert.match(await page.locator("#approve").innerText(),/pedir revisión/);
       const before = (await chatCalls()).length;
       await page.locator("#approve").click(); await page.locator("#send:enabled").waitFor();

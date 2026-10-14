@@ -11,13 +11,13 @@ import traceback
 
 parser=argparse.ArgumentParser(description='Real existing Ollama cloud native gate; owned fixture copies, backend approval only, private recording under target.')
 parser.add_argument('--run-real-cloud',action='store_true',help='Run five real cloud conversation turns using the existing profile and account.')
-parser.add_argument('--program',choices=['schematic','freecad','drawing','arduino'],default='schematic',help='Native saved-copy or compile-only workflow to exercise.')
+parser.add_argument('--program',choices=['schematic','freecad','drawing','arduino','slice'],default='schematic',help='Native saved-copy, slicing or compile-only workflow to exercise.')
 args=parser.parse_args()
 if not args.run_real_cloud:
     parser.error('Pass --run-real-cloud for the real-provider acceptance gate.')
 
 workspace = Path(__file__).resolve().parents[3]
-example_name={'schematic':'ollama_schematic_chat','freecad':'ollama_cad_chat','drawing':'ollama_drawing_chat','arduino':'ollama_arduino_chat'}[args.program]
+example_name={'schematic':'ollama_schematic_chat','freecad':'ollama_cad_chat','drawing':'ollama_drawing_chat','arduino':'ollama_arduino_chat','slice':'ollama_slice_chat'}[args.program]
 example = workspace/'target/debug/examples'/f'{example_name}.exe'
 if not example.is_file():
     parser.error(f'Build the {example_name} Rust example before running this gate.')
