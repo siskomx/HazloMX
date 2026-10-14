@@ -1,9 +1,10 @@
 //! Typed, copy-only operations using the identified official Windows CLI.
 use crate::process::{run_owned, StopReason};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs::{self, OpenOptions},
     io::{Read, Write},
@@ -65,6 +66,106 @@ pub struct Request {
     pub units: Units,
     pub circle: Option<Circle>,
     pub allow_loss: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_tools: Option<NativePlan>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeCall {
+    pub command: String,
+    pub params: serde_json::Map<String, Value>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativePlan {
+    pub intent: String,
+    pub calls: Vec<NativeCall>,
+}
+// Only reviewed geometry/selection commands can run; file, script, UI and clipboard effects stay host-owned.
+fn native_command(command: &str) -> bool {
+    matches!(
+        command,
+        "line"
+            | "pline"
+            | "circle"
+            | "arc"
+            | "rectang"
+            | "polygon"
+            | "ellipse"
+            | "point"
+            | "point.multiple"
+            | "xline"
+            | "ray"
+            | "spline"
+            | "donut"
+            | "erase"
+            | "move"
+            | "copy"
+            | "rotate"
+            | "scale"
+            | "mirror"
+            | "stretch"
+            | "offset"
+            | "trim"
+            | "extend"
+            | "fillet"
+            | "chamfer"
+            | "explode"
+            | "draworder.front"
+            | "draworder.back"
+            | "break"
+            | "breakatpoint"
+            | "join"
+            | "overkill"
+            | "select"
+    )
+}
+fn bounded_params(value: &Value, depth: usize) -> bool {
+    if depth > 8 {
+        return false;
+    }
+    match value {
+        Value::Null | Value::Bool(_) => true,
+        Value::Number(n) => n
+            .as_f64()
+            .is_some_and(|n| n.is_finite() && n.abs() <= 1_000_000.),
+        Value::String(s) => s.len() <= 1024 && !s.chars().any(char::is_control),
+        Value::Array(items) => {
+            items.len() <= 128 && items.iter().all(|v| bounded_params(v, depth + 1))
+        }
+        Value::Object(items) => {
+            items.len() <= 32
+                && items.iter().all(|(key, value)| {
+                    key.len() <= 64
+                        && !key.chars().any(char::is_control)
+                        && (!matches!(key.as_str(), "count" | "sides" | "degree")
+                            || value.as_u64().is_some_and(|n| n <= 128))
+                        && bounded_params(value, depth + 1)
+                })
+        }
+    }
+}
+impl NativePlan {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.intent.trim().is_empty()
+            || self.intent.len() > 1024
+            || self.intent.chars().any(char::is_control)
+            || self.calls.is_empty()
+            || self.calls.len() > 16
+            || self.calls.iter().any(|call| {
+                !native_command(&call.command)
+                    || !bounded_params(&Value::Object(call.params.clone()), 0)
+            })
+            || serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > 16384
+        {
+            return Err(
+                "El plan requiere comandos geométricos nativos revisados y parámetros acotados."
+                    .into(),
+            );
+        }
+        Ok(())
+    }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -97,10 +198,14 @@ pub struct DrawingInput {
     pub circle: Option<Circle>,
     pub allow_loss: bool,
     pub original_summary: Summary,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_tools: Option<NativePlan>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_source: Option<Vec<Value>>,
 }
 impl DrawingInput {
     pub fn validate(&self) -> Result<(), String> {
-        if !matches!(self.schema_version, 1 | 2)
+        if !matches!(self.schema_version, 1 | 2 | 3)
             || self.job_id.is_nil()
             || self.cadcraft_version != VERSION
             || self.source_format == Format::Png
@@ -116,6 +221,23 @@ impl DrawingInput {
             return Err("La propuesta de dibujo no es compatible.".into());
         }
         self.original_summary.validate()?;
+        match (&self.native_tools, self.schema_version) {
+            (Some(plan), 3) if self.circle.is_none() && self.output_format == Format::Dxf => {
+                plan.validate()?;
+                let entities = self
+                    .native_source
+                    .as_ref()
+                    .ok_or("Falta la inspección nativa de la propuesta.")?;
+                entity_page(
+                    serde_json::json!({"count":entities.len(),"returned":entities.len(),"offset":0,"entities":entities}),
+                )?;
+                if entities.len() as u64 != self.original_summary.entity_count {
+                    return Err("La inspección nativa no cubre el dibujo seleccionado.".into());
+                }
+            }
+            (None, 1 | 2) if self.native_source.is_none() => (),
+            _ => return Err("Versión o formato del plan nativo no compatible.".into()),
+        }
         if let Some(circle) = &self.circle {
             if !circle.radius.is_finite()
                 || circle.radius <= 0.0
@@ -171,6 +293,16 @@ pub struct DrawingResult {
     pub warnings: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub circle_readback: Option<CircleReadback>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_readback: Option<NativeReadback>,
+}
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeReadback {
+    pub command_results: Vec<Value>,
+    pub edited_summary: Summary,
+    pub entities: Vec<Value>,
+    pub geometry_sha256: String,
 }
 fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
@@ -321,6 +453,107 @@ fn inspect(
     summary.validate()?;
     Ok(summary)
 }
+fn native_catalog(
+    executable: &Path,
+    cwd: &Path,
+    env: &BTreeMap<OsString, OsString>,
+    cancel: Arc<AtomicBool>,
+) -> Result<Vec<Value>, String> {
+    let (stdout, warnings) = invoke(executable, cwd, env, &["commands".into()], cancel)?;
+    if !warnings.is_empty() {
+        return Err("CADCraft no confirmó su catálogo nativo.".into());
+    }
+    let catalog: Vec<Value> =
+        serde_json::from_slice(&stdout).map_err(|_| "Catálogo nativo no válido.")?;
+    if catalog.len() > 1024 {
+        return Err("Catálogo nativo demasiado grande.".into());
+    }
+    let catalog: Vec<_> = catalog.into_iter().filter(|entry| entry["id"].as_str().is_some_and(native_command))
+        .map(|entry| serde_json::json!({"id":entry["id"],"label":entry["label"],"params":entry["params"]})).collect();
+    if catalog.is_empty()
+        || serde_json::to_vec(&catalog)
+            .map_err(|e| e.to_string())?
+            .len()
+            > 32768
+    {
+        return Err("Falta el catálogo de comandos geométricos.".into());
+    }
+    Ok(catalog)
+}
+fn entity_page(value: Value) -> Result<Vec<Value>, String> {
+    let count = value["count"]
+        .as_u64()
+        .filter(|n| *n <= 128)
+        .ok_or("Este flujo admite hasta 128 entidades; no se omitirá geometría.")?;
+    let entities = value["entities"]
+        .as_array()
+        .ok_or("Falta la geometría nativa.")?;
+    if value["offset"].as_u64() != Some(0)
+        || value["returned"].as_u64() != Some(count)
+        || entities.len() as u64 != count
+        || entities.iter().any(|e| {
+            !e["geometry"].is_object()
+                || !e["handle"].as_str().is_some_and(|h| {
+                    !h.is_empty() && h.len() <= 32 && h.bytes().all(|c| c.is_ascii_hexdigit())
+                })
+        })
+    {
+        return Err("La lectura nativa de entidades está incompleta.".into());
+    }
+    if serde_json::to_vec(entities)
+        .map_err(|e| e.to_string())?
+        .len()
+        > 32768
+    {
+        return Err("La geometría nativa supera el límite de lectura.".into());
+    }
+    let mut handles = BTreeSet::new();
+    if entities.iter().any(|entity| {
+        !handles.insert(entity["handle"].as_str().unwrap()) || !entity["type"].is_string()
+    }) {
+        return Err(
+            "La lectura nativa contiene identidades duplicadas o tipos desconocidos.".into(),
+        );
+    }
+    Ok(entities.clone())
+}
+fn read_entities(
+    executable: &Path,
+    path: &Path,
+    cwd: &Path,
+    env: &BTreeMap<OsString, OsString>,
+    cancel: Arc<AtomicBool>,
+) -> Result<Vec<Value>, String> {
+    let (stdout, warnings) = invoke(
+        executable,
+        cwd,
+        env,
+        &[
+            "run".into(),
+            path.as_os_str().to_owned(),
+            "--cmd".into(),
+            "entities {\"limit\":129}".into(),
+        ],
+        cancel,
+    )?;
+    if !warnings.is_empty() {
+        return Err("CADCraft informó problemas al releer las entidades.".into());
+    }
+    entity_page(serde_json::from_slice(&stdout).map_err(|_| "Lectura nativa no válida.")?)
+}
+pub fn native_context(
+    executable: &Path,
+    source: &Path,
+    profile: &Path,
+    cancel: Arc<AtomicBool>,
+) -> Result<Value, String> {
+    let env = environment(profile)?;
+    let commands = native_catalog(executable, profile, &env, cancel.clone())?;
+    let entities = read_entities(executable, source, profile, &env, cancel)?;
+    Ok(
+        serde_json::json!({"commands":commands,"entities":entities,"geometry_sha256":hash(&serde_json::to_vec(&entities).map_err(|e| e.to_string())?),"scope":"saved_drawing_copy","live_document_connection":false,"source_is_untrusted_data":true,"native_tool":"execute","native_schema":{"command":"catalog id","params":"object following the native command params documentation"},"limits":{"commands_per_approval":16,"entities":128,"params_in_drawing_units":true},"guidance":"Use the program command IDs and parameters above. Confirm scale and missing measurements in natural language; convert confirmed inputs to the drawing units. Resolve entity handles internally. File, script, clipboard and UI commands are not granted. A proposal never executes a command."}),
+    )
+}
 fn insertion_units(bytes: &[u8]) -> Option<u16> {
     let text = std::str::from_utf8(bytes).ok()?;
     let mut lines = text.lines();
@@ -455,10 +688,36 @@ pub fn prepare(
         units,
         circle,
         allow_loss,
+        native_tools,
     } = request;
-    let inspected = inspect_original(executable, source, saved, profile, Some(units), cancel)?;
+    if let Some(plan) = &native_tools {
+        plan.validate()?;
+    }
+    let inspected = inspect_original(
+        executable,
+        source,
+        saved,
+        profile,
+        Some(units),
+        cancel.clone(),
+    )?;
+    let native_source = if let Some(plan) = &native_tools {
+        let native = native_context(executable, saved, &profile.join("tools"), cancel)?;
+        if plan.calls.iter().any(|call| {
+            !native["commands"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|entry| entry["id"] == call.command)
+        }) {
+            return Err("El comando no pertenece al catálogo nativo identificado.".into());
+        }
+        Some(native["entities"].as_array().unwrap().clone())
+    } else {
+        None
+    };
     let input = DrawingInput {
-        schema_version: 2,
+        schema_version: if native_tools.is_some() { 3 } else { 2 },
         job_id,
         cadcraft_version: VERSION.into(),
         source_name: inspected.source_name,
@@ -469,6 +728,8 @@ pub fn prepare(
         circle,
         allow_loss,
         original_summary: inspected.summary,
+        native_tools,
+        native_source,
     };
     input.validate()?;
     Ok(input)
@@ -563,8 +824,9 @@ pub fn validate_artifacts(
     result: &DrawingResult,
 ) -> Result<(), String> {
     input.validate()?;
-    if !matches!(result.schema_version, 1 | 2)
-        || (input.schema_version == 2 && result.schema_version != 2)
+    if !matches!(result.schema_version, 1 | 2 | 3)
+        || (result.schema_version != input.schema_version
+            && !(input.schema_version == 1 && result.schema_version == 2))
         || result.job_id != input.job_id
         || result.cadcraft_version != VERSION
         || result.source_sha256 != input.source_sha256
@@ -608,6 +870,42 @@ pub fn validate_artifacts(
             "Un resultado anterior no puede declarar la nueva verificación geométrica.".into(),
         );
     }
+    match (&input.native_tools, &result.native_readback) {
+        (Some(plan), Some(readback)) if result.schema_version == 3 => {
+            readback.edited_summary.validate()?;
+            let entities = entity_page(
+                serde_json::json!({"count":readback.entities.len(),"returned":readback.entities.len(),"offset":0,"entities":readback.entities}),
+            )?;
+            let mut counts = BTreeMap::<String, u64>::new();
+            for entity in &entities {
+                *counts
+                    .entry(
+                        entity["type"]
+                            .as_str()
+                            .ok_or("Falta el tipo de entidad.")?
+                            .into(),
+                    )
+                    .or_default() += 1;
+            }
+            if result.output_summary.as_ref() != Some(&readback.edited_summary)
+                || counts != readback.edited_summary.counts
+                || entities.len() as u64 != readback.edited_summary.entity_count
+                || readback.command_results.len() != plan.calls.len()
+                || serde_json::to_vec(&readback.command_results)
+                    .map_err(|e| e.to_string())?
+                    .len()
+                    > 16384
+                || hash(&serde_json::to_vec(&entities).map_err(|e| e.to_string())?)
+                    != readback.geometry_sha256
+            {
+                return Err(
+                    "La lectura final no corresponde a los comandos nativos aprobados.".into(),
+                );
+            }
+        }
+        (None, None) => (),
+        _ => return Err("Falta la lectura del plan nativo o su versión no corresponde.".into()),
+    }
     let original =
         read_file(&directory.join(format!("Original.{}", input.source_format.extension())))?;
     let output =
@@ -638,7 +936,7 @@ pub fn validate_artifacts(
         }
         _ => return Err("Formato de dibujo no válido.".into()),
     }
-    if !input.allow_loss {
+    if !input.allow_loss && input.native_tools.is_none() {
         if let Some(summary) = &result.output_summary {
             let mut expected = input.original_summary.counts.clone();
             if input.circle.is_some() {
@@ -688,7 +986,62 @@ pub fn convert(
     {
         warnings.push("El original contiene objetos no compatibles; pueden omitirse del dibujo o de su vista previa.".into());
     }
-    let working = if let Some(circle) = &input.circle {
+    let mut native_readback = None;
+    let working = if let Some(plan) = &input.native_tools {
+        let catalog = native_catalog(executable, stage, &env, cancel.clone())?;
+        if plan
+            .calls
+            .iter()
+            .any(|call| !catalog.iter().any(|entry| entry["id"] == call.command))
+        {
+            return Err("El comando no pertenece al catálogo del programa identificado.".into());
+        }
+        if Some(read_entities(
+            executable,
+            &original_path,
+            stage,
+            &env,
+            cancel.clone(),
+        )?) != input.native_source
+        {
+            return Err("La inspección original ya no coincide con la propuesta aprobada.".into());
+        }
+        let edited = profile.join("Edited.dxf");
+        let mut args = vec!["run".into(), original_path.as_os_str().to_owned()];
+        for call in &plan.calls {
+            args.extend([
+                "--cmd".into(),
+                format!("{} {}", call.command, Value::Object(call.params.clone())).into(),
+            ]);
+        }
+        args.extend([
+            "--cmd".into(),
+            "entities {\"limit\":129}".into(),
+            "--save".into(),
+            edited.as_os_str().to_owned(),
+        ]);
+        let (stdout, messages) = invoke(executable, stage, &env, &args, cancel.clone())?;
+        warnings.extend(messages);
+        let mut results: Vec<Value> = serde_json::Deserializer::from_slice(&stdout)
+            .into_iter::<Value>()
+            .collect::<Result<_, _>>()
+            .map_err(|_| "CADCraft no confirmó los comandos nativos.")?;
+        if results.len() != plan.calls.len() + 1 {
+            return Err("Faltan respuestas de los comandos aprobados.".into());
+        }
+        let in_memory = entity_page(results.pop().unwrap())?;
+        let entities = read_entities(executable, &edited, stage, &env, cancel.clone())?;
+        if in_memory != entities {
+            return Err("El archivo nativo guardado difiere de la geometría editada; la copia queda sin publicar.".into());
+        }
+        native_readback = Some(NativeReadback {
+            command_results: results,
+            edited_summary: inspect(executable, &edited, stage, &env, cancel.clone())?,
+            geometry_sha256: hash(&serde_json::to_vec(&entities).map_err(|e| e.to_string())?),
+            entities,
+        });
+        edited
+    } else if let Some(circle) = &input.circle {
         let edited = profile.join("Edited.dxf");
         let command = format!(
             "circle {}",
@@ -775,7 +1128,11 @@ pub fn convert(
     if input.output_format == Format::Png {
         args.extend(["--view".into(), "extents".into()]);
     }
-    warnings.extend(invoke(executable, stage, &env, &args, cancel.clone())?.1);
+    if input.native_tools.is_some() {
+        write_new(&output_path, &read_file(&working)?)?;
+    } else {
+        warnings.extend(invoke(executable, stage, &env, &args, cancel.clone())?.1);
+    }
     if !input.allow_loss && !warnings.is_empty() {
         return Err(format!("CADCraft informó pérdida o advertencias: {}. El original se conserva; revise la copia y prepare otra propuesta con consentimiento de pérdida si procede.", warnings.join("; ").chars().take(2048).collect::<String>()));
     }
@@ -811,6 +1168,13 @@ pub fn convert(
             cancel.clone(),
         )?)
     };
+    if let Some(readback) = &native_readback {
+        if read_entities(executable, &output_path, stage, &env, cancel.clone())?
+            != readback.entities
+        {
+            return Err("La lectura final del dibujo cambió; no se publicarán resultados.".into());
+        }
+    }
     if let (Some(circle), Some(readback)) = (&input.circle, &mut circle_readback) {
         if input.output_format != Format::Png {
             readback.final_matches = Some(read_circle_matches(
@@ -836,7 +1200,7 @@ pub fn convert(
         }
     }
     let result = DrawingResult {
-        schema_version: 2,
+        schema_version: if input.native_tools.is_some() { 3 } else { 2 },
         job_id: input.job_id,
         cadcraft_version: VERSION.into(),
         source_sha256: input.source_sha256.clone(),
@@ -845,18 +1209,167 @@ pub fn convert(
         output_summary,
         warnings,
         circle_readback,
+        native_readback,
     };
     validate_artifacts(stage, input, &result)?;
-    write_new(
-        &stage.join("result.json"),
-        &serde_json::to_vec_pretty(&result).map_err(|e| e.to_string())?,
-    )?;
+    let report = serde_json::to_vec_pretty(&result).map_err(|e| e.to_string())?;
+    if input.native_tools.is_some() && report.len() > 65536 {
+        return Err(
+            "La lectura nativa supera el límite del agente; la copia no se publicará.".into(),
+        );
+    }
+    write_new(&stage.join("result.json"), &report)?;
     Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_plans_reject_other_effects_and_preserve_legacy_schema() {
+        let good = serde_json::json!({"intent":"Mover la pieza elegida","calls":[{"command":"move","params":{"handles":["100"],"delta":[25.4,0]}}]});
+        let plan: NativePlan = serde_json::from_value(good.clone()).unwrap();
+        plan.validate().unwrap();
+        for command in [
+            "open",
+            "saveas",
+            "script",
+            "execute",
+            "ui.click",
+            "document.switch",
+            "circle {}",
+            "MOVE",
+            "copyclip",
+            "insert",
+        ] {
+            let mut wrong = good.clone();
+            wrong["calls"][0]["command"] = serde_json::json!(command);
+            assert!(
+                serde_json::from_value::<NativePlan>(wrong)
+                    .unwrap()
+                    .validate()
+                    .is_err(),
+                "{command}"
+            );
+        }
+        for params in [
+            serde_json::json!({"count":129}),
+            serde_json::json!({"delta":[1e20,0]}),
+            serde_json::json!({"points":vec![0;129]}),
+            serde_json::json!({"text":"line\nsaveas"}),
+        ] {
+            let mut wrong = good.clone();
+            wrong["calls"][0]["params"] = params;
+            assert!(serde_json::from_value::<NativePlan>(wrong)
+                .unwrap()
+                .validate()
+                .is_err());
+        }
+        let mut too_many = plan.clone();
+        too_many.calls = vec![plan.calls[0].clone(); 17];
+        assert!(too_many.validate().is_err());
+        let mut input = fixture();
+        input.schema_version = 3;
+        input.native_tools = Some(plan);
+        assert!(input.validate().is_err());
+        input.native_source = Some(vec![
+            serde_json::json!({"handle":"100","type":"Circle","geometry":{"type":"circle"}}),
+        ]);
+        input.validate().unwrap();
+        input.output_format = Format::Dwg;
+        assert!(input.validate().is_err());
+        input.output_format = Format::Dxf;
+        input.schema_version = 2;
+        assert!(input.validate().is_err());
+        assert!(!serde_json::to_value(fixture())
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .contains_key("native_tools"));
+    }
+    #[test]
+    fn native_entities_refuse_truncation_and_invalid_handles() {
+        let entity = serde_json::json!({"handle":"100","type":"Line","geometry":{"type":"line"}});
+        let good = serde_json::json!({"count":1,"returned":1,"offset":0,"entities":[entity]});
+        assert_eq!(entity_page(good.clone()).unwrap().len(), 1);
+        for (key, value) in [("count", 129), ("returned", 0), ("offset", 1)] {
+            let mut wrong = good.clone();
+            wrong[key] = serde_json::json!(value);
+            assert!(entity_page(wrong).is_err());
+        }
+        let mut wrong = good;
+        wrong["entities"][0]["handle"] = serde_json::json!("../file");
+        assert!(entity_page(wrong).is_err());
+    }
+    #[test]
+    #[ignore = "Actual native command readback preserves explicit inch drawing scale"]
+    fn actual_native_tools_preserve_inch_drawing_scale() {
+        let workspace = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(3)
+            .unwrap();
+        let exe = workspace.join(
+            "target/cadcraft-probe/runtime/cadcraft-0.5.0-windows-x64-portable/cadcraft-cli.exe",
+        );
+        let root = std::env::temp_dir().join(format!("hazlomexa-native-inch-{}", Uuid::new_v4()));
+        fs::create_dir(&root).unwrap();
+        let metric = fs::read_to_string(
+            workspace.join("docs/research/cadcraft-runtime-2026-10-11/metric.dxf"),
+        )
+        .unwrap()
+        .replace("\r\n", "\n");
+        assert_eq!(metric.matches("$INSUNITS\n 70\n4").count(), 1);
+        let bytes = metric
+            .replace("$INSUNITS\n 70\n4", "$INSUNITS\n 70\n1")
+            .into_bytes();
+        let source = root.join("Original.dxf");
+        fs::write(&source, &bytes).unwrap();
+        let stage = root.join("stage");
+        fs::create_dir(&stage).unwrap();
+        let plan:NativePlan=serde_json::from_value(serde_json::json!({"intent":"Añadir una línea de 1 por 2 pulgadas","calls":[{"command":"line","params":{"points":[[0,0],[1,2]]}},{"command":"circle","params":{"center":[3,4],"diameter":1}}]})).unwrap();
+        let input = prepare(
+            &exe,
+            &source,
+            &root.join("captured.dxf"),
+            &root.join("import"),
+            Request {
+                output_format: Format::Dxf,
+                units: Units::In,
+                circle: None,
+                allow_loss: false,
+                native_tools: Some(plan),
+            },
+            Uuid::new_v4(),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        let mut result = convert(
+            &exe,
+            &root.join("captured.dxf"),
+            &stage,
+            &root.join("native"),
+            &input,
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        assert_eq!(
+            insertion_units(&fs::read(stage.join("Drawing.dxf")).unwrap()),
+            Some(1)
+        );
+        let readback = result.native_readback.as_ref().unwrap();
+        assert!(readback.entities.iter().any(|e| e["type"] == "Line"
+            && e["geometry"]["b"]["x"].as_f64() == Some(1.)
+            && e["geometry"]["b"]["y"].as_f64() == Some(2.)));
+        assert!(readback.entities.iter().any(|e| e["type"] == "Circle"
+            && e["geometry"]["center"]["x"].as_f64() == Some(3.)
+            && e["geometry"]["radius"].as_f64() == Some(0.5)));
+        validate_artifacts(&stage, &input, &result).unwrap();
+        result.native_readback.as_mut().unwrap().entities[0]["geometry"]["forged"] =
+            serde_json::json!(true);
+        assert!(validate_artifacts(&stage, &input, &result).is_err());
+        assert_eq!(fs::read(source).unwrap(), bytes);
+        println!("Native inch drawing scale and forged readback rejection verified.");
+    }
     fn fixture() -> DrawingInput {
         DrawingInput {
             schema_version: 1,
@@ -874,6 +1387,8 @@ mod tests {
                 counts: BTreeMap::from([("Circle".into(), 1)]),
                 extents: Some([[-10.0, -10.0], [10.0, 10.0]]),
             },
+            native_tools: None,
+            native_source: None,
         }
     }
     #[test]
@@ -1037,6 +1552,7 @@ mod tests {
                 units: Units::Mm,
                 circle: None,
                 allow_loss: false,
+                native_tools: None,
             },
             Uuid::new_v4(),
             Arc::new(AtomicBool::new(false)),
@@ -1201,6 +1717,7 @@ mod tests {
                 units,
                 circle,
                 allow_loss,
+                native_tools: None,
             };
             let input = prepare(
                 &exe,
@@ -1235,6 +1752,7 @@ mod tests {
                         units: Units::Mm,
                         circle: None,
                         allow_loss: false,
+                        native_tools: None,
                     },
                     Uuid::new_v4(),
                     Arc::new(AtomicBool::new(false)),
@@ -1252,6 +1770,7 @@ mod tests {
                         units: Units::In,
                         circle: None,
                         allow_loss: false,
+                        native_tools: None,
                     },
                     Uuid::new_v4(),
                     Arc::new(AtomicBool::new(false)),
@@ -1296,6 +1815,7 @@ mod tests {
             units: Units::In,
             circle: None,
             allow_loss: false,
+            native_tools: None,
         };
         let saved = root.join("dwg-import.dwg");
         let input = prepare(
@@ -1364,6 +1884,7 @@ mod tests {
                     radius: 2.,
                 }),
                 allow_loss: false,
+                native_tools: None,
             },
             Uuid::new_v4(),
             Arc::new(AtomicBool::new(false)),

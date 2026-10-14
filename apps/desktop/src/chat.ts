@@ -81,7 +81,7 @@ function summary(run: Snapshot): string {
   if (input.cadpilot_version) return `FreeCAD · ${input.source_name} · ${input.request.operation === "inspect" ? "Inspeccionar y medir" : "Cambiar documento"}`;
   if (input.orca_version) return `OrcaSlicer · ${input.source_name} · ${input.settings.machine} · ${input.settings.filament}`;
   if (input.kicad_version) return `KiCad · revisar ${input.entry}`;
-  if (input.cadcraft_version) return `CADCraft · ${input.source_name} → ${input.output_format.toUpperCase()}`;
+  if (input.cadcraft_version) return input.native_tools ? `CADCraft · ${input.source_name} · ${input.native_tools.intent}` : `CADCraft · ${input.source_name} → ${input.output_format.toUpperCase()}`;
   if (input.agent_version) return `Arduino Agent · cambios en ${input.source_name}`;
   if (input.dimensions_mm) { const d = input.dimensions_mm; return `FreeCAD · ${d.length} × ${d.width} × ${d.height} mm`; }
   return `Arduino · compilar para ${input.fqbn}`;
@@ -94,7 +94,7 @@ function changeDetails(run: Snapshot): string {
   if (input.cadpilot_version) return JSON.stringify({ document: input.source_name, change: input.request, measurements: input.preview.measurements }, null, 2);
   if (input.orca_version) return JSON.stringify({ model: input.source_name, units: input.units, dimensions_mm: input.mesh.bounds_mm, settings: input.settings }, null, 2);
   if (input.kicad_version) return JSON.stringify({ document: input.entry, report_units: input.units, captured_files: input.files.map(file => file.path) }, null, 2);
-  if (input.cadcraft_version) return JSON.stringify({ document: input.source_name, units: input.units, output: input.output_format, circle: input.circle, accepted_loss: input.allow_loss }, null, 2);
+  if (input.cadcraft_version) return JSON.stringify({ document: input.source_name, units: input.units, output: input.output_format, current_entities: input.native_source, native_tools: input.native_tools, circle: input.circle, accepted_loss: input.allow_loss }, null, 2);
   return JSON.stringify(input.dimensions_mm, null, 2);
 }
 function artifactActions(run: Snapshot): [string, string][] {

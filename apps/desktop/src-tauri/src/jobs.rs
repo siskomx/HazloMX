@@ -1529,6 +1529,25 @@ impl Workflow {
         &self,
         source: &std::path::Path,
     ) -> Result<cadcraft::Inspection, String> {
+        self.discover_drawing_context(source, false, Arc::new(AtomicBool::new(false)))
+            .map(|(inspection, _)| inspection)
+    }
+    pub(crate) fn inspect_drawing_tools(
+        &self,
+        source: &std::path::Path,
+        cancel: Arc<AtomicBool>,
+    ) -> Result<serde_json::Value, String> {
+        let (inspection, native) = self.discover_drawing_context(source, true, cancel)?;
+        Ok(
+            serde_json::json!({"inspection":inspection,"native":native.ok_or("Falta el contexto nativo.")?}),
+        )
+    }
+    fn discover_drawing_context(
+        &self,
+        source: &std::path::Path,
+        include_tools: bool,
+        cancel: Arc<AtomicBool>,
+    ) -> Result<(cadcraft::Inspection, Option<serde_json::Value>), String> {
         let executable = self
             .cadcraft_runtime()?
             .ok_or("Seleccione CADCraft CLI antes de inspeccionar.")?;
@@ -1559,8 +1578,18 @@ impl Workflow {
             source,
             &saved,
             &profile.join("native"),
-            Arc::new(AtomicBool::new(false)),
+            cancel.clone(),
         )?;
+        let native = if include_tools {
+            Some(cadcraft::native_context(
+                &executable,
+                &saved,
+                &profile.join("tools"),
+                cancel,
+            )?)
+        } else {
+            None
+        };
         let state = self.state.lock().map_err(|e| e.to_string())?;
         if state
             .project
@@ -1570,7 +1599,7 @@ impl Workflow {
         {
             return Err("El proyecto o CADCraft cambió. Inspecciona de nuevo el dibujo.".into());
         }
-        Ok(inspected)
+        Ok((inspected, native))
     }
 
     pub(crate) fn propose_discovered_drawing(
@@ -2304,6 +2333,7 @@ mod tests {
                 radius: 2.0,
             }),
             allow_loss: false,
+            native_tools: None,
         };
         let denied = workflow
             .propose_drawing(source.clone(), request.clone())
@@ -2678,6 +2708,7 @@ mod tests {
                         radius: 2.,
                     }),
                     allow_loss: false,
+                    native_tools: None,
                 },
             )
             .unwrap();

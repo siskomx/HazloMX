@@ -38,6 +38,11 @@ try {
             window.makeProposal = false;
             snapshot.job = { snapshot: { schema_version: 2, project_id: snapshot.project[0], input: { schema_version: 1, job_id: "native-job", dimensions_mm: { length: 25.4, width: 10, height: 5 } }, phase: "awaiting_approval", audit: { created_unix_ms: 1000, source: { provider: "mcp" } } }, approval_id: "private-approval", sequence: 1, busy: false, error: null };
           }
+          if (window.makeNativePlan) {
+            window.makeNativePlan = false;
+            snapshot.job = { snapshot: { schema_version: 10, project_id: snapshot.project[0], input: { schema_version: 3, job_id: "drawing-native-job", cadcraft_version: "0.5.0", source_name: "Plano.dxf", output_format: "dxf", units: "mm", circle: null, allow_loss: false, native_tools: { intent: "Mover la pieza <img src=x>", calls: [{ command: "move", params: { handles: ["100"], delta: [25.4, 0] } }] } }, phase: "awaiting_approval", audit: { created_unix_ms: 2000, source: { provider: "mcp" } } }, approval_id: "private-approval", sequence: 1, busy: false, error: null };
+            snapshot.job.snapshot.input.native_source = [{ handle: "100", type: "Circle", geometry: { type: "circle", center: { x: 0, y: 0, z: 0 }, radius: 10 } }];
+          }
           args.events.onmessage(structuredClone(chat));
         };
         window.staleChatEvent = window.chatEvent;
@@ -128,6 +133,20 @@ try {
   const messages = await page.locator("#conversation .message").allTextContents();
   assert(messages.at(-2).includes("Respuesta privada enviada."));
   assert(messages.at(-1).includes("Primero revisemos"));
+  await page.locator("#program").selectOption("drawing");
+  await page.getByRole("button", { name: "Seleccionar dibujo…", exact: true }).click();
+  await page.evaluate(() => { window.makeNativePlan = true; });
+  await send("Mueve la pieza una pulgada usando las herramientas del programa.");
+  await page.locator("#approval:visible").waitFor();
+  assert.match(await page.locator("#change-summary").innerText(), /Mover la pieza <img src=x>/);
+  assert.equal(await page.locator("#change-summary img").count(), 0);
+  assert.match(await page.locator("#change-details").textContent(), /"command": "move"/);
+  assert.match(await page.locator("#change-details").textContent(), /"current_entities"/);
+  assert.equal(await page.locator("#approval input, #approval textarea").count(), 0);
+  assert.equal(await page.evaluate(() => window.approvals), 1, "A native tool plan was automatically approved");
+  await page.locator("#approve").click();
+  await page.locator("#approval").waitFor({ state: "hidden" });
+  assert.equal(await page.evaluate(() => window.approvals), 2);
   await page.evaluate(() => { window.holdChat = true; });
   await page.locator("#prompt").fill("Una consulta que voy a detener."); await page.locator("#send").click();
   await page.locator("#stop:enabled").waitFor(); await page.locator("#stop").click(); await page.locator("#send:enabled").waitFor();

@@ -179,7 +179,10 @@ mod tests {
             .is_err());
         let connection = connect(pipe, secret).await.unwrap();
         let client = ().serve(connection).await.unwrap();
-        assert_eq!(client.list_all_tools().await.unwrap().len(), 17);
+        assert_eq!(
+            client.list_all_tools().await.unwrap().len(),
+            crate::host_tools::catalog().len()
+        );
         assert!(client
             .call_tool(CallToolRequestParams::new("get_workflow_status"))
             .await
