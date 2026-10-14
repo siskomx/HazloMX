@@ -40,14 +40,14 @@ try {
       if (command === "discover_slice") return { id: "selected-slice", project_id: window.foreignSlice ? "foreign-project" : snapshot.project[0], preview: { source_name: "Pieza.stl", source_sha256: "e".repeat(64), selection_sha256: "f".repeat(64), triangles: 12, bounds_file_coordinates: [[0,0,0],[10,10,10]], declared_bed: null, bed_profiles: [] } };
       if (command === "select_agent_sketch") { snapshot.agent_source = { project_id: snapshot.project[0], source_name: "Sketch.ino", source: "void setup() {}" }; return copy(); }
       if (command === "select_project") { snapshot.project = window.otherFolder ? ["project-one", "C:\\owned\\other-folder"] : ["project-one", "C:\\owned\\project"]; snapshot.job = null; if (snapshot.chat) snapshot.chat.text = "PREVIOUS FOLDER RESPONSE"; return copy(); }
-      if (command === "start_codex_chat" || command === "start_claude_chat") {
-        const provider = command === "start_codex_chat" ? "codex" : "claude";
+      if (command === "start_codex_chat" || command === "start_claude_chat" || command === "start_ollama_chat") {
+        const provider = command === "start_codex_chat" ? "codex" : command === "start_claude_chat" ? "claude" : args.profile === "cloud" ? "ollama_cloud" : "ollama_local";
         snapshot.chat = { provider, id: crypto.randomUUID(), project_id: snapshot.project[0], sequence: 1, busy: true, cancelled: false, text: "", error: null };
         const chat = snapshot.chat;
         const finish = () => {
           if (snapshot.chat?.id !== chat.id || chat.cancelled) return;
           chat.sequence++; chat.busy = false; chat.question = null; chat.text = "Primero revisemos el documento. <img src=x onerror=window.injection=true>";
-          snapshot[provider === "codex" ? "codex_conversation_ready" : "claude_conversation_ready"] = true;
+          if (provider === "codex" || provider === "claude") snapshot[provider === "codex" ? "codex_conversation_ready" : "claude_conversation_ready"] = true;
           if (window.makeProposal) {
             window.makeProposal = false;
             snapshot.job = { snapshot: { schema_version: 2, project_id: snapshot.project[0], input: { schema_version: 1, job_id: "native-job", dimensions_mm: { length: 25.4, width: 10, height: 5 } }, phase: "awaiting_approval", audit: { created_unix_ms: 1000, source: { provider: "mcp" } } }, approval_id: "private-approval", sequence: 1, busy: false, error: null };
@@ -88,13 +88,19 @@ try {
   assert.match(await page.locator("#conversation").innerText(), /No necesitas conocer/);
   await page.locator("#setup").click();
   const send = async text => { await page.locator("#prompt").fill(text); await page.locator("#send").click(); await page.locator("#send:enabled").waitFor(); };
-  for (const provider of ["codex", "claude"]) {
+  for (const provider of ["codex", "claude", "ollama_local", "ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);
+    if (provider.startsWith("ollama_")) {
+      assert.equal(await page.locator("#select-client").isVisible(), false);
+      assert.equal(await page.locator("#connect-account").isVisible(), false);
+      assert.match(await page.locator("#login-status").innerText(), /No se descargan modelos/);
+    }
     for (const program of ["freecad", "drawing", "arduino", "agent", "kicad", "slice"]) {
       await page.locator("#program").selectOption(program);
       await send(`Quiero cambiar mi diseño con ${program}; todavía no conozco las medidas. Usa pulgadas cuando confirmemos su tamaño.`);
       const call = await page.evaluate(() => window.calls.filter(call => call.command.startsWith("start_")).at(-1));
-      assert.equal(call.command, provider === "codex" ? "start_codex_chat" : "start_claude_chat");
+      assert.equal(call.command, provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat");
+      if (provider.startsWith("ollama_")) assert.equal(call.args.profile, provider === "ollama_local" ? "local_experimental" : "cloud");
       const prompt = JSON.parse(call.args.prompt);
       assert.equal(prompt.desktop_context.live_document_connection, false);
       assert.equal(prompt.desktop_context.document_scope, "saved_files_and_verified_copies");
@@ -106,7 +112,24 @@ try {
   }
   assert.equal(await page.locator("#conversation img").count(), 0);
   assert.equal(await page.evaluate(() => window.injection), undefined);
-  for (const provider of ["codex", "claude"]) {
+  for (const provider of ["ollama_local", "ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#new-chat").click();
+    await send("Quiero recrear una pieza; todavía no sé sus dimensiones.");
+    await send("La usaré como soporte. Pregunta qué información necesitas.");
+    const call = await page.evaluate(() => window.calls.filter(call => call.command === "start_ollama_chat").at(-1));
+    const context = JSON.parse(call.args.prompt).recovered_conversation;
+    assert.equal(call.args.newSession, true, "Ollama must refresh visible conversation and document context on each turn");
+    assert(context.some(turn => turn.role === "user" && turn.content.includes("recrear una pieza")), "Ollama lost the earlier user intent");
+    assert(context.some(turn => turn.role === "assistant" && turn.content.includes("revisemos el documento")), "Ollama lost the clarification context");
+    assert(!await page.evaluate(() => Object.values(localStorage).join(" ").includes("private-approval")));
+    await page.evaluate(() => { window.holdChat = true; });
+    await page.locator("#prompt").fill("Voy a detener esta consulta de Ollama."); await page.locator("#send").click();
+    await page.locator("#stop:enabled").waitFor(); await page.locator("#stop").click(); await page.locator("#send:enabled").waitFor();
+    assert.match(await page.locator("#conversation").innerText(), /Conversación detenida/);
+    await page.evaluate(() => { window.holdChat = false; });
+  }
+  for (const provider of ["codex", "claude", "ollama_local", "ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);
     await page.locator("#program").selectOption("slice");
     await page.evaluate(() => { window.foreignSlice = true; });
@@ -116,7 +139,7 @@ try {
     await page.getByRole("button", { name: "Seleccionar modelo y perfiles…", exact: true }).click();
     await send("Quiero preparar este modelo para imprimir, pero todavía no sé su escala. Inspecciona sus perfiles antes de preguntar lo que falte.");
     const call = await page.evaluate(() => window.calls.filter(call => call.command.startsWith("start_")).at(-1));
-    assert.equal(call.command, provider === "codex" ? "start_codex_chat" : "start_claude_chat");
+    assert.equal(call.command, provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat");
     const context = JSON.parse(call.args.prompt).desktop_context;
     assert.deepEqual(context.slice_source, { selection: "selected-slice", selection_sha256: "f".repeat(64), units_require_confirmation: true });
     for (const invented of ["units", "bed", "bed_temperature_c", "draft_fields"]) assert.equal(context[invented], undefined);
@@ -274,5 +297,5 @@ try {
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry, both agent routes across all six program groups, selected document context, no form defaults or automatic approvals, completed-event ordering, verified-result access, question privacy, cancellation, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry, Codex/Claude and both Ollama profiles across all six program groups, selected document context, no form defaults or automatic approvals, completed-event ordering, verified-result access, question privacy, cancellation, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

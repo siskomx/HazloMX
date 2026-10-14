@@ -6,6 +6,7 @@
   "permissions": [
     "allow-select-codex", "allow-connect-codex", "allow-cancel-codex-login", "allow-open-codex-login", "allow-start-codex-chat", "allow-answer-codex-question",
     "allow-select-claude", "allow-start-claude-chat", "allow-cancel-chat",
+    "allow-start-ollama-chat",
     "allow-set-agent-tools",
     "allow-get-snapshot", "allow-select-project", "allow-select-freecad", "allow-select-arduino",
     "allow-start-compile", "allow-edit-compile",

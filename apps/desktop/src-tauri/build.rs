@@ -11,6 +11,7 @@ fn main() {
             "answer_codex_question",
             "select_claude",
             "start_claude_chat",
+            "start_ollama_chat",
             "cancel_chat",
             "set_agent_tools",
             "select_project",

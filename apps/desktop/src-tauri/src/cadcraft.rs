@@ -205,7 +205,7 @@ pub struct DrawingInput {
 }
 impl DrawingInput {
     pub fn validate(&self) -> Result<(), String> {
-        if !matches!(self.schema_version, 1 | 2 | 3)
+        if !matches!(self.schema_version, 1..=3)
             || self.job_id.is_nil()
             || self.cadcraft_version != VERSION
             || self.source_format == Format::Png
@@ -824,7 +824,7 @@ pub fn validate_artifacts(
     result: &DrawingResult,
 ) -> Result<(), String> {
     input.validate()?;
-    if !matches!(result.schema_version, 1 | 2 | 3)
+    if !matches!(result.schema_version, 1..=3)
         || (result.schema_version != input.schema_version
             && !(input.schema_version == 1 && result.schema_version == 2))
         || result.job_id != input.job_id

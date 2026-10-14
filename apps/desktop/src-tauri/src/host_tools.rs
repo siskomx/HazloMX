@@ -704,6 +704,29 @@ impl HostTools {
     pub fn call(&self, name: &str, arguments: Value) -> Result<Value, String> {
         self.call_with_cancel(name, arguments, Arc::new(AtomicBool::new(false)))
     }
+    pub(crate) async fn call_in_project(
+        self: Arc<Self>,
+        project: (Uuid, PathBuf),
+        name: String,
+        arguments: Value,
+        cancelled: Arc<AtomicBool>,
+    ) -> Result<Value, String> {
+        tokio::task::spawn_blocking(move || {
+            if cancelled.load(Ordering::SeqCst)
+                || self.workflow.view()?.project != Some(project.clone())
+            {
+                return Err("El proyecto cambió o la solicitud se detuvo.".into());
+            }
+            let result = self.call_with_cancel(&name, arguments, cancelled.clone());
+            if cancelled.load(Ordering::SeqCst) || self.workflow.view()?.project != Some(project) {
+                self.cancel_unapproved_result(&result);
+                return Err("El proyecto cambió o la solicitud se detuvo.".into());
+            }
+            result
+        })
+        .await
+        .map_err(|_| "No se pudo completar la herramienta de conversación.")?
+    }
     fn call_with_cancel(
         &self,
         name: &str,

@@ -10,6 +10,9 @@ use std::{
     time::Duration,
 };
 
+#[path = "ollama_chat.rs"]
+pub mod chat;
+
 const MAX_RECORD: usize = 64 * 1024;
 const MAX_RESPONSE: usize = 16 * 1024;
 const MAX_WIRE: usize = 1024 * 1024;
@@ -369,6 +372,10 @@ impl OllamaClient {
     }
 
     pub async fn check(&self, cancel: &AtomicBool) -> Result<(), String> {
+        self.check_capabilities(cancel, false).await
+    }
+
+    async fn check_capabilities(&self, cancel: &AtomicBool, tools: bool) -> Result<(), String> {
         let version = self.metadata("/api/version", None, cancel).await?;
         if version.get("version").and_then(Value::as_str) != Some("0.35.1") {
             return Err(
@@ -413,6 +420,13 @@ impl OllamaClient {
                 .is_some_and(|values| values.iter().any(|value| value == "completion"))
         {
             return Err("El modelo no admite la propuesta en el perfil seleccionado.".into());
+        }
+        if tools
+            && !show["capabilities"]
+                .as_array()
+                .is_some_and(|values| values.iter().any(|value| value == "tools"))
+        {
+            return Err("El modelo seleccionado no admite herramientas de conversación.".into());
         }
         Ok(())
     }
@@ -493,7 +507,8 @@ mod tests {
         time::Instant,
     };
 
-    const DIGEST: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    pub(super) const DIGEST: &str =
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     #[test]
     fn captured_real_stream_survives_every_byte_boundary() {
@@ -530,7 +545,9 @@ mod tests {
         }
     }
 
-    fn server(replies: Vec<String>) -> (u16, thread::JoinHandle<Vec<String>>, Arc<AtomicBool>) {
+    pub(super) fn server(
+        replies: Vec<String>,
+    ) -> (u16, thread::JoinHandle<Vec<String>>, Arc<AtomicBool>) {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
         let ready = Arc::new(AtomicBool::new(false));
@@ -558,7 +575,7 @@ mod tests {
                             .then(|| value.trim().parse::<usize>().unwrap())
                     })
                     .unwrap_or(0);
-                assert!(length < 32768);
+                assert!(length < 2 * MAX_WIRE);
                 let mut body = vec![0; length];
                 socket.read_exact(&mut body).unwrap();
                 request.extend(body);
@@ -580,11 +597,11 @@ mod tests {
         (port, handle, ready)
     }
 
-    fn reply(body: &str, content_type: &str) -> String {
+    pub(super) fn reply(body: &str, content_type: &str) -> String {
         format!("HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len())
     }
 
-    fn metadata_replies() -> Vec<String> {
+    pub(super) fn metadata_replies() -> Vec<String> {
         vec![
             reply(r#"{"version":"0.35.1"}"#, "application/json"),
             reply(

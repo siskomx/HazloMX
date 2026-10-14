@@ -1017,7 +1017,6 @@ impl Workflow {
             profiles,
             request,
             None,
-            RunSource::Manual,
             Arc::new(AtomicBool::new(false)),
         )
     }
@@ -1055,7 +1054,6 @@ impl Workflow {
             profiles,
             request,
             Some(binding),
-            RunSource::Mcp,
             cancel,
         )
     }
@@ -1066,7 +1064,6 @@ impl Workflow {
         profiles: [PathBuf; 3],
         request: orca::Request,
         binding: Option<(Uuid, PathBuf, orca::Discovery)>,
-        origin: RunSource,
         cancel: Arc<AtomicBool>,
     ) -> Result<JobView, String> {
         orca::stop(&cancel)?;
@@ -1119,6 +1116,11 @@ impl Workflow {
         {
             return Err("El proyecto cambió durante la importación.".into());
         }
+        let origin = if binding.is_some() {
+            RunSource::Mcp
+        } else {
+            RunSource::Manual
+        };
         Self::propose_operation_locked(&mut state, OperationInput::Orca(input), origin)
     }
     pub fn propose_cadpilot(

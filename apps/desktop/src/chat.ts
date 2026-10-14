@@ -6,12 +6,13 @@ import "./chat.css";
 const programs = { freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
 const phases: Record<Snapshot["phase"], string> = { awaiting_approval: "Pendiente de aprobación", running: "En curso", cancelled: "Cancelada", failed: "Falló", interrupted: "Interrumpida", completed: "Completada" };
 type Program = keyof typeof programs;
-type Provider = "codex" | "claude";
+type Provider = "codex" | "claude" | "ollama_local" | "ollama_cloud";
+const providerNames: Record<Provider, string> = {codex:"Codex",claude:"Claude Code",ollama_local:"Ollama local · experimental",ollama_cloud:"Ollama cloud"};
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 document.querySelector("#app")!.innerHTML = `
   <header><div><h1>Hazlo Mexa</h1><span class="fine">Cuéntame qué quieres crear o cambiar.</span></div><button id="setup" class="secondary">Conexiones</button></header>
   <details id="connections" class="panel"><summary>Tu IA, programas y documentos</summary>
-    <label for="provider">IA que usará las herramientas</label><select id="provider"><option value="codex">Codex instalado</option><option value="claude">Claude Code instalado</option><option disabled>Ollama · chat con herramientas pendiente</option></select>
+    <label for="provider">IA que usará las herramientas</label><select id="provider"><option value="codex">Codex instalado</option><option value="claude">Claude Code instalado</option><option value="ollama_local">Ollama local · experimental</option><option value="ollama_cloud">Ollama cloud</option></select>
     <p class="fine">Tu mensaje y los documentos seleccionados pueden enviarse al servicio de la IA y consumir tu plan. Inicia sesión personalmente cuando el cliente lo solicite.</p>
     <div class="actions"><button id="select-client" class="secondary">Elegir cliente instalado…</button><button id="connect-account">Conectar cuenta</button><button id="open-login" class="secondary" hidden>Abrir inicio de sesión</button><button id="cancel-login" class="secondary" hidden>Detener conexión</button></div><p id="login-status" class="status fine"></p>
     <label for="program">Programa con el que trabajaremos</label><select id="program"></select><div id="program-actions" class="actions"></div><p id="source-status" class="status fine"></p>
@@ -148,12 +149,13 @@ function renderQuestion() {
 }
 function render() {
   const busy = commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
-  const clientReady = provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected;
+  const ollama = provider.startsWith("ollama_");
+  const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
   $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
   $("live-pcb-setup").hidden = program !== "kicad";
   $("document-scope").textContent = native ? "PCB conectada para lectura nativa: las posiciones se consultan en KiCad, incluso antes de guardar. No permite modificar la PCB abierta. Para editar una copia guardada, selecciónala expresamente." : "Las ediciones actuales trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
-  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${provider === "codex" ? "Codex" : "Claude Code"} · ${programs[program]} · ${native ? "lectura nativa de PCB" : "archivos guardados"}`;
+  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${native ? "lectura nativa de PCB" : "archivos guardados"}`;
   $("source-status").textContent = sourceNames[program] ?? (program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
   if (JSON.stringify(messages) !== renderedConversation) {
@@ -169,11 +171,12 @@ function render() {
   $<HTMLButtonElement>("stop").disabled = commandBusy || !state.chat?.busy || !!state.chat.cancelled;
   for (const id of ["provider", "program"]) $<HTMLSelectElement>(id).disabled = busy || state.job?.snapshot.phase === "awaiting_approval";
   for (const id of ["select-client", "create-project", "open-project"]) $<HTMLButtonElement>(id).disabled = busy;
+  $("select-client").hidden = ollama;
   $<HTMLButtonElement>("connect-account").hidden = provider !== "codex";
   $<HTMLButtonElement>("connect-account").disabled = busy || !state.codex;
   $("open-login").hidden = !state.codex_login?.busy || !state.codex_login.auth_url || !!state.codex_login.cancelled;
   $("cancel-login").hidden = !state.codex_login?.busy || !!state.codex_login.cancelled;
-  $("login-status").textContent = provider === "claude" ? state.claude ? `Claude Code ${state.claude.version}. Usa su inicio de sesión existente.` : "Elige el cliente Claude Code instalado." : state.codex_login?.error ?? (state.codex_login?.connected ? "Cuenta Codex conectada." : state.codex_login?.busy ? "Completa personalmente la conexión con Codex." : "Elige Codex y conecta tu cuenta.");
+  $("login-status").textContent = ollama ? `Usa Ollama 0.35.1 en este equipo y el perfil ${provider === "ollama_local" ? "qwen3:4b" : "kimi-k2.7-code:cloud"} ya instalado y conectado. Comprobamos su identidad y soporte de herramientas antes de enviar. No se descargan modelos. ${provider === "ollama_cloud" ? "Este perfil envía el contexto al servicio cloud de Ollama." : "La calidad de este perfil local sigue siendo experimental."}` : provider === "claude" ? state.claude ? `Claude Code ${state.claude.version}. Usa su inicio de sesión existente.` : "Elige el cliente Claude Code instalado." : state.codex_login?.error ?? (state.codex_login?.connected ? "Cuenta Codex conectada." : state.codex_login?.busy ? "Completa personalmente la conexión con Codex." : "Elige Codex y conecta tu cuenta.");
   const active = state.job?.snapshot.phase === "awaiting_approval";
   $("approval").hidden = !active;
   if (state.job) { $("change-summary").textContent = summary(state.job.snapshot); $("change-details").textContent = changeDetails(state.job.snapshot); }
@@ -244,7 +247,7 @@ function context() {
 }
 async function send(content: string) {
   const token = ++revision;
-  const ready = provider === "codex" ? state.codex_conversation_ready : state.claude_conversation_ready;
+  const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
   const startNew = newSession || !ready;
   const prompt = agentPrompt(content, startNew ? turns : [], context());
   const events = new Channel<ChatView>();
@@ -254,7 +257,7 @@ async function send(content: string) {
     if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
   };
   turns.push({ role: "user", content }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; render();
-  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : "start_claude_chat", { prompt, newSession: startNew, events });
+  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, newSession: startNew, events, ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
 }
 $("setup").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("provider").focus(); };
