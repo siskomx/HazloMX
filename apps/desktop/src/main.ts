@@ -960,7 +960,7 @@ element("discover-drawing").addEventListener("click",()=>void action(async()=>{
   for(const id of ["drawing-x","drawing-y","drawing-diameter"])element<HTMLInputElement>(id).value="";
   element<HTMLInputElement>("drawing-add-circle").checked=false;
   element<HTMLSelectElement>("drawing-unit").value="";
-  const selected=await invoke<DiscoveredDrawing>("discover_drawing");
+  const selected=await invoke<DiscoveredDrawing>("discover_drawing",{events:new Channel<string>()});
   if(revision!==projectRevision || selected.project_id!==state.project?.[0])return;
   drawingSource=selected;
   element<HTMLSelectElement>("drawing-unit").value=selected.inspection.insunits===4 ? "mm" : selected.inspection.insunits===1 ? "in" : "";

@@ -42,6 +42,8 @@ let sourceNames: Partial<Record<Program, string>> = {};
 let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
 let renderedLegacy = "";
 let resultReview: { revision: number; project: string; provider: Provider; program: Program; jobId: string } | undefined;
+let inspection: {id?:string;cancelled:boolean;stopping:boolean;stop:Promise<void>} | undefined;
+let inspectionNotice = "";
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
@@ -90,7 +92,7 @@ function renderLegacy() {
 }
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
-  if (projectChanged) { revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; }
+  if (projectChanged) { revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
   if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
   if (next.codex_login && state.codex_login?.id === next.codex_login.id && state.codex_login.sequence > next.codex_login.sequence) next.codex_login = state.codex_login;
@@ -210,10 +212,11 @@ function render() {
     for (const message of messages) { const row = document.createElement("p"); row.className = `message ${message.role}`; row.textContent = `${message.role === "user" ? "Tú" : "Hazlo Mexa"}: ${message.content}`; log.append(row); }
     if (follow) log.scrollTop = log.scrollHeight;
   }
-  $("chat-progress").textContent = state.chat?.provider === provider && state.chat.busy ? state.chat.cancelled ? "Deteniendo conversación…" : state.chat.text || "Consultando a tu IA…" : "";
+  $("chat-progress").textContent = inspection ? inspection.cancelled || inspection.stopping ? "Deteniendo inspección…" : inspection.id ? "Inspeccionando el documento con sus herramientas…" : "Selecciona las fuentes o cancela la ventana de selección." : state.chat?.provider === provider && state.chat.busy ? state.chat.cancelled ? "Deteniendo conversación…" : state.chat.text || "Consultando a tu IA…" : inspectionNotice;
   for (const id of ["send", "new-chat"]) $<HTMLButtonElement>(id).disabled = busy || !state.project || !clientReady;
   $<HTMLTextAreaElement>("prompt").disabled = busy;
-  $<HTMLButtonElement>("stop").disabled = commandBusy || !state.chat?.busy || !!state.chat.cancelled;
+  $<HTMLButtonElement>("stop").disabled = inspection ? !inspection.id || inspection.stopping || inspection.cancelled : commandBusy || !state.chat?.busy || !!state.chat.cancelled;
+  $("stop").textContent = inspection ? "Detener inspección" : "Detener";
   for (const id of ["provider", "program"]) $<HTMLSelectElement>(id).disabled = busy || state.job?.snapshot.phase === "awaiting_approval";
   for (const id of ["select-client", "create-project", "open-project"]) $<HTMLButtonElement>(id).disabled = busy;
   $("select-client").hidden = ollama;
@@ -239,20 +242,38 @@ function connectionButton(label: string, disabled: boolean, work: () => Promise<
 function selectedNewSource(program: Program) {
   sourcePreviousJobs[program] = state.job?.snapshot.input.job_id ?? null;
 }
+async function inspectSource<T>(command: string, args: Record<string,unknown> = {}): Promise<T> {
+  const pending = {id:undefined as string|undefined,cancelled:false,stopping:false,stop:Promise.resolve()};
+  inspection = pending; inspectionNotice = "";
+  const events = new Channel<string>();
+  events.onmessage = id => { if (inspection === pending) { pending.id = id; render(); } };
+  render();
+  try {
+    const selected = await invoke<T>(command,{...args,events});
+    await pending.stop;
+    if (pending.cancelled) throw "Selección cancelada.";
+    inspectionNotice = "Documento inspeccionado. Cuéntame qué quieres cambiar.";
+    return selected;
+  } catch (e) {
+    await pending.stop;
+    if (pending.cancelled) { inspectionNotice = "Inspección detenida. Se conserva la selección anterior."; throw "Selección cancelada."; }
+    throw e;
+  } finally { if (inspection === pending) inspection = undefined; render(); }
+}
 function renderConnections(disabled: boolean) {
   $("program-actions").replaceChildren();
   const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
   if (program === "freecad") {
     connect("Elegir FreeCAD…", "select_freecad");
     connectionButton("Seleccionar documento guardado e inspeccionar…", disabled, async () => {
-      const selected = await invoke<DiscoveredCadDocument>("discover_cad_document");
+      const selected = await inspectSource<DiscoveredCadDocument>("discover_cad_document");
       if (selected.project_id !== state.project?.[0]) throw Error("El documento pertenece a otro proyecto.");
       sourceContext.cad_document_source = { selection: selected.id, source_sha256: selected.inspection.source_sha256 };
       sourceNames.freecad = selected.inspection.source_name; selectedNewSource("freecad");
     });
   } else if (program === "drawing") {
     connect("Elegir CADCraft…", "select_cadcraft");
-    connectionButton("Seleccionar dibujo…", disabled, async () => { const selected = await invoke<DiscoveredDrawing>("discover_drawing"); if (selected.project_id !== state.project?.[0]) throw Error("El dibujo pertenece a otro proyecto."); sourceContext.drawing_source = { selection: selected.id, sha256: selected.inspection.source_sha256 }; sourceNames.drawing = selected.inspection.source_name; selectedNewSource("drawing"); });
+    connectionButton("Seleccionar dibujo…", disabled, async () => { const selected = await inspectSource<DiscoveredDrawing>("discover_drawing"); if (selected.project_id !== state.project?.[0]) throw Error("El dibujo pertenece a otro proyecto."); sourceContext.drawing_source = { selection: selected.id, sha256: selected.inspection.source_sha256 }; sourceNames.drawing = selected.inspection.source_name; selectedNewSource("drawing"); });
   } else if (program === "arduino") connect("Elegir Arduino CLI y su entorno…", "select_arduino");
   else if (program === "agent") {
     connect("Conectar Arduino Agent", "connect_agent");
@@ -264,7 +285,7 @@ function renderConnections(disabled: boolean) {
     connectionButton("Leer PCB abierta en KiCad…", disabled, async () => {
       const connection = { endpoint: $<HTMLInputElement>("kicad-endpoint").value.trim(), token: $<HTMLInputElement>("kicad-api-token").value };
       $<HTMLInputElement>("kicad-api-token").value = "";
-      const selected = await invoke<DiscoveredLivePcb>("discover_live_pcb", { connection });
+      const selected = await inspectSource<DiscoveredLivePcb>("discover_live_pcb", { connection });
       if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto.");
       sourceContext.live_pcb_source = { selection: selected.id, document_sha256: selected.observation.document_sha256, components_sha256: selected.observation.components_sha256, mutations_allowed: false };
       delete sourceContext.pcb_source; delete sourceContext.schematic_source; sourceNames.kicad = `${selected.name} · lectura nativa`;
@@ -272,7 +293,7 @@ function renderConnections(disabled: boolean) {
   } else {
     connect("Elegir OrcaSlicer…", "select_orca");
     connectionButton("Seleccionar modelo y perfiles…", disabled, async () => {
-      const selected=await invoke<DiscoveredSlice>("discover_slice");
+      const selected=await inspectSource<DiscoveredSlice>("discover_slice");
       if(selected.project_id!==state.project?.[0]) throw Error("El modelo pertenece a otro proyecto.");
       sourceContext.slice_source={selection:selected.id,selection_sha256:selected.preview.selection_sha256,units_require_confirmation:true};
       selectedNewSource("slice");
@@ -297,6 +318,7 @@ function context() {
   return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: !native && job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: native ? "live_pcb_read_only" : "saved_files_and_verified_copies", live_document_connection: native, live_mutations_allowed: false };
 }
 async function send(content: string) {
+  inspectionNotice = "";
   const token = ++revision;
   const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
   const startNew = newSession || !ready;
@@ -326,7 +348,16 @@ $("cancel-login").onclick = () => void action(async () => { if (state.codex_logi
 for (const [id, create] of [["create-project", true], ["open-project", false]] as const) $(id).onclick = () => void action(async () => { revision++; apply(await invoke<DesktopSnapshot>("select_project", { create })); $("opening-status").textContent = ""; });
 $("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if (content) void action(() => send(content)); };
 $("new-chat").onclick = () => { if (state.chat?.busy || commandBusy) return; revision++; turns = []; answeredChat = state.chat?.id; newSession = true; persist(); render(); };
-$("stop").onclick = () => void action(async () => { if (state.chat) apply({ ...state, chat: await invoke<ChatView>("cancel_chat", { id: state.chat.id }) }); });
+$("stop").onclick = () => {
+  const pending = inspection;
+  if (pending) {
+    if (!pending.id || pending.cancelled || pending.stopping) return;
+    pending.stopping = true;
+    pending.stop = invoke<boolean>("cancel_source_inspection",{id:pending.id}).then(accepted=>{pending.cancelled=accepted;}).catch(error).finally(()=>{pending.stopping=false;render();});
+    render(); return;
+  }
+  void action(async () => { if (state.chat) apply({ ...state, chat: await invoke<ChatView>("cancel_chat", { id: state.chat.id }) }); });
+};
 $("question-form").onsubmit = event => {
   event.preventDefault(); const chat = state.chat, question = chat?.question;
   if (!chat?.busy || chat.cancelled || !question || commandBusy) return;

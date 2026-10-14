@@ -40,7 +40,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .envs(&config.env)
             .kill_on_drop(true);
         let service = ().serve(rmcp::transport::TokioChildProcess::new(command)?).await?;
-        let selected = host.select_drawing(project_id, source.clone())?;
+        let selected = host.select_drawing(
+            project_id,
+            source.clone(),
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        )?;
         assert!(workflow.view()?.job.is_none());
         assert!(workflow.view()?.history.is_empty());
         let inspected = service

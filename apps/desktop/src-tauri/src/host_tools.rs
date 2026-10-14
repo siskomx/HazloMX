@@ -53,6 +53,28 @@ pub struct HostTools {
     slice: Mutex<Option<DiscoveredSlice>>,
     check_source: Mutex<Option<SelectedKicadCheck>>,
     cad_document: Mutex<Option<DiscoveredCadDocument>>,
+    inspection: Mutex<Option<PendingInspection>>,
+}
+struct PendingInspection {
+    id: Uuid,
+    project: (Uuid, PathBuf),
+    cancelled: Arc<AtomicBool>,
+    published: bool,
+}
+pub struct SourceInspection {
+    pub id: Uuid,
+    pub cancelled: Arc<AtomicBool>,
+    host: Arc<HostTools>,
+}
+impl Drop for SourceInspection {
+    fn drop(&mut self) {
+        self.cancelled.store(true, Ordering::SeqCst);
+        if let Ok(mut current) = self.host.inspection.lock() {
+            if current.as_ref().is_some_and(|p| p.id == self.id) {
+                *current = None;
+            }
+        }
+    }
 }
 #[derive(Clone, Serialize)]
 pub struct DiscoveredCadDocument {
@@ -288,13 +310,81 @@ impl HostTools {
             slice: Mutex::new(None),
             check_source: Mutex::new(None),
             cad_document: Mutex::new(None),
+            inspection: Mutex::new(None),
         }
+    }
+    pub fn begin_source_inspection(self: &Arc<Self>) -> Result<SourceInspection, String> {
+        let mut current = self.inspection.lock().map_err(|e| e.to_string())?;
+        if current.is_some() {
+            return Err("Espera a que termine la inspección anterior.".into());
+        }
+        let view = self.workflow.view()?;
+        if view.inference.is_some_and(|i| i.busy)
+            || view.job.is_some_and(|j| {
+                j.busy
+                    || matches!(
+                        j.snapshot.phase,
+                        crate::project::Phase::Running | crate::project::Phase::AwaitingApproval
+                    )
+            })
+        {
+            return Err("Cancela o termina la operación actual antes de inspeccionar.".into());
+        }
+        let project = view.project.ok_or("Selecciona un proyecto.")?;
+        let id = Uuid::new_v4();
+        let cancelled = Arc::new(AtomicBool::new(false));
+        *current = Some(PendingInspection {
+            id,
+            project,
+            cancelled: cancelled.clone(),
+            published: false,
+        });
+        Ok(SourceInspection {
+            id,
+            cancelled,
+            host: self.clone(),
+        })
+    }
+    pub fn cancel_source_inspection(&self, id: Uuid) -> Result<bool, String> {
+        let current = self.inspection.lock().map_err(|e| e.to_string())?;
+        if let Some(pending) = current.as_ref().filter(|p| p.id == id && !p.published) {
+            pending.cancelled.store(true, Ordering::SeqCst);
+            return Ok(true);
+        }
+        Ok(false)
+    }
+    fn publish_selection<T>(
+        &self,
+        cancelled: &Arc<AtomicBool>,
+        publish: impl FnOnce() -> Result<T, String>,
+    ) -> Result<T, String> {
+        let mut current = self.inspection.lock().map_err(|e| e.to_string())?;
+        if cancelled.load(Ordering::SeqCst) {
+            return Err("Inspección cancelada.".into());
+        }
+        if let Some(pending) = current.as_ref() {
+            if !Arc::ptr_eq(&pending.cancelled, cancelled)
+                || pending.published
+                || self.workflow.view()?.project != Some(pending.project.clone())
+            {
+                return Err(
+                    "La inspección o el proyecto cambiaron. Selecciona el documento de nuevo."
+                        .into(),
+                );
+            }
+        }
+        let result = publish()?;
+        if let Some(pending) = current.as_mut() {
+            pending.published = true;
+        }
+        Ok(result)
     }
     pub fn select_cad_document(
         &self,
         project_id: Uuid,
         source: PathBuf,
         addon: PathBuf,
+        cancelled: Arc<AtomicBool>,
     ) -> Result<DiscoveredCadDocument, String> {
         self.check_project(project_id)?;
         let project_root = self
@@ -303,9 +393,9 @@ impl HostTools {
             .project
             .ok_or("Selecciona un proyecto.")?
             .1;
-        let inspection =
-            self.workflow
-                .discover_cadpilot(&source, &addon, Arc::new(AtomicBool::new(false)))?;
+        let inspection = self
+            .workflow
+            .discover_cadpilot(&source, &addon, cancelled.clone())?;
         if self.workflow.view()?.project != Some((project_id, project_root.clone())) {
             return Err("El proyecto cambió. Selecciona el documento de nuevo.".into());
         }
@@ -317,8 +407,10 @@ impl HostTools {
             source,
             addon,
         };
-        *self.cad_document.lock().map_err(|e| e.to_string())? = Some(selected.clone());
-        Ok(selected)
+        self.publish_selection(&cancelled, || {
+            *self.cad_document.lock().map_err(|e| e.to_string())? = Some(selected.clone());
+            Ok(selected)
+        })
     }
     fn selected_cad_document(&self, selection: Uuid) -> Result<DiscoveredCadDocument, String> {
         let selected = self
@@ -353,6 +445,7 @@ impl HostTools {
         profile_root: PathBuf,
         model: PathBuf,
         profiles: [PathBuf; 3],
+        cancelled: Arc<AtomicBool>,
     ) -> Result<DiscoveredSlice, String> {
         self.check_project(project_id)?;
         let project_root = self
@@ -365,7 +458,7 @@ impl HostTools {
             &profile_root,
             &model,
             profiles.clone(),
-            Arc::new(AtomicBool::new(false)),
+            cancelled.clone(),
         )?;
         if self.workflow.view()?.project != Some((project_id, project_root.clone())) {
             return Err("El proyecto cambió; selecciona las fuentes de nuevo.".into());
@@ -379,8 +472,10 @@ impl HostTools {
             profiles,
             preview,
         };
-        *self.slice.lock().map_err(|e| e.to_string())? = Some(selected.clone());
-        Ok(selected)
+        self.publish_selection(&cancelled, || {
+            *self.slice.lock().map_err(|e| e.to_string())? = Some(selected.clone());
+            Ok(selected)
+        })
     }
     fn slice_context(&self, selection: Uuid) -> Result<DiscoveredSlice, String> {
         let selected = self
@@ -403,6 +498,7 @@ impl HostTools {
         project_id: Uuid,
         entry: PathBuf,
         connection: crate::kicad_live::Connection,
+        cancelled: Arc<AtomicBool>,
     ) -> Result<DiscoveredLivePcb, String> {
         self.check_project(project_id)?;
         let project_root = self
@@ -411,10 +507,9 @@ impl HostTools {
             .project
             .ok_or("Selecciona un proyecto.")?
             .1;
-        // shortcut: initial picker read has a bounded timeout; add session cancellation before enabling live writes.
-        let observation =
-            self.workflow
-                .read_live_pcb(&entry, &connection, Arc::new(AtomicBool::new(false)))?;
+        let observation = self
+            .workflow
+            .read_live_pcb(&entry, &connection, cancelled.clone())?;
         if self.workflow.view()?.project != Some((project_id, project_root.clone())) {
             return Err("El proyecto cambió durante la conexión.".into());
         }
@@ -431,11 +526,17 @@ impl HostTools {
             connection,
             observation,
         };
-        *self.pcb.lock().map_err(|e| e.to_string())? = None;
-        *self.schematic.lock().map_err(|e| e.to_string())? = None;
-        *self.check_source.lock().map_err(|e| e.to_string())? = None;
-        *self.live_pcb.lock().map_err(|e| e.to_string())? = Some(selected.clone());
-        Ok(selected)
+        self.publish_selection(&cancelled, || {
+            let mut pcb = self.pcb.lock().map_err(|e| e.to_string())?;
+            let mut schematic = self.schematic.lock().map_err(|e| e.to_string())?;
+            let mut check_source = self.check_source.lock().map_err(|e| e.to_string())?;
+            let mut live_pcb = self.live_pcb.lock().map_err(|e| e.to_string())?;
+            *pcb = None;
+            *schematic = None;
+            *check_source = None;
+            *live_pcb = Some(selected.clone());
+            Ok(selected)
+        })
     }
     fn live_pcb_context(&self, selection: Uuid) -> Result<DiscoveredLivePcb, String> {
         let selected = self
@@ -457,6 +558,7 @@ impl HostTools {
         &self,
         project_id: Uuid,
         entry: PathBuf,
+        cancelled: Arc<AtomicBool>,
     ) -> Result<DiscoveredDrawing, String> {
         self.check_project(project_id)?;
         let project_root = self
@@ -465,7 +567,7 @@ impl HostTools {
             .project
             .ok_or("Seleccione un proyecto.")?
             .1;
-        let inspection = self.workflow.discover_drawing(&entry)?;
+        let inspection = self.workflow.discover_drawing(&entry, cancelled.clone())?;
         self.check_project(project_id)?;
         if self.workflow.view()?.project != Some((project_id, project_root.clone())) {
             return Err("La carpeta del proyecto cambió. Inspecciona de nuevo.".into());
@@ -477,8 +579,10 @@ impl HostTools {
             entry,
             project_root,
         };
-        *self.drawing.lock().map_err(|e| e.to_string())? = Some(selected.clone());
-        Ok(selected)
+        self.publish_selection(&cancelled, || {
+            *self.drawing.lock().map_err(|e| e.to_string())? = Some(selected.clone());
+            Ok(selected)
+        })
     }
 
     fn selected_drawing(&self, selection: Uuid) -> Result<DiscoveredDrawing, String> {
@@ -1354,6 +1458,163 @@ mod tests {
     use rmcp::ServiceExt;
     use std::fs;
     #[test]
+    fn source_inspections_cancel_atomically_preserve_context_and_refuse_copied_projects() {
+        let (root, workflow, host, original) = setup();
+        let (project_id, project_root) = workflow.view().unwrap().project.unwrap();
+        for _ in 0..32 {
+            let inspection = host.begin_source_inspection().unwrap();
+            assert!(host.begin_source_inspection().is_err());
+            assert!(!host.cancel_source_inspection(Uuid::new_v4()).unwrap());
+            let barrier = std::sync::Barrier::new(2);
+            let (accepted, published) = std::thread::scope(|scope| {
+                let stopping = scope.spawn(|| {
+                    barrier.wait();
+                    host.cancel_source_inspection(inspection.id).unwrap()
+                });
+                barrier.wait();
+                let published = host
+                    .publish_selection(&inspection.cancelled, || Ok(()))
+                    .is_ok();
+                (stopping.join().unwrap(), published)
+            });
+            assert_ne!(
+                accepted, published,
+                "Accepted cancellation and publication cannot both win"
+            );
+            let signal = inspection.cancelled.clone();
+            drop(inspection);
+            assert!(host.publish_selection(&signal, || Ok(())).is_err());
+        }
+        let inspection = host.begin_source_inspection().unwrap();
+        assert!(host.cancel_source_inspection(inspection.id).unwrap());
+        let (sources, model, profiles) = crate::orca::tests::fixture();
+        assert!(host
+            .select_slice(
+                project_id,
+                sources.join("profiles"),
+                model,
+                profiles,
+                inspection.cancelled.clone()
+            )
+            .is_err());
+        assert!(host.slice.lock().unwrap().is_none());
+        assert_eq!(
+            host.schematic.lock().unwrap().as_ref().unwrap().id,
+            original.id
+        );
+        drop(inspection);
+        let inspection = host.begin_source_inspection().unwrap();
+        let copied = root.join("copied-inspection-project");
+        fs::create_dir(&copied).unwrap();
+        drop(Project::create(&copied).unwrap());
+        fs::copy(
+            project_root.join("hazlomx.json"),
+            copied.join("hazlomx.json"),
+        )
+        .unwrap();
+        workflow
+            .select_project(Project::open(&copied).unwrap())
+            .unwrap();
+        assert!(host
+            .publish_selection(&inspection.cancelled, || Ok(()))
+            .is_err());
+        drop(inspection);
+        assert!(host.inspection.lock().unwrap().is_none());
+        assert!(workflow.view().unwrap().job.is_none());
+        assert!(workflow.view().unwrap().history.is_empty());
+    }
+    #[test]
+    #[ignore = "Actual source-inspection cancellation of owned FreeCAD and Konnect processes; run serially"]
+    fn actual_source_inspection_cancellation_stops_native_readers_without_selecting() {
+        let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(3)
+            .unwrap();
+        let (root, workflow, host, original_selection) = setup();
+        workflow.set_executable(PathBuf::from(std::env::var_os("LOCALAPPDATA").unwrap()).join("HazloMexa/runtimes/FreeCAD-1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311/FreeCADCmd.exe")).unwrap();
+        workflow
+            .set_kicad(workspace.join("target/kicad-probe/runtime/bin/kicad-cli.exe"))
+            .unwrap();
+        workflow
+            .set_konnect(workspace.join("target/konnect-probe/runtime/konnect.exe"))
+            .unwrap();
+        let project_id = workflow.view().unwrap().project.unwrap().0;
+        for process in ["FreeCADCmd.exe", "konnect.exe"] {
+            assert!(crate::process::tests::child_processes(process).is_empty());
+            let source = if process == "FreeCADCmd.exe" {
+                root.join("Selected.FCStd")
+            } else {
+                root.join("Selected.kicad_pcb")
+            };
+            let bytes: &[u8] = if process == "FreeCADCmd.exe" {
+                include_bytes!("../../../../docs/research/cadpilot-primitives-2026-10-11/artifacts/Original.FCStd")
+            } else {
+                include_bytes!("../../../../docs/research/konnect-pcb-2026-10-12/Original/basic_test.kicad_pcb")
+            };
+            fs::write(&source, bytes).unwrap();
+            let inspection = host.begin_source_inspection().unwrap();
+            let id = inspection.id;
+            let worker = host.clone();
+            let entry = source.clone();
+            let endpoint = format!(
+                "ipc://{}",
+                root.join(format!("absent-{}.sock", Uuid::new_v4()))
+                    .display()
+            );
+            let thread = std::thread::spawn(move || {
+                let result = if process == "FreeCADCmd.exe" {
+                    worker.select_cad_document(project_id,entry,workspace.join("target/cadpilot-probe/source/cadpilot-58bfee4d45061e55c158a5fd4786ab98a427f7f6/addon/CADPilot"),inspection.cancelled.clone()).map(|_|())
+                } else {
+                    worker
+                        .select_live_pcb(
+                            project_id,
+                            entry,
+                            crate::kicad_live::Connection {
+                                endpoint,
+                                token: "fixture-private-token".into(),
+                            },
+                            inspection.cancelled.clone(),
+                        )
+                        .map(|_| ())
+                };
+                drop(inspection);
+                result
+            });
+            let until = std::time::Instant::now() + std::time::Duration::from_secs(30);
+            let observed = loop {
+                if let Some(pid) = crate::process::tests::child_processes(process)
+                    .into_iter()
+                    .find(|pid| crate::process::tests::is_alive(*pid))
+                {
+                    break pid;
+                }
+                assert!(
+                    !thread.is_finished(),
+                    "Native reader ended before cancellation observation"
+                );
+                assert!(
+                    std::time::Instant::now() < until,
+                    "Native reader did not start"
+                );
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            };
+            assert!(host.cancel_source_inspection(id).unwrap());
+            assert!(thread.join().unwrap().is_err());
+            assert!(!crate::process::tests::is_alive(observed));
+            assert!(crate::process::tests::child_processes(process).is_empty());
+            assert_eq!(fs::read(&source).unwrap(), bytes);
+            assert!(host.cad_document.lock().unwrap().is_none());
+            assert!(host.live_pcb.lock().unwrap().is_none());
+            assert_eq!(
+                host.schematic.lock().unwrap().as_ref().unwrap().id,
+                original_selection.id
+            );
+            assert!(host.inspection.lock().unwrap().is_none());
+            assert!(workflow.view().unwrap().job.is_none());
+            assert!(workflow.view().unwrap().history.is_empty());
+        }
+    }
+    #[test]
     fn selected_cad_inspection_hides_paths_and_refuses_stale_or_copied_sources() {
         let (root, workflow, host, _) = setup();
         let (project_id, project_root) = workflow.view().unwrap().project.unwrap();
@@ -1500,7 +1761,12 @@ mod tests {
         let addon = workspace.join("target/cadpilot-probe/source/cadpilot-58bfee4d45061e55c158a5fd4786ab98a427f7f6/addon/CADPilot");
         let project_id = workflow.view().unwrap().project.unwrap().0;
         let selected = host
-            .select_cad_document(project_id, source.clone(), addon)
+            .select_cad_document(
+                project_id,
+                source.clone(),
+                addon,
+                Arc::new(AtomicBool::new(false)),
+            )
             .unwrap();
         assert!(workflow.view().unwrap().job.is_none());
         assert!(workflow.view().unwrap().history.is_empty());
@@ -1657,7 +1923,13 @@ mod tests {
         let id = workflow.view().unwrap().project.unwrap().0;
         let (sources, model, profiles) = crate::orca::tests::fixture();
         let selected = host
-            .select_slice(id, sources.join("profiles"), model, profiles)
+            .select_slice(
+                id,
+                sources.join("profiles"),
+                model,
+                profiles,
+                Arc::new(AtomicBool::new(false)),
+            )
             .unwrap();
         assert!(workflow.view().unwrap().job.is_none());
         assert!(workflow.view().unwrap().history.is_empty());
@@ -1733,7 +2005,13 @@ mod tests {
                 .unwrap();
             let host = HostTools::new(workflow.clone());
             let selected = host
-                .select_slice(id, root.join("profiles"), model.clone(), profiles.clone())
+                .select_slice(
+                    id,
+                    root.join("profiles"),
+                    model.clone(),
+                    profiles.clone(),
+                    Arc::new(AtomicBool::new(false)),
+                )
                 .unwrap();
             let inspection = host
                 .call(
@@ -1947,6 +2225,7 @@ mod tests {
                     endpoint,
                     token: "fixture-private-token".into(),
                 },
+                Arc::new(AtomicBool::new(false)),
             )
             .err()
             .expect("A saved-file reply must be refused");
@@ -1995,7 +2274,13 @@ mod tests {
             fs::read(workspace.join("docs/research/cadcraft-runtime-2026-10-11/metric.dxf"))
                 .unwrap();
         fs::write(&original, &bytes).unwrap();
-        let selected = host.select_drawing(project_id, original.clone()).unwrap();
+        let selected = host
+            .select_drawing(
+                project_id,
+                original.clone(),
+                Arc::new(AtomicBool::new(false)),
+            )
+            .unwrap();
         let inspection = host
             .call(
                 "inspect_drawing_native_tools",
@@ -2179,7 +2464,13 @@ mod tests {
             fs::read(workspace.join("docs/research/cadcraft-runtime-2026-10-11/metric.dxf"))
                 .unwrap();
         fs::write(&original, &bytes).unwrap();
-        let selected = host.select_drawing(project_id, original.clone()).unwrap();
+        let selected = host
+            .select_drawing(
+                project_id,
+                original.clone(),
+                Arc::new(AtomicBool::new(false)),
+            )
+            .unwrap();
         assert_eq!(selected.inspection.insunits, 4);
         assert!(workflow.view().unwrap().history.is_empty());
         assert!(workflow.view().unwrap().job.is_none());

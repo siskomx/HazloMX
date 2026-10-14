@@ -2,6 +2,8 @@
 
 ## Current chat source scope — October 13, 2026
 
+[Initial source inspections can be stopped from chat](research/source-inspection-cancellation-2026-10-13.md) for FreeCAD, CADCraft, Orca metadata and native PCB reads. Cancellation/publication races and all four browser flows pass; actual FreeCAD/Konnect cancellation preserves prior selection and creates no job. Native UI/installed Stop interaction and native CADCraft source-reader cancellation remain unverified.
+
 [Approval-to-result handoff](research/chat-result-handoff-2026-10-13.md) requests one AI result review after an explicitly approved operation succeeds across all four AI choices and nine operation variants. Browser ordering/failure/cancellation checks pass; actual agent readback and installed acceptance remain unverified.
 
 [Previous conversations](research/chat-history-preservation-2026-10-13.md) are available locally in a separate archive for the eleven known project/folder scopes. Explicit message-only copying into an empty chat passes browser checks across all four AI choices; original storage is unchanged. Native WebView/installed migration remains unverified; the current replacement build includes this change.

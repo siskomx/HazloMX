@@ -40,8 +40,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         workflow.select_project(project)?;
         workflow.set_orca(cli.clone())?;
         let host = Arc::new(HostTools::new(workflow.clone()));
-        let selection =
-            host.select_slice(project_id, profiles.clone(), source.clone(), selected)?;
+        let selection = host.select_slice(
+            project_id,
+            profiles.clone(),
+            source.clone(),
+            selected,
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        )?;
         assert!(workflow.view()?.job.is_none());
         let bridge = ToolBridge::start_project(host.clone(), helper, project_id)?;
         let config = bridge.config()?;

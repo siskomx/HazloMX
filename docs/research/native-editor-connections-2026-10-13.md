@@ -20,7 +20,7 @@ Only a local absolute Windows `ipc://` endpoint and two identified native read t
 
 The token stays in memory and the owned child's environment; it is not written to native configuration, exposed to the agent or stored in conversation history. Private configuration can contain the selected endpoint/path and remains outside publication. Live selection revokes the old saved-PCB capability. Returning to saved editing requires an explicit saved-source selection. The chat grants no live mutation and omits an unrelated saved job. File content remains untrusted data.
 
-Initial picker inspection has a bounded deadline but no separate UI cancel handle yet; agent refreshes use MCP cancellation. Native-launched handoff, restart identity, live mutation approvals, uncertain-write reconciliation, native backup/undo checks and GUI acceptance remain unfinished. This connection must not become a live-write approval capability without those boundaries.
+Initial picker inspection retains its bounded deadline; the later [chat Stop implementation](source-inspection-cancellation-2026-10-13.md) adds an operation-scoped cancellation handle after source picking. Agent refreshes use MCP cancellation. Native-launched handoff, restart identity, live mutation approvals, uncertain-write reconciliation, native backup/undo checks and GUI acceptance remain unfinished. This connection must not become a live-write approval capability without those boundaries.
 
 ## Verification
 

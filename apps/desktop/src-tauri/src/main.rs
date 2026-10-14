@@ -150,12 +150,25 @@ fn get_snapshot(state: State<AppState>) -> Result<DesktopSnapshot, String> {
 }
 
 #[tauri::command]
+fn cancel_source_inspection(state: State<AppState>, id: Uuid) -> Result<bool, String> {
+    state.tools.cancel_source_inspection(id)
+}
+fn source_inspection(state: &AppState) -> Result<hazlomexa::host_tools::SourceInspection, String> {
+    if desktop_codex::agent_busy(state)? {
+        return Err("Detén la conversación antes de seleccionar otra fuente.".into());
+    }
+    state.tools.begin_source_inspection()
+}
+
+#[tauri::command]
 async fn discover_live_pcb(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     connection: hazlomexa::kicad_live::Connection,
+    events: Channel<Uuid>,
 ) -> Result<DiscoveredLivePcb, String> {
     connection.validate()?;
+    let inspection = source_inspection(&state)?;
     let project_id = state
         .workflow
         .view()?
@@ -165,7 +178,10 @@ async fn discover_live_pcb(
     let tools = state.tools.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let entry=app.dialog().file().set_title("Seleccione la PCB guardada que está abierta en ese KiCad; se leerá su estado vivo sin editar").add_filter("PCB KiCad",&["kicad_pcb"]).blocking_pick_file().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
-        tools.select_live_pcb(project_id,entry,connection)
+        events.send(inspection.id).map_err(|_|"La inspección perdió su conversación.".to_string())?;
+        let result = tools.select_live_pcb(project_id,entry,connection,inspection.cancelled.clone());
+        drop(inspection);
+        result
     }).await.map_err(|e|e.to_string())?
 }
 
@@ -478,7 +494,9 @@ fn pick_slice_sources(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf, [Path
 async fn discover_slice(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
+    events: Channel<Uuid>,
 ) -> Result<DiscoveredSlice, String> {
+    let inspection = source_inspection(&state)?;
     let project_id = state
         .workflow
         .view()?
@@ -488,7 +506,18 @@ async fn discover_slice(
     let tools = state.tools.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let (root, model, profiles) = pick_slice_sources(&app)?;
-        tools.select_slice(project_id, root, model, profiles)
+        events
+            .send(inspection.id)
+            .map_err(|_| "La inspección perdió su conversación.".to_string())?;
+        let result = tools.select_slice(
+            project_id,
+            root,
+            model,
+            profiles,
+            inspection.cancelled.clone(),
+        );
+        drop(inspection);
+        result
     })
     .await
     .map_err(|e| e.to_string())?
@@ -528,7 +557,9 @@ async fn prepare_cadpilot_followup(
 async fn discover_cad_document(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
+    events: Channel<Uuid>,
 ) -> Result<DiscoveredCadDocument, String> {
+    let inspection = source_inspection(&state)?;
     let project_id = state
         .workflow
         .view()?
@@ -554,7 +585,13 @@ async fn discover_cad_document(
             .ok_or("Selección cancelada.")?
             .into_path()
             .map_err(|e| e.to_string())?;
-        tools.select_cad_document(project_id, source, addon)
+        events
+            .send(inspection.id)
+            .map_err(|_| "La inspección perdió su conversación.".to_string())?;
+        let result =
+            tools.select_cad_document(project_id, source, addon, inspection.cancelled.clone());
+        drop(inspection);
+        result
     })
     .await
     .map_err(|e| e.to_string())?
@@ -828,7 +865,9 @@ async fn prepare_drawing(
 async fn discover_drawing(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
+    events: Channel<Uuid>,
 ) -> Result<DiscoveredDrawing, String> {
+    let inspection = source_inspection(&state)?;
     let project_id = state
         .workflow
         .view()?
@@ -846,7 +885,12 @@ async fn discover_drawing(
             .ok_or("Selección cancelada.")?
             .into_path()
             .map_err(|e| e.to_string())?;
-        tools.select_drawing(project_id, path)
+        events
+            .send(inspection.id)
+            .map_err(|_| "La inspección perdió su conversación.".to_string())?;
+        let result = tools.select_drawing(project_id, path, inspection.cancelled.clone());
+        drop(inspection);
+        result
     })
     .await
     .map_err(|e| e.to_string())?
@@ -1222,7 +1266,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, discover_cad_document, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 

@@ -562,7 +562,9 @@ mod tests {
             .unwrap();
             let entry = root.join(source);
             fs::write(&entry, &original).unwrap();
-            let selected = host.select_drawing(project.0, entry.clone()).unwrap();
+            let selected = host
+                .select_drawing(project.0, entry.clone(), Arc::new(AtomicBool::new(false)))
+                .unwrap();
             let mut replies = metadata();
             replies.push(reply(
                 &record(

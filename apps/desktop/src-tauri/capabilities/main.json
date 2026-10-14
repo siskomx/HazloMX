@@ -9,6 +9,7 @@
     "allow-start-ollama-chat",
     "allow-set-agent-tools",
     "allow-get-snapshot", "allow-select-project", "allow-select-freecad", "allow-select-arduino",
+    "allow-cancel-source-inspection",
     "allow-start-compile", "allow-edit-compile",
     "allow-select-cadcraft", "allow-prepare-drawing",
     "allow-discover-drawing", "allow-prepare-selected-drawing",

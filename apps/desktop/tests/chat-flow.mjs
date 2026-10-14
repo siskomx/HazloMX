@@ -51,13 +51,26 @@ try {
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
       if (command === "get_snapshot") return copy();
+      if (["discover_cad_document","discover_drawing","discover_slice","discover_live_pcb"].includes(command)) {
+        if(window.rejectInspectionPicker) throw "Selección cancelada.";
+        window.previousInspectionEvent = window.inspectionEvent;
+        window.inspectionEvent = id => args.events.onmessage(id);
+        window.inspectionId = crypto.randomUUID(); args.events.onmessage(window.inspectionId);
+        if(window.holdInspection) await new Promise(resolve=>{window.finishInspection=resolve;});
+      }
+      if(command === "cancel_source_inspection") {
+        if(args.id!==window.inspectionId) throw Error("Stale inspection cancellation");
+        window.finishInspection();
+        await new Promise(resolve=>setTimeout(resolve,20));
+        return window.cancelInspectionAccepted ?? true;
+      }
       if (command === "select_codex" || command === "select_claude" || command === "select_freecad" || command === "select_cadcraft" || command === "select_arduino" || command === "connect_agent" || command === "select_kicad" || command === "select_konnect" || command === "select_orca") return copy();
       if (command === "discover_schematic") return { id: "selected-sheet", project_id: snapshot.project[0], name: "Circuito.kicad_sch", sha256: "a".repeat(64), components: [] };
       if (command === "discover_pcb") return { id: "selected-board", project_id: window.foreignSource ? "foreign-project" : snapshot.project[0], name: "Placa.kicad_pcb", sha256: "b".repeat(64), components: [] };
-      if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { document_sha256: "2".repeat(64), components_sha256: "d".repeat(64), components: [] } }; }
-      if (command === "discover_drawing") return { id: "selected-drawing", project_id: snapshot.project[0], inspection: { source_name: "Plano.dxf", source_sha256: "c".repeat(64) } };
-      if (command === "discover_cad_document") return { id: "selected-cad-document", project_id: window.foreignCad ? "foreign-project" : snapshot.project[0], inspection: { source_name: "Pieza.FCStd", source_sha256: "1".repeat(64), preview: {catalog:{Target:"Part::Box"},measurements:{Target:{dimensions_mm:{length:10,width:20,height:30}}}} } };
-      if (command === "discover_slice") return { id: "selected-slice", project_id: window.foreignSlice ? "foreign-project" : snapshot.project[0], preview: { source_name: "Pieza.stl", source_sha256: "e".repeat(64), selection_sha256: "f".repeat(64), triangles: 12, bounds_file_coordinates: [[0,0,0],[10,10,10]], declared_bed: null, bed_profiles: [] } };
+      if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: window.holdInspection ? "late-live-board" : "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { document_sha256: "2".repeat(64), components_sha256: "d".repeat(64), components: [] } }; }
+      if (command === "discover_drawing") return { id: window.holdInspection ? "late-selected-drawing" : "selected-drawing", project_id: snapshot.project[0], inspection: { source_name: "Plano.dxf", source_sha256: "c".repeat(64) } };
+      if (command === "discover_cad_document") return { id: window.holdInspection ? "late-selected-cad-document" : "selected-cad-document", project_id: window.foreignCad ? "foreign-project" : snapshot.project[0], inspection: { source_name: "Pieza.FCStd", source_sha256: "1".repeat(64), preview: {catalog:{Target:"Part::Box"},measurements:{Target:{dimensions_mm:{length:10,width:20,height:30}}}} } };
+      if (command === "discover_slice") return { id: window.holdInspection ? "late-selected-slice" : "selected-slice", project_id: window.foreignSlice ? "foreign-project" : snapshot.project[0], preview: { source_name: "Pieza.stl", source_sha256: "e".repeat(64), selection_sha256: "f".repeat(64), triangles: 12, bounds_file_coordinates: [[0,0,0],[10,10,10]], declared_bed: null, bed_profiles: [] } };
       if (command === "select_agent_sketch") { snapshot.agent_source = { project_id: snapshot.project[0], source_name: "Sketch.ino", source: "void setup() {}" }; return copy(); }
       if (command === "select_project") { snapshot.project = window.otherFolder ? ["project-one", "C:\\owned\\other-folder"] : ["project-one", "C:\\owned\\project"]; snapshot.job = null; if (snapshot.chat) snapshot.chat.text = "PREVIOUS FOLDER RESPONSE"; return copy(); }
       if (command === "start_codex_chat" || command === "start_claude_chat" || command === "start_ollama_chat") {
@@ -191,7 +204,7 @@ try {
   assert.equal(cadSource.live_document_connection,false);
   assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="prepare_cadpilot").length),0);
   const sourcePick = await page.evaluate(()=>window.calls.filter(call=>call.command==="discover_cad_document").at(-1));
-  assert.deepEqual(sourcePick.args,{},"Source selection invented user measurements or units");
+  assert.deepEqual(Object.keys(sourcePick.args),["events"],"Source selection invented user measurements or units");
   await page.evaluate(()=>{window.foreignCad=true;});
   await page.getByRole("button",{name:"Seleccionar documento guardado e inspeccionar…",exact:true}).click();
   await page.locator("#error:visible").waitFor();
@@ -334,6 +347,58 @@ try {
     }
   }
   const chatCalls = () => page.evaluate(() => window.calls.filter(call => ["start_codex_chat","start_claude_chat","start_ollama_chat"].includes(call.command)));
+  for(const [program,picker,field,selection] of [
+    ["freecad","Seleccionar documento guardado e inspeccionar…","cad_document_source","selected-cad-document"],
+    ["drawing","Seleccionar dibujo…","drawing_source","selected-drawing"],
+    ["slice","Seleccionar modelo y perfiles…","slice_source","selected-slice"],
+    ["kicad","Leer PCB abierta en KiCad…","pcb_source","selected-board"],
+  ]) {
+    await page.locator("#program").selectOption(program);
+    if(program==="kicad") {
+      await page.getByRole("button",{name:"Seleccionar PCB…",exact:true}).click();
+      await page.locator("#kicad-endpoint").fill("ipc://C:/owned/kicad/api.sock");
+      await page.locator("#kicad-api-token").fill("fixture-api-secret");
+    } else await page.getByRole("button",{name:picker,exact:true}).click();
+    await page.locator("#send:enabled").waitFor();
+    const statusBefore = await page.locator("#source-status").innerText();
+    const before = (await chatCalls()).length;
+    const cancels = await page.evaluate(()=>window.calls.filter(call=>call.command==="cancel_source_inspection").length);
+    const approvals = await page.evaluate(()=>window.approvals);
+    await page.evaluate(()=>{window.holdInspection=true;window.cancelInspectionAccepted=true;});
+    await page.getByRole("button",{name:picker,exact:true}).click(); await page.locator("#stop:enabled").waitFor();
+    assert.match(await page.locator("#stop").innerText(),/Detener inspección/);
+    assert.equal(await page.locator("#provider").isEnabled(),false);
+    await page.evaluate(()=>window.previousInspectionEvent?.("stale-inspection-id"));
+    await page.locator("#stop").click(); await page.locator("#send:enabled").waitFor();
+    assert.equal((await chatCalls()).length,before,"Inspecting/cancelling dispatched a model turn");
+    assert.equal(await page.evaluate(()=>window.approvals),approvals);
+    assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="cancel_source_inspection").length),cancels+1);
+    assert.equal(await page.locator("#source-status").innerText(),statusBefore);
+    assert.match(await page.locator("#chat-progress").innerText(),/Se conserva la selección anterior/);
+    assert.equal(await page.locator("#error").isVisible(),false);
+    await page.evaluate(()=>{window.holdInspection=false;});
+    await send("Consulta la selección anterior; la nueva inspección fue cancelada.");
+    const context = JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context;
+    assert.equal(context[field].selection,selection);
+    assert(!JSON.stringify(context).includes("late-"));
+    assert(!JSON.stringify(context).includes("fixture-api-secret"));
+    if(program==="kicad") assert.equal(context.live_pcb_source,undefined);
+  }
+  await page.locator("#program").selectOption("drawing");
+  await page.evaluate(()=>{window.holdInspection=true;window.cancelInspectionAccepted=false;});
+  await page.getByRole("button",{name:"Seleccionar dibujo…",exact:true}).click(); await page.locator("#stop:enabled").waitFor();
+  await page.locator("#stop").click(); await page.locator("#send:enabled").waitFor();
+  assert.match(await page.locator("#chat-progress").innerText(),/Documento inspeccionado/);
+  await page.evaluate(()=>{window.holdInspection=false;});
+  await send("Consulta el dibujo cuya inspección terminó antes de la solicitud de detener.");
+  assert.equal(JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context.drawing_source.selection,"late-selected-drawing");
+  const beforePickerCancel = await page.evaluate(()=>window.calls.filter(call=>call.command==="cancel_source_inspection").length);
+  await page.evaluate(()=>{window.rejectInspectionPicker=true;});
+  await page.getByRole("button",{name:"Seleccionar dibujo…",exact:true}).click(); await page.locator("#send:enabled").waitFor();
+  await page.evaluate(()=>{window.rejectInspectionPicker=false;});
+  assert.equal(await page.locator("#error").isVisible(),false);
+  assert.equal(await page.locator("#stop").isEnabled(),false);
+  assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="cancel_source_inspection").length),beforePickerCancel);
   for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);
     for (const [index,[program,fields]] of cases.entries()) {

@@ -1781,8 +1781,9 @@ impl Workflow {
     pub fn discover_drawing(
         &self,
         source: &std::path::Path,
+        cancel: Arc<AtomicBool>,
     ) -> Result<cadcraft::Inspection, String> {
-        self.discover_drawing_context(source, false, Arc::new(AtomicBool::new(false)))
+        self.discover_drawing_context(source, false, cancel)
             .map(|(inspection, _)| inspection)
     }
     pub(crate) fn inspect_drawing_tools(
