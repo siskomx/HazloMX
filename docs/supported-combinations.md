@@ -2,6 +2,8 @@
 
 ## Current chat source scope — October 13, 2026
 
+[Previous conversations](research/chat-history-preservation-2026-10-13.md) are available locally in a separate archive for the eleven known project/folder scopes. Explicit message-only copying into an empty chat passes browser checks across all four AI choices; original storage is unchanged. Native WebView/installed migration remains unverified, and the prepared installer predates this change.
+
 The production screen is a single natural-language chat with Codex, Claude Code and the existing Ollama local/cloud profiles. The shared catalog has 24 tools. Current source/browser/backend evidence must be distinguished from the older installed packages below. The current screen has not passed native/signed-in/updated-installer acceptance, and saved-copy execution does not establish live editing.
 
 | Program | Current source capability | Remaining native boundary |

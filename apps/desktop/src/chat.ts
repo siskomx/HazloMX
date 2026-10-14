@@ -1,5 +1,6 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { agentPrompt, savedConversation, type Turn } from "./design";
+import { legacyConversations } from "./chat-history";
 import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import "./chat.css";
 
@@ -26,6 +27,7 @@ document.querySelector("#app")!.innerHTML = `
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><p class="fine">Esta propuesta trabaja con una copia guardada. Revisa el destino y el cambio antes de aprobar.</p><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
     <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
+  <details id="past-chats" class="panel" hidden><summary>Conversaciones de la versión anterior</summary><p class="fine">Puedes leerlas sin enviarlas a una IA. Para continuar con sus mensajes, empieza una conversación vacía y elige la IA con la que seguirás. Solo se enviarán cuando pulses Enviar. No se restauran documentos, medidas ni aprobaciones; inspeccionaremos de nuevo la selección actual.</p><div id="past-chat-list"></div></details>
   <details id="results" class="panel"><summary>Resultados e historial verificados</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
   <p id="error" role="alert" hidden></p><dialog id="report"><h2>Resultado guardado · solo lectura</h2><pre id="report-text"></pre><form method="dialog"><button>Cerrar</button></form></dialog>`;
 for (const [value, label] of Object.entries(programs)) $("program").append(new Option(label, value));
@@ -38,6 +40,7 @@ let renderedConversation = "";
 let sourceContext: Record<string, unknown> = {};
 let sourceNames: Partial<Record<Program, string>> = {};
 let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
+let renderedLegacy = "";
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
@@ -53,6 +56,36 @@ function restore() {
   if (key === storageKey) return;
   persist(); storageKey = key; turns = []; answeredChat = undefined; newSession = true;
   try { const saved = savedConversation(key ? localStorage.getItem(key) : null); if (saved) { turns = saved.turns; answeredChat = saved.answeredChat; } } catch { /* Storage failure must not prevent using the chat. */ }
+}
+function renderLegacy() {
+  try {
+    const records = legacyConversations(key => localStorage.getItem(key), state.project);
+    const disabled = commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy || state.job?.snapshot.phase === "awaiting_approval" || turns.length > 0;
+    const signature = JSON.stringify([storageKey, provider, disabled, records]);
+    if (signature === renderedLegacy) return;
+    renderedLegacy = signature;
+    const opened = new Set([...$("past-chat-list").querySelectorAll<HTMLDetailsElement>("details[open]")].map(entry => entry.dataset.label));
+    $("past-chats").hidden = records.length === 0;
+    $("past-chat-list").replaceChildren();
+    const scope = storageKey;
+    for (const record of records) {
+      const entry = document.createElement("details"), title = document.createElement("summary");
+      entry.dataset.label = record.label; entry.open = opened.has(record.label); title.textContent = record.label; entry.append(title);
+      for (const turn of record.turns) { const row = document.createElement("p"); row.textContent = `${turn.role === "user" ? "Tú" : "Hazlo Mexa"}: ${turn.content}`; entry.append(row); }
+      const button = document.createElement("button"); button.className = "secondary";
+      button.textContent = `Continuar con ${providerNames[provider]}`; button.disabled = disabled;
+      button.onclick = () => {
+        if (scope !== storageKey || commandBusy || state.chat?.busy || state.job?.busy || state.codex_login?.busy || state.job?.snapshot.phase === "awaiting_approval" || turns.length) return;
+        try {
+          const saved = savedConversation(localStorage.getItem(record.key));
+          if (!saved?.turns.length) return;
+          revision++; turns = saved.turns; answeredChat = state.chat?.id; newSession = true;
+          persist(); render();
+        } catch { error("No se pudo leer la conversación anterior. Sus datos se conservan."); }
+      };
+      entry.append(button); $("past-chat-list").append(entry);
+    }
+  } catch { renderedLegacy = ""; $("past-chats").hidden = true; $("past-chat-list").replaceChildren(); $("storage-status").textContent = "No se pudo leer el historial anterior. Sus datos se conservan."; }
 }
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
@@ -185,7 +218,7 @@ function render() {
   $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = commandBusy;
   const job = state.job;
   $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
-  renderConnections(busy || !!active); renderQuestion(); renderHistory();
+  renderConnections(busy || !!active); renderQuestion(); renderHistory(); renderLegacy();
 }
 function connectionButton(label: string, disabled: boolean, work: () => Promise<void>) {
   const button = document.createElement("button"); button.textContent = label; button.className = "secondary"; button.disabled = disabled || !state.project; button.onclick = () => void action(work); $("program-actions").append(button);

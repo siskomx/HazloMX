@@ -1,5 +1,7 @@
 # Chat-first installer candidate — October 13, 2026
 
+This candidate predates the [previous-conversation archive](chat-history-preservation-2026-10-13.md). Its prepared acceptance package is retained, but a fresh build is required to certify that later frontend change.
+
 The privacy-remapped per-user NSIS installer builds from production source commit `ae13a51`. It contains the chat entry, Codex/Claude/Ollama routes, twenty-four shared tools, initial Orca/KiCad source flows and native drawing command plans. This is a **build candidate**, not a passed installed or live-editor acceptance gate.
 
 | Artifact | SHA-256 |

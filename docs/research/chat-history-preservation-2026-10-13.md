@@ -1,0 +1,9 @@
+# Previous conversation preservation — October 13, 2026
+
+The production chat exposes a separate, collapsed archive of the eleven known legacy conversation scopes: Codex, Claude and the nine guided program scopes. Reads use the exact project UUID and folder. An archive is rendered as text and is never automatically added to the current conversation or sent to a provider.
+
+The user can explicitly copy an archived conversation's normalized user/assistant messages into an empty conversation for the currently selected AI. The next explicit Send uses a fresh agent session and the existing instruction to inspect current document state. Old session IDs, documents, measurements and approvals are not restored. Existing conversations, running work and pending approval prevent copying. The original legacy storage is never rewritten.
+
+`node tests/chat-history.mjs` passes against the production entry with browser IPC fixtures: all eleven records remain readable; explicit copies work across all four AI choices; importing dispatches no backend command; message markup stays text; old metadata is excluded from the next request; reload preserves the copied chat; existing chats cannot be overwritten; project/folder/provider separation holds; storage failure clears the archive; legacy values remain byte-identical. Malformed, unsupported-version, invalid-role and oversized records are rejected by the shared validator. Only the eleven exact scoped keys are read, and no project means no reads.
+
+`node tests/chat-flow.mjs` and `npm run build` also pass. These are browser/build checks, not native WebView storage migration or installed acceptance. Unknown or unattributed older storage schemas are preserved but not automatically assigned to a project. The previously prepared installer `4af5549a…` predates this frontend change and needs rebuilding. Actual signed-in agent and native UI gates remain open.
