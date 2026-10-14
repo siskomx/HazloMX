@@ -2,6 +2,8 @@
 
 ## Current chat source scope — October 14, 2026
 
+[Current release native chat](research/chat-release-native-2026-10-14.md) now passes one real existing-cloud Arduino UI workflow: native pickers/approvals, two compilations, proposal denial, automatic result review, conversation/project recovery and read-only report access. This is unbundled release UI; current installed/all-program/provider acceptance stays open. Native automation is resumed. The user keeps the guest test pending; isolated host Agent readiness failed before conversation/editing.
+
 The current user path is the [simple-chat demo](first-workflow-demo.md), with [program/AI connection steps](agent-tools-setup.md). Historical form-based and installed receipts below retain their original scopes. Current unsigned installer **6a2f7ef9…** builds with 26 tools, passes privacy scans and actual release-helper checks, and has a fresh unlaunched guest package. [Real PCB conversation and package evidence](research/pcb-real-chat-2026-10-14.md) passes connector clarification, inch placement, metric follow-up, actual saved readback, preservation and recovery. Arduino Agent conversation and current native/installed acceptance remain open.
 
 [Real Orca existing-cloud file conversation](research/orca-real-chat-2026-10-14.md) passes explicit scale/bed clarification, two native file-generation jobs, temperature-only follow-up, preservation and recovery. The approval summary now shows the selected native bed name. This remains backend fixture approval; native/installed/ordinary-user, other-provider and broader-profile acceptance is unfinished, and no printer is controlled.
