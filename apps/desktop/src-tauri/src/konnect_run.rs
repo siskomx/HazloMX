@@ -329,9 +329,13 @@ async fn tool(
     serde_json::from_str(text).map_err(|_| "Konnect devolvió un resultado no válido.".into())
 }
 
-pub(crate) enum Edit<'a> {
+pub(crate) enum Operation<'a> {
     Value(&'a KonnectInput),
     Move(&'a crate::konnect_pcb::Input),
+    ReadLive {
+        board: &'a Path,
+        connection: &'a crate::kicad_live::Connection,
+    },
 }
 fn startup_error(error: String, exit_code: u32) -> String {
     if exit_code == 0xc0000135 {
@@ -345,12 +349,19 @@ pub(crate) async fn dispatch(
     cli: &Path,
     edited: &Path,
     profile: &Path,
-    input: Edit<'_>,
+    input: Operation<'_>,
     cancel: Arc<AtomicBool>,
-) -> Result<(), String> {
+) -> Result<serde_json::Value, String> {
     use process_wrap::tokio::{CommandWrap, CreationFlags, JobObject, KillOnDrop};
+    let endpoint = match &input {
+        Operation::ReadLive { connection, .. } => {
+            connection.validate()?;
+            connection.endpoint.clone()
+        }
+        _ => format!("ipc://{}", profile.join("no-editor-socket").display()),
+    };
     let config = profile.join("konnect.json");
-    source::write_new(&config,&serde_json::to_vec(&serde_json::json!({"transport":"stdio","project_dir":edited,"ipc_address":format!("ipc://{}",profile.join("no-editor-socket").display()),"kicad_cli":cli,"kicad_binary":cli.parent().ok_or("Falta KiCad.")?.join("kicad.exe"),"log_level":"warn","auto_load_toolsets":false,"eager_toolsets":false})).map_err(|e|e.to_string())?)?;
+    source::write_new(&config,&serde_json::to_vec(&serde_json::json!({"transport":"stdio","project_dir":edited,"ipc_address":endpoint,"kicad_cli":cli,"kicad_binary":cli.parent().ok_or("Falta KiCad.")?.join("kicad.exe"),"log_level":"warn","auto_load_toolsets":false,"eager_toolsets":false})).map_err(|e|e.to_string())?)?;
     let mut command = tokio::process::Command::new(executable);
     command
         .arg("--config")
@@ -362,6 +373,9 @@ pub(crate) async fn dispatch(
         if let Some(value) = std::env::var_os(key) {
             command.env(key, value);
         }
+    }
+    if let Operation::ReadLive { connection, .. } = &input {
+        command.env("KICAD_API_TOKEN", &connection.token);
     }
     command.env(
         "PATH",
@@ -419,6 +433,7 @@ pub(crate) async fn dispatch(
             return Err(startup_error(error, exit_code));
         }
     };
+    let reading_live = matches!(&input, Operation::ReadLive { .. });
     let operation = async {
         let peer = service
             .peer_info()
@@ -432,7 +447,70 @@ pub(crate) async fn dispatch(
             return Err("Servidor o protocolo Konnect no compatible.".into());
         }
         match input {
-            Edit::Value(input) => {
+            Operation::ReadLive { board, .. } => {
+                tool(
+                    &service,
+                    "load_toolset",
+                    serde_json::json!({"name":["pcb_board","pcb_components"]}),
+                )
+                .await?;
+                let actual = service
+                    .list_all_tools()
+                    .await
+                    .map_err(|_| "No se pudo verificar el catálogo nativo de KiCad.")?;
+                let expected: serde_json::Value = serde_json::from_str(include_str!(
+                    "../../../../docs/research/konnect-pcb-2026-10-12/catalogs.json"
+                ))
+                .map_err(|e| e.to_string())?;
+                for name in ["get_board_info", "get_component_list"] {
+                    let schema = expected["expanded"]
+                        .as_array()
+                        .and_then(|a| a.iter().find(|t| t["name"] == name))
+                        .ok_or("Falta el contrato nativo de lectura.")?;
+                    let current = actual
+                        .iter()
+                        .find(|t| t.name == name)
+                        .ok_or("Falta la herramienta nativa de lectura.")?;
+                    if serde_json::to_value(current).map_err(|e| e.to_string())?["inputSchema"]
+                        != schema["inputSchema"]
+                    {
+                        return Err("El contrato de lectura nativa cambió; conecta de nuevo tras verificarlo.".into());
+                    }
+                }
+                let info = tool(
+                    &service,
+                    "get_board_info",
+                    serde_json::json!({"board":board}),
+                )
+                .await?;
+                // Refuse fallback before the IPC-only footprint query; these are the only native calls in this branch.
+                if info["source"] != "ipc" {
+                    return Err("KiCad no confirmó la PCB abierta por IPC. No se sustituirá por el archivo guardado.".into());
+                }
+                let first = crate::kicad_live::Observation::from_native(
+                    &info,
+                    tool(
+                        &service,
+                        "get_component_list",
+                        serde_json::json!({"board":board}),
+                    )
+                    .await?,
+                )?;
+                let second = crate::kicad_live::Observation::from_native(
+                    &info,
+                    tool(
+                        &service,
+                        "get_component_list",
+                        serde_json::json!({"board":board}),
+                    )
+                    .await?,
+                )?;
+                if first.components_sha256 != second.components_sha256 {
+                    return Err("La PCB cambió durante la lectura. Vuelve a inspeccionarla.".into());
+                }
+                return serde_json::to_value(second).map_err(|e| e.to_string());
+            }
+            Operation::Value(input) => {
                 tool(
                     &service,
                     "load_toolset",
@@ -495,7 +573,7 @@ pub(crate) async fn dispatch(
                     );
                 }
             }
-            Edit::Move(input) => {
+            Operation::Move(input) => {
                 tool(
                     &service,
                     "load_toolset",
@@ -567,11 +645,11 @@ pub(crate) async fn dispatch(
                 }
             }
         }
-        Ok(())
+        Ok(serde_json::Value::Null)
     };
     let result = tokio::select! {
-        value=tokio::time::timeout(Duration::from_secs(60),operation)=>value.unwrap_or_else(|_|Err("Konnect no confirmó la edición a tiempo; la copia se conserva sin publicar.".into())),
-        _=cancelled(&cancel)=>Err("Edición cancelada; se conserva la copia sin publicar.".into())
+        value=tokio::time::timeout(Duration::from_secs(60),operation)=>value.unwrap_or_else(|_|Err(if reading_live { "Konnect no confirmó la lectura nativa a tiempo; vuelve a conectar cuando KiCad responda." } else { "Konnect no confirmó la edición a tiempo; la copia se conserva sin publicar." }.into())),
+        _=cancelled(&cancel)=>Err(if reading_live { "Lectura nativa cancelada." } else { "Edición cancelada; se conserva la copia sin publicar." }.into())
     };
     let closed = service
         .cancel()
@@ -633,7 +711,7 @@ pub fn run(
         cli,
         &edited,
         profile,
-        Edit::Value(input),
+        Operation::Value(input),
         cancel.clone(),
     ))?;
     native_readback(cli, &edited, stage, profile, input, cancel.clone())?;
@@ -1108,7 +1186,7 @@ mod tests {
                 &cli,
                 &edited,
                 &profile,
-                Edit::Value(&input),
+                Operation::Value(&input),
                 worker_cancel,
             ));
             sender.send(result).unwrap();

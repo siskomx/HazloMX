@@ -1,6 +1,6 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { agentPrompt, savedConversation, type Turn } from "./design";
-import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredDrawing, DiscoveredPcb, DiscoveredSchematic, Job, Snapshot } from "./contracts";
+import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, Job, Snapshot } from "./contracts";
 import "./chat.css";
 
 const programs = { freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
@@ -15,7 +15,8 @@ document.querySelector("#app")!.innerHTML = `
     <p class="fine">Tu mensaje y los documentos seleccionados pueden enviarse al servicio de la IA y consumir tu plan. Inicia sesión personalmente cuando el cliente lo solicite.</p>
     <div class="actions"><button id="select-client" class="secondary">Elegir cliente instalado…</button><button id="connect-account">Conectar cuenta</button><button id="open-login" class="secondary" hidden>Abrir inicio de sesión</button><button id="cancel-login" class="secondary" hidden>Detener conexión</button></div><p id="login-status" class="status fine"></p>
     <label for="program">Programa con el que trabajaremos</label><select id="program"></select><div id="program-actions" class="actions"></div><p id="source-status" class="status fine"></p>
-    <p class="fine">Las conexiones actuales trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento. La conexión a documentos vivos sigue pendiente.</p>
+    <div id="live-pcb-setup" hidden><label for="kicad-endpoint">Dirección IPC local de las preferencias de KiCad</label><input id="kicad-endpoint" type="text" maxlength="1030" placeholder="ipc://…"><label for="kicad-api-token">Token de esta sesión, si KiCad lo requiere</label><input id="kicad-api-token" type="password" maxlength="4096" autocomplete="off"><p class="fine">Activa la API en KiCad y copia su dirección local. Esta conexión permite leer posiciones sin guardar la PCB. Las ediciones en vivo siguen pendientes. El token no se guarda en el historial.</p></div>
+    <p id="document-scope" class="fine"></p>
     <h2>Proyecto local</h2><p id="project-name" class="fine"></p><div class="actions"><button id="create-project" class="secondary">Crear proyecto…</button><button id="open-project" class="secondary">Abrir proyecto…</button></div>
   </details>
   <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
@@ -148,7 +149,10 @@ function render() {
   const busy = commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
   const clientReady = provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected;
   $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
-  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${provider === "codex" ? "Codex" : "Claude Code"} · ${programs[program]} · archivos guardados`;
+  const native = program === "kicad" && !!sourceContext.live_pcb_source;
+  $("live-pcb-setup").hidden = program !== "kicad";
+  $("document-scope").textContent = native ? "PCB conectada para lectura nativa: las posiciones se consultan en KiCad, incluso antes de guardar. No permite modificar la PCB abierta. Para editar una copia guardada, selecciónala expresamente." : "Las ediciones actuales trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
+  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${provider === "codex" ? "Codex" : "Claude Code"} · ${programs[program]} · ${native ? "lectura nativa de PCB" : "archivos guardados"}`;
   $("source-status").textContent = sourceNames[program] ?? (program === "slice" ? "La selección inicial del modelo y perfiles para este chat sigue pendiente de integración." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
   if (JSON.stringify(messages) !== renderedConversation) {
@@ -197,14 +201,23 @@ function renderConnections(disabled: boolean) {
     connectionButton("Seleccionar sketch…", disabled, async () => { apply(await invoke<DesktopSnapshot>("select_agent_sketch")); sourceNames.agent = state.agent_source?.source_name; sourceContext.sketch_source = { name: state.agent_source?.source_name }; });
   } else if (program === "kicad") {
     connect("Elegir KiCad…", "select_kicad"); connect("Elegir Konnect…", "select_konnect");
-    connectionButton("Seleccionar esquema…", disabled, async () => { const selected = await invoke<DiscoveredSchematic>("discover_schematic"); if (selected.project_id !== state.project?.[0]) throw Error("El esquema pertenece a otro proyecto."); sourceContext.schematic_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.pcb_source; sourceNames.kicad = selected.name; });
-    connectionButton("Seleccionar PCB…", disabled, async () => { const selected = await invoke<DiscoveredPcb>("discover_pcb"); if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto."); sourceContext.pcb_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.schematic_source; sourceNames.kicad = selected.name; });
+    connectionButton("Seleccionar esquema…", disabled, async () => { const selected = await invoke<DiscoveredSchematic>("discover_schematic"); if (selected.project_id !== state.project?.[0]) throw Error("El esquema pertenece a otro proyecto."); sourceContext.schematic_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.pcb_source; delete sourceContext.live_pcb_source; sourceNames.kicad = selected.name; });
+    connectionButton("Seleccionar PCB…", disabled, async () => { const selected = await invoke<DiscoveredPcb>("discover_pcb"); if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto."); sourceContext.pcb_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.schematic_source; delete sourceContext.live_pcb_source; sourceNames.kicad = selected.name; });
+    connectionButton("Leer PCB abierta en KiCad…", disabled, async () => {
+      const connection = { endpoint: $<HTMLInputElement>("kicad-endpoint").value.trim(), token: $<HTMLInputElement>("kicad-api-token").value };
+      $<HTMLInputElement>("kicad-api-token").value = "";
+      const selected = await invoke<DiscoveredLivePcb>("discover_live_pcb", { connection });
+      if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto.");
+      sourceContext.live_pcb_source = { selection: selected.id, components_sha256: selected.observation.components_sha256, mutations_allowed: false };
+      delete sourceContext.pcb_source; delete sourceContext.schematic_source; sourceNames.kicad = `${selected.name} · lectura nativa`;
+    });
   } else connect("Elegir OrcaSlicer…", "select_orca");
 }
 function context() {
   const job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
-  const selected = program === "kicad" ? sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : {};
-  return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: "saved_files_and_verified_copies", live_document_connection: false };
+  const native = program === "kicad" && !!sourceContext.live_pcb_source;
+  const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : {};
+  return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: !native && job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: native ? "live_pcb_read_only" : "saved_files_and_verified_copies", live_document_connection: native, live_mutations_allowed: false };
 }
 async function send(content: string) {
   const token = ++revision;

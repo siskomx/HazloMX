@@ -1,3 +1,4 @@
+export type DiscoveredLivePcb = {id:string;project_id:string;name:string;observation:{components_sha256:string;components:{reference:string;value:string;footprint:string;x:number;y:number;rotation:number;layer:string}[]}};
 export type DiscoveredPcb = {id:string;project_id:string;name:string;sha256:string;components:{reference:string;uuid:string;library:string;value:string;layer:string;x_mm:number;y_mm:number;rotation_deg:number}[]};
 export type Dimensions = { length: number; width: number; height: number };
 export type DiscoveredSchematic = {id:string;project_id:string;name:string;sha256:string;components:{reference:string;value:string;library:string}[]};

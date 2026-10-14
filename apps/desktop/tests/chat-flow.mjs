@@ -23,6 +23,7 @@ try {
       if (command === "select_codex" || command === "select_claude" || command === "select_freecad" || command === "select_cadcraft" || command === "select_arduino" || command === "connect_agent" || command === "select_kicad" || command === "select_konnect" || command === "select_orca") return copy();
       if (command === "discover_schematic") return { id: "selected-sheet", project_id: snapshot.project[0], name: "Circuito.kicad_sch", sha256: "a".repeat(64), components: [] };
       if (command === "discover_pcb") return { id: "selected-board", project_id: window.foreignSource ? "foreign-project" : snapshot.project[0], name: "Placa.kicad_pcb", sha256: "b".repeat(64), components: [] };
+      if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { components_sha256: "d".repeat(64), components: [] } }; }
       if (command === "discover_drawing") return { id: "selected-drawing", project_id: snapshot.project[0], inspection: { source_name: "Plano.dxf", source_sha256: "c".repeat(64) } };
       if (command === "select_agent_sketch") { snapshot.agent_source = { project_id: snapshot.project[0], source_name: "Sketch.ino", source: "void setup() {}" }; return copy(); }
       if (command === "select_project") { snapshot.project = window.otherFolder ? ["project-one", "C:\\owned\\other-folder"] : ["project-one", "C:\\owned\\project"]; snapshot.job = null; if (snapshot.chat) snapshot.chat.text = "PREVIOUS FOLDER RESPONSE"; return copy(); }
@@ -133,6 +134,29 @@ try {
   const messages = await page.locator("#conversation .message").allTextContents();
   assert(messages.at(-2).includes("Respuesta privada enviada."));
   assert(messages.at(-1).includes("Primero revisemos"));
+  await page.locator("#program").selectOption("kicad");
+  await page.locator("#kicad-endpoint").fill("ipc://C:/owned/kicad/api.sock");
+  await page.locator("#kicad-api-token").fill("fixture-api-secret");
+  await page.getByRole("button", { name: "Leer PCB abierta en KiCad…", exact: true }).click();
+  await page.locator("#send:enabled").waitFor();
+  assert.equal(await page.locator("#kicad-api-token").inputValue(), "");
+  await send("Lee la posición actual del conector sin guardar ni modificar la PCB.");
+  const nativeContext = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt));
+  assert.equal(nativeContext.desktop_context.document_scope, "live_pcb_read_only");
+  assert.equal(nativeContext.desktop_context.live_document_connection, true);
+  assert.equal(nativeContext.desktop_context.live_mutations_allowed, false);
+  assert.equal(nativeContext.desktop_context.live_pcb_source.selection, "live-board");
+  assert.equal(nativeContext.desktop_context.pcb_source, undefined);
+  assert.equal(nativeContext.desktop_context.current_job, null);
+  assert(!JSON.stringify(nativeContext).includes("fixture-api-secret"));
+  assert(!await page.evaluate(() => Object.values(localStorage).join(" ").includes("fixture-api-secret")));
+  assert.match(await page.locator("#document-scope").innerText(), /No permite modificar/);
+  await page.getByRole("button", { name: "Seleccionar PCB…", exact: true }).click();
+  await send("Ahora consulta la copia guardada que seleccioné expresamente.");
+  const savedContext = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt));
+  assert.equal(savedContext.desktop_context.live_document_connection, false);
+  assert.equal(savedContext.desktop_context.live_pcb_source, undefined);
+  assert.equal(savedContext.desktop_context.pcb_source.selection, "selected-board");
   await page.locator("#program").selectOption("drawing");
   await page.getByRole("button", { name: "Seleccionar dibujo…", exact: true }).click();
   await page.evaluate(() => { window.makeNativePlan = true; });

@@ -563,6 +563,59 @@ impl Workflow {
     pub fn konnect_runtime(&self) -> Result<Option<PathBuf>, String> {
         Ok(self.konnect.lock().map_err(|e| e.to_string())?.clone())
     }
+    pub(crate) fn read_live_pcb(
+        &self,
+        board: &std::path::Path,
+        connection: &crate::kicad_live::Connection,
+        cancel: Arc<AtomicBool>,
+    ) -> Result<crate::kicad_live::Observation, String> {
+        connection.validate()?;
+        crate::project::valid_location(board).map_err(|_| "Selecciona una PCB local válida.")?;
+        if board.extension().and_then(|x| x.to_str()) != Some("kicad_pcb") {
+            return Err("Selecciona una PCB KiCad guardada que esté abierta en el editor.".into());
+        }
+        let parent = board.parent().ok_or("Falta la carpeta de la PCB.")?;
+        let _source_pins = crate::project::pin_lineage(parent).map_err(|e| e.to_string())?;
+        drop(kicad_project::open_regular(
+            board,
+            kicad_project::FILE_LIMIT,
+        )?);
+        let executable = self
+            .konnect_runtime()?
+            .ok_or("Selecciona Konnect antes de conectar el editor.")?;
+        let cli = self
+            .kicad_runtime()?
+            .ok_or("Selecciona KiCad antes de conectar el editor.")?;
+        let project = self.view()?.project.ok_or("Selecciona un proyecto.")?;
+        let _runtime = konnect_run::runtime(&executable)?;
+        let _kicad = crate::kicad_run::runtime(&cli, &cancel)?;
+        let profile = self
+            .profiles
+            .join(format!("live-pcb-read-{}", Uuid::new_v4()));
+        fs::create_dir(&profile).map_err(|e| e.to_string())?;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| e.to_string())?;
+        let value = runtime.block_on(konnect_run::dispatch(
+            &executable,
+            &cli,
+            parent,
+            &profile,
+            konnect_run::Operation::ReadLive { board, connection },
+            cancel.clone(),
+        ))?;
+        if cancel.load(Ordering::SeqCst)
+            || self.view()?.project != Some(project)
+            || self.konnect_runtime()?.as_ref() != Some(&executable)
+            || self.kicad_runtime()?.as_ref() != Some(&cli)
+        {
+            return Err(
+                "El proyecto o la conexión cambiaron durante la lectura; vuelve a conectar.".into(),
+            );
+        }
+        serde_json::from_value(value).map_err(|_| "La lectura del editor no es compatible.".into())
+    }
     pub fn set_konnect(&self, executable: PathBuf) -> Result<(), String> {
         konnect_run::verify_runtime(&executable)?;
         let state = self.state.lock().map_err(|e| e.to_string())?;

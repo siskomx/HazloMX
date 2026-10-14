@@ -95,7 +95,7 @@ pub fn run(
         cli,
         &edited,
         profile,
-        konnect_run::Edit::Move(input),
+        konnect_run::Operation::Move(input),
         cancel.clone(),
     ))?;
     let verification_input = source::capture(

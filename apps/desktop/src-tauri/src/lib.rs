@@ -20,6 +20,9 @@ pub mod cadpilot;
 pub mod kicad;
 
 #[cfg(windows)]
+pub mod kicad_live;
+
+#[cfg(windows)]
 pub mod konnect;
 
 #[cfg(windows)]
