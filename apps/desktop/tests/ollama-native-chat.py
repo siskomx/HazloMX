@@ -9,16 +9,19 @@ import time
 import uuid
 import traceback
 
-parser=argparse.ArgumentParser(description='Real existing Ollama cloud schematic gate; owned fixture copies, backend approval only, private recording under target.')
+parser=argparse.ArgumentParser(description='Real existing Ollama cloud native gate; owned fixture copies, backend approval only, private recording under target.')
 parser.add_argument('--run-real-cloud',action='store_true',help='Run five real cloud conversation turns using the existing profile and account.')
-if not parser.parse_args().run_real_cloud:
+parser.add_argument('--program',choices=['schematic','freecad'],default='schematic',help='Native saved-copy workflow to exercise.')
+args=parser.parse_args()
+if not args.run_real_cloud:
     parser.error('Pass --run-real-cloud for the real-provider acceptance gate.')
 
 workspace = Path(__file__).resolve().parents[3]
-example = workspace/'target/debug/examples/ollama_schematic_chat.exe'
+example_name={'schematic':'ollama_schematic_chat','freecad':'ollama_cad_chat'}[args.program]
+example = workspace/'target/debug/examples'/f'{example_name}.exe'
 if not example.is_file():
-    parser.error('Build the ollama_schematic_chat Rust example before running this gate.')
-case = workspace/'target'/('ollama-schematic-chat-'+str(uuid.uuid4()))
+    parser.error(f'Build the {example_name} Rust example before running this gate.')
+case = workspace/'target'/('ollama-'+args.program+'-chat-'+str(uuid.uuid4()))
 case.mkdir()
 lock = threading.Condition()
 counter = 0

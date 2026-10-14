@@ -22,7 +22,7 @@ Approval nonces were absent from every recorded request. A recursive scan, inclu
 
 ## Reproduction and limits
 
-Build the `ollama_schematic_chat` Rust example, then explicitly run `python apps/desktop/tests/ollama-schematic-chat.py --run-real-cloud` from the repository. This consumes the existing configured cloud route and requires the already identified Konnect/KiCad runtimes under `target/`. The launcher has a fresh owned fixture root, fixed upstream routing, bounded recording and private failure logs. Missing authentication/model/runtime prerequisites must be resolved separately; there is no automatic download or retry.
+Build the `ollama_schematic_chat` Rust example, then explicitly run `python apps/desktop/tests/ollama-native-chat.py --run-real-cloud --program schematic` from the repository. This consumes the existing configured cloud route and requires the already identified Konnect/KiCad runtimes under `target/`. The launcher has a fresh owned fixture root, fixed upstream routing, bounded recording and private failure logs. Missing authentication/model/runtime prerequisites must be resolved separately; there is no automatic download or retry. The launcher was subsequently renamed when the FreeCAD gate reused its recorder; the original schematic acceptance receipt retains its original scope.
 
 The passing run used the private launcher before promotion into the reusable test script. The promoted script adds explicit opt-in, process cleanup, missing-example checking and privacy/error assertions; those assertions were also checked against the completed recording. Only static/build checks were repeated after promotion, avoiding another cloud inference run for recorder-only changes.
 

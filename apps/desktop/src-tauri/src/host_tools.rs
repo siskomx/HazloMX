@@ -1085,8 +1085,13 @@ impl HostTools {
         {
             return Err("La solicitud supera el límite de argumentos.".into());
         }
-        let decode_error =
-            |_: serde_json::Error| "Los argumentos no coinciden con la herramienta.".to_string();
+        let decode_error = |_: serde_json::Error| {
+            let schema = catalog()
+                .into_iter()
+                .find(|tool| tool.name == name)
+                .map(|tool| Value::Object((*tool.input_schema).clone()));
+            format!("Los argumentos no coinciden con la herramienta. Corrige la llamada según este esquema JSON; conserva los valores y unidades confirmados por el usuario y pregunta si faltan: {}", schema.unwrap_or(Value::Null))
+        };
         match name {
             "inspect_selected_cad_document" => {
                 let request: Selection = serde_json::from_value(arguments).map_err(decode_error)?;
@@ -1462,6 +1467,25 @@ mod tests {
     use crate::project::Project;
     use rmcp::ServiceExt;
     use std::fs;
+    #[test]
+    fn malformed_arguments_return_only_the_advertised_schema_without_dispatch() {
+        let (root, workflow, host, _) = setup();
+        for tool in catalog() {
+            let error = host
+                .call(&tool.name, json!({"private-field":"private-value"}))
+                .unwrap_err();
+            let returned: Value =
+                serde_json::from_str(error.split_once("faltan: ").unwrap().1).unwrap();
+            assert_eq!(returned, Value::Object((*tool.input_schema).clone()));
+            assert!(!error.contains("private-field") && !error.contains("private-value"));
+            assert!(!error.contains(root.to_string_lossy().as_ref()));
+            assert!(workflow.view().unwrap().job.is_none());
+            assert!(workflow.view().unwrap().history.is_empty());
+        }
+        drop(host);
+        drop(workflow);
+        fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn arduino_readback_keeps_source_hash_and_returns_only_a_verified_compiler_report() {
         use crate::project::{ArtifactFormat, Phase};

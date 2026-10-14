@@ -12,6 +12,8 @@ Keep the existing connector work, project/source binding, approvals, supervision
 
 ### Implementation and acceptance order
 
+October 14 update: [real FreeCAD cloud conversation and malformed-call recovery](research/freecad-real-chat-2026-10-14.md) passes native inspection/clarification, an imperial height request, a metric result-derived follow-up, two native jobs, preservation and recovery. A reproduced malformed-proposal failure led to schema-only correction feedback in every shared host tool; the real agent then corrected its first and follow-up calls. Full regular validation is 141 pass/52 ignored. These are backend saved-copy conversations with fixture approvals, not desktop/native-UI/current-installer/live editing acceptance; other programs/providers remain unfinished.
+
 Current approval review: [source-derived Spanish change facts](research/chat-approval-language-2026-10-13.md) show measurements/units, actual old/new values or positions, native drawing action names, compilation/slicing scope and the relative result folder before approval. Technical parameters/code remain expandable. Focused/build/browser checks pass; native UI/current installed acceptance remains open.
 
 1. Make the existing configured agent routes drive a single chat-to-tool conversation. Reuse Claude Code, Codex and existing Ollama support; provider benchmarking and additional providers remain deferred. Expose the selected program's verified capabilities and document context through its connector, using upstream tools and schemas rather than reducing the product to Hazlo's fixed shape/edit menu.

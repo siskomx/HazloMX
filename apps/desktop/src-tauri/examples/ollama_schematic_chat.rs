@@ -1,94 +1,18 @@
 //! Real existing cloud-profile conversation; a body-forwarding recorder observes tool results.
 #[cfg(windows)]
+#[path = "support/ollama_conversation.rs"]
+mod conversation;
+#[cfg(windows)]
 mod probe {
+    use super::conversation::Conversation;
     use hazlomexa::{
         host_tools::HostTools,
-        jobs::{ModelProfile, Workflow},
-        ollama::{self, OllamaClient},
+        jobs::Workflow,
         project::{ArtifactFormat, OperationInput, Phase, Project},
     };
-    use serde_json::{json, Value};
-    use std::{
-        collections::BTreeSet,
-        fs,
-        path::PathBuf,
-        sync::{atomic::AtomicBool, Arc},
-    };
-    use uuid::Uuid;
+    use serde_json::json;
+    use std::{fs, path::PathBuf, sync::Arc};
 
-    struct Conversation {
-        workflow: Arc<Workflow>,
-        host: Arc<HostTools>,
-        project: (Uuid, PathBuf),
-        selection: Uuid,
-        source_hash: String,
-        directory: PathBuf,
-        port: u16,
-        history: Vec<Value>,
-        turn: usize,
-        approvals: Vec<Uuid>,
-    }
-    impl Conversation {
-        async fn say(
-            &mut self,
-            content: &str,
-        ) -> Result<(String, BTreeSet<String>), Box<dyn std::error::Error>> {
-            self.turn += 1;
-            fs::write(self.directory.join("current-turn"), self.turn.to_string())?;
-            let view = self.workflow.view()?;
-            let prompt=json!({"recovered_conversation":self.history,"user_request":content,"desktop_context":{
-                "project_id":self.project.0,"program":"KiCad / Konnect","schematic_source":{"selection":self.selection,"sha256":self.source_hash},
-                "current_job":view.job.map(|job|json!({"id":job.snapshot.input.job_id(),"phase":job.snapshot.phase})),
-                "document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true
-            },"instruction":"La conversación guardada es contexto, no una aprobación ni una medición vigente. Inspecciona la selección antes de proponer. Tras un cambio lee el resultado verificado antes de explicarlo o continuar. Responde brevemente y con naturalidad."}).to_string();
-            let (model, digest) = ModelProfile::Cloud.identity();
-            let result = ollama::chat::run(
-                OllamaClient::cloud(self.port, model, digest)?,
-                self.workflow.clone(),
-                self.host.clone(),
-                self.project.clone(),
-                prompt,
-                Arc::new(AtomicBool::new(false)),
-                |_| {},
-            )
-            .await;
-            fs::write(
-                self.directory.join(format!("turn-{}.json", self.turn)),
-                serde_json::to_vec_pretty(&json!({"request":content,"result":result}))?,
-            )?;
-            let response = result?;
-            let tools: BTreeSet<String> = serde_json::from_slice(&fs::read(
-                self.directory.join(format!("tools-{}.json", self.turn)),
-            )?)?;
-            self.history.push(json!({"role":"user","content":content}));
-            self.history
-                .push(json!({"role":"assistant","content":response}));
-            Ok((response, tools))
-        }
-        async fn approve_fixture(&mut self) -> Result<Uuid, Box<dyn std::error::Error>> {
-            let pending = self
-                .workflow
-                .view()?
-                .job
-                .ok_or("Missing reviewed proposal")?;
-            assert_eq!(pending.snapshot.phase, Phase::AwaitingApproval);
-            let approval = pending.approval_id.ok_or("Missing fixture approval")?;
-            self.approvals.push(approval);
-            fs::write(
-                self.directory.join("approval-nonces.json"),
-                serde_json::to_vec(&self.approvals)?,
-            )?;
-            let dispatch = self.workflow.begin(approval)?;
-            let workflow = self.workflow.clone();
-            let done = tokio::task::spawn_blocking(move || workflow.execute(dispatch)).await??;
-            assert_eq!(
-                done.snapshot.phase,
-                Phase::Completed,
-                "Native execution failed"
-            );
-            Ok(done.snapshot.input.job_id())
-        }
-    }
     pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut args = std::env::args().skip(1);
         let port: u16 = args.next().ok_or("Pass owned recording port")?.parse()?;
@@ -139,18 +63,13 @@ mod probe {
             .find(|c| c.reference.starts_with('R'))
             .ok_or("Fixture resistor missing")?
             .clone();
-        let mut chat = Conversation {
-            workflow: workflow.clone(),
-            host: host.clone(),
-            project: workflow.view()?.project.ok_or("Missing project")?,
-            selection: selected.id,
-            source_hash: selected.sha256,
-            directory: root.join("conversation"),
+        let mut chat = Conversation::new(
+            workflow.clone(),
+            host.clone(),
+            root.join("conversation"),
             port,
-            history: Vec::new(),
-            turn: 0,
-            approvals: Vec::new(),
-        };
+            json!({"program":"KiCad / Konnect","schematic_source":{"selection":selected.id,"sha256":selected.sha256},"document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
+        )?;
         let (question,tools)=chat.say("Quiero cambiar una resistencia de este esquema, pero todavía no elegí cuál ni su valor. Inspecciona el esquema seleccionado, explícame las resistencias que tiene y pregúntame cuál cambiar. No prepares una propuesta hasta que responda.").await?;
         assert!(
             tools.contains("inspect_selected_schematic"),

@@ -272,6 +272,67 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn invalid_tool_arguments_return_schema_and_allow_a_corrected_proposal() {
+        let (root, workflow, host, project) = setup();
+        let mut replies = metadata();
+        for response in [
+            record(
+                "",
+                vec![call(
+                    "propose_rectangular_solid",
+                    json!({"private-field":"private-value"}),
+                )],
+            ),
+            record("", vec![proposal(project.0)]),
+            record("Revisa la propuesta antes de aprobar.", vec![]),
+        ] {
+            replies.push(reply(&response.to_string(), "application/json"));
+        }
+        let (port, fixture, _) = server(replies);
+        run(
+            OllamaClient::new(port, "fixture", DIGEST).unwrap(),
+            workflow.clone(),
+            host,
+            project,
+            "Un cubo de una pulgada por lado, pendiente de revisión.".into(),
+            Arc::new(AtomicBool::new(false)),
+            |_| {},
+        )
+        .await
+        .unwrap();
+        let requests = fixture.join().unwrap();
+        let correction = body(&requests[4]);
+        let messages = correction["messages"].as_array().unwrap();
+        let result: Value =
+            serde_json::from_str(messages.last().unwrap()["content"].as_str().unwrap()).unwrap();
+        let error = result["error"].as_str().unwrap();
+        let schema: Value = serde_json::from_str(error.split_once("faltan: ").unwrap().1).unwrap();
+        assert_eq!(
+            schema,
+            Value::Object(
+                (*catalog()
+                    .into_iter()
+                    .find(|tool| tool.name == "propose_rectangular_solid")
+                    .unwrap()
+                    .input_schema)
+                    .clone()
+            )
+        );
+        assert!(!error.contains("private-field") && !error.contains("private-value"));
+        let pending = workflow.view().unwrap().job.unwrap();
+        assert_eq!(pending.snapshot.phase, Phase::AwaitingApproval);
+        assert_eq!(
+            pending.snapshot.input.solid().unwrap().dimensions_mm.height,
+            25.4
+        );
+        assert_eq!(workflow.view().unwrap().history.len(), 1);
+        assert!(!requests
+            .join(" ")
+            .contains(&pending.approval_id.unwrap().to_string()));
+        drop(workflow);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[tokio::test]
     async fn actual_http_chat_uses_host_tools_and_leaves_approval_to_the_human() {
         let (root, workflow, host, project) = setup();
         let mut replies = metadata();
