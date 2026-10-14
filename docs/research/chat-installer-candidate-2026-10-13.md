@@ -1,6 +1,21 @@
 # Chat-first installer candidate — October 13, 2026
 
-This candidate predates the [previous-conversation archive](chat-history-preservation-2026-10-13.md). Its prepared acceptance package is retained, but a fresh build is required to certify that later frontend change.
+## Current candidate — source `bae7ed1`
+
+The replacement privacy-remapped NSIS build includes the [previous-conversation archive](chat-history-preservation-2026-10-13.md) and [approval-to-result handoff](chat-result-handoff-2026-10-13.md). The release build passes in 242.88 seconds; all **6,553 captured tracked inputs** remain unchanged. Both shipped executables have zero matches for the checked builder-profile root spellings. Raw logs, manifests, binaries and prepared test directories remain private.
+
+| Artifact | SHA-256 |
+|---|---|
+| NSIS installer | `c0854251f329bf876a76373c7c45bc527ebaead2bcf1aeec9a0c75b18404b027` |
+| Unbundled main executable | `2580dffffb75830ffcebbd2c1d43751bfb03439e7c72a5b317dbf96830f79700` |
+| Expected installed main executable, NSIS marker | `0d0e555a00db6bc9808a23a5a9c905e29c0f790f7ff21994e92784c2053e6c7b` |
+| Release tools helper | `c44ff160da46993776cdd9e6157b530e4baa6ed4fde9b8d53eeea59a695c7c19` |
+
+The actual release helper passes the authenticated SDK gate with 24 tools, exact linked catalog, unknown-selection refusal, no approval tool and zero engineering jobs/model inference. Online isolated-package preparation passes with the exact identities above and the updated initial-chat startup checks. **No guest, installed main window or native UI was launched.** Preparation does not prove the new history/approval behavior in a native WebView. All real-agent, supported live-editing and current native/ordinary-user/installed acceptance requirements remain open; UI automation is still paused after Escape.
+
+## Earlier candidate — source `ae13a51`
+
+The following earlier receipt predates both frontend changes and is retained for its exact historical scope. It is superseded by the current build above, not by a passing installed test.
 
 The privacy-remapped per-user NSIS installer builds from production source commit `ae13a51`. It contains the chat entry, Codex/Claude/Ollama routes, twenty-four shared tools, initial Orca/KiCad source flows and native drawing command plans. This is a **build candidate**, not a passed installed or live-editor acceptance gate.
 
