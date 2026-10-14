@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "installer_sha256": "07ac4126473b67e3d83fe9a1afc3ac08d306097b8a2ab6ff15582f7d987c30b5",
+  "native_ui_approval": true,
+  "native_ui_preapproval_cancel": true,
+  "cancelled_proposal_published_files": 0,
+  "cli_version": "1.5.1",
+  "core_version": "1.8.8",
+  "fqbn": "arduino:avr:uno",
+  "confirmed_interval_ms": 250,
+  "flash_bytes": 922,
+  "hex_checksum_and_terminal_record": true,
+  "elf32_little_endian_avr_executable": true,
+  "saved_sketch_matches_approved_input": true,
+  "prior_artifact_files_unchanged": 116,
+  "artifacts": {
+    "firmware.elf": {
+      "bytes": 14444,
+      "sha256": "f65c9a28eb09b592bb5dd7356a436bcb27f0820252e7a1482d64c22350609a3c"
+    },
+    "firmware.hex": {
+      "bytes": 2611,
+      "sha256": "bc4408ee6ffa35578f2c71f11e4f463205f99cec924db3d856457ca3750aedd1"
+    },
+    "input.json": {
+      "bytes": 266,
+      "sha256": "4f8822941f9b56cbd084de8718179a983274f7f6553bf0f7c5b65a4d2bb7e666"
+    },
+    "result.json": {
+      "bytes": 213,
+      "sha256": "f50b42a35b5c25d95569f150e8003f7c7ee06688455c9a2e8135c91afe6a9a3a"
+    },
+    "Sketch.ino": {
+      "bytes": 156,
+      "sha256": "3ba9848425966f76b707d00f416546035ea323b3739a6aca2808b8b99c4d59b7"
+    }
+  },
+  "model_inference": false,
+  "firmware_uploaded": false,
+  "hardware_mutations": false,
+  "native_saved_sketch_modal": true,
+  "native_hex_folder_selection": true,
+  "native_conversation_recovered": true,
+  "native_cancelled_and_completed_history_recovered": true,
+  "native_recovered_sketch_opened": true,
+  "persistent_project_files_unchanged_after_recovery": 211,
+  "approval_restored": false,
+  "history_chronological_ordering": "unfinished"
+}
