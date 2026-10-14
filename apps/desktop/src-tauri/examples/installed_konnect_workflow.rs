@@ -64,7 +64,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .envs(&config.env)
             .kill_on_drop(true);
         let service = ().serve(rmcp::transport::TokioChildProcess::new(command)?).await?;
-        assert_eq!(service.list_all_tools().await?.len(), 17);
+        assert_eq!(
+            service.list_all_tools().await?.len(),
+            hazlomexa::host_tools::catalog().len()
+        );
         let call = |name: &'static str, arguments: Value| {
             let service = &service;
             async move {
