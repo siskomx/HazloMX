@@ -1,0 +1,23 @@
+{
+  "os": "Microsoft Windows NT 10.0.26100.0",
+  "installer_sha256": "07ac4126473b67e3d83fe9a1afc3ac08d306097b8a2ab6ff15582f7d987c30b5",
+  "app_alive": true,
+  "native_orca_connector_workflow": true,
+  "native_drawing_connector_workflow": true,
+  "uninstalled": true,
+  "native_konnect_missing_runtime_refusal": true,
+  "current_user_install": true,
+  "previous_installer_sha256": "1c4ea36af0c0d008b502156f565b051ffa809fde460db9a934a5cf2ec7154b6a",
+  "lifecycle_pass": true,
+  "native_agent_connector_workflow": true,
+  "native_arduino_connector_workflow": true,
+  "native_cadpilot_connector_workflow": true,
+  "native_kicad_connector_workflow": true,
+  "previous_build_update": true,
+  "pass": true,
+  "stage": "finished",
+  "native_konnect_connector_workflows": true,
+  "same_version_update": true,
+  "binaries_match_package_build": true,
+  "user_files_preserved": true
+}
