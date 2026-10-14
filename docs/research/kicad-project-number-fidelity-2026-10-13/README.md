@@ -1,6 +1,6 @@
 # Preserve KiCad project numbers during copy editing
 
-The installed schematic UI test uncovered a fidelity defect in package `07ac4126…`: Hazlo parsed and reserialized `.kicad_pro` files while making their references portable, rounding seven board settings even though only a resistor Value was approved. For example, `0.19999999999999998` became `0.2`. The source now preserves the number literals in new captures. **The installed package predates this fix; its schematic workflow is not accepted as a full fidelity pass.**
+The installed schematic UI test uncovered a fidelity defect in package `07ac4126…`: Hazlo parsed and reserialized `.kicad_pro` files while making their references portable, rounding seven board settings even though only a resistor Value was approved. For example, `0.19999999999999998` became `0.2`. The source now preserves the number literals in new captures. **The old package’s schematic attempt is not a full fidelity pass.** Subsequent [installed native editing and rebuilt result recovery](../native-schematic-recovery-2026-10-13/README.md) verify the precise fix and correct Explorer selection across two explicitly identified packages.
 
 ## Native installed attempt
 
@@ -25,4 +25,4 @@ Commands: `rtk cargo test -p hazlomexa --lib`; `rtk cargo test -p hazlomexa --li
 
 ## Still unfinished
 
-Rebuild/package the fix and retest the installed schematic workflow, its result-opening controls and native restart recovery. The other three workflow choices (Konnect PCB, Arduino Agent and OrcaSlicer) still need their native UI passes, so the full goal still has four unfinished native choices. Chronological history ordering and stale generic result messages also need UI fixes. Signed-in conversations, broader CAD fidelity and live unsaved editing remain open. No model inference, firmware upload or hardware/printer control ran here.
+The [follow-up](../native-schematic-recovery-2026-10-13/README.md) closes precise installed schematic editing, result selection, restart recovery, chronological history and stale generic result messages within its stated package scopes. Konnect PCB, Arduino Agent and OrcaSlicer still need native UI passes. Fresh approved execution and the complete guest matrix on the final opening-fix package, signed-in conversations, broader CAD fidelity and live unsaved editing remain open. No model inference, firmware upload or hardware/printer control ran here.

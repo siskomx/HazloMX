@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "package_sha256": "f03a7709f6abcd328c3f15adaca5fc3b12b4f3e51bdb2973526b0d93f68a43be",
+  "installed_app_sha256": "839b824185f38ad53dcb9e77b6dc8203e40e40074781b3e56521aa8ad4e2c976",
+  "installed_helper_sha256": "ea72d5a63fa82fb1b6258a31232505734c7c75a827ba81bfc4a47a779af3c61d",
+  "preserved_project_file_count": 228,
+  "exact_build_match_after_tauri_nsis_marker": true,
+  "native_ui_approval": true,
+  "native_chat_request": "c\u00e1mbiala a 33k",
+  "source_capture_schema": 2,
+  "component_reference": "R1",
+  "before_value": "10k",
+  "after_value": "33k",
+  "only_approved_schematic_value_changed": true,
+  "native_netlist_value_verified": true,
+  "whole_project_decimal_comparison_passed": true,
+  "portable_worksheet_references_changed": 0,
+  "source_files_unchanged": 4,
+  "prior_artifact_files_unchanged": 133,
+  "report_hashes_verified": 11,
+  "konnect_version": "0.13.0",
+  "protocol_version": "2025-06-18",
+  "kicad_cli_version": "10.0.7",
+  "output_files": [
+    {
+      "path": "Edited/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Edited/basic_test.kicad_prl",
+      "sha256": "74749046b03ab8d22676ae32fffc59f26db8ccc1812a83d1e870ef1c071deb79"
+    },
+    {
+      "path": "Edited/basic_test.kicad_pro",
+      "sha256": "8ce29bbb6ed8e2184fe66c236af16f6f74b0a616fd04265e3bccbbac7ea5ed3c"
+    },
+    {
+      "path": "Edited/basic_test.kicad_sch",
+      "sha256": "47324d5cfec6003714ed5c620527d7e1929ffab4234ed1c7815b3262911df47e"
+    },
+    {
+      "path": "Edited/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "Netlist.xml",
+      "sha256": "69f78a0d07915f587bc06a586988dd151f5600a031dbb3931e9a3b92178c3b5d"
+    },
+    {
+      "path": "Original/basic_test.kicad_pcb",
+      "sha256": "5db4b0bba54553591de636e83b3da3141868cd1e2e5fd327b6cbdb7eb5804b3a"
+    },
+    {
+      "path": "Original/basic_test.kicad_pro",
+      "sha256": "ca256500447bad81c80e21d78ae572e02b881fff9387a42115811077853a6837"
+    },
+    {
+      "path": "Original/basic_test.kicad_sch",
+      "sha256": "89dc77461efe4ef0dd1e3a4df76257d893979aff23985e02f55d128d62b7d79a"
+    },
+    {
+      "path": "Original/custom_ds.kicad_wks",
+      "sha256": "45531248855c321ba2389fea087232043b4643ab648f36487b60293f01774077"
+    },
+    {
+      "path": "input.json",
+      "sha256": "55c17900da8782704016343a38b6a82e6a6228200eaca2132c955bdd3c28229b"
+    }
+  ],
+  "model_inference": false,
+  "hardware_mutations": false,
+  "live_unsaved_editing": false
+}

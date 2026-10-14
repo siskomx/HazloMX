@@ -543,6 +543,8 @@ try {
   assert.match(await page.locator("#publication-result").innerText(), /disponibles/);
   await page.screenshot({ path: path.join(evidence, "arduino-workflow.png"), fullPage: true });
   await page.locator("#workflow").selectOption("agent");
+  assert.equal(await page.locator("#opening-status").isVisible(),false,"A file-opening result from another workflow is still displayed");
+  assert.equal(await page.locator("#opening-status").innerText(),"");
   assert.equal(await page.locator('label[for="arduino-board"]').isVisible(),false);
   assert.equal(await page.locator("#model-controls").isVisible(),false);
   assert.equal(await page.locator("#prepare-compile").isDisabled(),true);
@@ -1149,6 +1151,23 @@ try {
   await page.locator("#open-project").click();
   assert.equal(await page.locator("#prepare-drawing").isDisabled(),true);
   assert.equal(await page.locator("#drawing-unit").inputValue(),"");
+  for(const workflow of ["freecad","arduino","agent","drawing","konnect","pcb","kicad","slice","cadpilot"]){
+    await page.locator("#workflow").selectOption(workflow);
+    assert.equal(await page.locator("#status").innerText(),"Reúne los datos en el chat y prepara una propuesta para revisar.");
+  }
+  await page.locator("#workflow").selectOption("drawing");
+  await page.evaluate(()=>{
+    for(const [id,length,created] of [["order-old",31,1000],["order-tie-b",32,2000],["order-legacy",33,null],["order-new",34,3000],["order-tie-a",35,2000]]){
+      const run={schema_version:2,project_id:"test-project",input:{job_id:id,dimensions_mm:{length,width:1,height:1}},phase:"completed"};
+      if(created!==null)run.audit={source:{provider:"manual"},created_unix_ms:created,updated_unix_ms:created,files_verified:true};
+      window.addHistory(run);
+    }
+  });
+  await page.locator("#select-cadcraft").click();
+  const ordered=page.locator("#history .artifact-row").filter({hasText:/3[1-5] × 1 × 1 mm/});
+  await ordered.first().waitFor();
+  assert.deepEqual((await ordered.allTextContents()).map(text=>Number(text.match(/(3[1-5]) × 1 × 1 mm/)[1])),[34,35,32,31,33],"Recovered history is not newest-first with stable ties and undated legacy entries last");
+  await page.screenshot({path:path.join(evidence,"history-order.png"),fullPage:true});
   await mkdir(evidence,{recursive:true});
   await import("node:fs/promises").then(fs=>fs.writeFile(path.join(evidence,"agent-desktop-context.json"),JSON.stringify({passed:true,contexts},null,2)));
   assert.deepEqual(errors, []);

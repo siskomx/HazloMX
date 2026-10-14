@@ -1,0 +1,22 @@
+{
+  "package_sha256": "f630587573e024c522f412a41ab9a0472ae4459e6fdc7ffd373fb1f8453876d2",
+  "installed_app_sha256": "5e20163bbfdd5921b8985f7e1a445f46090e120dc85f75f673eb60d2a088c5c5",
+  "installed_helper_sha256": "2db7af2bd4ea6a818c451471c7434b9ddfad6d0223dee973640bd12c124f3d5a",
+  "preserved_project_file_count": 245,
+  "exact_build_match_after_tauri_nsis_marker": true,
+  "schema_version": 1,
+  "native_project_folder_picker": true,
+  "schema_1_and_2_results_recovered": true,
+  "native_history_newest_first_observed": true,
+  "original_schematic_selected_in_explorer": true,
+  "edited_schematic_selected_in_explorer": true,
+  "netlist_selected_in_explorer": true,
+  "read_only_report_opened": true,
+  "persistent_project_files_unchanged": 245,
+  "tracked_build_inputs_unchanged": 6523,
+  "builder_profile_binary_matches": 0,
+  "fresh_approved_edit_on_this_package": false,
+  "guest_matrix_on_this_package": false,
+  "model_inference": false,
+  "hardware_mutations": false
+}

@@ -1018,7 +1018,8 @@ fn open_artifact(
     ) {
         return artifact.read_text().map(Some).map_err(|e| e.to_string());
     }
-    let artifact_path = artifact.path.clone();
+    // Explorer's /select parser requires native separators in nested artifact names.
+    let artifact_path: PathBuf = artifact.path.components().collect();
     let system = PathBuf::from(std::env::var_os("SystemRoot").ok_or("SystemRoot missing")?);
     let gui = if matches!(format, ArtifactFormat::Fcstd | ArtifactFormat::Step) {
         state.workflow.gui_executable()?

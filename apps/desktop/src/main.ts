@@ -378,6 +378,7 @@ function artifactButtons(job: Snapshot, parent: HTMLElement) {
       const result=await invoke<{project_id:string;job_id:string;sha256:string;format:string;content:string}>("read_cadpilot_result",{jobId:job.input.job_id});
       if(revision!==projectRevision || result.project_id!==state.project?.[0])throw new Error("El proyecto cambió. Selecciona de nuevo el resultado.");
       if(result.format!=="cadpilot_report")throw new Error("Este resultado no es un documento CADPilot.");
+      clearOpeningStatus();
       resetPilotSelection();
       pilotBase={...result,report:JSON.parse(result.content)};
       const choices=element<HTMLSelectElement>("cadpilot-component");choices.replaceChildren(new Option("Elige una caja medida", ""));
@@ -674,7 +675,7 @@ function render() {
     element("operation-preview").textContent=runStatus(job.snapshot);
     element("code-preview").hidden=true;
   }
-  element("status").textContent = job ? runStatus(job.snapshot) : state.project ? "Describe tu idea en el chat o ingresa las medidas manualmente." : "Crea o abre un proyecto para comenzar la conversación.";
+  element("status").textContent = job ? runStatus(job.snapshot) : state.project ? "Reúne los datos en el chat y prepara una propuesta para revisar." : "Crea o abre un proyecto para comenzar la conversación.";
   const completed = job?.snapshot.phase === "completed";
   const verified = completed || !!job?.snapshot.audit?.files_verified;
   element("generation-result").textContent = verified ? "Completada" : job?.busy ? "En curso" : job?.snapshot.phase === "failed" ? "Falló; revisa el detalle" : "Sin archivos nuevos";
@@ -688,7 +689,7 @@ function render() {
   element("artifacts").replaceChildren();
   if (job?.snapshot.phase === "completed") artifactButtons(job.snapshot, element("artifacts"));
   element("history").replaceChildren();
-  for (const previous of state.recovered) {
+  for (const previous of [...state.recovered].sort((a,b)=>(b.audit?.created_unix_ms ?? 0)-(a.audit?.created_unix_ms ?? 0) || a.input.job_id.localeCompare(b.input.job_id))) {
     if (previous.input.job_id === job?.snapshot.input.job_id) continue;
     if (previous.phase === "completed") artifactButtons(previous, element("history"));
     else { const row = document.createElement("p"); row.textContent = `${runStatus(previous)}${historyText(previous)}${previous.audit?.error ? ` · ${previous.audit.error}` : ""}`; element("history").append(row); }
@@ -704,10 +705,15 @@ function render() {
 }
 
 function showError(message: string) { element("error").textContent = message; element("error").hidden = false; }
+function clearOpeningStatus() {
+  element("opening-status").hidden = true;
+  element("opening-status").textContent = "";
+}
 function applyJob(job: Job) {
   if (state.job && state.job.snapshot.input.job_id === job.snapshot.input.job_id && state.job.sequence > job.sequence) return;
   const changed = state.job?.snapshot.input.job_id !== job.snapshot.input.job_id || state.job?.sequence !== job.sequence;
   if (changed && job.error) showError(job.error);
+  if(state.job?.snapshot.input.job_id!==job.snapshot.input.job_id)clearOpeningStatus();
   state.job = job; render();
 }
 function applySnapshot(next: DesktopSnapshot) {
@@ -730,11 +736,11 @@ function applySnapshot(next: DesktopSnapshot) {
     element<HTMLSelectElement>("schematic-component").replaceChildren(new Option("Primero abre un esquema", ""));
     element("schematic-discovery").textContent="";
     element<HTMLInputElement>("konnect-reference").value="";
-    element("opening-status").hidden = true;
-    element("opening-status").textContent = "";
+    clearOpeningStatus();
     element<HTMLTextAreaElement>("sketch-source").value = "";
   }
   if (next.job && (!state.job || next.job.snapshot.input.job_id !== state.job.snapshot.input.job_id)) {
+    clearOpeningStatus();
     if (next.job.snapshot.input.dimensions_mm) {
       setDimensionFields(next.job.snapshot.input.dimensions_mm);
       element<HTMLDetailsElement>("manual-dimensions").open = true;
@@ -977,6 +983,7 @@ element("select-agent-sketch").addEventListener("click", () => void action(async
   dirty = true;
 }));
 element("workflow").addEventListener("change", () => {
+  clearOpeningStatus();
   pilotQuestion=undefined;
   pcbQuestion=undefined;drawingQuestion=undefined;
   selectedWorkflow = element<HTMLSelectElement>("workflow").value as typeof selectedWorkflow;
