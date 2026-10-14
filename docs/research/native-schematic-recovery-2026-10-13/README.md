@@ -1,6 +1,6 @@
 # Installed schematic fidelity and result recovery
 
-Native schematic editing now preserves the full project’s numeric settings. A second package fixes nested result selection in Explorer and recovers the precise edit. The evidence is deliberately split between those two exact installers; a fresh edit on the final package and its full guest matrix remain pending.
+Native schematic editing now preserves the full project’s numeric settings. A second package fixes nested result selection in Explorer and recovers the precise edit. The host GUI evidence is deliberately split between those two exact installers. The final package subsequently passes [fresh guest execution and ordinary-user acceptance](../native-opening-installed-2026-10-13/README.md), including independent project fidelity; a fresh native-UI-approved edit on that package remains pending.
 
 ## Native approved edit
 
@@ -26,4 +26,4 @@ Each package was built from 6,523 captured tracked inputs verified unchanged thr
 
 ## Remaining work
 
-Konnect PCB, Arduino Agent and OrcaSlicer still need their native UI passes. The latest installer still needs a fresh approved edit and complete second-Windows/ordinary-user acceptance; older package matrices are historical evidence. CADPilot add operations, ordinary GUI-saved CAD fidelity, signed-in conversations and live unsaved editing remain unfinished. No model inference, firmware upload or hardware/printer control ran in this test.
+Konnect PCB, Arduino Agent and OrcaSlicer still need their native UI passes. The latest installer passes the separately recorded guest/ordinary-user matrix, but still needs a fresh native-UI-approved schematic edit. CADPilot add operations, ordinary GUI-saved CAD fidelity, signed-in conversations and live unsaved editing remain unfinished. No model inference, firmware upload or hardware/printer control ran in this test.

@@ -1,0 +1,83 @@
+{
+  "agent": {
+    "approval_driver": "shared_backend_test",
+    "completed_jobs": 2,
+    "denied_jobs": 1,
+    "hardware_mutations": false,
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "pass": true,
+    "recovery_verified": true
+  },
+  "arduino": {
+    "approval_driver": "shared_backend_test",
+    "completed_jobs": 2,
+    "denied_jobs": 1,
+    "failed_jobs": 1,
+    "hardware_mutations": false,
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "pass": true,
+    "recovery_verified": true
+  },
+  "cadpilot": {
+    "approval_driver": "shared_backend_test",
+    "completed_jobs": 3,
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "pass": true,
+    "recovery_verified": true,
+    "units": [
+      "mm",
+      "cm",
+      "in"
+    ]
+  },
+  "drawing": {
+    "approval_driver": "shared_backend_test",
+    "completed_jobs": 4,
+    "formats": [
+      "dwg",
+      "dxf"
+    ],
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "originals_and_first_results_preserved": true,
+    "pass": true,
+    "recovery_verified": true,
+    "units": [
+      "mm",
+      "in"
+    ]
+  },
+  "engineering": {
+    "approval_driver": "shared_backend_test",
+    "completed_jobs": 2,
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "pass": true,
+    "recovery_verified": true
+  },
+  "konnect": {
+    "approval_driver": "shared_backend_test",
+    "completed_jobs": 4,
+    "hardware_mutations": false,
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "pass": true,
+    "recovery_verified": true
+  },
+  "orca": {
+    "approval_driver": "shared_backend_test",
+    "completed_jobs": 4,
+    "model_inference": false,
+    "native_desktop_ui": false,
+    "pass": true,
+    "printer_control": false,
+    "recovery_verified": true,
+    "units": [
+      "mm",
+      "in"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "guest_stopped": true,
+  "captured_source_entries_verified_unchanged": 141,
+  "main_export_files_independently_matched": 704,
+  "ordinary_export_files_independently_matched": 69,
+  "all_prelaunch_inputs_unchanged": true,
+  "native_ui_automation": false,
+  "signed_in_agents": false,
+  "live_unsaved_document_editing": false,
+  "tool_catalog_hosted_by_current_linked_harness": 17,
+  "raw_logs_profiles_projects_private": true
+}

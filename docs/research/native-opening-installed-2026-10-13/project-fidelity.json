@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "installer_sha256": "f630587573e024c522f412a41ab9a0472ae4459e6fdc7ffd373fb1f8453876d2",
+  "completed_konnect_jobs": 4,
+  "source_schema": 2,
+  "full_project_decimal_comparisons": 6,
+  "all_project_values_preserved_except_portable_worksheet_references": true
+}
