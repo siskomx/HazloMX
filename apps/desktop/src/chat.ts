@@ -36,6 +36,7 @@ let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", quest
 let renderedConversation = "";
 let sourceContext: Record<string, unknown> = {};
 let sourceNames: Partial<Record<Program, string>> = {};
+let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
@@ -54,7 +55,7 @@ function restore() {
 }
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
-  if (projectChanged) { revision++; sourceContext = {}; sourceNames = {}; }
+  if (projectChanged) { revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
   if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
   if (next.codex_login && state.codex_login?.id === next.codex_login.id && state.codex_login.sequence > next.codex_login.sequence) next.codex_login = state.codex_login;
@@ -186,6 +187,9 @@ function render() {
 function connectionButton(label: string, disabled: boolean, work: () => Promise<void>) {
   const button = document.createElement("button"); button.textContent = label; button.className = "secondary"; button.disabled = disabled || !state.project; button.onclick = () => void action(work); $("program-actions").append(button);
 }
+function selectedNewSource(program: Program) {
+  sourcePreviousJobs[program] = state.job?.snapshot.input.job_id ?? null;
+}
 function renderConnections(disabled: boolean) {
   $("program-actions").replaceChildren();
   const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
@@ -194,15 +198,15 @@ function renderConnections(disabled: boolean) {
     connectionButton("Seleccionar documento guardado e inspeccionar…", disabled, async () => apply(await invoke<DesktopSnapshot>("prepare_cadpilot", { request: { operation: "inspect", object: "Document", units: "mm", parameters: {} } })));
   } else if (program === "drawing") {
     connect("Elegir CADCraft…", "select_cadcraft");
-    connectionButton("Seleccionar dibujo…", disabled, async () => { const selected = await invoke<DiscoveredDrawing>("discover_drawing"); if (selected.project_id !== state.project?.[0]) throw Error("El dibujo pertenece a otro proyecto."); sourceContext.drawing_source = { selection: selected.id, sha256: selected.inspection.source_sha256 }; sourceNames.drawing = selected.inspection.source_name; });
+    connectionButton("Seleccionar dibujo…", disabled, async () => { const selected = await invoke<DiscoveredDrawing>("discover_drawing"); if (selected.project_id !== state.project?.[0]) throw Error("El dibujo pertenece a otro proyecto."); sourceContext.drawing_source = { selection: selected.id, sha256: selected.inspection.source_sha256 }; sourceNames.drawing = selected.inspection.source_name; selectedNewSource("drawing"); });
   } else if (program === "arduino") connect("Elegir Arduino CLI y su entorno…", "select_arduino");
   else if (program === "agent") {
     connect("Conectar Arduino Agent", "connect_agent");
-    connectionButton("Seleccionar sketch…", disabled, async () => { apply(await invoke<DesktopSnapshot>("select_agent_sketch")); sourceNames.agent = state.agent_source?.source_name; sourceContext.sketch_source = { name: state.agent_source?.source_name }; });
+    connectionButton("Seleccionar sketch…", disabled, async () => { apply(await invoke<DesktopSnapshot>("select_agent_sketch")); sourceNames.agent = state.agent_source?.source_name; sourceContext.sketch_source = { name: state.agent_source?.source_name }; selectedNewSource("agent"); });
   } else if (program === "kicad") {
     connect("Elegir KiCad…", "select_kicad"); connect("Elegir Konnect…", "select_konnect");
-    connectionButton("Seleccionar esquema…", disabled, async () => { const selected = await invoke<DiscoveredSchematic>("discover_schematic"); if (selected.project_id !== state.project?.[0]) throw Error("El esquema pertenece a otro proyecto."); sourceContext.schematic_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.pcb_source; delete sourceContext.live_pcb_source; sourceNames.kicad = selected.name; });
-    connectionButton("Seleccionar PCB…", disabled, async () => { const selected = await invoke<DiscoveredPcb>("discover_pcb"); if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto."); sourceContext.pcb_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.schematic_source; delete sourceContext.live_pcb_source; sourceNames.kicad = selected.name; });
+    connectionButton("Seleccionar esquema…", disabled, async () => { const selected = await invoke<DiscoveredSchematic>("discover_schematic"); if (selected.project_id !== state.project?.[0]) throw Error("El esquema pertenece a otro proyecto."); sourceContext.schematic_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.pcb_source; delete sourceContext.live_pcb_source; sourceNames.kicad = selected.name; selectedNewSource("kicad"); });
+    connectionButton("Seleccionar PCB…", disabled, async () => { const selected = await invoke<DiscoveredPcb>("discover_pcb"); if (selected.project_id !== state.project?.[0]) throw Error("La PCB pertenece a otro proyecto."); sourceContext.pcb_source = { selection: selected.id, sha256: selected.sha256 }; delete sourceContext.schematic_source; delete sourceContext.live_pcb_source; sourceNames.kicad = selected.name; selectedNewSource("kicad"); });
     connectionButton("Leer PCB abierta en KiCad…", disabled, async () => {
       const connection = { endpoint: $<HTMLInputElement>("kicad-endpoint").value.trim(), token: $<HTMLInputElement>("kicad-api-token").value };
       $<HTMLInputElement>("kicad-api-token").value = "";
@@ -217,14 +221,23 @@ function renderConnections(disabled: boolean) {
       const selected=await invoke<DiscoveredSlice>("discover_slice");
       if(selected.project_id!==state.project?.[0]) throw Error("El modelo pertenece a otro proyecto.");
       sourceContext.slice_source={selection:selected.id,selection_sha256:selected.preview.selection_sha256,units_require_confirmation:true};
-      sourceContext.slice_previous_job=state.job?.snapshot.input.job_id ?? null;
+      selectedNewSource("slice");
       sourceNames.slice=`${selected.preview.source_name} · STL sin unidad declarada`;
     });
   }
 }
+function jobProgram(run: Snapshot): Program | undefined {
+  const input = run.input;
+  if (input.konnect_version || input.kicad_version) return "kicad";
+  if (input.cadpilot_version || input.dimensions_mm) return "freecad";
+  if (input.cadcraft_version) return "drawing";
+  if (input.orca_version) return "slice";
+  if (input.agent_version) return "agent";
+  if (input.fqbn) return "arduino";
+}
 function context() {
   let job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
-  if (program === "slice" && job?.input.job_id === sourceContext.slice_previous_job) job = undefined;
+  if (job && (jobProgram(job) !== program || job.input.job_id === sourcePreviousJobs[program])) job = undefined;
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
   const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : program === "slice" ? {slice_source:sourceContext.slice_source} : {};
   return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: !native && job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: native ? "live_pcb_read_only" : "saved_files_and_verified_copies", live_document_connection: native, live_mutations_allowed: false };

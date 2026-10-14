@@ -16,6 +16,9 @@ try {
     let callback = 0;
     const snapshot = { project: ["project-one", "C:\\owned\\project"], job: null, inference: null, recovered: [], freecad: "owned-freecad", freecad_available: true, codex: { version: "fixture" }, codex_login: { id: "login", sequence: 1, busy: false, cancelled: false, connected: true, auth_url: null, error: null }, claude: { version: "fixture" } };
     const copy = () => structuredClone(snapshot);
+    window.setCompletedJob = input => {
+      snapshot.job = { snapshot: { schema_version: 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
+    };
     window.calls = []; window.approvals = 0;
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
@@ -123,6 +126,7 @@ try {
   assert.equal(board.desktop_context.pcb_source.selection, "selected-board");
   assert.equal(board.desktop_context.schematic_source, undefined);
   assert(!JSON.stringify(board).includes("private-approval"));
+  await page.locator("#program").selectOption("freecad");
   await page.evaluate(() => { window.makeProposal = true; });
   await send("Prepara un cambio que pueda revisar.");
   await page.locator("#approval:visible").waitFor();
@@ -135,6 +139,12 @@ try {
   await send("Ahora consulta el resultado antes de proponer otro cambio.");
   const followup = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt));
   assert.deepEqual(followup.desktop_context.current_job, { id: "native-job", phase: "completed" });
+  for (const program of ["drawing", "arduino", "agent", "kicad", "slice"]) {
+    await page.locator("#program").selectOption(program);
+    await send("Inspecciona el documento de este programa antes de modificarlo.");
+    const context = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt).desktop_context);
+    assert.equal(context.current_job, null, `A FreeCAD result crossed into ${program}`);
+  }
   await page.locator("#program").selectOption("slice");
   await page.getByRole("button", { name: "Seleccionar modelo y perfiles…", exact: true }).click();
   await send("Este es otro modelo; inspecciónalo antes de preparar su primer laminado.");
@@ -214,6 +224,43 @@ try {
   await send("Conversación del otro proyecto.");
   await page.locator("#new-chat").click();
   assert(!await page.locator("#conversation").innerText().then(text => text.includes("Conversación del otro proyecto")));
+  const cases = [
+    ["freecad", { dimensions_mm: { length: 10, width: 10, height: 10 } }],
+    ["freecad", { cadpilot_version: "fixture", source_name: "Part.FCStd", request: { operation: "inspect" }, preview: { measurements: {} } }],
+    ["drawing", { cadcraft_version: "fixture", source_name: "Plano.dxf", output_format: "dxf" }, "Seleccionar dibujo…"],
+    ["arduino", { fqbn: "arduino:avr:uno", source: "void setup() {}" }],
+    ["agent", { agent_version: "fixture", source_name: "Sketch.ino", original_source: "void setup() {}", source: "void setup() {}" }, "Seleccionar sketch…"],
+    ["kicad", { kicad_version: "10.0.7", entry: "Board.kicad_pcb", units: "mm", files: [] }, "Seleccionar PCB…"],
+    ["kicad", { konnect_version: "fixture", edit: { reference: "R1", expected_value: "1k", value: "2k" } }, "Seleccionar esquema…"],
+    ["kicad", { konnect_version: "fixture", pcb_move: { reference: "R1", expected_x_mm: 10, expected_y_mm: 10, x_mm: 20, y_mm: 10 } }, "Seleccionar PCB…"],
+    ["slice", { orca_version: "fixture", source_name: "Part.stl", units: "mm", mesh: { bounds_mm: [[0,0,0],[10,10,10]] }, settings: { machine: "Printer", filament: "PLA" } }, "Seleccionar modelo y perfiles…"],
+  ];
+  for (const provider of ["codex", "claude"]) {
+    await page.locator("#provider").selectOption(provider);
+    for (const [index, [program, fields, picker]] of cases.entries()) {
+      await page.locator("#new-chat").click();
+      const job = { schema_version: 1, job_id: `${provider}-${index}`, ...fields };
+      await page.evaluate(input => window.setCompletedJob(input), job);
+      await page.locator("#select-client").click(); await page.locator("#send:enabled").waitFor();
+      await page.locator("#program").selectOption(program);
+      await send("Lee el resultado verificado de este programa.");
+      const lastContext = () => page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat" || call.command === "start_claude_chat").at(-1).args.prompt).desktop_context);
+      assert.deepEqual((await lastContext()).current_job, { id: job.job_id, phase: "completed" });
+      await page.locator("#program").selectOption(program === "freecad" ? "drawing" : "freecad");
+      await send("Consulta este otro programa.");
+      assert.equal((await lastContext()).current_job, null, `${provider}: unrelated ${program} job leaked`);
+      await page.locator("#program").selectOption(program);
+      if (picker) {
+        await page.getByRole("button", { name: picker, exact: true }).click();
+        await send("Este es otro documento; empieza inspeccionándolo.");
+        assert.equal((await lastContext()).current_job, null, `${provider}: replaced ${program} source retained old result`);
+        await page.evaluate(input => window.setCompletedJob(input), { ...job, job_id: `${job.job_id}-new` });
+        await page.locator("#select-client").click(); await page.locator("#send:enabled").waitFor();
+        await send("Consulta el nuevo resultado verificado.");
+        assert.deepEqual((await lastContext()).current_job, { id: `${job.job_id}-new`, phase: "completed" });
+      }
+    }
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });

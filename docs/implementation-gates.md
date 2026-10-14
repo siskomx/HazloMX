@@ -1,5 +1,7 @@
 # Hazlo Mexa implementation gates
 
+**Program/source context:** the production chat now excludes current jobs from other programs and excludes the previous result after selecting another saved source. A reproduced cross-program regression and both-provider browser checks across all nine operation variants pass, including new-result follow-ups. Production build passes. Backend capabilities/hash checks remain authoritative; this does not close native document-session or real signed-in gates.
+
 **Orca source-first chat:** [selected STL/profile inspection and initial proposals](research/orca-source-chat-2026-10-13.md) now work without engineering input forms or assumed source units. The twenty-two-tool catalog supports the first source-bound slice and existing verified-result follow-up. Actual metric/inch native and MCP execution, stale-source refusal, preapproval cancellation, readback, preservation and recovery pass. Approval used backend fixtures; native picker/signed-in conversation/current installer acceptance remain open. File slicing does not establish a live Orca GUI connection.
 
 **Read-only native PCB connection:** the [native editor boundary](research/native-editor-connections-2026-10-13.md) adds an IPC-only observation path and the twentieth host tool. Actual fallback refusal, saved schematic/PCB regressions, unit/build and mocked browser context/privacy checks pass. Successful live observation, editor-instance identity, live writes, native GUI/signed-in interaction and current installer acceptance remain open.
