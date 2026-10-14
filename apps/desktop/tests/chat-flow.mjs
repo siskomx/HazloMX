@@ -1,10 +1,19 @@
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { createServer } from "vite";
 import { chromium } from "playwright-core";
 
 const root = path.resolve(import.meta.dirname, "..");
+const mainSource = await readFile(path.join(root, "src-tauri/src/main.rs"), "utf8");
+const buildSource = await readFile(path.join(root, "src-tauri/build.rs"), "utf8");
+const capability = JSON.parse(await readFile(path.join(root, "src-tauri/capabilities/main.json"), "utf8"));
+const handlers = mainSource.match(/generate_handler!\[([^\]]+)\]/)[1].split(",").map(name => name.trim().split("::").at(-1)).sort();
+const declared = [...buildSource.match(/\.commands\(&\[([^\]]+)\]/)[1].matchAll(/"([a-z_]+)"/g)].map(match => match[1]).sort();
+assert.deepEqual(declared, handlers, "Desktop permission declarations must cover the actual command handler");
+assert.deepEqual([...capability.permissions].sort(), declared.map(command => `allow-${command.replaceAll("_", "-")}`).sort(), "Bundled chat permissions must match the declared app commands");
+assert.deepEqual(capability.webviews, ["main"]);
+assert.equal(capability.remote, undefined, "App commands must not be granted to remote pages");
 const server = await createServer({ root, server: { host: "127.0.0.1", port: 0 } });
 let browser;
 try {
