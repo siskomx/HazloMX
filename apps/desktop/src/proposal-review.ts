@@ -13,6 +13,25 @@ const drawingActions: Record<string, string> = {
 };
 const number = (value: number) => value.toLocaleString("es-MX", {useGrouping:false, maximumSignificantDigits:15});
 const position = (x: number, y: number) => `horizontal ${number(x)}, vertical ${number(y)} mm`;
+const circularMeasures: Record<string, Record<string, readonly [string, string?]>> = {
+  "Part::Cylinder": {Radius:["distancia del centro al borde de la base", "diámetro del círculo de la base"]},
+  "Part::Sphere": {Radius:["distancia del centro al borde de la esfera", "diámetro de la esfera completa"]},
+  "Part::Cone": {
+    Radius1:["distancia del centro al borde de la base", "diámetro del círculo de la base"],
+    Radius2:["distancia del centro al borde del otro extremo", "diámetro del círculo del otro extremo"],
+  },
+  "Part::Torus": {
+    Radius1:["distancia del centro del aro al centro del tubo"],
+    Radius2:["distancia del centro al borde del tubo", "diámetro del círculo que forma el tubo"],
+  },
+};
+function doubledLength(value: unknown): string | undefined {
+  const parsed = typeof value === "number" ? [value,"mm"] as const
+    : typeof value === "string" ? value.trim().match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(mm|cm|m|in|ft)$/)?.slice(1) : undefined;
+  if (!parsed) return;
+  const doubled = Number(parsed[0])*2;
+  if (Number.isFinite(doubled)) return `${number(doubled)} ${parsed[1]}`;
+}
 
 /** Describe the approved input, never an assistant's claim that it performed a change. */
 export function proposalFacts(run: Snapshot): string[] {
@@ -39,15 +58,23 @@ export function proposalFacts(run: Snapshot): string[] {
     const exporting = input.operations[0]?.action === "export_step";
     facts.push(saving ? "Guardar el documento abierto de FreeCAD." : exporting ? "Exportar la pieza abierta a STEP." : "Cambiar el documento abierto de FreeCAD.", "Objetivo: " + input.description);
     const actions:Record<string,string>={create_object:"Crear objeto",edit_object:"Cambiar objeto",delete_object:"Eliminar objeto",boolean:"Combinar sólidos",fillet:"Redondear bordes",chamfer:"Biselar bordes",loft:"Crear forma entre secciones",sweep:"Crear barrido",mirror:"Reflejar",pattern:"Crear patrón",move:"Mover",color:"Cambiar color",variables:"Cambiar variables",sketch:"Crear boceto",pad:"Extruir",pocket:"Crear vaciado",revolution:"Crear revolución",groove:"Crear ranura",thickness:"Cambiar espesor",draft:"Crear ángulo de salida",datum_plane:"Crear plano de referencia",hull:"Crear envolvente"};
-    const names:Record<string,string>={Length:"largo",Width:"ancho",Height:"alto",Radius:"radio",Placement:"posición"};
+    let explainedDiameter=false;
+    const names:Record<string,string>={Length:"largo",Width:"ancho",Height:"alto",Radius:"distancia del centro al borde",Radius1:"primer radio (del centro al borde)",Radius2:"segundo radio (del centro al borde)",Placement:"posición"};
     for(const operation of saving || exporting ? [] : input.operations){
       const current=input.before.find(object=>object.name===operation.obj_name);
       facts.push(`${Object.hasOwn(actions,operation.action) ? actions[operation.action] : operation.action}: ${current?.label ?? operation.obj_name ?? "nuevo objeto"}.`);
       for(const [key,value] of Object.entries(operation.obj_properties ?? {})){
-        const label=Object.hasOwn(names,key) ? names[key] : key;
+        const type=current?.type ?? operation.obj_type ?? "";
+        const measure=Object.hasOwn(circularMeasures,type) && Object.hasOwn(circularMeasures[type],key) ? circularMeasures[type][key] : undefined;
+        const previous=current && Object.hasOwn(current.properties,key) ? current.properties[key] : undefined;
+        const proposedDiameter=measure?.[1] ? doubledLength(value) : undefined;
+        const previousDiameter=measure?.[1] ? doubledLength(previous) : undefined;
+        const diameter=proposedDiameter!==undefined && (previous===undefined || previousDiameter!==undefined);
+        const label=diameter ? measure![1]! : measure?.[0] ?? (Object.hasOwn(names,key) ? names[key] : key);
         const dimension=["Length","Width","Height","Radius","Radius1","Radius2"].includes(key);
         const display=(v:unknown)=>typeof v==="number" && dimension ? `${number(v)} mm` : typeof v==="string" ? v : JSON.stringify(v);
-        facts.push(`${label}: ${current && key in current.properties ? display(current.properties[key]) + " → " : ""}${display(value)}.`);
+        if(diameter && !explainedDiameter){facts.push("Diámetro significa ancho completo: de un borde al opuesto pasando por el centro del círculo.");explainedDiameter=true;}
+        facts.push(`${label}: ${previous!==undefined ? (diameter ? previousDiameter : display(previous)) + " → " : ""}${diameter ? proposedDiameter : display(value)}.`);
       }
     }
     if (saving) facts.push("FreeCAD abrirá Guardar como para que elijas el archivo y confirmes allí cualquier sobrescritura.", "Guardar no es una edición de geometría que pueda deshacerse. Hazlo verificará el archivo guardado y releerá el documento.");

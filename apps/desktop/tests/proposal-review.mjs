@@ -27,6 +27,33 @@ assert.match(exported,/No se sobrescriben destinos existentes/);
 assert.match(exported,/documento abierto no cambia ni se guarda/);
 assert(!exported.includes("InternalBox") && !exported.includes("transacción que puedes deshacer"));
 
+const coneInput={live_cad_version:1,description:"Ensanchamos los dos extremos del embudo",before:[{name:"InternalCone",label:"Embudo",type:"Part::Cone",properties:{Radius1:"10 mm",Radius2:5}}],operations:[{action:"edit_object",obj_name:"InternalCone",obj_properties:{Radius1:"0.5 in",Radius2:"0.25 in"}}]};
+const coneOriginal=JSON.stringify(coneInput), cone=review(coneInput);
+assert.match(cone,/diámetro del círculo de la base: 20 mm → 1 in/);
+assert.match(cone,/diámetro del círculo del otro extremo: 10 mm → 0.5 in/);
+assert(!cone.includes("Radius1") && !cone.includes("Radius2") && !cone.includes("InternalCone"));
+assert.equal(cone.split("Diámetro significa ancho completo").length-1,1);
+assert.equal(JSON.stringify(coneInput),coneOriginal,"Review must not rescale the approved native payload");
+const torus=review({live_cad_version:1,description:"Ajusta el aro",before:[{name:"Ring",label:"Aro",type:"Part::Torus",properties:{Radius1:"10 mm",Radius2:"2 mm"}}],operations:[{action:"edit_object",obj_name:"Ring",obj_properties:{Radius1:"0.5 in",Radius2:"0.125 in"}}]});
+assert.match(torus,/distancia del centro del aro al centro del tubo: 10 mm → 0.5 in/);
+assert.match(torus,/diámetro del círculo que forma el tubo: 4 mm → 0.25 in/);
+assert(!torus.includes("Radius1") && !torus.includes("Radius2"));
+for(const [unit,value] of [["mm","0.5"],["cm",".5"],["m","5e-1"],["in","0.5"],["ft","0.5"]]) {
+  const facts=review({live_cad_version:1,description:"Crea un cilindro",before:[],operations:[{action:"create_object",obj_type:"Part::Cylinder",obj_name:"Shaft",obj_properties:{Radius:`${value} ${unit}`}}]});
+  assert(facts.includes(`diámetro del círculo de la base: 1 ${unit}.`));
+}
+const sphere=review({live_cad_version:1,description:"Cambia la esfera",before:[{name:"Sphere",label:"Bola",type:"Part::Sphere",properties:{Radius:5}}],operations:[{action:"edit_object",obj_name:"Sphere",obj_properties:{Radius:10}}]});
+assert.match(sphere,/diámetro de la esfera completa: 10 mm → 20 mm/);
+for(const value of ["1/2 in","(5 mm + 2 mm)","1,000 mm","Infinity mm"]){
+  const facts=review({...coneInput,operations:[{action:"edit_object",obj_name:"InternalCone",obj_properties:{Radius1:value}}]});
+  assert(facts.includes(`distancia del centro al borde de la base: 10 mm → ${value}.`));
+  assert(!facts.includes("diámetro del círculo"),"Unknown expressions must not be presented as converted diameters");
+}
+const unknownCircular=review({live_cad_version:1,description:"Revisa otro objeto",before:[{name:"Unknown",label:"Otra pieza",type:"Other::Type",properties:{}}],operations:[{action:"edit_object",obj_name:"Unknown",obj_properties:{Radius1:10,constructor:5}}]});
+assert.match(unknownCircular,/primer radio \(del centro al borde\): 10 mm/);
+assert.match(unknownCircular,/constructor: 5/);
+assert(!unknownCircular.includes("undefined") && !unknownCircular.includes("function Object"));
+
 assert.match(review({dimensions_mm:{length:25.4,width:12.7,height:5}}),/milímetros: largo 25.4, ancho 12.7, alto 5/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/compila para Arduino Uno/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/No se carga código/);

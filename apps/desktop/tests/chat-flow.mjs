@@ -623,9 +623,29 @@ try {
     const history=await page.locator("#history").innerText();assert.match(history,/Informe del cambio en Arduino Agent/);
     assert(!history.includes("HEX") && !history.includes("ELF"));
   }
+  for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("freecad");
+    await page.locator("#new-chat").click();
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_cad_version:1,job_id:crypto.randomUUID(),document_name:"Embudo",document_token:crypto.randomUUID(),state_sha256:"a".repeat(64),
+      description:"Ensanchamos los dos extremos del embudo",before:[{name:"InternalCone",label:"Embudo",type:"Part::Cone",properties:{Radius1:"10 mm",Radius2:5}}],
+      operations:[{action:"edit_object",obj_name:"InternalCone",obj_properties:{Radius1:"0.5 in",Radius2:"0.25 in"}}]}));
+    await page.locator("#program-actions button").first().click();
+    await page.locator("#approve:enabled").waitFor();
+    const facts=await page.locator("#change-facts").innerText();
+    assert.match(facts,/diámetro del círculo de la base: 20 mm → 1 in/);
+    assert.match(facts,/diámetro del círculo del otro extremo: 10 mm → 0.5 in/);
+    assert.match(facts,/Diámetro significa ancho completo/);
+    assert(!facts.includes("Radius1") && !facts.includes("Radius2") && !facts.includes("InternalCone"));
+    const before=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    assert.equal((await chatCalls()).length,before+1);
+    const approved=await page.evaluate(async()=>(await window.__TAURI_INTERNALS__.invoke("get_snapshot")).job.snapshot.input.operations[0].obj_properties);
+    assert.deepEqual(approved,{Radius1:"0.5 in",Radius2:"0.25 in"});
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }
