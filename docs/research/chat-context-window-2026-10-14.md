@@ -35,8 +35,11 @@ Source commit `8e24fb1` builds a new unsigned 0.1.0 installer with all 6,582 tra
 |---|---|
 | Installer, 5,535,721 bytes | `4768e7170c67074a49150c6cf8d7c96c64b9a2d981a5029a40b51ad226c3f52a` |
 | Unbundled release app | `1a7e20096b59f26430600878d03e01680f6858bfbff2aa362b38f9ead38b6c1b` |
+| Extracted installed app | `26fce2b0bc8714ed8ba189349fea5e622c840082489741862ce7e0fa93d2e9e1` |
 | Bundled helper | `d37dc51da59a9ff4b8bfebd9098464c01c84387cfc7f8eb9e6402b5a27279a3d` |
 
-Guest preparation refuses to proceed because its fresh memory check observes 2,181 MiB available against the unchanged 3,072 MiB prerequisite. It creates no new test configuration or guest. The previous verified/stopped guest receipt is preserved separately. This candidate has not passed installed or corrected native UI acceptance, and explicit UI resume was requested. The existing Claude Code client still reports signed out in a fresh read-only status check; no credentials were displayed.
+The first guest preparation refuses at 2,181 MiB available against the unchanged 3,072 MiB prerequisite and creates no configuration or guest. A later host check observes 3,147 MiB; the preparer's own fresh memory gate then passes. Preparation binds the exact installer, extracted installed app, unbundled app and helper identities, includes initial-chat checks and all seven integration harnesses, and assembles the ordinary-user lifecycle/KiCad inputs with the corrected PowerShell driver invocation. All 64 prepared input hashes match; the output directory is empty and there is no active guest session. The previous verified/stopped guest receipt is preserved separately.
+
+This is **prepared-only evidence**. The new guest has not launched, and this candidate has not passed installed or corrected native UI acceptance. The explicit UI-resume question remains pending; no app input follows Escape. The existing Claude Code client still reports signed out in the latest read-only status check; no credentials were displayed.
 
 The [sanitized receipt](chat-context-window-2026-10-14.json) separates the failed native run from the passing source checks. The full application goal remains active.

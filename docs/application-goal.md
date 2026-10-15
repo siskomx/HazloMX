@@ -2,7 +2,7 @@
 
 **October 14 — conversation-length correction:** a [real CADCraft native run](research/chat-context-window-2026-10-14.md) completes two approved saved-copy edits and one denial, but fails its final automatic explanation at the request-size limit. The source fix preserves visible/saved history separately, keeps user constraints before verbose old replies and sends explicitly bounded context. Focused/browser/legacy-history checks and the production build pass. Corrected native/installed acceptance remains open; Escape stopped native UI automation again. The tested installer below predates this correction.
 
-The corrected source builds unsigned candidate `4768e717…` with 6,582 unchanged tracked inputs, binary privacy checks and the actual 26-tool release-helper transport passing. Native UI resume is pending. Guest preparation refuses at 2,181 MiB available against its unchanged 3,072 MiB requirement; no new guest is launched. Candidate build evidence does not replace the earlier installer acceptance or close the full goal.
+The corrected source builds unsigned candidate `4768e717…` with 6,582 unchanged tracked inputs, binary privacy checks and the actual 26-tool release-helper transport passing. After an initial memory refusal, preparation passes the unchanged 3,072 MiB prerequisite and verifies exact package/binary identities plus 64 inputs, seven integration harnesses and the ordinary-user inputs. Native UI resume is pending; the new guest remains unlaunched. Candidate build/preparation evidence does not replace the earlier installer acceptance or close the full goal.
 
 ## Current Windows acceptance — October 14, 2026
 
