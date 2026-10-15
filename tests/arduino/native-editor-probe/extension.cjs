@@ -28,7 +28,12 @@ async function connect(root) {
   throw Error("Owned native companion did not become ready");
 }
 
-async function activate() {
+function activate(context) {
+  const scheduled = setTimeout(() => { void runProbe(); }, 0);
+  context.subscriptions.push({dispose() { clearTimeout(scheduled); }});
+}
+
+async function runProbe() {
   const root = process.env.HAZLOMEXA_AGENT_EDITOR_PROBE_ROOT;
   if (!root || !/^arduino-native-ui-[0-9a-f-]+$/.test(path.basename(root))) return;
   const marker = JSON.parse(fs.readFileSync(path.join(root, "owned-native-probe.json"), "utf8"));
@@ -40,13 +45,37 @@ async function activate() {
     const file = path.join(root, "sketchbook", "OwnedSketch", "OwnedSketch.ino");
     const disk = fs.readFileSync(file, "utf8");
     result.stage = "opening owned sketch"; save();
-    const doc = await api.workspace.openTextDocument(api.Uri.file(file));
-    const editor = await api.window.showTextDocument(doc);
+    const opened = await api.workspace.openTextDocument(api.Uri.file(file));
+    await api.window.showTextDocument(opened);
+    let editor, version = -1, stable = 0;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const current = api.window.activeTextEditor;
+      if (current && path.resolve(current.document.uri.fsPath).toLowerCase() === path.resolve(file).toLowerCase()) {
+        stable = current.document.version === version ? stable + 1 : 0;
+        version = current.document.version;
+        if (stable >= 3) { editor = current; break; }
+      } else { version = -1; stable = 0; }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert(editor, "The owned sketch must be active with a stable native revision before fixture setup");
+    const doc = editor.document;
     result.api_version = api.version; result.application_name = api.env.appName;
     result.autosave = api.workspace.getConfiguration("files", doc.uri).get("autoSave");
     assert.equal(result.autosave, "off", "Owned fixture must disable ordinary editor autosave");
     const eol = doc.eol === api.EndOfLine.CRLF ? "\r\n" : "\n";
-    assert.equal(await editor.edit(edit => edit.insert(doc.positionAt(doc.getText().length), "// unsaved user note" + eol)), true);
+    result.initial_document_version = doc.version;
+    result.initial_source_sha256 = crypto.createHash("sha256").update(doc.getText()).digest("hex");
+    const expectedSetupSource = doc.getText() + "// unsaved user note" + eol;
+    result.initial_insert_confirmed = await editor.edit(edit => edit.insert(doc.positionAt(doc.getText().length), "// unsaved user note" + eol));
+    if (result.initial_insert_confirmed) {
+      for (let attempt = 0; attempt < 100 && doc.getText() !== expectedSetupSource; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+    }
+    result.after_insert_document_version = doc.version;
+    result.after_insert_source_sha256 = crypto.createHash("sha256").update(doc.getText()).digest("hex"); save();
+    assert.equal(result.initial_insert_confirmed, true, "The IDE must confirm the owned setup edit without retry");
+    assert.equal(doc.getText(), expectedSetupSource, "The IDE must deliver the setup source change before the actual companion test");
     const tools = await connect(path.join(root, "connection"));
     const inspect = async () => { const reply = await tools.request({action:"inspect"}); assert.equal(reply.ok,true); return reply.result; };
     const apply = async before => {
@@ -60,9 +89,18 @@ async function activate() {
     assert.equal(original.dirty, true); assert(original.source.includes("unsaved user note"));
     assert.equal(fs.readFileSync(file,"utf8"), disk);
     result.stage = "native edit and undo"; save();
-    await apply(original);
+    const beforeUndo = await apply(original);
+    const undoTarget = await inspect();
+    assert.equal(undoTarget.document_token, original.document_token);
+    assert.equal(undoTarget.source, beforeUndo.source);
     await api.commands.executeCommand("undo");
-    assert.equal((await inspect()).source, original.source, "Native undo must preserve the earlier user note");
+    let restored = await inspect();
+    for (let attempt = 0; attempt < 100 && restored.document_token === original.document_token && restored.source !== original.source; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 20)); restored = await inspect();
+    }
+    assert.equal(restored.document_token, original.document_token);
+    assert(restored.version > beforeUndo.version);
+    assert.equal(restored.source, original.source, "Native undo must preserve the earlier user note");
     result.native_undo_verified = true;
     result.stage = "native edit and follow-up"; save();
     const first = await apply(await inspect()), second = await apply(await inspect());

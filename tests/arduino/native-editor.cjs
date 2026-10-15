@@ -50,6 +50,41 @@ test("inspection reads the dirty native buffer and excludes its private URI", as
   assert.equal(state.state_sha256, crypto.createHash("sha256").update(f.doc.text).digest("hex"));
   assert(!JSON.stringify(state).includes("C:")); assert.equal(f.editor.calls, 0);
 });
+
+test("native readback waits for a delayed document notification without resending the edit", async () => {
+  const f=fixture(), before=await read(f), source=before.source.replace("1000","500");
+  f.editor.edit=async callback=>{
+    f.editor.calls++;let replacement;
+    callback({replace(range,text){replacement=text;}});
+    setTimeout(()=>{f.doc.text=replacement;f.doc.version++;},40);
+    return true;
+  };
+  const pending=f.tools.request(apply(before,source));
+  const concurrent=await f.tools.request(apply(before,source));
+  assert.equal(concurrent.outcome,"refused");
+  const result=await pending;assert.equal(result.ok,true);assert.equal(result.result.after.source,source);
+  assert.equal(f.editor.calls,1);assert(result.result.after.version>before.version);
+});
+
+test("an acknowledgement without any native source change stays uncertain and is never retried", async () => {
+  const f=fixture(), before=await read(f);
+  f.editor.edit=async ()=>{f.editor.calls++;return true;};
+  const result=await f.tools.request(apply(before,before.source.replace("1000","500")));
+  assert.equal(result.outcome,"uncertain");assert.equal(f.editor.calls,1);assert.equal(f.doc.text,before.source);
+});
+
+test("a renamed buffer or changed line ending after delivery makes the edit uncertain", async () => {
+  for(const field of ["name","eol"]){
+    const f=fixture(), before=await read(f), edit=f.editor.edit.bind(f.editor);
+    f.editor.edit=async (...args)=>{
+      const result=await edit(...args);
+      if(field==="name")f.doc.uri.fsPath="C:\\owned\\Other.ino";else f.doc.eol=2;
+      return result;
+    };
+    const result=await f.tools.request(apply(before,before.source.replace("1000","500")));
+    assert.equal(result.outcome,"uncertain");assert.equal(f.editor.calls,1);
+  }
+});
 test("two edits and native undo preserve the preexisting unsaved note", async () => {
   const f = fixture(), original = f.doc.text;
   const first = await f.tools.request(apply(await read(f), original.replace("1000", "500")));

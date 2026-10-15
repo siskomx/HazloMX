@@ -14,7 +14,39 @@ use std::{
     thread,
     time::Duration,
 };
+use windows_sys::Win32::System::RemoteDesktop::{
+    WTSActive, WTSFreeMemory, WTSQuerySessionInformationW, WTSSessionInfoEx, WTSINFOEXW,
+    WTS_CURRENT_SESSION, WTS_SESSIONSTATE_UNLOCK,
+};
 use windows_sys::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
+
+fn desktop_unlocked() -> bool {
+    let mut buffer = std::ptr::null_mut();
+    let mut bytes = 0;
+    unsafe {
+        let queried = WTSQuerySessionInformationW(
+            std::ptr::null_mut(),
+            WTS_CURRENT_SESSION,
+            WTSSessionInfoEx,
+            &mut buffer,
+            &mut bytes,
+        ) != 0;
+        let ready = queried
+            && !buffer.is_null()
+            && bytes as usize >= std::mem::size_of::<WTSINFOEXW>()
+            && {
+                let info = &*buffer.cast::<WTSINFOEXW>();
+                let session = info.Data.WTSInfoExLevel1;
+                info.Level == 1
+                    && session.SessionState == WTSActive
+                    && session.SessionFlags == WTS_SESSIONSTATE_UNLOCK as i32
+            };
+        if !buffer.is_null() {
+            WTSFreeMemory(buffer.cast());
+        }
+        ready
+    }
+}
 
 fn memory_available() -> bool {
     let mut memory = MEMORYSTATUSEX {
@@ -48,6 +80,15 @@ fn main() {
     let marker: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join("owned-native-probe.json")).unwrap()).unwrap();
     assert_eq!(marker["owned"], true);
+    if !desktop_unlocked() {
+        fs::write(
+            root.join("owned-runner-status.json"),
+            b"{\"reason\":\"desktop_not_unlocked\",\"launched\":false}",
+        )
+        .unwrap();
+        println!("Owned editor test requires an active, unlocked Windows desktop; launch skipped");
+        return;
+    }
     assert!(
         memory_available(),
         "At least 1 GB of physical and commit memory is required"
@@ -130,6 +171,8 @@ fn main() {
                 .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok());
             let reason = if observed.join("stop-owned-agent").exists() {
                 Some("explicit_owned_stop")
+            } else if !desktop_unlocked() {
+                Some("desktop_not_unlocked")
             } else if !memory_available() {
                 Some("memory_floor")
             } else if result.as_ref().is_some_and(|r| r.get("error").is_some()) {
@@ -146,7 +189,6 @@ fn main() {
         "process_finished"
     });
     let args = vec![
-        "--disable-gpu".into(),
         "--electronUserData".into(),
         root.join("runtime/resources/app/data/app-data")
             .into_os_string(),

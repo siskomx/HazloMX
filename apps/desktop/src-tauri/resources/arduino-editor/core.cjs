@@ -46,8 +46,16 @@ function createEditorTools(api) {
       sent = true;
       const applied = await editor.edit(edit => edit.replace(range, input.source), {undoStopBefore:true, undoStopAfter:true});
       if (!applied) { confirmedRefusal = true; throw Error("native_refused"); }
-      const after = observe(editor);
-      if (after.document_token !== before.document_token || after.version <= before.version || after.source !== input.source) throw Error("readback");
+      let after = observe(editor);
+      // The IDE may acknowledge the edit before its document-change notification reaches this host.
+      for (let attempt = 0; attempt < 100 && after.document_token === before.document_token
+          && after.name === before.name && after.eol === before.eol
+          && after.version === before.version && after.source === before.source; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        after = observe(editor);
+      }
+      if (after.document_token !== before.document_token || after.name !== before.name || after.eol !== before.eol
+          || after.version <= before.version || after.source !== input.source) throw Error("readback");
       return {ok:true, result:{editor_version:1, job_id:input.job_id, status:"completed",
         before_sha256:before.state_sha256, after, native_edit_confirmed:true}};
     } catch {
