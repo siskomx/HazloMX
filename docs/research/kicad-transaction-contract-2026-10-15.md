@@ -1,0 +1,13 @@
+# KiCad document-bound transaction contract — October 15, 2026
+
+The official kicad-python 0.8.0 wheel was fetched from its [published PyPI release](https://pypi.org/project/kicad-python/0.8.0/) and verified against its published SHA-256. It was installed only into an ignored, isolated test directory using the restored KiCad CPython 3.11 runtime. No application dependency, user profile or model configuration was changed.
+
+The actual generated BeginCommit class has no fields. EndCommit has only id, action and message. The official Board methods therefore omit the same document binding that was missing in the pinned Konnect client. Substituting this package without checking its wire format would leave that gap open.
+
+The [native KiCad 10.0.7 contract](https://github.com/KiCad/kicad-source-mirror/blob/10.0.7/api/proto/common/commands/editor_commands.proto) adds ItemHeader at BeginCommit field 1 and EndCommit field 4. The new tests/kicad/ipc_transaction_contract.py proves that the older generated classes retain those length-delimited fields through protobuf parse/serialization, allowing compatibility without copying an editor or replacing all generated messages. An independent descriptor of the native field contract checks the target document, including a header long enough to require multibyte length encoding. Missing target documents are refused.
+
+A real local in-process NNG request/reply exchange then exercises the official client with those messages. The mock native server verifies exact document headers, message type names, preserved commit ID/action and the learned instance token on the second request. Request resending is explicitly disabled using the actual pynng socket option. A missing reply raises a connection error without issuing an automatic follow-up transaction. These are protocol tests, not real KiCad commits or proof of exactly-once delivery under peer disconnects; uncertain-write readback remains required.
+
+The probe passes. Its Windows CPython 3.11 dependencies are version/hash pinned in tests/kicad/ipc-client-requirements.txt. Native editor reads, edits, undo, complete state fingerprints, approval integration and installed acceptance are not established by this probe. The owned editor remains at its Updates & Privacy handoff; no privacy controls were changed by automation. The next implementation step is to use this document-bound transaction path in the native PCB adapter, retain no saved-file fallback, then prove it in the actual owned editor.
+
+Raw package metadata, dependency installation reports, logs and private paths stay in ignored build output. The full application goal remains active.
