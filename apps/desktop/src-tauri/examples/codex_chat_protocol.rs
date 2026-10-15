@@ -57,10 +57,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let project = Project::create(&base.join("project"))?;
     let project_id = project.id;
     workflow.select_project(project)?;
+    let project_scope = workflow.view()?.project.ok_or("Missing selected project")?;
     let host = Arc::new(HostTools::new(workflow.clone()));
     let helper = workspace.join("target/release/hazlomexa-tools.exe");
     let mut bridge = match program {
-        Some(program) => ToolBridge::start_program(host.clone(), &helper, project_id, program)?,
+        Some(program) => ToolBridge::start_program(host.clone(), &helper, project_scope.clone(), program)?,
         None => ToolBridge::start(host.clone(), &helper)?,
     };
     let mut config = bridge.config()?;
@@ -253,7 +254,7 @@ stream_max_retries = 0
         }
         bridge = if mode == "switch" {
             program = Some(hazlomexa::host_tools::Program::Arduino);
-            ToolBridge::start_program(host, &helper, project_id, program.unwrap())?
+            ToolBridge::start_program(host, &helper, project_scope, program.unwrap())?
         } else { ToolBridge::start(host, &helper)? };
         let fresh = bridge.config()?;
         if fresh.env == config.env {

@@ -76,6 +76,7 @@ mod probe {
             host.clone(),
             root.join("conversation"),
             port,
+            hazlomexa::host_tools::Program::Agent,
             json!({"program":"Arduino Agent","sketch_source":{"name":"Blink.ino"},"document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
         )?;
         let (question,tools)=chat.say("Quiero cambiar el ritmo de parpadeo del sketch seleccionado usando Arduino Agent. Inspecciona su código, explícame el ritmo actual y pregúntame cuál quiero. No prepares una propuesta todavía; no quiero compilar ni cargar nada.").await?;

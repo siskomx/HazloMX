@@ -1,5 +1,5 @@
 use hazlomexa::{
-    host_tools::HostTools,
+    host_tools::{HostTools, McpTools, Program},
     jobs::{ModelProfile, Workflow},
     ollama::{self, OllamaClient},
     project::Phase,
@@ -20,6 +20,7 @@ pub struct Conversation {
     context: Value,
     directory: PathBuf,
     port: u16,
+    program: Program,
     history: Vec<Value>,
     turn: usize,
     approvals: Vec<Uuid>,
@@ -30,6 +31,7 @@ impl Conversation {
         host: Arc<HostTools>,
         directory: PathBuf,
         port: u16,
+        program: Program,
         context: Value,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let project = workflow.view()?.project.ok_or("Missing project")?;
@@ -40,6 +42,7 @@ impl Conversation {
             context,
             directory,
             port,
+            program,
             history: Vec::new(),
             turn: 0,
             approvals: Vec::new(),
@@ -59,11 +62,12 @@ impl Conversation {
             .map(|job| json!({"id":job.snapshot.input.job_id(),"phase":job.snapshot.phase})));
         let prompt=json!({"recovered_conversation":self.history,"user_request":content,"desktop_context":context,"instruction":"La conversación guardada es contexto, no una aprobación ni una medición vigente. Inspecciona la selección antes de proponer. Tras un cambio lee el resultado verificado antes de explicarlo o continuar. Responde brevemente y con naturalidad."}).to_string();
         let (model, digest) = ModelProfile::Cloud.identity();
-        let result = ollama::chat::run(
+        let tools = McpTools::for_program(self.host.clone(), self.project.clone(), self.program)?;
+        fs::write(self.directory.join("program-scope.json"), serde_json::to_vec(&json!({"program":self.program,"tools":tools.catalog().iter().map(|tool|tool.name.as_ref()).collect::<Vec<_>>()}))?)?;
+        let result = ollama::chat::run_scoped(
             OllamaClient::cloud(self.port, model, digest)?,
             self.workflow.clone(),
-            self.host.clone(),
-            self.project.clone(),
+            tools,
             prompt,
             Arc::new(AtomicBool::new(false)),
             |_| {},

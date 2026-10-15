@@ -267,7 +267,8 @@ pub(crate) async fn start_codex_chat(
     if view.inference.is_some_and(|i| i.busy) {
         return Err("Detén la solicitud a Ollama antes de cambiar de asistente.".into());
     }
-    let project = view.project.ok_or("Selecciona un proyecto.")?.0;
+    let selected_project = view.project.ok_or("Selecciona un proyecto.")?;
+    let project = selected_project.0;
     let runtime = state
         .codex
         .lock()
@@ -330,7 +331,7 @@ pub(crate) async fn start_codex_chat(
             {
                 return Err("Codex cambió. Selecciónalo de nuevo.".into());
             }
-            let bridge = ToolBridge::start_program(tools, &helper, project, program)?;
+            let bridge = ToolBridge::start_program(tools, &helper, selected_project, program)?;
             let configuration = home.join("config.toml");
             let response = async {
                 std::fs::write(&configuration, codex::configuration(&bridge.config()?)?)

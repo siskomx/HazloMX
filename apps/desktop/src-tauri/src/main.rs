@@ -256,7 +256,8 @@ async fn start_claude_chat(
     if view.inference.is_some_and(|i| i.busy) {
         return Err("Detén la solicitud a Ollama antes de cambiar de asistente.".into());
     }
-    let project = view.project.ok_or("Selecciona un proyecto.")?.0;
+    let selected_project = view.project.ok_or("Selecciona un proyecto.")?;
+    let project = selected_project.0;
     let runtime = state
         .claude
         .lock()
@@ -318,7 +319,7 @@ async fn start_claude_chat(
         let result=async {
             let executable=runtime.executable.clone();let expected=runtime.sha256.clone();
             if tauri::async_runtime::spawn_blocking(move||claude::fingerprint(&executable)).await.map_err(|e|e.to_string())??!=expected{return Err("Claude cambió. Selecciónalo de nuevo.".into());}
-            let bridge=ToolBridge::start_program(tools,&helper,project,program)?;let config=bridge.config()?;let configuration=directory.join("mcp.json");
+            let bridge=ToolBridge::start_program(tools,&helper,selected_project,program)?;let config=bridge.config()?;let configuration=directory.join("mcp.json");
             std::fs::write(&configuration,serde_json::to_vec(&serde_json::json!({"mcpServers":{"hazlomexa":{"type":"stdio","command":config.command,"env":config.env}}})).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?;
             let response=claude::run(claude::TurnRequest{executable:runtime.executable,sha256:runtime.sha256,directory,configuration:configuration.clone(),session,resume,prompt,environment:claude::environment(),cancelled:cancelled.clone()},|update|{
                 if let Ok(mut current)=chat.lock(){if let Some(turn)=current.as_mut().filter(|t|t.view.id==id){if !turn.view.cancelled{turn.view.text=update.text;turn.view.sequence+=1;let _=events.send(turn.view.clone());}}}

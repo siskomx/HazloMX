@@ -127,6 +127,14 @@ try:
             payload=json.loads(path.read_text(encoding='utf-8')).get('request')
             assert not any(home in text.lower() or home.replace('\\','/') in text.lower() for text in strings(payload)),'Builder home path entered a provider request'
         assert summary['completed_native_jobs']==2 and summary['conversation_turns']==5
+        scope=json.loads((case/'run/conversation/program-scope.json').read_text())
+        expected_program={'schematic':'kicad','pcb':'kicad','freecad':'freecad','drawing':'drawing','arduino':'arduino','agent':'agent','slice':'slice'}[args.program]
+        assert scope['program']==expected_program
+        chats=[record for record in records if record['path']=='/api/chat']
+        assert chats and all([tool['function']['name'] for tool in record['request']['tools']]==scope['tools'] for record in chats),'Provider received tools outside the selected program scope'
+        assert 'approve_operation' not in scope['tools']
+        summary['program_scope_enforced']=True
+        summary['advertised_tool_count']=len(scope['tools'])
         summary['approval_nonces_excluded']=True
         summary['builder_home_paths_excluded']=True
     else:

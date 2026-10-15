@@ -158,6 +158,7 @@ mod probe {
             host.clone(),
             root.join("conversation"),
             port,
+            hazlomexa::host_tools::Program::Slice,
             json!({"program":"OrcaSlicer","slice_source":{"selection":selected.id,"selection_sha256":selected.preview.selection_sha256,"units_require_confirmation":true},"document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
         )?;
         let (question,tools)=chat.say("Quiero preparar archivos para una pieza de prueba con el modelo y los perfiles que seleccioné. Todavía no confirmé las unidades del STL ni el tipo o la temperatura de cama. Inspecciona las fuentes, explícame qué perfiles están seleccionados y pregúntame lo que falta. No prepares una propuesta todavía.").await?;

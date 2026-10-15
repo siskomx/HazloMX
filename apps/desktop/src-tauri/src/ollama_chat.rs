@@ -289,7 +289,7 @@ mod tests {
         use crate::host_tools::Program;
         for program in [Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice] {
             let (root, workflow, host, project) = setup();
-            let tools = McpTools::for_program(host, project.0, program).unwrap();
+            let tools = McpTools::for_program(host, project.clone(), program).unwrap();
             let wrong = if program == Program::Freecad {
                 call("propose_arduino_compile", json!({"project_id":project.0,"fqbn":"arduino:avr:uno","source":"void setup() {}\nvoid loop() {}"}))
             } else { proposal(project.0) };

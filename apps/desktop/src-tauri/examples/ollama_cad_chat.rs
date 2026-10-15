@@ -84,6 +84,7 @@ mod probe {
             host.clone(),
             root.join("conversation"),
             port,
+            hazlomexa::host_tools::Program::Freecad,
             json!({"program":"FreeCAD / CADPilot","cad_document_source":{"selection":selected.id,"source_sha256":selected.inspection.source_sha256},"document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
         )?;
         let (question,tools)=chat.say("Quiero que el bloque del documento seleccionado sea más alto, pero todavía no elegí cuánto. Inspecciónalo, explícame sus medidas actuales y pregúntame la altura final y las unidades. No prepares una propuesta hasta que responda.").await?;

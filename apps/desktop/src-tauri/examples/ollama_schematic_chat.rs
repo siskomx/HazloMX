@@ -68,6 +68,7 @@ mod probe {
             host.clone(),
             root.join("conversation"),
             port,
+            hazlomexa::host_tools::Program::Kicad,
             json!({"program":"KiCad / Konnect","schematic_source":{"selection":selected.id,"sha256":selected.sha256},"document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
         )?;
         let (question,tools)=chat.say("Quiero cambiar una resistencia de este esquema, pero todavía no elegí cuál ni su valor. Inspecciona el esquema seleccionado, explícame las resistencias que tiene y pregúntame cuál cambiar. No prepares una propuesta hasta que responda.").await?;

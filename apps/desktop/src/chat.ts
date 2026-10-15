@@ -124,7 +124,7 @@ function reviewCompletedResult() {
   if (["awaiting_approval", "running"].includes(job.snapshot.phase)) return;
   resultReview = undefined;
   if (job.snapshot.phase !== "completed" || job.error) return;
-  void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId} y explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`));
+  void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId} y explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`, false));
 }
 function summary(run: Snapshot): string {
   const input = run.input;
@@ -322,7 +322,7 @@ function context() {
   const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : program === "slice" ? {slice_source:sourceContext.slice_source} : program === "freecad" ? {cad_document_source:sourceContext.cad_document_source} : {};
   return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: !native && job ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: native ? "live_pcb_read_only" : "saved_files_and_verified_copies", live_document_connection: native, live_mutations_allowed: false };
 }
-async function send(content: string) {
+async function send(content: string, userInitiated = true) {
   inspectionNotice = "";
   const token = ++revision;
   const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
@@ -335,7 +335,8 @@ async function send(content: string) {
     apply({ ...state, chat });
     if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
   };
-  turns.push({ role: "user", content }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; render();
+  if (userInitiated) { turns.push({ role: "user", content }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
+  render();
   const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
 }

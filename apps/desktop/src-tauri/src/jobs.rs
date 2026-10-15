@@ -1756,7 +1756,7 @@ impl Workflow {
             .and_then(|artifact| artifact.read_text())
             .map_err(|e| e.to_string())?;
         if kicad_project::digest(report.as_bytes()) != result_sha256 {
-            return Err("El dibujo cambió. Lee de nuevo el resultado verificado.".into());
+            return Err("La huella del informe no coincide. Lee read_verified_result y usa su sha256 principal, no el output_sha256 del dibujo.".into());
         }
         if input.output_format == cadcraft::Format::Png {
             return Err(

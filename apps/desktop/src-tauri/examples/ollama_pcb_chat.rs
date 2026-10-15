@@ -88,6 +88,7 @@ mod probe {
             host.clone(),
             root.join("conversation"),
             port,
+            hazlomexa::host_tools::Program::Kicad,
             json!({"program":"KiCad / Konnect","pcb_source":{"selection":selected.id,"sha256":selected.sha256},"document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
         )?;
         let (question,tools)=chat.say("Quiero mover un conector de esta placa, pero no sé cómo se llama ni dónde está. Inspecciona la PCB seleccionada, explícame sus conectores y pregúntame cuál y a dónde moverlo. No prepares una propuesta todavía.").await?;

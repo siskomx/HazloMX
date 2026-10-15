@@ -32,7 +32,7 @@ impl ToolBridge {
     ) -> Result<Self, String> {
         Self::start_handler(McpTools::for_project(host, project)?, helper)
     }
-    pub fn start_program(host: Arc<HostTools>, helper: &Path, project: Uuid, program: Program) -> Result<Self, String> {
+    pub fn start_program(host: Arc<HostTools>, helper: &Path, project: (Uuid, std::path::PathBuf), program: Program) -> Result<Self, String> {
         Self::start_handler(McpTools::for_program(host, project, program)?, helper)
     }
     fn start_handler(handler: McpTools, helper: &Path) -> Result<Self, String> {
@@ -167,6 +167,33 @@ mod tests {
     use crate::jobs::Workflow;
     use rmcp::{model::CallToolRequestParams, ServiceExt};
     #[tokio::test]
+    async fn program_scope_refuses_a_copied_folder_before_connection_and_after_selection() {
+        let root = std::env::temp_dir().join(format!("hazlomexa-program-folder-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(root.join("original")).unwrap();
+        std::fs::create_dir(root.join("copy")).unwrap();
+        let project = crate::project::Project::create(&root.join("original")).unwrap();
+        drop(crate::project::Project::create(&root.join("copy")).unwrap());
+        std::fs::copy(root.join("original/hazlomx.json"), root.join("copy/hazlomx.json")).unwrap();
+        let workflow = Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("profiles")).unwrap());
+        workflow.select_project(project).unwrap();
+        let selected = workflow.view().unwrap().project.unwrap();
+        let host = Arc::new(HostTools::new(workflow.clone()));
+        let prior = McpTools::for_program(host.clone(), selected.clone(), Program::Drawing).unwrap();
+        workflow.select_project(crate::project::Project::open(&root.join("copy")).unwrap()).unwrap();
+        let current = workflow.view().unwrap().project.unwrap();
+        assert_eq!(selected.0, current.0);
+        assert_ne!(selected.1, current.1);
+        assert!(McpTools::for_program(host.clone(), selected, Program::Drawing).is_err());
+        assert!(prior.call_in_project("get_workflow_status".into(), serde_json::json!({}), Arc::new(std::sync::atomic::AtomicBool::new(false))).await.is_err());
+        let valid = McpTools::for_program(host.clone(), current, Program::Drawing).unwrap();
+        assert!(valid.call_in_project("get_workflow_status".into(), serde_json::json!({}), Arc::new(std::sync::atomic::AtomicBool::new(false))).await.is_ok());
+        assert!(workflow.view().unwrap().job.is_none());
+        assert!(workflow.view().unwrap().history.is_empty());
+        drop(valid); drop(prior); drop(host); drop(workflow);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    #[tokio::test]
     async fn program_scopes_advertise_and_enforce_the_selected_engineering_tools() {
         let programs = [Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice];
         for tool in crate::host_tools::catalog() {
@@ -182,7 +209,7 @@ mod tests {
             let workflow = Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("profiles")).unwrap());
             workflow.select_project(project).unwrap();
             let host = Arc::new(HostTools::new(workflow.clone()));
-            let bridge = ToolBridge::start_program(host, &std::env::current_exe().unwrap(), id, program).unwrap();
+            let bridge = ToolBridge::start_program(host, &std::env::current_exe().unwrap(), workflow.view().unwrap().project.unwrap(), program).unwrap();
             let config = bridge.config().unwrap();
             let client = ().serve(connect(&config.env["HAZLOMEXA_PIPE"], &config.env["HAZLOMEXA_TOKEN"]).await.unwrap()).await.unwrap();
             let actual = client.list_all_tools().await.unwrap();

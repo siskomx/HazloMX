@@ -36,3 +36,17 @@ Source commit `3ebd8e3` builds unsigned 0.1.0 candidate **`472af63e…`**, inclu
 | Bundled helper | `02ba28ca09829087b21b2021639e61f2c926191c66b2be1d73f788f150561d26` |
 
 The new preparer's fresh check observes 2,354 MiB available against the unchanged 3,072 MiB requirement and refuses before creating a configuration or guest. The earlier `4768e717…` prepared inputs remain preserved and are marked superseded by this newer source candidate, preventing them from being mistaken for current-source acceptance. This build has no corrected native or installed acceptance; explicit UI resume is still pending.
+
+## Folder binding and current conversation follow-ups
+
+The user has explicitly resumed native UI automation in owned Hazlo windows and the disposable guest. Earlier stop and pending-resume statements above describe those earlier attempts.
+
+The program connection now validates the original project UUID **and folder** captured by the desktop request before starting its asynchronous provider connection. A new regression copies a project manifest into another folder, verifies refusal both at connection creation and on a previously created connection, and checks that neither path creates a job or history entry. All three desktop provider routes and protocol fixtures retain this original folder identity. The actual Codex 0.159.2 local protocol switch case passes again after this correction; cloud authentication/inference remains unverified.
+
+All seven real-model integration fixtures now use the same restricted program route as production. The test harness checks the exact advertised catalog on every recorded model request, rather than only checking the final job. Real existing-cloud-profile Arduino and CADCraft conversations pass after the folder correction: five turns, two native jobs each, clarification, result-derived follow-up, preservation and recovery. Arduino compiles the confirmed Uno sketch with 1,000 ms then 500 ms delay (924 flash bytes each). CADCraft moves the selected circle by one inch (25.4 mm), then another 5 mm, preserving unrelated geometry and the earlier output.
+
+The drawing rerun exposed ambiguity between the verified report hash and the drawing file hash. Validation remains strict; verified-result output now supplies an explicit editable-drawing follow-up pair, and the tool description and refusal explain which hash to use. The final real-model drawing run passes with eight advertised tools; Arduino passes with four. Earlier failed attempts are retained privately. These gates use backend fixture approvals, not native UI approval, and do not establish installed acceptance.
+
+Automatic result review now stays internal to the provider request instead of appearing as a fabricated user message with tool names and job identifiers. It also preserves an unsent draft. The production browser fixture passes all 36 handoffs across four provider choices, including assertions for both behaviors, existing approval isolation, delayed/duplicate completion and cancellation. Frontend typecheck/build and Rust Clippy pass; the regular Rust suite passes 144 tests with 52 ignored. No new dependency, model download, approval bypass or native editor is introduced.
+
+The 472af63e installer above predates these corrections. A fresh candidate and native Windows/installed acceptance are required. Broader live/unsaved editing, actual Agent conversation and authenticated Claude/Codex inference remain unfinished.

@@ -428,7 +428,10 @@ try {
       if(program==="slice") assert.match(await page.locator("#change-facts").innerText(),/Cama seleccionada: High Temp Plate/);
       assert.match(await page.locator("#approve").innerText(),/pedir revisión/);
       const before = (await chatCalls()).length;
+      await page.locator("#prompt").fill("Mi siguiente pregunta todavía es un borrador.");
       await page.locator("#approve").click(); await page.locator("#send:enabled").waitFor();
+      assert.equal(await page.locator("#prompt").inputValue(),"Mi siguiente pregunta todavía es un borrador.");
+      assert(!await page.locator("#conversation").innerText().then(text=>text.includes("read_verified_result") || text.includes(jobId)),"Internal result review appeared as a user message");
       const calls = await chatCalls(); assert.equal(calls.length,before+1,"Approval must request exactly one result review");
       const prompt = JSON.parse(calls.at(-1).args.prompt);
       assert.equal(calls.at(-1).args.program,program,"Automatic result review changed its tool scope");

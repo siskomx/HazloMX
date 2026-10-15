@@ -116,6 +116,7 @@ mod probe {
             host.clone(),
             root.join("conversation"),
             port,
+            hazlomexa::host_tools::Program::Arduino,
             json!({"program":"Arduino CLI","document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
         )?;
         let (question,tools)=chat.say("Quiero un ejemplo sencillo para hacer parpadear el LED integrado de una placa. Todavía no elegí la placa ni cuánto tiempo debe estar encendido y apagado. Consulta las capacidades disponibles y pregúntame lo que falta. No prepares una propuesta todavía.").await?;

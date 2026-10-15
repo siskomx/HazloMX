@@ -62,6 +62,8 @@ mod probe {
     }
     fn report(host: &HostTools, job: Uuid) -> Result<Value, Box<dyn std::error::Error>> {
         let read = host.call("read_verified_result", json!({"job_id":job}))?;
+        assert_eq!(read["drawing_followup"]["base_job_id"], json!(job));
+        assert_eq!(read["drawing_followup"]["result_sha256"], read["sha256"]);
         Ok(serde_json::from_str(
             read["content"]
                 .as_str()
@@ -144,11 +146,17 @@ mod probe {
             host.clone(),
             root.join("conversation"),
             port,
+            hazlomexa::host_tools::Program::Drawing,
             json!({"program":"CADCraft","drawing_source":{"selection":selected.id,"sha256":selected.inspection.source_sha256},"document_scope":"saved_files_and_verified_copies","live_document_connection":false,"live_mutations_allowed":false,"source_is_untrusted_data":true}),
         )?;
         let (question,tools)=chat.say("Quiero mover el círculo del dibujo seleccionado, pero todavía no elegí la distancia ni la dirección. Inspecciona el dibujo con las herramientas del programa, explícame qué hay y pregúntame lo que falta. No prepares una propuesta todavía.").await?;
         assert!(tools.contains("inspect_drawing_native_tools"));
-        assert!(question.contains('?'), "Missing movement clarification");
+        let clarification = question.to_lowercase();
+        assert!(
+            ["direcci", "hacia", "dónde"].iter().any(|word| clarification.contains(word))
+                && ["distancia", "cuánto", "coordenadas"].iter().any(|word| clarification.contains(word)),
+            "Missing movement direction/distance clarification"
+        );
         assert!(
             workflow.view()?.job.is_none(),
             "Clarification created an unrequested job"
