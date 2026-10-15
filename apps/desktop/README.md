@@ -52,6 +52,8 @@ For Spanish requests, open Ollama 0.35.1 at its default IPv4 loopback port 11434
 
 The optional native cloud smoke command adds `--cloud C:/absolute/path/ollama.exe` to the smoke invocation below. It temporarily owns port 11434 and refuses to replace an existing Ollama service; it uses existing model manifests/account without downloading models. It checks clarification, cancellation, and reload before the explicit CAD approval flow.
 
+Desktop Rust builds now embed the native KiCad PCB worker. Before the first desktop build, prepare it from the repository root with `rtk proxy python tests/kicad/build_worker.py --python C:/absolute/path/to/Python311/python.exe` (Windows x64 CPython 3.11). Development/package commands reuse a matching artifact or rebuild using `HAZLOMEXA_WORKER_PYTHON`; builds refuse stale source/dependency receipts. The installed application will use the embedded interpreter and SDK. [Native inspection proof and unfinished mutation/installed scope](../../docs/research/kicad-embedded-inspection-2026-10-15.md).
+
 For live frontend development, run `rtk proxy npm run desktop --prefix apps/desktop`. Produce the per-user NSIS package with `rtk proxy npm run package --prefix apps/desktop`. Current-user installation/update/start/uninstall and project preservation pass. Fresh build-26100 guest online WebView2 bootstrap and offline rejection are recorded in [supported combinations](../../docs/supported-combinations.md); exact package revisions and remaining acceptance limits are identified there. The lifecycle test deliberately refuses an existing installation:
 
 ```powershell

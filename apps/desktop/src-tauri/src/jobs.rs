@@ -580,42 +580,16 @@ impl Workflow {
             board,
             kicad_project::FILE_LIMIT,
         )?);
-        let executable = self
-            .konnect_runtime()?
-            .ok_or("Selecciona Konnect antes de conectar el editor.")?;
-        let cli = self
-            .kicad_runtime()?
-            .ok_or("Selecciona KiCad antes de conectar el editor.")?;
         let project = self.view()?.project.ok_or("Selecciona un proyecto.")?;
-        let _runtime = konnect_run::runtime(&executable)?;
-        let _kicad = crate::kicad_run::runtime(&cli, &cancel)?;
-        let profile = self
-            .profiles
-            .join(format!("live-pcb-read-{}", Uuid::new_v4()));
-        fs::create_dir(&profile).map_err(|e| e.to_string())?;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(|e| e.to_string())?;
-        let value = runtime.block_on(konnect_run::dispatch(
-            &executable,
-            &cli,
-            parent,
-            &profile,
-            konnect_run::Operation::ReadLive { board, connection },
-            cancel.clone(),
-        ))?;
-        if cancel.load(Ordering::SeqCst)
-            || self.view()?.project != Some(project)
-            || self.konnect_runtime()?.as_ref() != Some(&executable)
-            || self.kicad_runtime()?.as_ref() != Some(&cli)
-        {
-            return Err(
-                "El proyecto o la conexión cambiaron durante la lectura; vuelve a conectar.".into(),
-            );
+        let profile = self.profiles.join(format!("live-pcb-read-{}", Uuid::new_v4()));
+        fs::create_dir(&profile).map_err(|_| "No se pudo preparar la lectura nativa.")?;
+        let observation = crate::kicad_live::inspect(board, connection, &profile, cancel.clone())?;
+        if cancel.load(Ordering::SeqCst) || self.view()?.project != Some(project) {
+            return Err("El proyecto o la conexión cambiaron durante la lectura; vuelve a conectar.".into());
         }
-        serde_json::from_value(value).map_err(|_| "La lectura del editor no es compatible.".into())
+        Ok(observation)
     }
+
     pub fn set_konnect(&self, executable: PathBuf) -> Result<(), String> {
         konnect_run::verify_runtime(&executable)?;
         let state = self.state.lock().map_err(|e| e.to_string())?;

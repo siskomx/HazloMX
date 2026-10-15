@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,14 +11,32 @@ import uuid
 
 
 ROOT = Path(__file__).resolve().parents[2]
+INPUTS = ["apps/desktop/src-tauri/resources/kicad/live.py",
+          "tests/kicad/build_worker.py", "tests/kicad/ipc-client-requirements.txt",
+          "tests/kicad/worker-build-requirements.txt"]
 
 
 def build(python):
+    destination = ROOT / "target/native-pcb-worker"
+    inputs = {name:hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in INPUTS}
+    receipt_path = destination / "build-receipt.json"
+    executable = destination / "hazlomexa-kicad.exe"
+    if receipt_path.is_file() and executable.is_file():
+        receipt = json.loads(receipt_path.read_text())
+        if (receipt.get("inputs") == inputs
+                and receipt.get("sha256") == hashlib.sha256(executable.read_bytes()).hexdigest()
+                and receipt.get("self_check") is True):
+            print("Native PCB worker matches current source and locked dependencies.")
+            return
+    python = python or os.environ.get("HAZLOMEXA_WORKER_PYTHON")
+    if not python and sys.version_info[:2] == (3, 11):
+        python = sys.executable
+    if not python:
+        raise SystemExit("Build the native worker with --python <Windows x64 Python 3.11>, or set HAZLOMEXA_WORKER_PYTHON.")
     python = Path(python).resolve(strict=True)
     subprocess.run([str(python), "-I", "-S", "-c",
         "import sys; assert sys.platform == 'win32' and sys.version_info[:2] == (3, 11)"],
         check=True, timeout=10, capture_output=True)
-    destination = ROOT / "target/native-pcb-worker"
     destination.mkdir(parents=True, exist_ok=True)
     work = destination / str(uuid.uuid4())
     work.mkdir()
@@ -45,12 +64,12 @@ def build(python):
     shutil.copyfile(executable, destination / executable.name)
     receipt = {"sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
         "source_sha256": hashlib.sha256((ROOT / "apps/desktop/src-tauri/resources/kicad/live.py").read_bytes()).hexdigest(),
-        "self_check": True}
+        "inputs": inputs, "self_check": True}
     (destination / "build-receipt.json").write_text(json.dumps(receipt, indent=2))
     print("Native PCB worker built; frozen imports and pinned client metadata pass.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--python", required=True, help="Windows x64 CPython 3.11 executable")
+    parser.add_argument("--python", help="Windows x64 CPython 3.11 executable")
     build(parser.parse_args().python)

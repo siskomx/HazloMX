@@ -1,5 +1,5 @@
 export type DiscoveredSlice = {id:string;project_id:string;preview:{source_name:string;source_sha256:string;selection_sha256:string;triangles:number;bounds_file_coordinates:[[number,number,number],[number,number,number]];declared_bed:string|null;bed_profiles:{bed:"cool"|"textured"|"smooth";settings:SliceInput["settings"]}[]}};
-export type DiscoveredLivePcb = {id:string;project_id:string;name:string;observation:{document_sha256:string;components_sha256:string;components:{reference:string;value:string;footprint:string;x:number;y:number;rotation:number;layer:string}[]}};
+export type DiscoveredLivePcb = {id:string;project_id:string;name:string;observation:{job_id:string;native_pcb_version:1;instance_sha256:string;document_sha256:string;state_sha256:string;source_is_untrusted_data:true;components:{uuid:string;reference:string;value:string;x_mm:number;y_mm:number;locked:boolean}[]}};
 export type DiscoveredPcb = {id:string;project_id:string;name:string;sha256:string;components:{reference:string;uuid:string;library:string;value:string;layer:string;x_mm:number;y_mm:number;rotation_deg:number}[]};
 export type Dimensions = { length: number; width: number; height: number };
 export type DiscoveredSchematic = {id:string;project_id:string;name:string;sha256:string;components:{reference:string;value:string;library:string}[]};

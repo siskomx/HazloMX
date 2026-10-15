@@ -11,6 +11,7 @@ import uuid
 parser = argparse.ArgumentParser()
 parser.add_argument("--site", required=True)
 parser.add_argument("--verifier", required=True)
+parser.add_argument("--host-runner", help="Desktop-feature Rust test executable for production read routing")
 parser.add_argument("--worker", help="Frozen helper for real NNG subprocess coverage")
 args = parser.parse_args()
 sys.path.insert(0, args.site)
@@ -258,7 +259,7 @@ class Tests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2] / "target/native-pcb-worker" / str(uuid.uuid4())
         root.mkdir()
         endpoint = "ipc://" + str(root / "api.sock")
-        self.board.document.project.path = "C:/owned"
+        self.board.document.project.path = str(root) if args.host_runner else "C:/owned"
         failures = queue.Queue()
         stop = threading.Event()
         count = []
@@ -309,7 +310,19 @@ class Tests(unittest.TestCase):
                 return reply["result"]
             try:
                 base = {"job_id":str(uuid.uuid4()), "board_path":"C:/owned/OwnedBoard.kicad_pcb"}
-                initial = call({**base, "action":"inspect"})
+                if args.host_runner:
+                    base["board_path"] = str(root / "OwnedBoard.kicad_pcb")
+                    Path(base["board_path"]).write_bytes(b"Saved fixture bytes cannot stand in for native state")
+                    host_env = {**os.environ, "HAZLOMEXA_TEST_NATIVE_PCB_ROOT":str(root)}
+                    host = subprocess.run([str(Path(args.host_runner).resolve()), "--ignored", "--exact",
+                        "host_tools::tests::actual_embedded_worker_reads_controlled_native_server", "--nocapture"],
+                        capture_output=True, env=host_env, cwd=root, timeout=60,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                    (root / "host-runner.log").write_bytes(host.stdout + host.stderr)
+                    self.assertEqual(host.returncode, 0, (host.stdout + host.stderr).decode(errors="replace")[-1500:])
+                    initial = json.loads((root / "native-host-result.json").read_text())["result"]
+                else:
+                    initial = call({**base, "action":"inspect"})
                 result = call({**base, "action":"move", "movement":self.request["movement"],
                     **{key:initial[key] for key in ("instance_sha256", "document_sha256", "state_sha256")}})
                 self.assertEqual(result["status"], "completed")
@@ -325,6 +338,41 @@ class Tests(unittest.TestCase):
             self.assertFalse(thread.is_alive())
             if not failures.empty():
                 raise failures.get()
+
+    def test_public_run_refuses_wrong_native_version_instance_or_document(self):
+        board = self.board
+        board.document.project.path = "C:/owned"
+        original_client = worker.BoundClient
+        original_endpoint = os.environ.get("KICAD_API_SOCKET")
+        os.environ["KICAD_API_SOCKET"] = "ipc://C:/owned/api.sock"
+        try:
+            for fault in ("wrong_version", "missing_instance", "different_project", "duplicate_document"):
+                class FaultClient:
+                    def __init__(self, *args):
+                        self._kicad_token = "" if fault == "missing_instance" else "owned-fixture-token"
+                        self.connected = False
+
+                    def send(self, command, response_type):
+                        reply = native_reply(board, command, response_type)
+                        if command.DESCRIPTOR.name == "GetVersion" and fault == "wrong_version":
+                            reply.version.patch = 6
+                        if command.DESCRIPTOR.name == "GetOpenDocuments":
+                            if fault == "different_project":
+                                reply.documents[0].project.path = "C:/other"
+                            if fault == "duplicate_document":
+                                reply.documents.append(reply.documents[0])
+                        return reply
+                worker.BoundClient = FaultClient
+                with self.subTest(fault=fault), self.assertRaises(worker.Refused):
+                    worker.run({"action":"inspect","job_id":str(uuid.uuid4()),
+                                "board_path":"C:/owned/OwnedBoard.kicad_pcb"})
+            self.assertEqual(board.calls, [])
+        finally:
+            worker.BoundClient = original_client
+            if original_endpoint is None:
+                os.environ.pop("KICAD_API_SOCKET", None)
+            else:
+                os.environ["KICAD_API_SOCKET"] = original_endpoint
 
     def test_public_inspection_and_move_use_real_sdk_board_and_version_wrappers(self):
         board = self.board

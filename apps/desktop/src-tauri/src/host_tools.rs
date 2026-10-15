@@ -2393,12 +2393,7 @@ mod tests {
             id: Uuid::new_v4(),
             project_id,
             name: "test.kicad_pcb".into(),
-            observation: crate::kicad_live::Observation::from_native(
-                &json!({"source":"ipc"}),
-                json!({"count":0,"components":[]}),
-                &"a".repeat(64),
-            )
-            .unwrap(),
+            observation: crate::kicad_live::tests::fixture(),
             entry: entry.clone(),
             project_root: project_root.clone(),
             connection: crate::kicad_live::Connection {
@@ -2454,12 +2449,8 @@ mod tests {
         );
     }
     #[test]
-    #[ignore = "Actual identified Konnect must refuse saved-file fallback for a read-only editor connection"]
+    #[ignore = "Requires desktop feature and embedded worker; unreachable native editor must not fall back to saved file"]
     fn actual_live_pcb_read_refuses_unreachable_editor_without_fallback() {
-        let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .ancestors()
-            .nth(3)
-            .unwrap();
         let root =
             std::env::temp_dir().join(format!("hazlomexa-live-pcb-refusal-{}", Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
@@ -2468,12 +2459,6 @@ mod tests {
         let workflow =
             Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("profiles")).unwrap());
         workflow.select_project(project).unwrap();
-        workflow
-            .set_konnect(workspace.join("target/konnect-probe/runtime/konnect.exe"))
-            .unwrap();
-        workflow
-            .set_kicad(workspace.join("target/kicad-probe/runtime/bin/kicad-cli.exe"))
-            .unwrap();
         let entry = root.join("board.kicad_pcb");
         let before = include_bytes!(
             "../../../../docs/research/konnect-pcb-2026-10-12/Original/basic_test.kicad_pcb"
@@ -2518,8 +2503,57 @@ mod tests {
                 }
             }
         }
-        println!("Identified Konnect refused saved-file fallback; original unchanged, no job created, no session token persisted.");
+        println!("Official native worker refused saved-file fallback; original unchanged, no job created, no session token persisted.");
     }
+    #[cfg(feature = "desktop")]
+    #[test]
+    #[ignore = "Controlled local NNG server and private owned root supplied by the frozen-worker test"]
+    fn actual_embedded_worker_reads_controlled_native_server() {
+        let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap();
+        let root = PathBuf::from(std::env::var_os("HAZLOMEXA_TEST_NATIVE_PCB_ROOT").expect("Supply the controlled native-protocol fixture"));
+        assert!(fs::canonicalize(&root).unwrap().starts_with(fs::canonicalize(workspace.join("target/native-pcb-worker")).unwrap()));
+        let entry = root.join("OwnedBoard.kicad_pcb");
+        let before = b"Saved fixture bytes cannot stand in for native state";
+        assert_eq!(fs::read(&entry).unwrap(), before);
+        let project = Project::create(&root).unwrap();
+        let project_id = project.id;
+        let workflow = Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("host-profiles")).unwrap());
+        workflow.select_project(project).unwrap();
+        let host = HostTools::new(workflow.clone());
+        let selected = host.select_live_pcb(project_id,entry.clone(),crate::kicad_live::Connection {
+            endpoint:format!("ipc://{}",root.join("api.sock").display()),token:String::new()
+        },Arc::new(AtomicBool::new(false))).unwrap();
+        let reply=host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap();
+        assert_eq!(reply["observation"]["state_sha256"],selected.observation.state_sha256);
+        assert_eq!(reply["observation"]["instance_sha256"],selected.observation.instance_sha256);
+        assert_eq!(reply["observation"]["components"][0]["reference"],"R1");
+        assert_eq!(reply["observation"]["components"][0]["x_mm"],10.);
+        assert!(!reply.to_string().contains(&root.to_string_lossy().to_string()));
+        assert!(!reply.to_string().contains("owned-fixture-token"));
+        assert_eq!(fs::read(entry).unwrap(),before);
+        assert!(workflow.view().unwrap().job.is_none());
+        assert!(workflow.view().unwrap().history.is_empty());
+        let profiles=root.join("host-profiles");
+        let mut pending=vec![profiles];
+        let mut workers=Vec::new();
+        while let Some(dir)=pending.pop() {
+            for item in fs::read_dir(dir).unwrap() {
+                let path=item.unwrap().path();
+                if path.is_dir() { pending.push(path); }
+                else {
+                    assert!(!fs::read(&path).unwrap().windows(b"owned-fixture-token".len()).any(|w|w==b"owned-fixture-token"));
+                    if path.file_name().unwrap()=="hazlomexa-kicad.exe" { workers.push(path); }
+                }
+            }
+        }
+        assert_eq!(workers.len(),1,"Repeated reads reuse the identified helper");
+        fs::write(&workers[0],b"tampered helper must never launch").unwrap();
+        assert!(host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap_err().contains("No se sustituirá"));
+        fs::write(root.join("native-host-result.json"),serde_json::to_vec(&json!({
+            "ok":true,"result":reply["observation"]
+        })).unwrap()).unwrap();
+    }
+
     #[test]
     #[ignore = "Requires the explicitly launched owned KiCad PCB fixture and its local IPC server"]
     fn actual_live_pcb_observes_owned_editor_without_saved_fallback() {
@@ -2536,8 +2570,6 @@ mod tests {
         let id = project.id;
         let workflow = Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("hazlo-profiles")).unwrap());
         workflow.select_project(project).unwrap();
-        workflow.set_konnect(workspace.join("target/konnect-probe/runtime/konnect.exe")).unwrap();
-        workflow.set_kicad(workspace.join("target/kicad-probe/runtime/bin/kicad-cli.exe")).unwrap();
         let host = HostTools::new(workflow.clone());
         // Only the isolated fixture's endpoint; no discovery or calls to a user's editor.
         let selected = host.select_live_pcb(id, entry.clone(), crate::kicad_live::Connection {
@@ -2547,7 +2579,7 @@ mod tests {
         assert!(!selected.observation.components.is_empty());
         let reply = host.call("inspect_selected_live_pcb", json!({"selection":selected.id})).unwrap();
         assert_eq!(reply["observation"]["document_sha256"], selected.observation.document_sha256);
-        assert_eq!(reply["observation"]["components_sha256"], selected.observation.components_sha256);
+        assert_eq!(reply["observation"]["state_sha256"], selected.observation.state_sha256);
         assert!(!reply.to_string().contains(root.file_name().unwrap().to_str().unwrap()));
         assert_eq!(fs::read(entry).unwrap(), before);
         let view = workflow.view().unwrap();
@@ -2555,7 +2587,7 @@ mod tests {
         fs::write(root.join("hazlo-native-read.json"), serde_json::to_vec_pretty(&json!({
             "passed":true,"component_count":selected.observation.components.len(),
             "document_sha256":selected.observation.document_sha256,
-            "components_sha256":selected.observation.components_sha256,
+            "state_sha256":selected.observation.state_sha256,
             "source_unchanged":true,"job_created":false,"live_mutation_verified":false
         })).unwrap()).unwrap();
         println!("Owned native PCB observation and refresh passed; original unchanged, no job created.");

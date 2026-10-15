@@ -1,5 +1,7 @@
 fn main() {
     #[cfg(feature = "desktop")]
+    verify_native_pcb_worker();
+    #[cfg(feature = "desktop")]
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
             "get_snapshot",
@@ -55,4 +57,29 @@ fn main() {
         ]),
     ))
     .expect("Tauri application permissions/build failed");
+}
+
+#[cfg(feature = "desktop")]
+fn verify_native_pcb_worker() {
+    use sha2::{Digest, Sha256};
+    use std::{fs, path::Path};
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap();
+    let directory = root.join("target/native-pcb-worker");
+    let receipt = directory.join("build-receipt.json");
+    let executable = directory.join("hazlomexa-kicad.exe");
+    println!("cargo:rerun-if-changed={}", receipt.display());
+    println!("cargo:rerun-if-changed={}", executable.display());
+    let message = "Build the native PCB worker first: python tests/kicad/build_worker.py --python <Windows x64 Python 3.11>";
+    let receipt: serde_json::Value = serde_json::from_slice(&fs::read(receipt).expect(message)).expect(message);
+    assert_eq!(receipt["self_check"], true, "{message}");
+    let hash = |path:&Path| format!("{:x}", Sha256::digest(fs::read(path).expect(message)));
+    assert_eq!(receipt["sha256"], hash(&executable), "{message}");
+    for name in [
+        "apps/desktop/src-tauri/resources/kicad/live.py",
+        "tests/kicad/build_worker.py", "tests/kicad/ipc-client-requirements.txt",
+        "tests/kicad/worker-build-requirements.txt",
+    ] {
+        println!("cargo:rerun-if-changed={}", root.join(name).display());
+        assert_eq!(receipt["inputs"][name], hash(&root.join(name)), "{message}");
+    }
 }

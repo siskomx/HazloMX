@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "mx.hazlomexa.desktop",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "python ../../tests/kicad/build_worker.py && npm run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "npm run build && cargo build -p hazlomexa --release --bin hazlomexa-tools",
+    "beforeBuildCommand": "python ../../tests/kicad/build_worker.py && npm run build && cargo build -p hazlomexa --release --bin hazlomexa-tools",
     "frontendDist": "../dist",
     "features": ["desktop"]
   },
