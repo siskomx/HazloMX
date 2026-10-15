@@ -2521,6 +2521,46 @@ mod tests {
         println!("Identified Konnect refused saved-file fallback; original unchanged, no job created, no session token persisted.");
     }
     #[test]
+    #[ignore = "Requires the explicitly launched owned KiCad PCB fixture and its local IPC server"]
+    fn actual_live_pcb_observes_owned_editor_without_saved_fallback() {
+        let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors().nth(3).unwrap();
+        let root = std::path::PathBuf::from(std::env::var("HAZLOMEXA_TEST_LIVE_PCB_ROOT")
+            .expect("Launch the owned PCB fixture and supply its test root"));
+        assert!(fs::canonicalize(&root).unwrap().starts_with(fs::canonicalize(workspace.join("target")).unwrap()));
+        assert!(root.file_name().unwrap().to_str().unwrap().starts_with("kicad-live-ui-"));
+        let entry = root.join("OwnedBoard.kicad_pcb");
+        let before = include_bytes!("../../../../docs/research/konnect-pcb-2026-10-12/Original/basic_test.kicad_pcb");
+        assert_eq!(fs::read(&entry).unwrap(), before);
+        let project = Project::create(&root).unwrap();
+        let id = project.id;
+        let workflow = Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("hazlo-profiles")).unwrap());
+        workflow.select_project(project).unwrap();
+        workflow.set_konnect(workspace.join("target/konnect-probe/runtime/konnect.exe")).unwrap();
+        workflow.set_kicad(workspace.join("target/kicad-probe/runtime/bin/kicad-cli.exe")).unwrap();
+        let host = HostTools::new(workflow.clone());
+        // Only the isolated fixture's endpoint; no discovery or calls to a user's editor.
+        let selected = host.select_live_pcb(id, entry.clone(), crate::kicad_live::Connection {
+            endpoint: format!("ipc://{}", root.join("temp/kicad/api.sock").display()),
+            token: String::new(),
+        }, Arc::new(AtomicBool::new(false))).unwrap();
+        assert!(!selected.observation.components.is_empty());
+        let reply = host.call("inspect_selected_live_pcb", json!({"selection":selected.id})).unwrap();
+        assert_eq!(reply["observation"]["document_sha256"], selected.observation.document_sha256);
+        assert_eq!(reply["observation"]["components_sha256"], selected.observation.components_sha256);
+        assert!(!reply.to_string().contains(root.file_name().unwrap().to_str().unwrap()));
+        assert_eq!(fs::read(entry).unwrap(), before);
+        let view = workflow.view().unwrap();
+        assert!(view.job.is_none() && view.history.is_empty());
+        fs::write(root.join("hazlo-native-read.json"), serde_json::to_vec_pretty(&json!({
+            "passed":true,"component_count":selected.observation.components.len(),
+            "document_sha256":selected.observation.document_sha256,
+            "components_sha256":selected.observation.components_sha256,
+            "source_unchanged":true,"job_created":false,"live_mutation_verified":false
+        })).unwrap()).unwrap();
+        println!("Owned native PCB observation and refresh passed; original unchanged, no job created.");
+    }
+    #[test]
     #[ignore = "Actual CADCraft catalog, native command plans, approval and saved geometry follow-up"]
     fn actual_native_drawing_tool_plan_and_followup() {
         use crate::project::{ArtifactFormat, Phase};
