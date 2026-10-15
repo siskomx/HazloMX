@@ -1,0 +1,10 @@
+{
+  "name": "hazlomexa-arduino-editor",
+  "displayName": "Hazlo Mexa native Arduino editor",
+  "publisher": "siskomx",
+  "version": "0.1.0",
+  "license": "MIT",
+  "engines": { "vscode": "^1.78.0" },
+  "activationEvents": ["*"],
+  "main": "./extension.cjs"
+}

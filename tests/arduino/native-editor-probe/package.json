@@ -1,0 +1,9 @@
+{
+  "name": "hazlomexa-arduino-editor-probe",
+  "publisher": "siskomx",
+  "version": "0.1.0",
+  "engines": { "vscode": "^1.78.0" },
+  "activationEvents": ["*"],
+  "extensionDependencies": ["siskomx.hazlomexa-arduino-editor"],
+  "main": "./extension.cjs"
+}
