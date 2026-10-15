@@ -3,12 +3,11 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::{
-    cell::Cell,
-    fs::OpenOptions,
-    io::Read,
-    os::windows::fs::{MetadataExt, OpenOptionsExt},
-    path::Path,
-    sync::atomic::{AtomicBool, Ordering},
+    path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     time::Duration,
 };
 use tokio::{
@@ -16,9 +15,6 @@ use tokio::{
     net::windows::named_pipe::ClientOptions,
 };
 use uuid::Uuid;
-use windows_sys::Win32::Storage::FileSystem::{
-    FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_READ,
-};
 
 const SOURCE_LIMIT: usize = 65536;
 const FRAME_LIMIT: usize = 512 * 1024;
@@ -58,30 +54,112 @@ impl Connection {
         crate::project::valid_location(path).map_err(|_| Failure::Refused)?;
         let _parents = crate::project::pin_lineage(path.parent().ok_or(Failure::Refused)?)
             .map_err(|_| Failure::Refused)?;
-        let file = OpenOptions::new()
-            .read(true)
-            .share_mode(FILE_SHARE_READ)
-            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
-            .open(path)
-            .map_err(|_| Failure::Refused)?;
-        let metadata = file.metadata().map_err(|_| Failure::Refused)?;
-        if !metadata.is_file()
-            || metadata.len() > 4096
-            || metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-        {
-            return Err(Failure::Refused);
-        }
-        let mut bytes = Vec::new();
-        file.take(4097)
-            .read_to_end(&mut bytes)
-            .map_err(|_| Failure::Refused)?;
-        if bytes.len() > 4096 {
-            return Err(Failure::Refused);
-        }
+        let bytes = crate::kicad_project::read_regular(path, 4096).map_err(|_| Failure::Refused)?;
         let connection: Self = serde_json::from_slice(&bytes).map_err(|_| Failure::Refused)?;
         connection.validate()?;
         Ok(connection)
     }
+}
+
+pub fn default_directory() -> Result<PathBuf, String> {
+    let profile = std::env::var_os("USERPROFILE")
+        .ok_or("No se encontró el perfil local de Arduino Agent.")?;
+    let root = PathBuf::from(profile).join(".arduinoIDE/hazlomexa-editor");
+    crate::project::valid_location(&root)
+        .map_err(|_| "El perfil de Arduino Agent debe ser local.")?;
+    Ok(root)
+}
+
+#[derive(Clone, Serialize)]
+pub struct DiscoveredEditor {
+    pub id: Uuid,
+    pub observation: Observation,
+    #[serde(skip)]
+    connection: Connection,
+}
+impl DiscoveredEditor {
+    pub fn connection(&self) -> &Connection {
+        &self.connection
+    }
+}
+
+/// Read-only connection discovery; it never installs a plugin, deletes records or edits a sketch.
+pub async fn discover(
+    root: &Path,
+    cancel: Arc<AtomicBool>,
+) -> Result<Vec<DiscoveredEditor>, String> {
+    let invalid = "No se pudieron leer los registros locales del complemento de Arduino Agent.";
+    if cancel.load(Ordering::SeqCst) {
+        return Err("Conexión cancelada.".into());
+    }
+    crate::project::valid_location(root).map_err(|_| invalid)?;
+    let _parents = match crate::project::pin_lineage(root) {
+        Ok(pins) => pins,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(_) => return Err(invalid.into()),
+    };
+    let mut tasks = tokio::task::JoinSet::new();
+    for (count, entry) in std::fs::read_dir(root).map_err(|_| invalid)?.enumerate() {
+        if cancel.load(Ordering::SeqCst) {
+            return Err("Conexión cancelada.".into());
+        }
+        if count >= 64 {
+            return Err("Hay demasiados registros del complemento. Revisa sus conexiones antes de continuar.".into());
+        }
+        let entry = entry.map_err(|_| invalid)?;
+        let path = entry.path();
+        let Some(instance) = path
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .and_then(|name| Uuid::parse_str(name).ok())
+        else {
+            continue;
+        };
+        if entry.file_name().to_str() != Some(format!("{instance}.json").as_str()) {
+            continue;
+        }
+        let Ok(connection) = Connection::load(&path) else {
+            continue;
+        };
+        if instance != connection.instance_id {
+            continue;
+        }
+        let signal = cancel.clone();
+        tasks.spawn(async move {
+            inspect(&connection, &signal)
+                .await
+                .ok()
+                .map(|observation| DiscoveredEditor {
+                    id: Uuid::new_v4(),
+                    observation,
+                    connection,
+                })
+        });
+    }
+    let gathering = async move {
+        let mut sessions = Vec::new();
+        while let Some(result) = tasks.join_next().await {
+            if let Ok(Some(session)) = result {
+                sessions.push(session);
+            }
+        }
+        sessions
+    };
+    let cancelled = async {
+        while !cancel.load(Ordering::SeqCst) {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    };
+    let mut sessions = tokio::select! {
+        _=cancelled=>return Err("Conexión cancelada.".into()),
+        result=tokio::time::timeout(Duration::from_secs(15),gathering)=>
+            result.map_err(|_|"El editor no respondió a tiempo. Vuelve a conectar Arduino Agent.")?,
+    };
+    if cancel.load(Ordering::SeqCst) {
+        return Err("Conexión cancelada.".into());
+    }
+    sessions.sort_by_key(|session| session.observation.name.to_lowercase());
+    Ok(sessions)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -302,13 +380,13 @@ async fn exchange<T: DeserializeOwned>(
     if frame.len() > FRAME_LIMIT {
         return Err(Failure::Refused);
     }
-    let sent = Cell::new(false);
+    let mut sent = false;
     let attempt = async {
         let mut pipe = ClientOptions::new()
             .open(&connection.pipe)
             .map_err(|_| ())?;
         // Once a write is attempted, partial delivery or lost replies cannot prove nonexecution.
-        sent.set(mutation);
+        sent = mutation;
         pipe.write_all(&frame).await.map_err(|_| ())?;
         let mut bytes = Vec::new();
         (&mut pipe)
@@ -330,7 +408,7 @@ async fn exchange<T: DeserializeOwned>(
         _ = cancelled => None,
         result = tokio::time::timeout(timeout, attempt) => result.ok().and_then(Result::ok),
     };
-    let failure = if sent.get() {
+    let failure = if sent {
         Failure::Uncertain
     } else {
         Failure::Refused
@@ -427,6 +505,137 @@ pub(crate) mod tests {
             .create(&connection.pipe)
             .unwrap();
         (connection, server)
+    }
+    fn discovery_record(root: &Path, connection: &Connection) {
+        std::fs::write(root.join(format!("{}.json",connection.instance_id)),serde_json::to_vec(&json!({
+            "editor_version":1,"instance_id":connection.instance_id,"pipe":connection.pipe,"token":connection.token,
+        })).unwrap()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn discovery_reads_live_authenticated_state_and_ignores_stale_or_forged_records() {
+        let root =
+            std::env::temp_dir().join(format!("hazlomexa-editor-discovery-{}", Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let (connection, mut server) = fixture();
+        discovery_record(&root, &connection);
+        let before = observation(connection.instance_id);
+        let expected = before.clone();
+        let token = connection.token.clone();
+        let (stale, closed) = fixture();
+        drop(closed);
+        discovery_record(&root, &stale);
+        std::fs::write(
+            root.join(format!("{}.json", Uuid::new_v4())),
+            b"not a connection",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("Sketch.ino"),
+            b"Saved text is not live editor state",
+        )
+        .unwrap();
+        let forged = root.join(format!("{}.json", Uuid::new_v4()));
+        std::fs::write(
+            &forged,
+            serde_json::to_vec(
+                &json!({"editor_version":1,"instance_id":connection.instance_id,
+            "pipe":connection.pipe,"token":connection.token}),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let worker = tokio::spawn(async move {
+            assert_eq!(
+                receive(&mut server).await,
+                json!({"token":token,"request":{"action":"inspect"}})
+            );
+            server
+                .write_all(&serde_json::to_vec(&json!({"ok":true,"result":expected})).unwrap())
+                .await
+                .unwrap();
+        });
+        let sessions = discover(&root, Arc::new(AtomicBool::new(false)))
+            .await
+            .unwrap();
+        worker.await.unwrap();
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].observation.state_sha256, before.state_sha256);
+        sessions[0].connection().validate_for(&before).unwrap();
+        let public = serde_json::to_value(&sessions).unwrap();
+        assert!(public[0].get("connection").is_none());
+        assert!(!public.to_string().contains(&connection.token));
+        assert!(!public.to_string().contains(&connection.pipe));
+        assert_eq!(
+            std::fs::read(root.join("Sketch.ino")).unwrap(),
+            b"Saved text is not live editor state"
+        );
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 5);
+        assert!(root
+            .canonicalize()
+            .unwrap()
+            .starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn cancelled_discovery_returns_no_partial_selection_and_preserves_records() {
+        let root =
+            std::env::temp_dir().join(format!("hazlomexa-editor-discovery-{}", Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let (connection, mut server) = fixture();
+        discovery_record(&root, &connection);
+        let cancel = Arc::new(AtomicBool::new(true));
+        assert!(discover(&root, cancel.clone()).await.is_err());
+        assert!(
+            tokio::time::timeout(Duration::from_millis(50), server.connect())
+                .await
+                .is_err()
+        );
+        cancel.store(false, Ordering::SeqCst);
+        let signal = cancel.clone();
+        let (stop, done) = tokio::sync::oneshot::channel::<()>();
+        let worker = tokio::spawn(async move {
+            receive(&mut server).await;
+            signal.store(true, Ordering::SeqCst);
+            let _ = done.await;
+        });
+        assert!(discover(&root, cancel).await.is_err());
+        stop.send(()).unwrap();
+        worker.await.unwrap();
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+        assert!(root
+            .canonicalize()
+            .unwrap()
+            .starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn absent_and_overfull_registries_are_bounded_without_creating_or_deleting_them() {
+        assert!(default_directory()
+            .unwrap()
+            .ends_with(".arduinoIDE/hazlomexa-editor"));
+        let root =
+            std::env::temp_dir().join(format!("hazlomexa-editor-discovery-{}", Uuid::new_v4()));
+        assert!(discover(&root, Arc::new(AtomicBool::new(false)))
+            .await
+            .unwrap()
+            .is_empty());
+        assert!(!root.exists());
+        std::fs::create_dir(&root).unwrap();
+        for index in 0..65 {
+            std::fs::write(root.join(format!("note-{index}")), b"retained").unwrap();
+        }
+        assert!(discover(&root, Arc::new(AtomicBool::new(false)))
+            .await
+            .is_err());
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 65);
+        assert!(root
+            .canonicalize()
+            .unwrap()
+            .starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        std::fs::remove_dir_all(root).unwrap();
     }
     async fn receive(server: &mut NamedPipeServer) -> serde_json::Value {
         server.connect().await.unwrap();

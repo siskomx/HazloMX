@@ -1,6 +1,6 @@
 //! Exercise the Rust host against the real companion transport in an owned test buffer.
 use hazlomexa::{
-    agent_editor::{self, Connection, Failure, Input},
+    agent_editor::{self, Failure, Input},
     host_tools::HostTools,
     jobs::Workflow,
     project::{ArtifactFormat, Phase, Project},
@@ -40,15 +40,25 @@ fn main() {
         .filter(|item| item.path().extension().is_some_and(|ext| ext == "json"))
         .collect::<Vec<_>>();
     assert_eq!(records.len(), 1);
-    let connection = Connection::load(&records[0].path()).unwrap();
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
+    let sessions = runtime
+        .block_on(agent_editor::discover(
+            &root,
+            Arc::new(AtomicBool::new(false)),
+        ))
+        .unwrap();
+    assert_eq!(sessions.len(), 1);
+    let serialized = serde_json::to_value(&sessions).unwrap();
+    assert!(serialized[0].get("connection").is_none());
+    let connection = sessions[0].connection().clone();
     let cancel = AtomicBool::new(false);
     let before = runtime
         .block_on(agent_editor::inspect(&connection, &cancel))
         .unwrap();
+    assert_eq!(before.state_sha256, sessions[0].observation.state_sha256);
     assert_eq!(before.name, "Sketch.ino");
     assert!(before.source.starts_with("// unsaved user note\n") && before.dirty);
     assert_eq!(before.source.matches("delay(1000)").count(), 1);

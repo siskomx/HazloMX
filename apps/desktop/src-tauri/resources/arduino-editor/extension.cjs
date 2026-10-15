@@ -4,15 +4,29 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const net = require("node:net");
 const path = require("node:path");
+const os = require("node:os");
 const {TextDecoder} = require("node:util");
 const {createEditorTools} = require("./core.cjs");
 
-// shortcut: explicit launch directory only; add installed-session discovery after native editor acceptance.
+function connectionDirectory() {
+  try {
+    let root = process.env.HAZLOMEXA_AGENT_EDITOR_ROOT;
+    if (!root) {
+      const config = path.join(os.homedir(), ".arduinoIDE");
+      if (!/^[a-z]:[\\/]/i.test(config) || !fs.lstatSync(config).isDirectory()
+          || fs.realpathSync(config).toLowerCase() !== path.resolve(config).toLowerCase()) throw Error("profile");
+      root = path.join(config, "hazlomexa-editor");
+      try { fs.mkdirSync(root, {mode:0o700}); } catch (error) { if (error.code !== "EEXIST") throw error; }
+    }
+    if (!/^[a-z]:[\\/]/i.test(root) || !path.isAbsolute(root) || !fs.lstatSync(root).isDirectory()
+        || fs.realpathSync(root).toLowerCase() !== path.resolve(root).toLowerCase()) throw Error("directory");
+    return root;
+  } catch { throw Error("Native editor connection directory is invalid."); }
+}
+
 function activate(context) {
-  const root = process.env.HAZLOMEXA_AGENT_EDITOR_ROOT;
-  if (!root) return;
-  if (process.platform !== "win32" || !/^[a-z]:[\\/]/i.test(root) || !path.isAbsolute(root) || !fs.lstatSync(root).isDirectory()
-      || fs.realpathSync(root).toLowerCase() !== path.resolve(root).toLowerCase()) throw Error("Native editor connection directory is invalid.");
+  if (process.platform !== "win32" || vscode.env?.appName !== "Arduino Agent") return;
+  const root = connectionDirectory();
   const tools = createEditorTools(vscode), token = crypto.randomBytes(32).toString("hex");
   const pipe = "\\\\.\\pipe\\hazlomexa-arduino-" + tools.instance_id;
   const discovery = path.join(root, tools.instance_id + ".json");

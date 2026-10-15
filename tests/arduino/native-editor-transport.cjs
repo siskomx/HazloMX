@@ -23,7 +23,7 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     assert.deepEqual(options, {undoStopBefore:true, undoStopAfter:true});
     edits++; callback({replace(range, source) {doc.source = source;}}); doc.version++; return true;
   }};
-  const api = {window:{activeTextEditor:editor}, Range:class {}};
+  const api = {env:{appName:"Arduino Agent"}, window:{activeTextEditor:editor}, Range:class {}};
   const context = {subscriptions:[]};
   try {
     process.env.HAZLOMEXA_AGENT_EDITOR_ROOT = await fs.realpath(root);
