@@ -39,7 +39,7 @@ fn main() {
         .map(Result::unwrap)
         .filter(|item| item.path().extension().is_some_and(|ext| ext == "json"))
         .collect::<Vec<_>>();
-    assert_eq!(records.len(), 1);
+    assert_eq!(records.len(), 2);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -50,7 +50,7 @@ fn main() {
             Arc::new(AtomicBool::new(false)),
         ))
         .unwrap();
-    assert_eq!(sessions.len(), 1);
+    assert_eq!(sessions.len(), 2);
     let serialized = serde_json::to_value(&sessions).unwrap();
     assert!(serialized[0].get("connection").is_none());
     let connection = sessions[0].connection().clone();
@@ -71,6 +71,26 @@ fn main() {
         .select_project(Project::create(&project_root).unwrap())
         .unwrap();
     let host = HostTools::new(workflow.clone());
+    let listed=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
+    assert_eq!(listed["selection_required"],true);
+    assert_eq!(listed["documents"].as_array().unwrap().len(),2);
+    assert!(listed.get("observation").is_none());
+    assert!(!listed.to_string().contains("delay("));
+    let args=serde_json::json!({"instance_id":before.instance_id});
+    let read=host.call("inspect_open_agent_documents",args.clone()).unwrap();
+    assert_eq!(read["observation"],serde_json::to_value(&before).unwrap());
+    assert_eq!(read["mutations_allowed"],false);
+    for private in ["\"token\":", "\"pipe\":",root.to_str().unwrap()] {
+        assert!(!read.to_string().contains(private));
+    }
+    assert!(host.call("inspect_open_agent_documents",serde_json::json!({"instance_id":Uuid::new_v4()})).is_err());
+    assert!(host.call("inspect_open_agent_documents",serde_json::json!({"path":"Sketch.ino"})).is_err());
+    let discovery=agent_editor::default_directory().unwrap();
+    assert_eq!(discovery,root.join("profile/.arduinoIDE/hazlomexa-editor"));
+    let other=sessions.iter().find(|s|s.observation.instance_id!=before.instance_id).unwrap();
+    std::fs::remove_file(discovery.join(format!("{}.json",other.observation.instance_id))).unwrap();
+    let automatic=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
+    assert_eq!(automatic["observation"],read["observation"]);
     let project = workflow.view().unwrap().project.unwrap();
     let mut current = before.clone();
     for (old, new) in [("delay(1000)", "delay(500)"), ("delay(500)", "delay(250)")] {
@@ -117,6 +137,9 @@ fn main() {
             .block_on(agent_editor::inspect(&connection, &cancel))
             .unwrap();
         assert_eq!(current.source, source);
+        let live=host.call("inspect_open_agent_documents",args.clone()).unwrap();
+        assert_eq!(live["observation"]["source"],source);
+        assert_eq!(live["observation"]["state_sha256"],current.state_sha256);
         assert_eq!(result["after"]["state_sha256"], current.state_sha256);
         assert_eq!(std::fs::read(root.join("Sketch.ino")).unwrap(), saved);
     }
@@ -134,6 +157,11 @@ fn main() {
     );
     let final_state = current;
     assert!(final_state.source.starts_with("// unsaved user note\n") && final_state.dirty);
+    std::fs::remove_file(discovery.join(format!("{}.json",before.instance_id))).unwrap();
+    let disconnected=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
+    assert!(disconnected["documents"].as_array().unwrap().is_empty());
+    assert!(disconnected.get("observation").is_none());
+    assert_eq!(std::fs::read(root.join("Sketch.ino")).unwrap(),saved);
     drop(host);
     drop(workflow);
     let recovered = Project::open(&project_root).unwrap().recover().unwrap();

@@ -63,9 +63,19 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     assert.equal((await send({token:connection.token, request:{...request, path:"C:/another.ino"}})).ok, false);
     assert.equal(edits, 1); assert(doc.source.startsWith("// unsaved user note"));
     if (process.env.HAZLOMEXA_NATIVE_EDITOR_HOST) {
+      extension.activate(context);
+      for (let attempt=0;attempt<100;attempt++) {
+        names=(await fs.readdir(root)).filter(name=>/^[0-9a-f-]{36}\.json$/.test(name));
+        if(names.length===2) break;
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      assert.equal(names.length,2);
+      const profile=path.join(root,"profile"), discovery=path.join(profile,".arduinoIDE","hazlomexa-editor");
+      await fs.mkdir(discovery,{recursive:true});
+      for(const name of names) await fs.copyFile(path.join(root,name),path.join(discovery,name));
       await fs.writeFile(path.join(root, "owned-host-probe"), "owned");
       const result = await promisify(execFile)(process.env.HAZLOMEXA_NATIVE_EDITOR_HOST, [], {
-        env:{...process.env, HAZLOMEXA_NATIVE_EDITOR_TEST_ROOT:root}, timeout:10000, maxBuffer:65536,
+        env:{...process.env, USERPROFILE:profile, HAZLOMEXA_NATIVE_EDITOR_TEST_ROOT:root}, timeout:15000, maxBuffer:65536,
         windowsHide:true,
       });
       assert(result.stdout.includes("stale refusal passed")); assert.equal(result.stderr, "");

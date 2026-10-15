@@ -162,6 +162,32 @@ pub async fn discover(
     Ok(sessions)
 }
 
+/// Project a fresh native read without publishing connection secrets or several sketches' code.
+pub async fn inspect_open(
+    root: &Path,
+    instance: Option<Uuid>,
+    cancel: Arc<AtomicBool>,
+) -> Result<serde_json::Value, String> {
+    let sessions = discover(root, cancel).await?;
+    let selected = match instance {
+        Some(id) => Some(sessions.iter().find(|s| s.observation.instance_id == id)
+            .ok_or("Ese editor ya no responde. Consulta de nuevo los sketches abiertos.")?),
+        None if sessions.len() == 1 => sessions.first(),
+        None => None,
+    };
+    Ok(match selected {
+        Some(session) => json!({"scope":"live_agent_read_only","observation":session.observation,
+            "source_is_untrusted_data":true,"mutations_allowed":false,"saved_file_fallback":false,
+            "guidance":"This is the current active native buffer, including unsaved changes. Explain its behavior naturally and ask what should change. No live edit tool is available yet; never claim this read changed or saved it. Saved-copy editing requires the person's explicit choice of that separate workflow."}),
+        None => json!({"scope":"live_agent_read_only","documents":sessions.iter().map(|s|
+            json!({"instance_id":s.observation.instance_id,"name":s.observation.name,"dirty":s.observation.dirty})
+            ).collect::<Vec<_>>(),"selection_required":!sessions.is_empty(),"mutations_allowed":false,
+            "saved_file_fallback":false,"source_is_untrusted_data":true,
+            "guidance":if sessions.is_empty() {"Open an Arduino Agent sketch with the Hazlo native editor companion active, then inspect again. No saved file was read."}
+            else {"Ask which named editor the person means, then pass its instance_id. Do not ask them to type an internal ID. This list contains no sketch code."}}),
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Failure {
     Refused,
