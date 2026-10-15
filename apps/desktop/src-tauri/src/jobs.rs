@@ -2510,7 +2510,7 @@ impl Workflow {
         if dispatch.cancelled.load(Ordering::SeqCst) {
             job.view.snapshot.phase = Phase::Cancelled;
             if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_)) {
-                job.view.error = Some("La espera se canceló. FreeCAD puede haber aplicado la transacción; vuelve a leer el documento antes de continuar. Cancelar no deshace una edición nativa.".into());
+                job.view.error = Some("La espera se canceló. FreeCAD puede haber completado la operación nativa; vuelve a leer el documento antes de continuar. Cancelar no deshace una edición nativa.".into());
             }
             if matches!(dispatch.snapshot.input, OperationInput::Agent(_)) {
                 job.view.error = Some("La espera se canceló. Agent puede terminar de modificar su copia temporal; no se publicaron esos cambios ni se modificó el original.".into());
@@ -2567,7 +2567,7 @@ mod tests {
         let dispatch=workflow.begin(approval).unwrap();
         assert!(workflow.begin(approval).is_err());
         let stage=dispatch.project.reserve_stage(input.job_id).unwrap();
-        let report=serde_json::json!({"live_cad_version":1,"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"success":true}],"undo_available":true});
+        let report=serde_json::json!({"live_cad_version":1,"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
         let bytes=serde_json::to_vec_pretty(&report).unwrap();
         fs::write(stage.path.join("result.json"),&bytes).unwrap();
         let done=workflow.finish(dispatch,Ok(stage)).unwrap();

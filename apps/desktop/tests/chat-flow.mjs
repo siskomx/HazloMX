@@ -533,9 +533,26 @@ try {
     const history=await page.locator("#history").innerText();
     assert.match(history,/Informe de la transacción/);assert(!history.includes("STEP")&&!history.includes("HEX"));
   }
+  for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#new-chat").click();
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_cad_version:1,job_id:crypto.randomUUID(),document_name:"Enclosure",document_token:"11111111-1111-4111-8111-111111111111",state_sha256:"a".repeat(64),description:"Guarda la carcasa terminada",before:[],operations:[{action:"save_as"}]}));
+    await page.locator("#program-actions button").first().click();
+    await page.locator("#approve:enabled").waitFor();
+    const facts=await page.locator("#change-facts").innerText();
+    assert.match(facts,/FreeCAD abrirá Guardar como/);
+    assert.match(facts,/Guardar no es una edición de geometría/);
+    assert(!facts.includes("No se guarda ni exporta"));
+    const before=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    assert.equal((await chatCalls()).length,before+1);
+    assert.match(await page.locator("#job-status").innerText(),/FreeCAD confirmó el guardado/);
+    if (!await page.locator("#history").isVisible()) await page.locator("#results > summary").click();
+    assert.match(await page.locator("#history").innerText(),/Informe del guardado/);
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy and four open-FreeCAD approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit and four native Save As approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

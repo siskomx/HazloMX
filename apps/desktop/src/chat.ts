@@ -124,7 +124,7 @@ function reviewCompletedResult() {
   if (["awaiting_approval", "running"].includes(job.snapshot.phase)) return;
   resultReview = undefined;
   if (job.snapshot.phase !== "completed" || job.error) return;
-  void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId}; si es una transacción de FreeCAD abierto, vuelve a consultar inspect_open_cad_documents con su nombre para leer el estado actual. Explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`, false));
+  void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId}; si es una operación de FreeCAD abierto, vuelve a consultar inspect_open_cad_documents con su nombre para leer el estado actual. Explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`, false));
 }
 function summary(run: Snapshot): string {
   const input = run.input;
@@ -152,7 +152,7 @@ function changeDetails(run: Snapshot): string {
 }
 function artifactActions(run: Snapshot): [string, string][] {
   const input = run.input;
-  if (input.live_cad_version) return [["Informe de la transacción","cadpilot_report"]];
+  if (input.live_cad_version) return [[input.operations[0]?.action === "save_as" ? "Informe del guardado" : "Informe de la transacción","cadpilot_report"]];
   if (input.konnect_version) return [["Original", "konnect_original"], ["Resultado guardado", "konnect_edited"], ["Informe", "konnect_report"], ...(input.pcb_move ? [["Revisión KiCad", "kicad_report"], ["Exportaciones", "kicad_outputs"]] : input.schema_version === 2 ? [["Netlist", "konnect_netlist"]] : [])] as [string, string][];
   if (input.cadpilot_version) return [["Original", "original_cad"], ["Mediciones e informe", "cadpilot_report"], ...(input.request.operation === "inspect" ? [] : [["Abrir en FreeCAD", "fcstd"], ["STEP", "step"]])] as [string, string][];
   if (input.orca_version) return [["3MF", "sliced"], ["G-code", "gcode"], ["Informe", "slice_report"]];
@@ -206,7 +206,7 @@ function render() {
   $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
   $("live-pcb-setup").hidden = program !== "kicad";
-  $("document-scope").textContent = native ? "PCB conectada para lectura nativa: las posiciones se consultan en KiCad, incluso antes de guardar. No permite modificar la PCB abierta. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer en FreeCAD; guardar y exportar en vivo siguen pendientes. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
+  $("document-scope").textContent = native ? "PCB conectada para lectura nativa: las posiciones se consultan en KiCad, incluso antes de guardar. No permite modificar la PCB abierta. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar, FreeCAD abrirá su propio diálogo y elegirás el destino allí; exportar en vivo sigue pendiente. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
   $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${native ? "lectura nativa de PCB" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : "archivos guardados"}`;
   $("source-status").textContent = sourceNames[program] ?? (program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
@@ -241,7 +241,7 @@ function render() {
   $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;
   $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = commandBusy;
   const job = state.job;
-  $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? job.snapshot.input.live_cad_version ? "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
+  $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? job.snapshot.input.live_cad_version ? job.snapshot.input.operations[0]?.action === "save_as" ? "FreeCAD confirmó el guardado. El informe conserva el nombre y la huella del archivo en ese momento." : "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
   renderConnections(busy || !!active); renderQuestion(); renderHistory(); renderLegacy();
 }
 function connectionButton(label: string, disabled: boolean, work: () => Promise<void>) {

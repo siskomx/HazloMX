@@ -4,6 +4,8 @@ import io
 import json
 from pathlib import Path
 import sys
+import tempfile
+import hashlib
 import time
 import types
 import unittest
@@ -43,11 +45,20 @@ class Document:
 class LiveTests(unittest.TestCase):
     def setUp(self):
         self.doc = Document()
+        self.saved_folder = tempfile.TemporaryDirectory(prefix="hazlo-live-save-")
+        self.saved_path = Path(self.saved_folder.name) / "Finished.FCStd"
+        self.modified = True
+        self.save_result = False
+        self.save_calls = 0
         self.opened = {self.doc.Name: self.doc}
         self.calls = []
         self.draws = []
         self.rpc = types.ModuleType("rpc_server.rpc_server")
-        self.rpc.dispatch_to_gui = lambda callback: callback()
+        self.dispatch_timeouts = []
+        def dispatch(callback, **options):
+            self.dispatch_timeouts.append(options["timeout"])
+            return callback()
+        self.rpc.dispatch_to_gui = dispatch
 
         def operation(doc, op):
             self.assertEqual(doc, self.doc.Name)
@@ -61,7 +72,16 @@ class LiveTests(unittest.TestCase):
         self.gui = types.ModuleType("FreeCADGui")
         self.active = self.doc
         self.gui.activeDocument = lambda: types.SimpleNamespace(Document=self.active)
-        self.gui.getDocument = lambda name: types.SimpleNamespace(activeView=lambda: types.SimpleNamespace(redraw=lambda: self.draws.append(name)))
+        def save_as():
+            self.save_calls += 1
+            if self.save_result:
+                self.saved_path.write_bytes(b"native fixture bytes")
+                self.doc.FileName = str(self.saved_path)
+                self.modified = False
+            return self.save_result
+
+        self.save_as = save_as
+        self.gui.getDocument = lambda name: types.SimpleNamespace(Modified=self.modified, saveAs=lambda: self.save_as(), activeView=lambda: types.SimpleNamespace(redraw=lambda: self.draws.append(name)))
         package = types.ModuleType("rpc_server")
         package.rpc_server = self.rpc
         serialize = types.ModuleType("rpc_server.serialize")
@@ -71,6 +91,7 @@ class LiveTests(unittest.TestCase):
         sys.modules.update(self.modules)
 
     def tearDown(self):
+        self.saved_folder.cleanup()
         for key, module in self.originals.items():
             if module is None:
                 sys.modules.pop(key, None)
@@ -90,6 +111,65 @@ class LiveTests(unittest.TestCase):
 
     def request(self, observation, length=30.4):
         return {"action": "apply", "document_token": observation["document_token"], "state_sha256": observation["state_sha256"], "job_id": str(uuid.uuid4()), "expires_at": time.time() + 30, "operations": [{"action": "edit_object", "obj_name": "Box", "obj_properties": {"Length": length}}]}
+
+    def test_save_as_uses_native_dialog_verifies_file_and_preserves_geometry_and_undo(self):
+        before = self.inspect()
+        self.assertEqual(self.dispatch_timeouts[-1], 60)
+        request = self.request(before)
+        request["operations"] = [{"action": "save_as"}]
+        self.save_result = True
+        self.doc.UndoMode = 0
+        result = self.call(request)
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(self.dispatch_timeouts[-1], 600)
+        saved = result["result"]["saved_document"]
+        self.assertEqual(saved, {"name": "Finished.FCStd", "bytes": 20, "sha256": hashlib.sha256(b"native fixture bytes").hexdigest()})
+        self.assertFalse(result["result"]["undo_available"])
+        self.assertEqual(before["objects"], result["result"]["after"]["objects"])
+        self.assertTrue(result["result"]["after"]["has_saved_file"])
+        self.assertFalse(result["result"]["after"]["modified"])
+        self.assertEqual(self.save_calls, 1)
+        self.assertEqual(self.calls, [])
+        self.assertEqual(self.doc.UndoNames, [])
+        self.assertNotIn(str(self.saved_path), json.dumps(result))
+        self.assertEqual(self.call(request)["error"], "changed_document")
+
+    def test_save_as_cancel_and_uncertain_failure_do_not_claim_a_completed_save(self):
+        request = self.request(self.inspect())
+        request["operations"] = [{"action": "save_as"}]
+        self.assertEqual(self.call(request)["error"], "native_save_not_completed")
+        self.assertFalse(self.saved_path.exists())
+        self.assertEqual(self.inspect()["recent_attempts"][request["job_id"]]["status"], "not_completed")
+        self.assertEqual(self.call(request)["error"], "already_attempted")
+        self.assertEqual(self.save_calls, 1)
+
+        def failed():
+            self.saved_path.write_bytes(b"possibly saved")
+            raise RuntimeError("private path or native error must not escape")
+
+        self.save_as = failed
+        request["job_id"] = str(uuid.uuid4())
+        result = self.call(request)
+        self.assertEqual(result, {"ok": False, "error": "native_operation_uncertain"})
+        self.assertEqual(self.inspect()["recent_attempts"][request["job_id"]]["status"], "uncertain")
+        self.assertEqual(self.call(request)["error"], "already_attempted")
+        self.assertEqual(self.calls, [])
+
+    def test_native_save_dialog_blocks_another_write_but_allows_readback(self):
+        request = self.request(self.inspect())
+        request["operations"] = [{"action": "save_as"}]
+        save = self.save_as
+
+        def pending():
+            fresh = self.inspect()
+            self.assertEqual(fresh["recent_attempts"][request["job_id"]]["status"], "running")
+            self.assertEqual(self.call(self.request(fresh))["error"], "native_operation_pending")
+            return save()
+
+        self.save_as = pending
+        self.save_result = True
+        self.assertTrue(self.call(request)["ok"])
+        self.assertEqual(self.calls, [])
 
     def test_material_archive_timestamps_do_not_change_state_but_content_does(self):
         obj = self.doc.Objects[0]

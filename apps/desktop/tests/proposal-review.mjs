@@ -14,6 +14,12 @@ assert.match(live,/largo: 25.4 mm → 30.4 mm/);
 assert.match(live,/No se guarda ni exporta el modelo/);
 assert(!live.includes("InternalBox") && !live.includes("archivos originales se conservan"));
 
+const save=review({live_cad_version:1,description:"Guarda la carcasa",before:[],operations:[{action:"save_as"}]});
+assert.match(save,/Guardar el documento abierto de FreeCAD/);
+assert.match(save,/FreeCAD abrirá Guardar como/);
+assert.match(save,/Guardar no es una edición de geometría que pueda deshacerse/);
+assert(!save.includes("No se guarda ni exporta") && !save.includes("nuevo objeto"));
+
 assert.match(review({dimensions_mm:{length:25.4,width:12.7,height:5}}),/milímetros: largo 25.4, ancho 12.7, alto 5/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/compila para Arduino Uno/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/No se carga código/);

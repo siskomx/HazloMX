@@ -16,7 +16,7 @@ try:
     sys.path.insert(0, config["addon"])
     Gui.addCommand = lambda *args: None
     from rpc_server import rpc_server as rpc
-    rpc.dispatch_to_gui = lambda callback: callback()
+    rpc.dispatch_to_gui = lambda callback, **options: callback()
     doc = App.newDocument("OwnedLiveFixture")
     doc.UndoMode = 1
     box = doc.addObject("Part::Box", "Target")

@@ -5,6 +5,8 @@ The host supplies JSON data in HAZLO_REQUEST, never model-written Python.
 import hashlib
 import io
 import json
+import os
+import stat
 import time
 import uuid
 import zipfile
@@ -51,7 +53,28 @@ def _state(doc):
     # The server's async task output is capped at 64 KiB. Do not return a truncated observation.
     if len(json.dumps(objects, ensure_ascii=False).encode()) > 48000:
         raise ValueError("model_limit")
-    return {"document_name": doc.Name, "state_sha256": fingerprint, "objects": objects}
+    return {"document_name": doc.Name, "state_sha256": fingerprint, "objects": objects, "has_saved_file": bool(doc.FileName), "modified": bool(getattr(Gui.getDocument(doc.Name), "Modified", True))}
+
+
+def _saved_file(doc):
+    # The destination comes only from FreeCAD's human-owned Save As dialog.
+    path = doc.FileName
+    before = os.stat(path, follow_symlinks=False)
+    if not path.lower().endswith(".fcstd") or not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 256 * 1024 * 1024:
+        raise ValueError("native_save_uncertain")
+    digest = hashlib.sha256()
+    total = 0
+    with open(path, "rb") as saved:
+        for chunk in iter(lambda: saved.read(1024 * 1024), b""):
+            total += len(chunk)
+            if total > 256 * 1024 * 1024:
+                raise ValueError("native_save_uncertain")
+            digest.update(chunk)
+        after = os.fstat(saved.fileno())
+    current = os.stat(path, follow_symlinks=False)
+    if total != before.st_size or any((item.st_ino, item.st_size, item.st_mtime_ns) != (before.st_ino, before.st_size, before.st_mtime_ns) for item in (after, current)):
+        raise ValueError("native_save_uncertain")
+    return {"name": os.path.basename(path), "bytes": before.st_size, "sha256": digest.hexdigest()}
 
 
 def _run(request):
@@ -88,7 +111,8 @@ def _run(request):
     before = _state(doc)
     if before["state_sha256"] != request["state_sha256"]:
         raise ValueError("changed_document")
-    if doc.HasPendingTransaction or doc.UndoMode != 1:
+    saving = request["operations"] == [{"action": "save_as"}]
+    if doc.HasPendingTransaction or (not saving and doc.UndoMode != 1):
         raise ValueError("native_undo_unavailable")
     # Do not edit a hidden tab while the user is looking at a different document.
     if Gui.activeDocument() is None or Gui.activeDocument().Document is not doc:
@@ -99,9 +123,26 @@ def _run(request):
     job = request["job_id"]
     if job in receipts:
         raise ValueError("already_attempted")
+    if any(entry["status"] == "running" and entry["document_token"] == request["document_token"] for entry in receipts.values()):
+        raise ValueError("native_operation_pending")
     if len(receipts) >= 128:
         raise ValueError("receipt_limit")
     receipts[job] = {"status": "running", "document_token": request["document_token"]}
+    if saving:
+        try:
+            if not Gui.getDocument(doc.Name).saveAs():
+                receipts[job] = {"status": "not_completed", "document_token": request["document_token"]}
+                raise ValueError("native_save_not_completed")
+            after = _state(doc)
+            saved = _saved_file(doc)
+            if after["modified"] or before["objects"] != after["objects"]:
+                raise ValueError("native_save_uncertain")
+            receipts[job] = {"status": "completed", "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after_sha256": after["state_sha256"], "saved_document": saved}
+            return {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": [{"action": "save_as", "success": True}], "undo_available": False, "saved_document": saved}
+        except BaseException:
+            if receipts[job]["status"] == "running":
+                receipts[job]["status"] = "uncertain"
+            raise
     transaction = "Hazlo Mexa: " + job
     doc.openTransaction(transaction)
     try:
@@ -132,8 +173,8 @@ def _dispatch():
         return {"ok": True, "result": _run(HAZLO_REQUEST)}
     except Exception as error:
         # Do not forward native tracebacks, paths or document contents in failures.
-        safe = {"model_limit", "closed_document", "document_limit", "stale_document", "changed_document", "native_undo_unavailable", "document_not_visible", "expired_request", "already_attempted", "receipt_limit", "native_operation_rolled_back", "rollback_uncertain"}
+        safe = {"model_limit", "closed_document", "document_limit", "stale_document", "changed_document", "native_undo_unavailable", "document_not_visible", "expired_request", "already_attempted", "receipt_limit", "native_operation_rolled_back", "rollback_uncertain", "native_save_not_completed", "native_save_uncertain", "native_operation_pending"}
         return {"ok": False, "error": str(error) if str(error) in safe else "native_operation_uncertain"}
 
 
-task_print(json.dumps(rpc.dispatch_to_gui(_dispatch), ensure_ascii=False, allow_nan=False))
+task_print(json.dumps(rpc.dispatch_to_gui(_dispatch, timeout=600 if HAZLO_REQUEST.get("operations") == [{"action": "save_as"}] else 60), ensure_ascii=False, allow_nan=False))
