@@ -1,5 +1,19 @@
 # Hazlo Mexa application goal
 
+## Governing user flow — October 14, 2026
+
+1. **Idea.** The user describes what they want to create or change in ordinary language.
+2. **Define together.** The agent helps choose the appropriate program, inspects what is already there, and asks only for parameters needed for the next useful step. Users can give metric or imperial measurements and need not know internal names.
+3. **Work in the program.** The agent sends incremental interactions through that program's native MCP, API, Python interface or CLI. The program owns the document and editing tools. The user sees actual changes in its native window while Hazlo stays a chat.
+4. **Suggest and finalize.** Read the program's current state, discuss improvements, apply the user's revisions, then save/export when ready.
+
+This sequence governs the remaining work and supersedes acceptance priorities in the historical updates below. Hazlo is the conversational operator of the native software. Keep existing adapters, connections, source checks, undo/backups, approvals and result reads underneath that interaction; do not build another editor or require a separate custom workflow for each possible edit. Review meaningful changes together rather than making the user manage native tool calls.
+
+**Next implementation gate:** demonstrate an incremental edit in one connected, open native document, visibly observe it there, read it back and continue from that current state. Reuse the working native interface, then apply the same flow to every named program. Installer polish and more repetitions of saved-copy jobs come after this gate.
+
+A CLI command or MCP connection alone does not establish live editing. The adapter must address the open document through the program's supported interface and update its native view. Explicitly requested compile/export/slice and saved-file fallbacks remain valid capabilities, but do not satisfy this live-interaction gate. Do not silently reload over unsaved work or claim that a separate generated file changed the open document.
+
+
 **October 14 — selected-program enforcement:** [desktop tool connections now enforce the program choice](research/chat-program-scope-2026-10-14.md) across Claude, Codex and Ollama. Cross-program proposal calls are refused before preparing a job; existing source validation and human approval remain in force. The source passes 143 regular Rust tests, program-scoped SDK/Ollama/browser checks and actual Codex local-fixture catalogs for all six groups plus a resumed program switch. Real-model/native/installed acceptance remains open. Prepared installer `4768e717…` predates this change; native UI remains stopped after Escape.
 
 Latest candidate `472af63e…` includes both fixes and passes release build, 6,584 unchanged-input checks, binary privacy scans and the real 26-tool release-helper transport. Its fresh guest preparation refuses at 2,354/3,072 MiB available/required before creating a configuration or guest. Earlier prepared inputs are preserved as superseded; native resume and current native/installed acceptance remain pending.

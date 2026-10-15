@@ -1,5 +1,14 @@
 # Hazlo Mexa implementation gates
 
+## Current priority — native interaction from chat
+
+Follow the user's four steps in [the application goal](application-goal.md): idea → define parameters and program → visible native interactions → suggestions and finalization.
+
+The next acceptance target is one connected, open document: describe an edit naturally, perform it using the program's native tools, see the change in that program, read its current state and make a follow-up revision there. Then extend that same flow across the remaining programs. Hazlo supplies the chat and connections; the native applications supply their editing behavior and views. Reuse existing native adapters and keep safeguards beneath this flow instead of expanding operation-specific forms, menus or orchestration.
+
+The passing saved-copy/backend/installer checks below retain their exact scopes. They are supporting evidence, not substitutes for visible native interaction. Preserve existing projects and working integrations; do not expand package-testing work before proving the intended interaction. Native UI automation remains stopped after the user's latest Escape.
+
+
 **October 14 — selected-program tool boundary:** [typed desktop program binding](research/chat-program-scope-2026-10-14.md) scopes MCP/Ollama catalogs and dispatch for every program group, filters capability descriptions and refuses another program's proposal before preparing a job. Regular validation: 143 pass/52 ignored; SDK/loopback/browser/legacy/build/Clippy checks pass. Actual Codex 0.159.2 passes all six scoped model catalogs and a conversation-preserving scope switch using local scripted HTTP responses. The different PATH alpha client is refused; no version pin or download changes. Real-model/native/installed acceptance remains open, UI automation is stopped and prepared `4768e717…` predates this source.
 
 **Latest program-bound candidate:** unsigned `472af63e…` builds from `3ebd8e3` with both fixes, 6,584 unchanged tracked inputs, zero targeted builder-profile matches and a real 26-tool release-helper transport pass. Fresh preparation refuses at 2,354/3,072 MiB available/required and creates no configuration or guest. The earlier prepared candidate remains preserved as superseded. Native UI resume and current native/installed acceptance remain open.
