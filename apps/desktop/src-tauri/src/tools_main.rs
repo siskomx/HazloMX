@@ -3,21 +3,8 @@
 async fn main() {
     use std::io::{Read, Write};
     use tokio::io::AsyncWriteExt;
-    let mode = std::env::args_os().nth(1);
-    let validate = mode.as_deref() == Some(std::ffi::OsStr::new("--validate-pcb-move"));
-    if validate || mode.as_deref() == Some(std::ffi::OsStr::new("--verify-pcb-move")) {
-        let mut bytes = Vec::new();
-        let valid = std::env::args_os().len() == 2
-            && std::io::stdin().lock()
-                .take((hazlomexa::konnect::NATIVE_MOVE_CHECK_LIMIT + 1) as u64)
-                .read_to_end(&mut bytes).is_ok()
-            && if validate {
-                hazlomexa::konnect::validate_native_move_json(&bytes)
-            } else {
-                hazlomexa::konnect::check_native_move_json(&bytes)
-            };
-        println!("{}", if valid { "{\"valid\":true}" } else { "{\"valid\":false}" });
-        std::process::exit(if valid { 0 } else { 1 });
+    if let Some(code) = hazlomexa::konnect::movement_validator_cli() {
+        std::process::exit(code);
     }
     async fn run() -> std::io::Result<()> {
         let pipe = std::env::var("HAZLOMEXA_PIPE")

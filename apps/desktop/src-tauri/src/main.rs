@@ -1176,6 +1176,7 @@ fn open_artifact(
             | ArtifactFormat::KicadReport
             | ArtifactFormat::SliceReport
             | ArtifactFormat::CadpilotReport
+            | ArtifactFormat::LivePcbReport
             | ArtifactFormat::KonnectReport
     ) {
         return artifact.read_text().map(Some).map_err(|e| e.to_string());
@@ -1240,6 +1241,9 @@ fn open_artifact(
 }
 
 fn main() {
+    if let Some(code) = hazlomexa::konnect::movement_validator_cli() {
+        std::process::exit(code);
+    }
     tauri::Builder::default().plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data = app.path().app_local_data_dir()?;

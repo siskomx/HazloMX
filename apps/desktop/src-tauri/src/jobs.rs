@@ -112,6 +112,7 @@ pub struct InferenceDispatch {
 }
 
 struct Job {
+    live_pcb: Option<crate::kicad_live::Binding>,
     view: JobView,
     cancelled: Arc<AtomicBool>,
 }
@@ -161,6 +162,7 @@ impl AgentSource {
 }
 
 pub struct Dispatch {
+    live_pcb: Option<crate::kicad_live::Binding>,
     project: Arc<Project>,
     snapshot: Snapshot,
     cancelled: Arc<AtomicBool>,
@@ -2050,6 +2052,8 @@ impl Workflow {
         if matches!(snapshot.audit.as_ref().unwrap().source, RunSource::Mcp) {
             snapshot.schema_version = if matches!(snapshot.input, OperationInput::LiveCad(_)) {
                 13
+            } else if matches!(snapshot.input, OperationInput::LivePcb(_)) {
+                14
             } else if matches!(snapshot.input, OperationInput::KonnectPcb(_)) {
                 12
             } else {
@@ -2065,6 +2069,7 @@ impl Workflow {
             busy: false,
         };
         state.job = Some(Job {
+            live_pcb: None,
             view: view.clone(),
             cancelled: Arc::new(AtomicBool::new(false)),
         });
@@ -2111,6 +2116,26 @@ impl Workflow {
         Self::propose_operation_locked(&mut state, OperationInput::LiveCad(input), RunSource::Mcp)
     }
 
+    pub fn propose_live_pcb(
+        &self, project:(Uuid,PathBuf), input:crate::kicad_live::Input,
+        board:PathBuf, connection:crate::kicad_live::Connection,
+    ) -> Result<JobView,String> {
+        input.validate()?;
+        connection.validate()?;
+        crate::project::valid_location(&board).map_err(|_|"Selecciona una PCB local válida.")?;
+        if board.file_name().and_then(|s|s.to_str())!=Some(input.board_name.as_str()) || input.receipt_sha256.is_some() {
+            return Err("La propuesta requiere la PCB abierta sin un resultado anterior.".into());
+        }
+        let mut state=self.state.lock().map_err(|e|e.to_string())?;
+        inference_idle(&state)?;
+        if state.project.as_ref().map(|p|(p.id,p.root.clone()))!=Some(project) {
+            return Err("El proyecto cambió. Lee la PCB de nuevo.".into());
+        }
+        let view=Self::propose_operation_locked(&mut state,OperationInput::LivePcb(input),RunSource::Mcp)?;
+        state.job.as_mut().unwrap().live_pcb=Some(crate::kicad_live::Binding {board,connection});
+        Ok(view)
+    }
+
     pub fn begin(&self, approval_id: Uuid) -> Result<Dispatch, String> {
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
@@ -2135,6 +2160,9 @@ impl Workflow {
         } else {
             None
         };
+        let live_pcb=if matches!(job.view.snapshot.input,OperationInput::LivePcb(_)) {
+            Some(job.live_pcb.clone().ok_or("La conexión nativa venció. Vuelve a leer la PCB.")?)
+        } else {None};
         let mut snapshot = job.view.snapshot.clone();
         snapshot.phase = Phase::Running;
         snapshot.advance();
@@ -2144,6 +2172,7 @@ impl Workflow {
         job.view.busy = true;
         job.view.sequence += 1;
         Ok(Dispatch {
+            live_pcb,
             project,
             snapshot,
             cancelled: job.cancelled.clone(),
@@ -2336,6 +2365,10 @@ impl Workflow {
                         dispatch.cancelled.clone(),
                     )?;
                 }
+                OperationInput::LivePcb(input) => {
+                    crate::kicad_live::run(input,dispatch.live_pcb.as_ref().ok_or("La conexión PCB venció.")?,
+                        &stage.path,&profile,dispatch.cancelled.clone())?;
+                }
                 OperationInput::LiveCad(input) => {
                     crate::cadpilot_live::run(input, &stage.path, &dispatch.cancelled)?;
                 }
@@ -2460,6 +2493,10 @@ impl Workflow {
                 let bytes = crate::kicad_project::read_regular(&stage.path.join("result.json"), 65536)?;
                 input.receipt_sha256 = Some(crate::kicad_project::digest(&bytes));
             }
+            if let OperationInput::LivePcb(input)=&mut dispatch.snapshot.input {
+                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
+                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
+            }
             Ok(stage)
         });
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
@@ -2486,13 +2523,16 @@ impl Workflow {
             if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_)) {
                 job.view.error = Some("La espera se canceló. FreeCAD puede haber completado la operación nativa; vuelve a leer el documento antes de continuar. Cancelar no deshace una edición nativa.".into());
             }
+            if matches!(dispatch.snapshot.input,OperationInput::LivePcb(_)) {
+                job.view.error=Some("La espera se canceló. KiCad puede haber completado el cambio; vuelve a leer la PCB. Cancelar no deshace una edición nativa.".into());
+            }
             if matches!(dispatch.snapshot.input, OperationInput::Agent(_)) {
                 job.view.error = Some("La espera se canceló. Agent puede terminar de modificar su copia temporal; no se publicaron esos cambios ni se modificó el original.".into());
             }
         } else {
             match result {
                 Ok(stage) => {
-                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_)) {
+                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_)) {
                         job.view.snapshot.input = dispatch.snapshot.input.clone();
                     }
                     if let Some(audit) = &mut job.view.snapshot.audit {
@@ -2526,6 +2566,70 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_pcb_jobs_bind_private_connections_to_one_use_approval_and_receipt_recovery() {
+        let (root,workflow)=setup();
+        let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::kicad_live::tests::move_fixture();
+        let connection=crate::kicad_live::Connection {endpoint:format!("ipc://{}",root.join("owned.sock").display()),token:"owned-private-session".into()};
+        let board=root.join("Owned.kicad_pcb");
+        assert!(workflow.propose_live_pcb((Uuid::new_v4(),root.clone()),input.clone(),board.clone(),connection.clone()).is_err());
+        let pending=workflow.propose_live_pcb(project,input.clone(),board,connection).unwrap();
+        assert_eq!(pending.snapshot.schema_version,14);
+        assert_eq!(pending.snapshot.phase,Phase::AwaitingApproval);
+        let persisted=serde_json::to_string(&pending.snapshot).unwrap();
+        assert!(!persisted.contains("owned-private-session") && !persisted.contains("ipc://") && !persisted.contains("board_path"));
+        assert_eq!(fs::read_dir(root.join(".hazlomexa/staging")).unwrap().count(),0);
+        assert!(workflow.begin(Uuid::new_v4()).is_err());
+        let approval=pending.approval_id.unwrap();
+        let dispatch=workflow.begin(approval).unwrap();
+        assert!(dispatch.live_pcb.is_some());
+        assert!(workflow.begin(approval).is_err());
+        let stage=dispatch.project.reserve_stage(input.job_id).unwrap();
+        let bytes=serde_json::to_vec_pretty(&crate::kicad_live::tests::receipt_fixture(&input)).unwrap();
+        fs::write(stage.path.join("result.json"),&bytes).unwrap();
+        let done=workflow.finish(dispatch,Ok(stage)).unwrap();
+        assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);
+        let OperationInput::LivePcb(completed)=&done.snapshot.input else {panic!("Wrong native input")};
+        assert_eq!(completed.receipt_sha256.as_deref(),Some(crate::kicad_project::digest(&bytes).as_str()));
+        assert_eq!(workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).unwrap().read_text().unwrap().as_bytes(),bytes);
+        let path=root.join(".hazlomexa/artifacts").join(input.job_id.to_string()).join("result.json");
+        fs::write(&path,b"changed receipt").unwrap();
+        assert!(workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).is_err());
+        fs::write(&path,&bytes).unwrap();
+        drop(workflow);
+        let project=Project::open(&root).unwrap();
+        let recovered=project.recover().unwrap();
+        assert_eq!(recovered[0].schema_version,14);
+        assert_eq!(recovered[0].phase,Phase::Completed);
+        drop(project);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn native_pcb_cancellation_never_reuses_approval_or_claims_rollback() {
+        let (root,workflow)=setup();
+        let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::kicad_live::tests::move_fixture();
+        let pending=workflow.propose_live_pcb(project,input.clone(),root.join("Owned.kicad_pcb"),
+            crate::kicad_live::Connection {endpoint:format!("ipc://{}",root.join("owned.sock").display()),token:String::new()}).unwrap();
+        let approval=pending.approval_id.unwrap();
+        let dispatch=workflow.begin(approval).unwrap();
+        workflow.cancel(input.job_id).unwrap();
+        let done=workflow.finish(dispatch,Err("Stopped owned worker".into())).unwrap();
+        assert_eq!(done.snapshot.phase,Phase::Cancelled);
+        assert!(done.error.unwrap().contains("Cancelar no deshace"));
+        assert!(workflow.begin(approval).is_err());
+        assert!(workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).is_err());
+        drop(workflow);
+        let project=Project::open(&root).unwrap();
+        assert_eq!(project.recover().unwrap()[0].phase,Phase::Cancelled);
+        drop(project);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn native_changes_require_one_time_approval_and_persist_a_verified_receipt_hash() {
         let (root,workflow)=setup();

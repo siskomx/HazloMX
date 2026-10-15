@@ -44,7 +44,7 @@ try {
     const snapshot = { project: ["project-one", "C:\\owned\\project"], job: null, inference: null, recovered: [], freecad: "owned-freecad", freecad_available: true, codex: { version: "fixture" }, codex_login: { id: "login", sequence: 1, busy: false, cancelled: false, connected: true, auth_url: null, error: null }, claude: { version: "fixture" } };
     const copy = () => structuredClone(snapshot);
     window.setCompletedJob = input => {
-      snapshot.job = { snapshot: { schema_version: input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
+      snapshot.job = { snapshot: { schema_version: input.live_pcb_version ? 14 : input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
     };
     window.setPendingJob = input => { window.setCompletedJob(input); snapshot.job.snapshot.phase = "awaiting_approval"; snapshot.job.approval_id = "private-approval"; };
     window.calls = []; window.approvals = 0;
@@ -570,9 +570,37 @@ try {
     if (!await page.locator("#history").isVisible()) await page.locator("#results > summary").click();
     assert.match(await page.locator("#history").innerText(),/Informe de la exportación/);
   }
+  for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("kicad");
+    await page.locator("#new-chat").click();
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_pcb_version:1,job_id:crypto.randomUUID(),board_name:"Placa.kicad_pcb",
+      description:"Desplaza la resistencia una pulgada a la derecha",units:"in",
+      before:{job_id:crypto.randomUUID(),native_pcb_version:1,instance_sha256:"a".repeat(64),document_sha256:"b".repeat(64),
+        state_sha256:"c".repeat(64),source_is_untrusted_data:true,
+        components:[{uuid:"1390739f-0b91-4d50-b8ae-92acd725ec51",reference:"R1",value:"10k",x_mm:25.4,y_mm:0,locked:false}]},
+      movement:{uuid:"1390739f-0b91-4d50-b8ae-92acd725ec51",reference:"R1",expected_x_mm:25.4,expected_y_mm:0,x_mm:50.8,y_mm:0}}));
+    await page.locator("#program-actions button").first().click();
+    await page.locator("#approve:enabled").waitFor();
+    const facts=await page.locator("#change-facts").innerText();
+    assert.match(facts,/10k \(R1\)[\s\S]*horizontal 1, vertical 0 pulgadas → horizontal 2, vertical 0 pulgadas/);
+    assert.match(facts,/archivo todavía no se guardará/);
+    assert(!facts.includes("1390739f"));
+    const before=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    const calls=await chatCalls();
+    assert.equal(calls.length,before+1);
+    assert.equal(calls.at(-1).args.program,"kicad");
+    assert.match(JSON.parse(calls.at(-1).args.prompt).user_request,/inspect_selected_live_pcb/);
+    assert.match(await page.locator("#job-status").innerText(),/PCB abierta de KiCad[\s\S]*todavía no se guardó/);
+    if(!await page.locator("#history").isVisible())await page.locator("#results > summary").click();
+    const history=await page.locator("#history").innerText();
+    assert.match(history,/Informe del cambio PCB/);
+    assert(!history.includes("Gerber")&&!history.includes("HEX"));
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

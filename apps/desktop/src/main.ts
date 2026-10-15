@@ -329,6 +329,7 @@ function artifactButtons(job: Snapshot, parent: HTMLElement) {
     formats=[["original_cad","Mostrar FCStd original"],["cadpilot_report","Ver mediciones y operación"]];
     if(job.input.request.operation!=="inspect") formats.push(["fcstd","Abrir FCStd editado"],["step","Abrir STEP editado"]);
   }
+  if (job.input.live_pcb_version) formats=[["live_pcb_report","Ver informe del cambio PCB"]];
   if (job.input.konnect_version) {
     formats=[["konnect_original","Mostrar esquema original"],["konnect_edited","Mostrar copia editada"]];
     if(job.input.pcb_move)formats=[["konnect_original","Mostrar PCB original"],["konnect_edited","Mostrar PCB guardada y revisada"],["kicad_report","Ver errores y advertencias DRC"],["kicad_outputs","Mostrar exportaciones"]];
@@ -346,6 +347,7 @@ function artifactButtons(job: Snapshot, parent: HTMLElement) {
           if (format === "drawing_report") element("artifact-preview-heading").textContent = "Informe de CADCraft · solo lectura";
           if (format === "kicad_report") element("artifact-preview-heading").textContent = "Informe ERC/DRC · solo lectura";
           if (format === "slice_report") element("artifact-preview-heading").textContent = "Informe de laminado · solo lectura";
+          if (format === "live_pcb_report") element("artifact-preview-heading").textContent = "Informe del cambio PCB · solo lectura";
           if (format === "cadpilot_report") element("artifact-preview-heading").textContent = "Mediciones y operación CADPilot · solo lectura";
           if (format === "konnect_report") element("artifact-preview-heading").textContent="Informe de edición Konnect · solo lectura";
           element("artifact-source").textContent = source;

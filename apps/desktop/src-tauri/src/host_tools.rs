@@ -1293,6 +1293,7 @@ impl HostTools {
                     OperationInput::Kicad(_)=>ArtifactFormat::KicadReport,
                     OperationInput::Orca(_)=>ArtifactFormat::SliceReport,
                     OperationInput::Cadpilot(_) | OperationInput::LiveCad(_)=>ArtifactFormat::CadpilotReport,
+                    OperationInput::LivePcb(_)=>ArtifactFormat::LivePcbReport,
                     OperationInput::Konnect(_) | OperationInput::KonnectPcb(_)=>ArtifactFormat::KonnectReport,
                 };
                 let mut content=self.workflow.artifact(request.job_id,format)?.read_text().map_err(|e|e.to_string())?;
@@ -2509,6 +2510,7 @@ mod tests {
     #[test]
     #[ignore = "Controlled local NNG server and private owned root supplied by the frozen-worker test"]
     fn actual_embedded_worker_reads_controlled_native_server() {
+        use crate::project::{ArtifactFormat,Phase};
         let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap();
         let root = PathBuf::from(std::env::var_os("HAZLOMEXA_TEST_NATIVE_PCB_ROOT").expect("Supply the controlled native-protocol fixture"));
         assert!(fs::canonicalize(&root).unwrap().starts_with(fs::canonicalize(workspace.join("target/native-pcb-worker")).unwrap()));
@@ -2523,16 +2525,52 @@ mod tests {
         let selected = host.select_live_pcb(project_id,entry.clone(),crate::kicad_live::Connection {
             endpoint:format!("ipc://{}",root.join("api.sock").display()),token:String::new()
         },Arc::new(AtomicBool::new(false))).unwrap();
-        let reply=host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap();
+        let mut reply=host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap();
         assert_eq!(reply["observation"]["state_sha256"],selected.observation.state_sha256);
         assert_eq!(reply["observation"]["instance_sha256"],selected.observation.instance_sha256);
         assert_eq!(reply["observation"]["components"][0]["reference"],"R1");
         assert_eq!(reply["observation"]["components"][0]["x_mm"],10.);
         assert!(!reply.to_string().contains(&root.to_string_lossy().to_string()));
         assert!(!reply.to_string().contains("owned-fixture-token"));
-        assert_eq!(fs::read(entry).unwrap(),before);
+        assert_eq!(fs::read(&entry).unwrap(),before);
         assert!(workflow.view().unwrap().job.is_none());
         assert!(workflow.view().unwrap().history.is_empty());
+        if std::env::var_os("HAZLOMEXA_TEST_NATIVE_PCB_APPLY").as_deref()==Some(std::ffi::OsStr::new("1")) {
+            for step in 1..=2 {
+                let before:crate::kicad_live::Observation=serde_json::from_value(reply["observation"].clone()).unwrap();
+                let component=before.components[0].clone();
+                let input=crate::kicad_live::Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
+                    board_name:"OwnedBoard.kicad_pcb".into(),description:"Move the resistor one inch right and a little down".into(),units:crate::kicad::Units::In,
+                    before:before.clone(),movement:crate::konnect::FootprintMove {uuid:component.uuid,
+                        reference:component.reference,expected_x_mm:component.x_mm,expected_y_mm:component.y_mm,
+                        x_mm:10.+25.4*f64::from(step),y_mm:20.+2.5*f64::from(step)},receipt_sha256:None};
+                let pending=workflow.propose_live_pcb((project_id,root.clone()),input.clone(),entry.clone(),
+                    crate::kicad_live::Connection {endpoint:format!("ipc://{}",root.join("api.sock").display()),token:String::new()}).unwrap();
+                assert_eq!(pending.snapshot.phase,Phase::AwaitingApproval);
+                let approval=pending.approval_id.unwrap();
+                assert!(workflow.begin(Uuid::new_v4()).is_err());
+                let dispatch=workflow.begin(approval).unwrap();
+                assert!(workflow.begin(approval).is_err());
+                let done=workflow.execute(dispatch).unwrap();
+                assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);
+                assert!(workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).unwrap().read_text().unwrap().contains("\"saved\": false"));
+                let verified=host.call("read_verified_result",json!({"job_id":input.job_id})).unwrap();
+                assert_eq!(verified["format"],"live_pcb_report");
+                assert!(!verified.to_string().contains("owned-fixture-token"));
+                assert!(!verified.to_string().contains(&root.to_string_lossy().to_string()));
+                reply=host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap();
+                assert_eq!(reply["observation"]["components"][0]["x_mm"],input.movement.x_mm);
+                assert_eq!(reply["observation"]["instance_sha256"],before.instance_sha256);
+                assert_eq!(reply["observation"]["document_sha256"],before.document_sha256);
+                assert_ne!(reply["observation"]["state_sha256"],before.state_sha256);
+                assert_eq!(fs::read(&entry).unwrap(),b"Saved fixture bytes cannot stand in for native state");
+            }
+            let view=workflow.view().unwrap();
+            assert_eq!(view.history.len(),2);
+            assert!(view.history.iter().all(|run|run.phase==Phase::Completed));
+            let serialized=serde_json::to_string(&view.history).unwrap();
+            assert!(!serialized.contains("owned-fixture-token") && !serialized.contains("ipc://"));
+        }
         let profiles=root.join("host-profiles");
         let mut pending=vec![profiles];
         let mut workers=Vec::new();
@@ -2552,6 +2590,13 @@ mod tests {
         fs::write(root.join("native-host-result.json"),serde_json::to_vec(&json!({
             "ok":true,"result":reply["observation"]
         })).unwrap()).unwrap();
+        if std::env::var_os("HAZLOMEXA_TEST_NATIVE_PCB_APPLY").as_deref()==Some(std::ffi::OsStr::new("1")) {
+            drop(host);drop(workflow);
+            let reopened=Project::open(&root).unwrap();
+            let recovered=reopened.recover().unwrap();
+            assert_eq!(recovered.len(),2);
+            assert!(recovered.iter().all(|run|run.phase==Phase::Completed && run.schema_version==14));
+        }
     }
 
     #[test]

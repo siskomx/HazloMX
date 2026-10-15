@@ -11,6 +11,7 @@ import uuid
 parser = argparse.ArgumentParser()
 parser.add_argument("--site", required=True)
 parser.add_argument("--verifier", required=True)
+parser.add_argument("--host-apply", action="store_true", help="Exercise two approved production jobs in the controlled native server")
 parser.add_argument("--host-runner", help="Desktop-feature Rust test executable for production read routing")
 parser.add_argument("--worker", help="Frozen helper for real NNG subprocess coverage")
 args = parser.parse_args()
@@ -314,6 +315,8 @@ class Tests(unittest.TestCase):
                     base["board_path"] = str(root / "OwnedBoard.kicad_pcb")
                     Path(base["board_path"]).write_bytes(b"Saved fixture bytes cannot stand in for native state")
                     host_env = {**os.environ, "HAZLOMEXA_TEST_NATIVE_PCB_ROOT":str(root)}
+                    if args.host_apply:
+                        host_env["HAZLOMEXA_TEST_NATIVE_PCB_APPLY"] = "1"
                     host = subprocess.run([str(Path(args.host_runner).resolve()), "--ignored", "--exact",
                         "host_tools::tests::actual_embedded_worker_reads_controlled_native_server", "--nocapture"],
                         capture_output=True, env=host_env, cwd=root, timeout=60,
@@ -323,15 +326,21 @@ class Tests(unittest.TestCase):
                     initial = json.loads((root / "native-host-result.json").read_text())["result"]
                 else:
                     initial = call({**base, "action":"inspect"})
-                result = call({**base, "action":"move", "movement":self.request["movement"],
+                movement = self.request["movement"]
+                if args.host_apply:
+                    current = initial["components"][0]
+                    movement = {**movement, "expected_x_mm":current["x_mm"], "expected_y_mm":current["y_mm"],
+                                "x_mm":86.2, "y_mm":27.5}
+                result = call({**base, "action":"move", "movement":movement,
                     **{key:initial[key] for key in ("instance_sha256", "document_sha256", "state_sha256")}})
                 self.assertEqual(result["status"], "completed")
                 self.assertFalse(result["saved"])
-                self.assertEqual(result["after"]["components"][0]["x_mm"], 35.4)
-                self.assertEqual(self.board.calls, ["begin", "update", "commit"])
-                self.assertEqual(count.count("BeginCommit"), 1)
-                self.assertEqual(count.count("EndCommit"), 1)
-                self.assertEqual(count.count("UpdateItems"), 1)
+                self.assertEqual(result["after"]["components"][0]["x_mm"], 86.2 if args.host_apply else 35.4)
+                moves = 3 if args.host_apply else 1
+                self.assertEqual(self.board.calls, ["begin", "update", "commit"] * moves)
+                self.assertEqual(count.count("BeginCommit"), moves)
+                self.assertEqual(count.count("EndCommit"), moves)
+                self.assertEqual(count.count("UpdateItems"), moves)
             finally:
                 stop.set()
                 thread.join(3)

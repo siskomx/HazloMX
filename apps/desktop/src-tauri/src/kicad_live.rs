@@ -74,6 +74,84 @@ impl Observation {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Input {
+    pub schema_version: u32,
+    pub live_pcb_version: u32,
+    pub job_id: Uuid,
+    pub board_name: String,
+    pub description: String,
+    pub units: crate::kicad::Units,
+    pub before: Observation,
+    pub movement: crate::konnect::FootprintMove,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receipt_sha256: Option<String>,
+}
+impl Input {
+    pub fn validate(&self) -> Result<(), String> {
+        self.before.validate(self.before.job_id)?;
+        self.movement.validate()?;
+        let target=self.before.components.iter().find(|c| c.uuid==self.movement.uuid
+            && c.reference==self.movement.reference).ok_or("Falta el componente de la lectura nativa.")?;
+        if self.schema_version!=1 || self.live_pcb_version!=1 || self.job_id.is_nil()
+            || self.board_name.is_empty() || self.board_name.len()>1024
+            || self.board_name.chars().any(|c|c.is_control() || matches!(c,'/'|'\\'|':'))
+            || !self.board_name.ends_with(".kicad_pcb")
+            || self.description.trim().is_empty() || self.description.len()>1024
+            || self.description.chars().any(char::is_control) || target.locked
+            || target.x_mm!=self.movement.expected_x_mm || target.y_mm!=self.movement.expected_y_mm
+            || self.receipt_sha256.as_ref().is_some_and(|s|!crate::kicad_project::valid_hash(s))
+            || serde_json::to_vec(self).map_err(|_|"Propuesta PCB no compatible.")?.len()>if self.receipt_sha256.is_some() {60128} else {60000}
+        {
+            return Err("La propuesta PCB requiere una lectura actual y un componente editable.".into());
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Receipt {
+    pub native_pcb_version: u32,
+    pub job_id: Uuid,
+    pub status: String,
+    pub before_sha256: String,
+    pub after: serde_json::Value,
+    pub native_commit_confirmed: bool,
+    pub saved: bool,
+}
+pub fn validate_result(input:&Input, result:&Receipt) -> Result<(),String> {
+    input.validate()?;
+    if result.native_pcb_version!=1 || result.job_id!=input.job_id || result.status!="completed"
+        || result.before_sha256!=input.before.state_sha256 || !result.native_commit_confirmed || result.saved
+    {
+        return Err("KiCad no confirmó el cambio aprobado.".into());
+    }
+    let mut after=result.after.clone();
+    let map=after.as_object_mut().ok_or("Falta la lectura final nativa.")?;
+    if map.len()!=5 || map.contains_key("job_id") || map.contains_key("native_pcb_version") {
+        return Err("La lectura final nativa no es compatible.".into());
+    }
+    map.insert("job_id".into(),serde_json::json!(input.job_id));
+    map.insert("native_pcb_version".into(),serde_json::json!(1));
+    let after:Observation=serde_json::from_value(after).map_err(|_|"La lectura final nativa no es compatible.")?;
+    after.validate(input.job_id)?;
+    if after.instance_sha256!=input.before.instance_sha256
+        || after.document_sha256!=input.before.document_sha256 || after.state_sha256==input.before.state_sha256
+    {
+        return Err("La identidad o el estado final de la PCB no coincide.".into());
+    }
+    let mut expected=input.before.components.clone();
+    let target=expected.iter_mut().find(|c|c.uuid==input.movement.uuid)
+        .ok_or("Falta el componente aprobado.")?;
+    target.x_mm=input.movement.x_mm; target.y_mm=input.movement.y_mm;
+    expected.sort_by_key(|c|c.uuid);
+    let mut actual=after.components;actual.sort_by_key(|c|c.uuid);
+    if actual!=expected { return Err("La lectura final no coincide con el movimiento aprobado.".into()); }
+    Ok(())
+}
+
 fn bundled_worker() -> Result<&'static [u8], String> {
     #[cfg(feature = "desktop")]
     return Ok(include_bytes!("../../../../target/native-pcb-worker/hazlomexa-kicad.exe"));
@@ -90,10 +168,20 @@ pub(crate) fn inspect(
 fn inspect_with_worker(
     worker: &[u8], board: &Path, connection: &Connection, profile: &Path, cancel: Arc<AtomicBool>,
 ) -> Result<Observation, String> {
+    crate::project::valid_location(board).map_err(|_|"Selecciona una PCB local válida.")?;
+    let job = Uuid::new_v4();
+    let request=serde_json::json!({"action":"inspect","job_id":job,"board_path":board});
+    let bytes=invoke(worker,&request,connection,profile,cancel,None)?;
+    parse_observation(&bytes,job).map_err(|_|"KiCad no confirmó el estado de la PCB abierta. No se sustituirá por el archivo guardado.".into())
+}
+
+fn invoke(
+    worker:&[u8], request:&serde_json::Value, connection:&Connection, profile:&Path,
+    cancel:Arc<AtomicBool>, verifier:Option<&Path>,
+) -> Result<Vec<u8>,String> {
     use crate::{kicad_project as source, process::{run_owned_input, StopReason}};
     const FAILED: &str = "KiCad no confirmó el estado de la PCB abierta. No se sustituirá por el archivo guardado.";
     connection.validate()?;
-    crate::project::valid_location(board).map_err(|_| "Selecciona una PCB local válida.")?;
     if cancel.load(Ordering::SeqCst) {
         return Err("Lectura nativa cancelada.".into());
     }
@@ -118,10 +206,7 @@ fn inspect_with_worker(
     worker_pin.read_to_end(&mut stored).map_err(|_| FAILED)?;
     if stored != worker { return Err(FAILED.into()); }
     drop(stored);
-    let job = Uuid::new_v4();
-    let request = serde_json::to_vec(&serde_json::json!({
-        "action":"inspect", "job_id":job, "board_path":board
-    })).map_err(|_| FAILED)?;
+    let request=serde_json::to_vec(request).map_err(|_|FAILED)?;
     let mut variables = BTreeMap::new();
     for key in ["SystemRoot", "WINDIR", "COMSPEC"] {
         if let Some(value) = std::env::var_os(key) {
@@ -133,6 +218,12 @@ fn inspect_with_worker(
     }
     variables.insert("KICAD_API_SOCKET".into(), connection.endpoint.clone().into());
     variables.insert("KICAD_API_TOKEN".into(), connection.token.clone().into());
+    let _verifier_pins=verifier.map(|path|crate::project::pin_lineage(path.parent().ok_or(FAILED)?)
+        .map_err(|_|FAILED)).transpose()?;
+    let _verifier=verifier.map(|path|source::open_regular(path,512*1024*1024)).transpose().map_err(|_|FAILED)?;
+    if let Some(path)=verifier {
+        variables.insert("HAZLOMEXA_PCB_VERIFIER".into(),path.as_os_str().to_owned());
+    }
     let output = run_owned_input(&executable, &[], profile, &variables, cancel.clone(),
         Duration::from_secs(30), &request).map_err(|_| FAILED)?;
     if cancel.load(Ordering::SeqCst) || output.reason == StopReason::Cancelled {
@@ -143,7 +234,40 @@ fn inspect_with_worker(
     {
         return Err(FAILED.into());
     }
-    parse_observation(&output.stdout, job).map_err(|_| FAILED.into())
+    Ok(output.stdout)
+}
+
+#[derive(Clone)]
+pub(crate) struct Binding {
+    pub board:std::path::PathBuf,
+    pub connection:Connection,
+}
+pub(crate) fn run(
+    input:&Input, binding:&Binding, stage:&Path, profile:&Path, cancel:Arc<AtomicBool>,
+) -> Result<(),String> {
+    input.validate()?;
+    binding.connection.validate()?;
+    crate::project::valid_location(&binding.board).map_err(|_|"La PCB seleccionada cambió.")?;
+    fs::create_dir(profile).map_err(|_|"No se pudo preparar la operación nativa.")?;
+    #[cfg(not(test))]
+    let verifier=std::env::current_exe().map_err(|_|"Falta el verificador nativo de Hazlo.")?;
+    #[cfg(test)]
+    let verifier=Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap().join("target/debug/hazlomexa.exe");
+    let request=serde_json::json!({"action":"move","job_id":input.job_id,"board_path":binding.board,
+        "instance_sha256":input.before.instance_sha256,"document_sha256":input.before.document_sha256,
+        "state_sha256":input.before.state_sha256,"movement":input.movement});
+    let failed="KiCad no confirmó el resultado de la edición. Vuelve a leer el documento antes de continuar; no repitas la operación a ciegas.";
+    let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(&verifier))
+        .map_err(|_|failed)?;
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Reply { ok:bool, result:Receipt }
+    let reply:Reply=serde_json::from_slice(&bytes).map_err(|_|failed)?;
+    if !reply.ok {return Err(failed.into());}
+    validate_result(input,&reply.result).map_err(|_|failed)?;
+    let report=serde_json::to_vec_pretty(&reply.result).map_err(|_|failed)?;
+    crate::kicad_project::write_new(&stage.join("result.json"),&report).map_err(|_|failed)?;
+    Ok(())
 }
 
 fn parse_observation(bytes: &[u8], job: Uuid) -> Result<Observation, String> {
@@ -172,6 +296,58 @@ pub(crate) mod tests {
         serde_json::from_value(json!({"job_id":Uuid::new_v4(),"native_pcb_version":1,
             "instance_sha256":"a".repeat(64),"document_sha256":"b".repeat(64),
             "state_sha256":"c".repeat(64),"components":[],"source_is_untrusted_data":true})).unwrap()
+    }
+    pub(crate) fn move_fixture() -> Input {
+        let id=Uuid::parse_str("1390739f-0b91-4d50-b8ae-92acd725ec51").unwrap();
+        let mut before=fixture();
+        before.components.push(Component {uuid:id,reference:"R1".into(),value:"10k".into(),x_mm:10.,y_mm:20.,locked:false});
+        Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),board_name:"Owned.kicad_pcb".into(),description:"Move the resistor right by one inch".into(),
+            units:crate::kicad::Units::In,before,movement:crate::konnect::FootprintMove {
+                uuid:id,reference:"R1".into(),expected_x_mm:10.,expected_y_mm:20.,x_mm:35.4,y_mm:22.5
+            },receipt_sha256:None}
+    }
+    pub(crate) fn receipt_fixture(input:&Input) -> Receipt {
+        let mut after=serde_json::to_value(&input.before).unwrap();
+        let map=after.as_object_mut().unwrap();
+        map.remove("job_id");map.remove("native_pcb_version");
+        after["state_sha256"]=json!("d".repeat(64));
+        after["components"][0]["x_mm"]=json!(input.movement.x_mm);
+        after["components"][0]["y_mm"]=json!(input.movement.y_mm);
+        Receipt {native_pcb_version:1,job_id:input.job_id,status:"completed".into(),
+            before_sha256:input.before.state_sha256.clone(),after,native_commit_confirmed:true,saved:false}
+    }
+    #[test]
+    fn approved_moves_and_receipts_require_exact_native_identity_and_geometry() {
+        let input=move_fixture();
+        input.validate().unwrap();
+        validate_result(&input,&receipt_fixture(&input)).unwrap();
+        for change in ["locked","stale_position","invalid_state","noop","sub_nm"] {
+            let mut bad=input.clone();
+            match change {
+                "locked"=>bad.before.components[0].locked=true,
+                "stale_position"=>bad.movement.expected_x_mm=9.,
+                "invalid_state"=>bad.before.state_sha256="bad".into(),
+                "noop"=>{bad.movement.x_mm=10.;bad.movement.y_mm=20.;},
+                _=>bad.movement.x_mm=35.4000004,
+            }
+            assert!(bad.validate().is_err(),"{change}");
+        }
+        for field in ["wrong_job","wrong_before","wrong_instance","wrong_document","same_state","other_value","unconfirmed","saved"] {
+            let mut bad=receipt_fixture(&input);
+            match field {
+                "wrong_job"=>bad.job_id=Uuid::new_v4(),
+                "wrong_before"=>bad.before_sha256="e".repeat(64),
+                "wrong_instance"=>bad.after["instance_sha256"]=json!("e".repeat(64)),
+                "wrong_document"=>bad.after["document_sha256"]=json!("e".repeat(64)),
+                "same_state"=>bad.after["state_sha256"]=json!(input.before.state_sha256),
+                "other_value"=>bad.after["components"][0]["value"]=json!("unapproved"),
+                "unconfirmed"=>bad.native_commit_confirmed=false,
+                _=>bad.saved=true,
+            }
+            assert!(validate_result(&input,&bad).is_err(),"{field}");
+        }
+        let mut raw=serde_json::to_value(&input).unwrap();raw["board_path"]=json!("C:/private/board.kicad_pcb");
+        assert!(serde_json::from_value::<Input>(raw).is_err());
     }
     #[test]
     fn only_local_nng_addresses_and_private_tokens_are_accepted() {

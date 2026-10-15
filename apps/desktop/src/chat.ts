@@ -124,10 +124,11 @@ function reviewCompletedResult() {
   if (["awaiting_approval", "running"].includes(job.snapshot.phase)) return;
   resultReview = undefined;
   if (job.snapshot.phase !== "completed" || job.error) return;
-  void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId}; si es una operación de FreeCAD abierto, vuelve a consultar inspect_open_cad_documents con su nombre para leer el estado actual. Explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`, false));
+  void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId}; si es una operación de FreeCAD abierto, vuelve a consultar inspect_open_cad_documents con su nombre; si es una PCB abierta, consulta inspect_selected_live_pcb con la selección actual para leer el estado nativo. Explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`, false));
 }
 function summary(run: Snapshot): string {
   const input = run.input;
+  if (input.live_pcb_version) return "PCB abierta · " + input.description;
   if (input.live_cad_version) return "FreeCAD abierto · " + input.description;
   if (input.konnect_version) return input.pcb_move ? `KiCad · ${input.pcb_move.reference}: (${input.pcb_move.expected_x_mm}, ${input.pcb_move.expected_y_mm}) → (${input.pcb_move.x_mm}, ${input.pcb_move.y_mm}) mm` : `KiCad · ${input.edit.reference}: ${input.edit.expected_value} → ${input.edit.value}`;
   if (input.cadpilot_version) return `FreeCAD · ${input.source_name} · ${input.request.operation === "inspect" ? "Inspeccionar y medir" : "Cambiar documento"}`;
@@ -140,6 +141,7 @@ function summary(run: Snapshot): string {
 }
 function changeDetails(run: Snapshot): string {
   const input = run.input;
+  if (input.live_pcb_version) return JSON.stringify({current_components:input.before.components,approved_move:input.movement},null,2);
   if (input.live_cad_version) return JSON.stringify({document:input.document_name,current_geometry:input.before,native_operations:input.operations},null,2);
   if (input.agent_version) return `Original:\n${input.original_source}\n\nCambio propuesto:\n${input.source}`;
   if (typeof input.source === "string") return input.source;
@@ -152,6 +154,7 @@ function changeDetails(run: Snapshot): string {
 }
 function artifactActions(run: Snapshot): [string, string][] {
   const input = run.input;
+  if (input.live_pcb_version) return [["Informe del cambio PCB","live_pcb_report"]];
   if (input.live_cad_version) return [[input.operations[0]?.action === "save_as" ? "Informe del guardado" : input.operations[0]?.action === "export_step" ? "Informe de la exportación" : "Informe de la transacción","cadpilot_report"]];
   if (input.konnect_version) return [["Original", "konnect_original"], ["Resultado guardado", "konnect_edited"], ["Informe", "konnect_report"], ...(input.pcb_move ? [["Revisión KiCad", "kicad_report"], ["Exportaciones", "kicad_outputs"]] : input.schema_version === 2 ? [["Netlist", "konnect_netlist"]] : [])] as [string, string][];
   if (input.cadpilot_version) return [["Original", "original_cad"], ["Mediciones e informe", "cadpilot_report"], ...(input.request.operation === "inspect" ? [] : [["Abrir en FreeCAD", "fcstd"], ["STEP", "step"]])] as [string, string][];
@@ -241,7 +244,7 @@ function render() {
   $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;
   $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = commandBusy;
   const job = state.job;
-  $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? job.snapshot.input.live_cad_version ? job.snapshot.input.operations[0]?.action === "save_as" ? "FreeCAD confirmó el guardado. El informe conserva el nombre y la huella del archivo en ese momento." : job.snapshot.input.operations[0]?.action === "export_step" ? "STEP exportado y verificado. El documento abierto sigue sin cambios; exportar no guarda el modelo nativo." : "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
+  $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? job.snapshot.input.live_pcb_version ? "Cambio leído en la PCB abierta de KiCad. El archivo todavía no se guardó." : job.snapshot.input.live_cad_version ? job.snapshot.input.operations[0]?.action === "save_as" ? "FreeCAD confirmó el guardado. El informe conserva el nombre y la huella del archivo en ese momento." : job.snapshot.input.operations[0]?.action === "export_step" ? "STEP exportado y verificado. El documento abierto sigue sin cambios; exportar no guarda el modelo nativo." : "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
   renderConnections(busy || !!active); renderQuestion(); renderHistory(); renderLegacy();
 }
 function connectionButton(label: string, disabled: boolean, work: () => Promise<void>) {
@@ -312,6 +315,7 @@ function renderConnections(disabled: boolean) {
 function jobProgram(run: Snapshot): Program | undefined {
   const input = run.input;
   if (input.konnect_version || input.kicad_version) return "kicad";
+  if (input.live_pcb_version) return "kicad";
   if (input.live_cad_version || input.cadpilot_version || input.dimensions_mm) return "freecad";
   if (input.cadcraft_version) return "drawing";
   if (input.orca_version) return "slice";

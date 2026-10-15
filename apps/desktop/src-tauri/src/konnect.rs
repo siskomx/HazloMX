@@ -530,6 +530,23 @@ pub fn footprints(bytes: &[u8]) -> Result<Vec<Footprint>, String> {
     Ok(result)
 }
 /// Verify the whole board: only the chosen footprint's root X/Y may change.
+/// Fixed internal modes used by native workers; the desktop handles these before starting its UI.
+pub fn movement_validator_cli() -> Option<i32> {
+    use std::io::Read;
+    let mode = std::env::args_os().nth(1);
+    let validate = mode.as_deref() == Some(std::ffi::OsStr::new("--validate-pcb-move"));
+    if !validate && mode.as_deref() != Some(std::ffi::OsStr::new("--verify-pcb-move")) {
+        return None;
+    }
+    let mut bytes = Vec::new();
+    let valid = std::env::args_os().len() == 2
+        && std::io::stdin().lock().take((NATIVE_MOVE_CHECK_LIMIT + 1) as u64)
+            .read_to_end(&mut bytes).is_ok()
+        && if validate { validate_native_move_json(&bytes) } else { check_native_move_json(&bytes) };
+    println!("{}", if valid { "{\"valid\":true}" } else { "{\"valid\":false}" });
+    Some(if valid { 0 } else { 1 })
+}
+
 /// Bounded stdin contract for native workers to reuse the whole-board verifier.
 pub const NATIVE_MOVE_CHECK_LIMIT: usize = 32 * 1024 * 1024;
 pub fn validate_native_move_json(bytes: &[u8]) -> bool {

@@ -18,7 +18,17 @@ const position = (x: number, y: number) => `horizontal ${number(x)}, vertical ${
 export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
-  if(input.live_cad_version){
+  if(input.live_pcb_version){
+    const move=input.movement;
+    const component=input.before.components.find(item=>item.uuid===move.uuid);
+    const label=component?.value ? component.value+" ("+move.reference+")" : move.reference;
+    const scale=input.units==="in" ? 25.4 : input.units==="mils" ? .0254 : 1;
+    const coordinates=(x:number,y:number)=>"horizontal "+number(x/scale)+", vertical "+number(y/scale)+" "+unitNames[input.units];
+    facts.push("Mover un componente en la PCB abierta de KiCad.", "PCB: " + input.board_name, "Objetivo: " + input.description,
+      label + ": " + coordinates(move.expected_x_mm,move.expected_y_mm) + " → " + coordinates(move.x_mm,move.y_mm) + ".",
+      "KiCad mostrará el cambio en el documento abierto. El archivo todavía no se guardará.",
+      "Hazlo comprobará el movimiento y releerá el estado nativo antes de darlo por terminado.");
+  } else if(input.live_cad_version){
     const saving = input.operations[0]?.action === "save_as";
     const exporting = input.operations[0]?.action === "export_step";
     facts.push(saving ? "Guardar el documento abierto de FreeCAD." : exporting ? "Exportar la pieza abierta a STEP." : "Cambiar el documento abierto de FreeCAD.", "Objetivo: " + input.description);
@@ -82,7 +92,7 @@ export function proposalFacts(run: Snapshot): string[] {
   } else {
     facts.push(`Comprobar que el código compila para ${input.fqbn === "arduino:avr:uno" ? "Arduino Uno" : input.fqbn}.`, "Se generarán el sketch, el informe y los archivos compilados. Revisa el código en los detalles.", "No se carga código a una placa.");
   }
-  facts.push(input.live_cad_version ? "El informe de la operación nativa se guarda en el proyecto." : "El resultado se guarda en el proyecto; los archivos originales se conservan.");
+  facts.push(input.live_cad_version || input.live_pcb_version ? "El informe de la operación nativa se guarda en el proyecto." : "El resultado se guarda en el proyecto; los archivos originales se conservan.");
   if (run.audit?.destination) facts.push(`Carpeta de resultado dentro del proyecto: ${run.audit.destination}`);
   return facts;
 }
