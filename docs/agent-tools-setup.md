@@ -23,7 +23,7 @@ The [latest source correction](research/chat-context-window-2026-10-14.md) keeps
 
 Hazlo does not download models. Installed-client identity checks currently target Codex 0.159.2 and Claude Code 2.1.285; other versions are not established by the recorded tests. Sending through a cloud route can consume your account plan and sends selected context to that provider. Claude and Codex manage their own authentication; do not paste credentials into Hazlo messages or publication artifacts.
 
-All routes use the same **26-tool catalog** and project-bound validation. The AI has no approval tool. It can prepare a proposal, but only the user can authorize execution through Hazlo. A rejected, cancelled, failed or unverified result cannot become a follow-up source.
+All routes use the same **26 shared tool implementations** and project-bound validation. The [latest desktop source](research/chat-program-scope-2026-10-14.md) advertises and enforces the subset belonging to your selected program; select another program in Conexiones to request its changes. The standalone project connector retains all 26 tools. The AI has no approval tool. It can prepare a proposal, but only the user can authorize execution through Hazlo. A rejected, cancelled, failed or unverified result cannot become a follow-up source. The prepared installer predates this program-binding change.
 
 ## Program connections and result scope
 

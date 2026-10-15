@@ -1,5 +1,5 @@
 //! Local authenticated transport to the desktop's existing tool host.
-use crate::host_tools::{HostTools, McpTools};
+use crate::host_tools::{HostTools, McpTools, Program};
 use rmcp::ServiceExt;
 use serde::Serialize;
 use std::{path::Path, sync::Arc, time::Duration};
@@ -31,6 +31,9 @@ impl ToolBridge {
         project: Uuid,
     ) -> Result<Self, String> {
         Self::start_handler(McpTools::for_project(host, project)?, helper)
+    }
+    pub fn start_program(host: Arc<HostTools>, helper: &Path, project: Uuid, program: Program) -> Result<Self, String> {
+        Self::start_handler(McpTools::for_program(host, project, program)?, helper)
     }
     fn start_handler(handler: McpTools, helper: &Path) -> Result<Self, String> {
         if !helper.is_absolute() || !helper.is_file() {
@@ -163,6 +166,65 @@ mod tests {
     use super::*;
     use crate::jobs::Workflow;
     use rmcp::{model::CallToolRequestParams, ServiceExt};
+    #[tokio::test]
+    async fn program_scopes_advertise_and_enforce_the_selected_engineering_tools() {
+        let programs = [Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice];
+        for tool in crate::host_tools::catalog() {
+            let count = programs.iter().filter(|program| program.allows(&tool.name)).count();
+            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result") { 6 } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
+        }
+        assert!(serde_json::from_str::<Program>("\"unknown\"").is_err());
+        for program in programs {
+            let root = std::env::temp_dir().join(format!("hazlomexa-program-scope-{}", Uuid::new_v4()));
+            std::fs::create_dir_all(root.join("project")).unwrap();
+            let project = crate::project::Project::create(&root.join("project")).unwrap();
+            let id = project.id;
+            let workflow = Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("profiles")).unwrap());
+            workflow.select_project(project).unwrap();
+            let host = Arc::new(HostTools::new(workflow.clone()));
+            let bridge = ToolBridge::start_program(host, &std::env::current_exe().unwrap(), id, program).unwrap();
+            let config = bridge.config().unwrap();
+            let client = ().serve(connect(&config.env["HAZLOMEXA_PIPE"], &config.env["HAZLOMEXA_TOKEN"]).await.unwrap()).await.unwrap();
+            let actual = client.list_all_tools().await.unwrap();
+            assert_eq!(actual.iter().map(|t| &t.name).collect::<Vec<_>>(), program.catalog().iter().map(|t| &t.name).collect::<Vec<_>>());
+            let (wrong, arguments) = if program == Program::Freecad {
+                ("propose_arduino_compile", serde_json::json!({"project_id":id,"fqbn":"arduino:avr:uno","source":"void setup() {}\nvoid loop() {}"}))
+            } else {
+                ("propose_rectangular_solid", serde_json::json!({"project_id":id,"units":"mm","length":10,"width":10,"height":10}))
+            };
+            assert!(!actual.iter().any(|tool| tool.name == wrong));
+            let refused = client.call_tool(CallToolRequestParams::new(wrong).with_arguments(arguments.as_object().unwrap().clone())).await.unwrap();
+            assert_eq!(refused.is_error, Some(true));
+            assert!(refused.structured_content.is_none());
+            assert!(workflow.view().unwrap().job.is_none());
+            assert!(workflow.view().unwrap().history.is_empty());
+            let capabilities = client.call_tool(CallToolRequestParams::new("get_design_capabilities")).await.unwrap().structured_content.unwrap();
+            assert_eq!(capabilities["program"], serde_json::to_value(program).unwrap());
+            assert_eq!(capabilities.get("arduino").is_some(), program == Program::Arduino);
+            assert_eq!(capabilities.get("cadpilot").is_some(), program == Program::Freecad);
+            assert_eq!(capabilities.get("agent").is_some(), program == Program::Agent);
+            if matches!(program, Program::Freecad | Program::Arduino) {
+                let (name, arguments) = if program == Program::Freecad {
+                    ("propose_rectangular_solid", serde_json::json!({"project_id":id,"units":"in","length":1,"width":1,"height":1}))
+                } else {
+                    ("propose_arduino_compile", serde_json::json!({"project_id":id,"fqbn":"arduino:avr:uno","source":"void setup() {}\nvoid loop() {}"}))
+                };
+                let accepted = client.call_tool(CallToolRequestParams::new(name).with_arguments(arguments.as_object().unwrap().clone())).await.unwrap();
+                let value = accepted.structured_content.unwrap();
+                assert_eq!(value["human_approval_required"], true);
+                let pending = workflow.view().unwrap().job.unwrap();
+                assert_eq!(pending.snapshot.phase, crate::project::Phase::AwaitingApproval);
+                assert!(!value.to_string().contains(&pending.approval_id.unwrap().to_string()));
+                workflow.cancel_unapproved(pending.snapshot.input.job_id()).unwrap();
+                assert_eq!(workflow.view().unwrap().job.unwrap().snapshot.phase, crate::project::Phase::Cancelled);
+            }
+            bridge.close().await.unwrap();
+            let _ = client.waiting().await;
+            drop(workflow);
+            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
     #[tokio::test]
     async fn local_auth_sdk_and_revocation() {
         let root = std::env::temp_dir().join(format!("hazlomexa-bridge-{}", Uuid::new_v4()));

@@ -256,6 +256,7 @@ pub(crate) async fn start_codex_chat(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     prompt: String,
+    program: hazlomexa::host_tools::Program,
     new_session: bool,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
@@ -329,13 +330,14 @@ pub(crate) async fn start_codex_chat(
             {
                 return Err("Codex cambió. Selecciónalo de nuevo.".into());
             }
-            let bridge = ToolBridge::start_project(tools, &helper, project)?;
+            let bridge = ToolBridge::start_program(tools, &helper, project, program)?;
             let configuration = home.join("config.toml");
             let response = async {
                 std::fs::write(&configuration, codex::configuration(&bridge.config()?)?)
                     .map_err(|e| e.to_string())?;
                 codex::run_with_questions(
                     codex::TurnRequest {
+                        program: Some(program),
                         runtime,
                         home: home.clone(),
                         directory: home.join("workspace"),

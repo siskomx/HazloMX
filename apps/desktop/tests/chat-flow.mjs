@@ -136,6 +136,7 @@ try {
       await send(`Quiero cambiar mi diseño con ${program}; todavía no conozco las medidas. Usa pulgadas cuando confirmemos su tamaño.`);
       const call = await page.evaluate(() => window.calls.filter(call => call.command.startsWith("start_")).at(-1));
       assert.equal(call.command, provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat");
+      assert.equal(call.args.program,program,"Selected program must bind the backend tool connection");
       if (provider.startsWith("ollama_")) assert.equal(call.args.profile, provider === "ollama_local" ? "local_experimental" : "cloud");
       const prompt = JSON.parse(call.args.prompt);
       assert.equal(prompt.desktop_context.live_document_connection, false);
@@ -430,6 +431,7 @@ try {
       await page.locator("#approve").click(); await page.locator("#send:enabled").waitFor();
       const calls = await chatCalls(); assert.equal(calls.length,before+1,"Approval must request exactly one result review");
       const prompt = JSON.parse(calls.at(-1).args.prompt);
+      assert.equal(calls.at(-1).args.program,program,"Automatic result review changed its tool scope");
       assert.deepEqual(prompt.desktop_context.current_job,{id:jobId,phase:"completed"});
       assert.match(prompt.user_request,/Lee read_verified_result/); assert(prompt.user_request.includes(jobId));
       assert.match(prompt.user_request,/No prepares ni ejecutes otro cambio/);

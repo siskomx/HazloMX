@@ -1021,7 +1021,7 @@ element("inference-form").addEventListener("submit", event => {
         if(state.chat?.id===view.id && state.chat.sequence>view.sequence)return;
         state.chat=view;render();if(!view.busy)void invoke<DesktopSnapshot>("get_snapshot").then(next=>{if(revision===projectRevision && requestRevision===inferenceRevision)applySnapshot(next);}).catch(error=>showError(String(error)));
       };
-      const next=await invoke<DesktopSnapshot>(assistantProvider==="codex" ? "start_codex_chat" : "start_claude_chat",{prompt,newSession:startNew,events:chatChannel});newChatSession=false;
+      const next=await invoke<DesktopSnapshot>(assistantProvider==="codex" ? "start_codex_chat" : "start_claude_chat",{prompt,program: selectedWorkflow === "cadpilot" ? "freecad" : ["pcb","konnect"].includes(selectedWorkflow) ? "kicad" : selectedWorkflow,newSession:startNew,events:chatChannel});newChatSession=false;
       if(next.chat?.id===state.chat?.id && next.chat && state.chat && next.chat.sequence<state.chat.sequence)next.chat=state.chat;
       applySnapshot(next);return;
     }

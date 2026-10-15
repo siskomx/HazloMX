@@ -20,22 +20,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .ok_or("Pass installed codex.exe")?,
     );
     let mode = std::env::args().nth(2).unwrap_or_else(|| "failure".into());
+    let mut program: Option<hazlomexa::host_tools::Program> = if mode == "switch" { Some(hazlomexa::host_tools::Program::Freecad) } else { mode.strip_prefix("program-").map(|name| serde_json::from_value(json!(name))).transpose()? };
     if ![
         "success",
         "failure",
         "cancel",
         "resume",
+        "switch",
         "questions",
         "question-cancel",
     ]
-    .contains(&mode.as_str())
+    .contains(&mode.as_str()) && program.is_none()
     {
-        return Err("Use success, failure, cancel, resume, questions or question-cancel".into());
+        return Err("Use success, failure, cancel, resume, questions, question-cancel or program-<program>".into());
     }
     let question_cancel = mode == "question-cancel";
     let questions = mode == "questions" || question_cancel;
-    let resume = mode == "resume";
-    let success = mode == "success" || resume || questions;
+    let resume = mode == "resume" || mode == "switch";
+    let success = mode == "success" || resume || questions || program.is_some();
     let cancel = mode == "cancel" || question_cancel;
     let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let fixture_cancelled = cancelled.clone();
@@ -56,10 +58,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let project_id = project.id;
     workflow.select_project(project)?;
     let host = Arc::new(HostTools::new(workflow.clone()));
-    let mut bridge = ToolBridge::start(
-        host.clone(),
-        &workspace.join("target/release/hazlomexa-tools.exe"),
-    )?;
+    let helper = workspace.join("target/release/hazlomexa-tools.exe");
+    let mut bridge = match program {
+        Some(program) => ToolBridge::start_program(host.clone(), &helper, project_id, program)?,
+        None => ToolBridge::start(host.clone(), &helper)?,
+    };
     let mut config = bridge.config()?;
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
@@ -204,6 +207,7 @@ stream_max_retries = 0
     let answer_cancelled = cancelled.clone();
     let mut result = codex::run_with_questions(
         codex::TurnRequest {
+                program,
             runtime: runtime.clone(),
             home: base.join("home"),
             directory: base.join("project"),
@@ -247,7 +251,10 @@ stream_max_retries = 0
         {
             return Err("Revoked connection still accepts calls".into());
         }
-        bridge = ToolBridge::start(host, &workspace.join("target/release/hazlomexa-tools.exe"))?;
+        bridge = if mode == "switch" {
+            program = Some(hazlomexa::host_tools::Program::Arduino);
+            ToolBridge::start_program(host, &helper, project_id, program.unwrap())?
+        } else { ToolBridge::start(host, &helper)? };
         let fresh = bridge.config()?;
         if fresh.env == config.env {
             return Err("Bridge capability was reused".into());
@@ -256,6 +263,7 @@ stream_max_retries = 0
         fs::write(base.join("home/config.toml"), fixture_settings(&config)?)?;
         result = codex::run(
             codex::TurnRequest {
+                program,
                 runtime,
                 home: base.join("home"),
                 directory: base.join("project"),
@@ -398,7 +406,7 @@ stream_max_retries = 0
         .iter()
         .find(|tool| tool["name"] == "mcp__hazlomexa")
         .ok_or("Missing Hazlo namespace")?;
-    let expected = hazlomexa::host_tools::catalog();
+    let expected = program.map_or_else(hazlomexa::host_tools::catalog, hazlomexa::host_tools::Program::catalog);
     let exact_inner = namespace["type"] == "namespace"
         && namespace["tools"].as_array().is_some_and(|tools| {
             tools.len() == expected.len()

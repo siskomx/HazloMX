@@ -83,6 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let denied = codex::run(
         codex::TurnRequest {
+                program: None,
             runtime: runtime.clone(),
             home: home.clone(),
             directory,

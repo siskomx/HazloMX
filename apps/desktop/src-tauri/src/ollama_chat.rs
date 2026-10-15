@@ -1,7 +1,7 @@
 //! Ollama's chat protocol uses the same bounded host tools and human approval as installed agents.
 use super::{OllamaClient, MAX_RESPONSE, MAX_WIRE};
 use crate::{
-    host_tools::{catalog, HostTools},
+    host_tools::{HostTools, McpTools},
     jobs::Workflow,
 };
 use serde::{Deserialize, Serialize};
@@ -90,22 +90,36 @@ pub async fn run(
     project: (Uuid, PathBuf),
     prompt: String,
     cancelled: Arc<AtomicBool>,
+    emit: impl FnMut(String),
+) -> Result<String, String> {
+    let tools = McpTools::for_project(host, project.0)?;
+    if tools.project() != Some(project) {
+        return Err("El proyecto cambió o la conversación se detuvo.".into());
+    }
+    run_scoped(client, workflow, tools, prompt, cancelled, emit).await
+}
+pub async fn run_scoped(
+    client: OllamaClient,
+    workflow: Arc<Workflow>,
+    tools: McpTools,
+    prompt: String,
+    cancelled: Arc<AtomicBool>,
     mut emit: impl FnMut(String),
 ) -> Result<String, String> {
     if prompt.trim().is_empty() || prompt.len() > 8192 {
         return Err("Escribe una solicitud de hasta 8 KiB.".into());
     }
     let check = || -> Result<(), String> {
-        if cancelled.load(Ordering::SeqCst) || workflow.view()?.project != Some(project.clone()) {
+        if cancelled.load(Ordering::SeqCst) || tools.check_scope().is_err() {
             return Err("El proyecto cambió o la conversación se detuvo.".into());
         }
         Ok(())
     };
     check()?;
     client.check_capabilities(&cancelled, true).await?;
-    let tools = catalog();
-    let allowed: BTreeSet<_> = tools.iter().map(|tool| tool.name.to_string()).collect();
-    let read_only: BTreeSet<_> = tools
+    let catalog = tools.catalog();
+    let allowed: BTreeSet<_> = catalog.iter().map(|tool| tool.name.to_string()).collect();
+    let read_only: BTreeSet<_> = catalog
         .iter()
         .filter(|tool| {
             tool.annotations
@@ -115,7 +129,7 @@ pub async fn run(
         })
         .map(|tool| tool.name.to_string())
         .collect();
-    let functions: Vec<_> = tools
+    let functions: Vec<_> = catalog
         .iter()
         .map(|tool| {
             json!({"type":"function","function":{
@@ -185,10 +199,8 @@ pub async fn run(
         for call in response.tool_calls {
             check()?;
             let name = call.function.name;
-            let result = host
-                .clone()
+            let result = tools
                 .call_in_project(
-                    project.clone(),
                     name.clone(),
                     Value::Object(call.function.arguments),
                     cancelled.clone(),
@@ -228,6 +240,7 @@ pub async fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::host_tools::catalog;
     use crate::{
         ollama::tests::{metadata_replies, reply, server, DIGEST},
         project::{Phase, Project},
@@ -269,6 +282,32 @@ mod tests {
     }
     fn body(request: &str) -> Value {
         serde_json::from_str(request.split_once("\r\n\r\n").unwrap().1).unwrap()
+    }
+
+    #[tokio::test]
+    async fn scoped_chat_refuses_a_cross_program_batch_before_any_proposal() {
+        use crate::host_tools::Program;
+        for program in [Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice] {
+            let (root, workflow, host, project) = setup();
+            let tools = McpTools::for_program(host, project.0, program).unwrap();
+            let wrong = if program == Program::Freecad {
+                call("propose_arduino_compile", json!({"project_id":project.0,"fqbn":"arduino:avr:uno","source":"void setup() {}\nvoid loop() {}"}))
+            } else { proposal(project.0) };
+            let mut replies = metadata();
+            replies.push(reply(&record("", vec![call("get_workflow_status", json!({})), wrong]).to_string(), "application/json"));
+            let (port, fixture, _) = server(replies);
+            let error = run_scoped(OllamaClient::new(port, "fixture", DIGEST).unwrap(), workflow.clone(), tools, "Inspecciona el programa seleccionado.".into(), Arc::new(AtomicBool::new(false)), |_| {}).await.unwrap_err();
+            assert!(error.contains("no autorizada o repetida"));
+            assert!(workflow.view().unwrap().job.is_none());
+            assert!(workflow.view().unwrap().history.is_empty());
+            let requests = fixture.join().unwrap();
+            let advertised = body(requests.last().unwrap());
+            let names: Vec<_> = advertised["tools"].as_array().unwrap().iter().map(|tool| tool["function"]["name"].as_str().unwrap()).collect();
+            assert_eq!(names, program.catalog().iter().map(|tool| tool.name.as_ref()).collect::<Vec<_>>());
+            drop(workflow);
+            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+            fs::remove_dir_all(root).unwrap();
+        }
     }
 
     #[tokio::test]

@@ -336,7 +336,7 @@ async function send(content: string) {
     if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
   };
   turns.push({ role: "user", content }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; render();
-  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, newSession: startNew, events, ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
+  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
 }
 $("setup").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("provider").focus(); };

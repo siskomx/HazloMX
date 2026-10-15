@@ -116,6 +116,7 @@ pub fn identify(executable: std::path::PathBuf) -> Result<Runtime, String> {
 }
 
 pub struct TurnRequest {
+    pub program: Option<crate::host_tools::Program>,
     pub runtime: Runtime,
     pub home: std::path::PathBuf,
     pub directory: std::path::PathBuf,
@@ -321,7 +322,7 @@ pub async fn run_with_questions<
             &mut notifications,
         )
         .await?;
-        let expected = crate::host_tools::catalog();
+        let expected = request.program.map_or_else(crate::host_tools::catalog, crate::host_tools::Program::catalog);
         if status["data"].as_array().is_none_or(|servers| {
             servers.len() != 1
                 || servers[0]["name"] != "hazlomexa"
@@ -1125,6 +1126,7 @@ mod tests {
     async fn pre_cancelled_runner_never_reads_or_launches_runtime() {
         let result = run(
             TurnRequest {
+                program: None,
                 runtime: Runtime {
                     executable: "C:/missing/codex.exe".into(),
                     sha256: "0".repeat(64),

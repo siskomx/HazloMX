@@ -15,6 +15,35 @@ use std::{
 };
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Program {
+    Freecad,
+    Drawing,
+    Arduino,
+    Agent,
+    Kicad,
+    Slice,
+}
+impl Program {
+    pub fn allows(self, name: &str) -> bool {
+        if matches!(name, "get_design_capabilities" | "get_workflow_status" | "read_verified_result") {
+            return true;
+        }
+        match self {
+            Self::Freecad => matches!(name, "inspect_selected_cad_document" | "propose_selected_cad_document_change" | "propose_rectangular_solid" | "propose_cad_document_change"),
+            Self::Drawing => matches!(name, "inspect_drawing_native_tools" | "propose_drawing_native_tools" | "inspect_selected_drawing" | "propose_selected_drawing_change" | "propose_drawing_change"),
+            Self::Arduino => name == "propose_arduino_compile",
+            Self::Agent => matches!(name, "inspect_selected_sketch" | "propose_selected_sketch_edit"),
+            Self::Kicad => matches!(name, "inspect_selected_kicad_check_source" | "propose_selected_kicad_check" | "propose_kicad_check" | "inspect_selected_live_pcb" | "inspect_selected_pcb" | "propose_pcb_move" | "inspect_selected_schematic" | "propose_schematic_value"),
+            Self::Slice => matches!(name, "inspect_selected_slice_sources" | "propose_selected_slice" | "propose_slice_settings"),
+        }
+    }
+    pub fn catalog(self) -> Vec<Tool> {
+        catalog().into_iter().filter(|tool| self.allows(&tool.name)).collect()
+    }
+}
+
 #[derive(Clone, Serialize)]
 pub struct DiscoveredSchematic {
     pub id: Uuid,
@@ -1356,7 +1385,7 @@ pub fn catalog() -> Vec<Tool> {
 }
 
 #[derive(Clone)]
-pub struct McpTools(pub Arc<HostTools>, Option<(Uuid, PathBuf)>);
+pub struct McpTools(pub Arc<HostTools>, Option<(Uuid, PathBuf)>, Option<Program>);
 impl McpTools {
     pub fn for_project(host: Arc<HostTools>, project: Uuid) -> Result<Self, String> {
         let selected = host
@@ -1365,17 +1394,60 @@ impl McpTools {
             .project
             .filter(|selected| selected.0 == project)
             .ok_or("El proyecto cambió. Conecta el agente de nuevo.")?;
-        Ok(Self(host, Some(selected)))
+        Ok(Self(host, Some(selected), None))
+    }
+    pub fn for_program(host: Arc<HostTools>, project: Uuid, program: Program) -> Result<Self, String> {
+        let mut scoped = Self::for_project(host, project)?;
+        scoped.2 = Some(program);
+        Ok(scoped)
     }
     pub fn new(host: Arc<HostTools>) -> Result<Self, String> {
         let project = host.workflow.view()?.project;
-        Ok(Self(host, project))
+        Ok(Self(host, project, None))
     }
-    fn check_scope(&self) -> Result<(), String> {
+    pub(crate) fn check_scope(&self) -> Result<(), String> {
         if self.0.workflow.view()?.project != self.1 {
             return Err("El proyecto cambió. Conecta el agente de nuevo.".into());
         }
         Ok(())
+    }
+    pub(crate) fn project(&self) -> Option<(Uuid, PathBuf)> { self.1.clone() }
+    pub fn catalog(&self) -> Vec<Tool> {
+        self.2.map_or_else(catalog, Program::catalog)
+    }
+    fn check_tool(&self, name: &str) -> Result<(), String> {
+        if self.2.is_some_and(|program| !program.allows(name)) {
+            return Err("Esta herramienta pertenece a otro programa. Selecciónalo en Conexiones antes de solicitar el cambio.".into());
+        }
+        Ok(())
+    }
+    fn scope_result(&self, name: &str, result: Result<Value, String>) -> Result<Value, String> {
+        let mut value = result?;
+        if name == "get_design_capabilities" {
+            if let Some(program) = self.2 {
+                if let Some(fields) = value.as_object_mut() {
+                    fields.retain(|key, _| key == "approval" || match program {
+                        Program::Freecad => matches!(key.as_str(), "design" | "cadpilot"),
+                        Program::Drawing => key == "cadcraft",
+                        Program::Arduino => key == "arduino",
+                        Program::Agent => false,
+                        Program::Kicad => key == "kicad",
+                        Program::Slice => key == "orca",
+                    });
+                }
+                value["program"] = serde_json::to_value(program).map_err(|e| e.to_string())?;
+                if program == Program::Agent {
+                    value["agent"] = json!({"source":"human_selected_sketch","operation":"edit_copy_only","inspection_tool":"inspect_selected_sketch","proposal_tool":"propose_selected_sketch_edit","compilation":false,"hardware_control":false});
+                }
+            }
+        }
+        Ok(value)
+    }
+    pub(crate) async fn call_in_project(&self, name: String, arguments: Value, cancelled: Arc<AtomicBool>) -> Result<Value, String> {
+        self.check_scope()?;
+        self.check_tool(&name)?;
+        let result = self.0.clone().call_in_project(self.1.clone().ok_or("Selecciona un proyecto.")?, name.clone(), arguments, cancelled).await;
+        self.scope_result(&name, result)
     }
 }
 impl ServerHandler for McpTools {
@@ -1385,7 +1457,7 @@ impl ServerHandler for McpTools {
         info
     }
     fn get_tool(&self, name: &str) -> Option<Tool> {
-        catalog().into_iter().find(|t| t.name == name)
+        self.catalog().into_iter().find(|t| t.name == name)
     }
     async fn list_tools(
         &self,
@@ -1399,7 +1471,7 @@ impl ServerHandler for McpTools {
             ));
         }
         Ok(ListToolsResult {
-            tools: catalog(),
+            tools: self.catalog(),
             ..Default::default()
         })
     }
@@ -1409,6 +1481,9 @@ impl ServerHandler for McpTools {
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, ErrorData> {
         if let Err(error) = self.check_scope() {
+            return Ok(CallToolResult::error(vec![ContentBlock::text(error)]).into());
+        }
+        if let Err(error) = self.check_tool(&request.name) {
             return Ok(CallToolResult::error(vec![ContentBlock::text(error)]).into());
         }
         if context.ct.is_cancelled() {
@@ -1441,7 +1516,7 @@ impl ServerHandler for McpTools {
                 host.cancel_unapproved_result(&result);
                 return Err(error);
             }
-            result
+            scope.scope_result(&name, result)
         })
         .await;
         watcher.abort();

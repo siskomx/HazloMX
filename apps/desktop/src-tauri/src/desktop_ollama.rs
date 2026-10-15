@@ -11,6 +11,7 @@ use uuid::Uuid;
 pub(crate) async fn start_ollama_chat(
     state: State<'_, AppState>,
     profile: ModelProfile,
+    program: hazlomexa::host_tools::Program,
     prompt: String,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
@@ -60,11 +61,12 @@ pub(crate) async fn start_ollama_chat(
     let host = state.tools.clone();
     let workflow = state.workflow.clone();
     tauri::async_runtime::spawn(async move {
-        let result = ollama::chat::run(
+        let result = async {
+        let tools = hazlomexa::host_tools::McpTools::for_program(host, project.0, program)?;
+        ollama::chat::run_scoped(
             client,
             workflow.clone(),
-            host,
-            project.clone(),
+            tools,
             prompt,
             cancelled.clone(),
             |text| {
@@ -84,7 +86,8 @@ pub(crate) async fn start_ollama_chat(
                 }
             },
         )
-        .await;
+        .await
+        }.await;
         if let Ok(mut current) = chat.lock() {
             if let Some(turn) = current.as_mut().filter(|turn| turn.view.id == id) {
                 turn.view.busy = false;
