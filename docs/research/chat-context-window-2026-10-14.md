@@ -27,4 +27,16 @@ The [production browser matrix](../../apps/desktop/tests/chat-flow.mjs) passes a
 
 The corrected source has not passed native or installed acceptance. Escape stopped native UI automation again; no later UI input was issued. The previously tested installer `6a2f7ef9…` predates this correction and remains a separately verified baseline. Real Agent conversation, broader program/provider UI, running-operation UI cancellation and live/unsaved editing remain unfinished. Three additional isolated host Agent launch variants also fail authenticated readiness and stop cleanly; they establish no inference, edit or host startup fix.
 
+## Rebuilt candidate
+
+Source commit `8e24fb1` builds a new unsigned 0.1.0 installer with all 6,582 tracked inputs unchanged during the build and zero targeted builder-profile path matches in the app/helper binaries. Its actual release helper passes the 26-tool transport check without engineering jobs.
+
+| Artifact | SHA-256 |
+|---|---|
+| Installer, 5,535,721 bytes | `4768e7170c67074a49150c6cf8d7c96c64b9a2d981a5029a40b51ad226c3f52a` |
+| Unbundled release app | `1a7e20096b59f26430600878d03e01680f6858bfbff2aa362b38f9ead38b6c1b` |
+| Bundled helper | `d37dc51da59a9ff4b8bfebd9098464c01c84387cfc7f8eb9e6402b5a27279a3d` |
+
+Guest preparation refuses to proceed because its fresh memory check observes 2,181 MiB available against the unchanged 3,072 MiB prerequisite. It creates no new test configuration or guest. The previous verified/stopped guest receipt is preserved separately. This candidate has not passed installed or corrected native UI acceptance, and explicit UI resume was requested. The existing Claude Code client still reports signed out in a fresh read-only status check; no credentials were displayed.
+
 The [sanitized receipt](chat-context-window-2026-10-14.json) separates the failed native run from the passing source checks. The full application goal remains active.
