@@ -33,6 +33,15 @@ pub struct Connection {
     token: String,
 }
 impl Connection {
+    pub(crate) fn validate_for(&self, before: &Observation) -> Result<(), Failure> {
+        self.validate()?;
+        before.validate()?;
+        if self.instance_id == before.instance_id {
+            Ok(())
+        } else {
+            Err(Failure::Refused)
+        }
+    }
     fn validate(&self) -> Result<(), Failure> {
         if self.editor_version != 1
             || self.instance_id.is_nil()
@@ -147,6 +156,100 @@ pub struct Receipt {
     pub before_sha256: String,
     pub after: Observation,
     pub native_edit_confirmed: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Input {
+    pub schema_version: u32,
+    pub live_agent_version: u32,
+    pub job_id: Uuid,
+    pub description: String,
+    pub before: Observation,
+    pub source: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receipt_sha256: Option<String>,
+}
+impl Input {
+    pub fn validate(&self) -> Result<(), String> {
+        self.before.validate().map_err(|error| error.message())?;
+        if self.schema_version != 1
+            || self.live_agent_version != 1
+            || self.job_id.is_nil()
+            || self.before.version >= 9007199254740991
+            || self.description.trim().is_empty()
+            || self.description.len() > 1024
+            || self.description.chars().any(char::is_control)
+            || self.source == self.before.source
+            || !source_valid(&self.source, self.before.eol)
+            || self
+                .receipt_sha256
+                .as_ref()
+                .is_some_and(|hash| !crate::kicad_project::valid_hash(hash))
+            || serde_json::to_vec(self)
+                .map_err(|_| "Propuesta no compatible.")?
+                .len()
+                > 900000
+        {
+            return Err(
+                "La propuesta requiere el sketch abierto y un cambio de código revisable.".into(),
+            );
+        }
+        Ok(())
+    }
+}
+
+pub fn validate_report(input: &Input, report: &serde_json::Value) -> Result<(), String> {
+    input.validate()?;
+    let mut expanded = report.clone();
+    let after = expanded
+        .get_mut("after")
+        .and_then(|value| value.as_object_mut())
+        .ok_or("Falta la lectura final del sketch.")?;
+    if after.contains_key("source") {
+        return Err("Informe nativo no compatible.".into());
+    }
+    // The journal retains the approved source; the small report retains its independently verified native digest.
+    after.insert("source".into(), json!(input.source));
+    let receipt: Receipt =
+        serde_json::from_value(expanded).map_err(|_| "Informe nativo no compatible.")?;
+    receipt
+        .validate(input.job_id, &input.before, &input.source)
+        .map_err(|error| error.message().into())
+}
+
+pub(crate) fn run(
+    input: &Input,
+    connection: &Connection,
+    stage: &Path,
+    cancel: &AtomicBool,
+) -> Result<(), String> {
+    input.validate()?;
+    connection
+        .validate_for(&input.before)
+        .map_err(|error| error.message())?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|_| "No se pudo iniciar la conexión al editor.")?;
+    let receipt = runtime
+        .block_on(apply(
+            connection,
+            input.job_id,
+            &input.before,
+            &input.source,
+            cancel,
+        ))
+        .map_err(|error| error.message())?;
+    let mut report = serde_json::to_value(receipt).map_err(|_| Failure::Uncertain.message())?;
+    report["after"]
+        .as_object_mut()
+        .ok_or(Failure::Uncertain.message())?
+        .remove("source");
+    validate_report(input, &report)?;
+    let bytes = serde_json::to_vec_pretty(&report).map_err(|_| Failure::Uncertain.message())?;
+    crate::kicad_project::write_new(&stage.join("result.json"), &bytes)
+        .map_err(|_| Failure::Uncertain.message().to_string())
 }
 impl Receipt {
     pub fn validate(&self, job: Uuid, before: &Observation, source: &str) -> Result<(), Failure> {
@@ -291,7 +394,7 @@ pub async fn apply(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
 
@@ -344,6 +447,51 @@ mod tests {
         after.state_sha256 = digest(source);
         json!({"editor_version":1,"job_id":job,"status":"completed","before_sha256":before.state_sha256,
             "after":after,"native_edit_confirmed":true})
+    }
+
+    pub(crate) fn job_fixture() -> Input {
+        let before = observation(Uuid::new_v4());
+        Input {
+            schema_version: 1,
+            live_agent_version: 1,
+            job_id: Uuid::new_v4(),
+            description: "Make the LED blink faster".into(),
+            source: before.source.replace("1000", "500"),
+            before,
+            receipt_sha256: None,
+        }
+    }
+    pub(crate) fn connection_fixture(input: &Input) -> Connection {
+        Connection {
+            editor_version: 1,
+            instance_id: input.before.instance_id,
+            pipe: format!(r"\\.\pipe\hazlomexa-arduino-{}", input.before.instance_id),
+            token: "b".repeat(64),
+        }
+    }
+    pub(crate) fn report_fixture(input: &Input) -> serde_json::Value {
+        let mut report = receipt(input.job_id, &input.before, &input.source);
+        report["after"].as_object_mut().unwrap().remove("source");
+        report
+    }
+
+    #[test]
+    fn full_size_escaped_sketches_fit_the_journal_and_small_report_without_losing_verification() {
+        let mut input = job_fixture();
+        input.before.source = "\u{1}".repeat(SOURCE_LIMIT);
+        input.before.state_sha256 = digest(&input.before.source);
+        input.source = "\u{2}".repeat(SOURCE_LIMIT);
+        input.validate().unwrap();
+        let report = report_fixture(&input);
+        assert!(serde_json::to_vec_pretty(&report).unwrap().len() < 65536);
+        assert!(!report["after"].as_object().unwrap().contains_key("source"));
+        validate_report(&input, &report).unwrap();
+        let mut changed = report.clone();
+        changed["after"]["state_sha256"] = json!("0".repeat(64));
+        assert!(validate_report(&input, &changed).is_err());
+        changed = report;
+        changed["after"]["source"] = json!(input.source);
+        assert!(validate_report(&input, &changed).is_err());
     }
 
     #[test]

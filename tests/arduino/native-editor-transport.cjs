@@ -13,9 +13,11 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
   const target = path.resolve(__dirname, "../../target");
   const root = path.join(target, "native-arduino-transport-" + crypto.randomUUID());
   await fs.mkdir(root, {recursive:true});
+  const savedSketch = "void loop() { delay(1000); }\n";
+  await fs.writeFile(path.join(root, "Sketch.ino"), savedSketch);
   const env = process.env.HAZLOMEXA_AGENT_EDITOR_ROOT, loader = Module._load;
   let reads = 0, edits = 0;
-  const doc = {uri:{scheme:"file", fsPath:"C:\\owned\\Sketch.ino"}, version:1, eol:1, isDirty:true, isClosed:false,
+  const doc = {uri:{scheme:"file", fsPath:path.join(root,"Sketch.ino")}, version:1, eol:1, isDirty:true, isClosed:false,
     source:"// unsaved user note\nvoid loop() { delay(1000); }\n", getText() { reads++; return this.source; }, positionAt(offset) { return offset; }};
   const editor = {document:doc, async edit(callback, options) {
     assert.deepEqual(options, {undoStopBefore:true, undoStopAfter:true});
@@ -31,7 +33,7 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     extension.activate(context);
     let names = [];
     for (let attempt = 0; attempt < 100; attempt++) {
-      names = await fs.readdir(root); if (names.length) break;
+      names = (await fs.readdir(root)).filter(name => /^[0-9a-f-]{36}\.json$/.test(name)); if (names.length) break;
       await new Promise(resolve => setTimeout(resolve, 20));
     }
     assert.equal(names.length, 1);
@@ -68,7 +70,8 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
       });
       assert(result.stdout.includes("stale refusal passed")); assert.equal(result.stderr, "");
       assert.equal(edits, 3); assert(doc.source.includes("delay(250)"));
-      t.diagnostic("Actual Rust host and companion pipe passed edit/readback/follow-up and stale refusal against the controlled IDE API.");
+      assert.equal(await fs.readFile(path.join(root,"Sketch.ino"),"utf8"), savedSketch);
+      t.diagnostic("Actual approved Rust jobs and companion pipe passed edit/readback/follow-up, stale refusal, saved-file preservation and recovery against the controlled IDE API.");
     }
   } finally {
     Module._load = loader;

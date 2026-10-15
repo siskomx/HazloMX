@@ -44,7 +44,7 @@ try {
     const snapshot = { project: ["project-one", "C:\\owned\\project"], job: null, inference: null, recovered: [], freecad: "owned-freecad", freecad_available: true, codex: { version: "fixture" }, codex_login: { id: "login", sequence: 1, busy: false, cancelled: false, connected: true, auth_url: null, error: null }, claude: { version: "fixture" } };
     const copy = () => structuredClone(snapshot);
     window.setCompletedJob = input => {
-      snapshot.job = { snapshot: { schema_version: input.live_pcb_version ? 14 : input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
+      snapshot.job = { snapshot: { schema_version: input.live_agent_version ? 15 : input.live_pcb_version ? 14 : input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
     };
     window.setPendingJob = input => { window.setCompletedJob(input); snapshot.job.snapshot.phase = "awaiting_approval"; snapshot.job.approval_id = "private-approval"; };
     window.calls = []; window.approvals = 0;
@@ -598,9 +598,34 @@ try {
     assert.match(history,/Informe del cambio PCB/);
     assert(!history.includes("Gerber")&&!history.includes("HEX"));
   }
+  for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("agent");
+    await page.locator("#new-chat").click();
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_agent_version:1,job_id:crypto.randomUUID(),
+      description:"Reduce el tiempo de espera <img src=x onerror=window.nativeInjected=true>",
+      before:{editor_version:1,instance_id:crypto.randomUUID(),document_token:crypto.randomUUID(),name:"Sketch.ino",version:3,
+        state_sha256:"a".repeat(64),source:"// unsaved note\nvoid loop() { delay(1000); }\n",eol:1,dirty:true,source_is_untrusted_data:true},
+      source:"// unsaved note\nvoid loop() { delay(500); }\n"}));
+    await page.locator("#program-actions button").first().click();
+    await page.locator("#approve:enabled").waitFor();
+    const facts=await page.locator("#change-facts").innerText();
+    assert.match(facts,/sketch abierto de Arduino Agent/);
+    assert.match(facts,/cambios sin guardar/);
+    assert(!facts.includes("Guardar una copia") && !facts.includes("archivos originales se conservan"));
+    assert.equal(await page.locator("#change-facts img").count(),0);
+    assert.equal(await page.evaluate(()=>window.nativeInjected),undefined);
+    const before=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    const calls=await chatCalls();assert.equal(calls.length,before+1);assert.equal(calls.at(-1).args.program,"agent");
+    assert.match(await page.locator("#job-status").innerText(),/sketch abierto de Arduino Agent[\s\S]*guardado lo gestiona el IDE/);
+    if(!await page.locator("#history").isVisible())await page.locator("#results > summary").click();
+    const history=await page.locator("#history").innerText();assert.match(history,/Informe del cambio en Arduino Agent/);
+    assert(!history.includes("HEX") && !history.includes("ELF"));
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

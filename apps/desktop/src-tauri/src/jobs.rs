@@ -112,6 +112,7 @@ pub struct InferenceDispatch {
 }
 
 struct Job {
+    live_agent: Option<crate::agent_editor::Connection>,
     live_pcb: Option<crate::kicad_live::Binding>,
     view: JobView,
     cancelled: Arc<AtomicBool>,
@@ -162,6 +163,7 @@ impl AgentSource {
 }
 
 pub struct Dispatch {
+    live_agent: Option<crate::agent_editor::Connection>,
     live_pcb: Option<crate::kicad_live::Binding>,
     project: Arc<Project>,
     snapshot: Snapshot,
@@ -2052,6 +2054,8 @@ impl Workflow {
         if matches!(snapshot.audit.as_ref().unwrap().source, RunSource::Mcp) {
             snapshot.schema_version = if matches!(snapshot.input, OperationInput::LiveCad(_)) {
                 13
+            } else if matches!(snapshot.input, OperationInput::LiveAgent(_)) {
+                15
             } else if matches!(snapshot.input, OperationInput::LivePcb(_)) {
                 14
             } else if matches!(snapshot.input, OperationInput::KonnectPcb(_)) {
@@ -2069,6 +2073,7 @@ impl Workflow {
             busy: false,
         };
         state.job = Some(Job {
+            live_agent: None,
             live_pcb: None,
             view: view.clone(),
             cancelled: Arc::new(AtomicBool::new(false)),
@@ -2116,6 +2121,23 @@ impl Workflow {
         Self::propose_operation_locked(&mut state, OperationInput::LiveCad(input), RunSource::Mcp)
     }
 
+    pub fn propose_live_agent(
+        &self, project:(Uuid,PathBuf), input:crate::agent_editor::Input,
+        connection:crate::agent_editor::Connection,
+    ) -> Result<JobView,String> {
+        input.validate()?;
+        connection.validate_for(&input.before).map_err(|error|error.message())?;
+        if input.receipt_sha256.is_some() { return Err("La propuesta ya contiene un resultado anterior.".into()); }
+        let mut state=self.state.lock().map_err(|e|e.to_string())?;
+        inference_idle(&state)?;
+        if state.project.as_ref().map(|p|(p.id,p.root.clone()))!=Some(project) {
+            return Err("El proyecto cambió. Lee el sketch abierto de nuevo.".into());
+        }
+        let view=Self::propose_operation_locked(&mut state,OperationInput::LiveAgent(input),RunSource::Mcp)?;
+        state.job.as_mut().unwrap().live_agent=Some(connection);
+        Ok(view)
+    }
+
     pub fn propose_live_pcb(
         &self, project:(Uuid,PathBuf), input:crate::kicad_live::Input,
         board:PathBuf, connection:crate::kicad_live::Connection,
@@ -2160,6 +2182,9 @@ impl Workflow {
         } else {
             None
         };
+        let live_agent=if matches!(job.view.snapshot.input,OperationInput::LiveAgent(_)) {
+            Some(job.live_agent.clone().ok_or("La conexión nativa venció. Lee el sketch abierto de nuevo.")?)
+        } else {None};
         let live_pcb=if matches!(job.view.snapshot.input,OperationInput::LivePcb(_)) {
             Some(job.live_pcb.clone().ok_or("La conexión nativa venció. Vuelve a leer la PCB.")?)
         } else {None};
@@ -2172,6 +2197,7 @@ impl Workflow {
         job.view.busy = true;
         job.view.sequence += 1;
         Ok(Dispatch {
+            live_agent,
             live_pcb,
             project,
             snapshot,
@@ -2365,6 +2391,10 @@ impl Workflow {
                         dispatch.cancelled.clone(),
                     )?;
                 }
+                OperationInput::LiveAgent(input) => {
+                    crate::agent_editor::run(input,dispatch.live_agent.as_ref().ok_or("La conexión al sketch venció.")?,
+                        &stage.path,&dispatch.cancelled)?;
+                }
                 OperationInput::LivePcb(input) => {
                     crate::kicad_live::run(input,dispatch.live_pcb.as_ref().ok_or("La conexión PCB venció.")?,
                         &stage.path,&profile,dispatch.cancelled.clone())?;
@@ -2493,6 +2523,10 @@ impl Workflow {
                 let bytes = crate::kicad_project::read_regular(&stage.path.join("result.json"), 65536)?;
                 input.receipt_sha256 = Some(crate::kicad_project::digest(&bytes));
             }
+            if let OperationInput::LiveAgent(input)=&mut dispatch.snapshot.input {
+                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
+                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
+            }
             if let OperationInput::LivePcb(input)=&mut dispatch.snapshot.input {
                 let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
                 input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
@@ -2511,17 +2545,23 @@ impl Workflow {
             let mut snapshot = dispatch.snapshot;
             snapshot.phase = Phase::Cancelled;
             snapshot.advance();
+            let warning = matches!(snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_))
+                .then_some("El proyecto cambió y no se publicó el informe. La operación nativa puede haber terminado; vuelve a leer el programa antes de continuar. Cancelar no deshace una edición nativa.");
+            if let (Some(message), Some(audit)) = (warning, snapshot.audit.as_mut()) { audit.error = Some(message.into()); }
             dispatch
                 .project
                 .save(&snapshot)
                 .map_err(|e| e.to_string())?;
-            return Err("El proyecto activo cambió; los archivos no se publicaron.".into());
+            return Err(warning.unwrap_or("El proyecto activo cambió; los archivos no se publicaron.").into());
         }
         let job = state.job.as_mut().unwrap();
         if dispatch.cancelled.load(Ordering::SeqCst) {
             job.view.snapshot.phase = Phase::Cancelled;
             if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_)) {
                 job.view.error = Some("La espera se canceló. FreeCAD puede haber completado la operación nativa; vuelve a leer el documento antes de continuar. Cancelar no deshace una edición nativa.".into());
+            }
+            if matches!(dispatch.snapshot.input,OperationInput::LiveAgent(_)) {
+                job.view.error=Some("La espera se canceló. Arduino Agent puede haber completado el cambio; vuelve a leer el sketch. Cancelar no deshace una edición nativa.".into());
             }
             if matches!(dispatch.snapshot.input,OperationInput::LivePcb(_)) {
                 job.view.error=Some("La espera se canceló. KiCad puede haber completado el cambio; vuelve a leer la PCB. Cancelar no deshace una edición nativa.".into());
@@ -2532,7 +2572,7 @@ impl Workflow {
         } else {
             match result {
                 Ok(stage) => {
-                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_)) {
+                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_)) {
                         job.view.snapshot.input = dispatch.snapshot.input.clone();
                     }
                     if let Some(audit) = &mut job.view.snapshot.audit {
@@ -2543,6 +2583,9 @@ impl Workflow {
                         Err(error) => {
                             job.view.snapshot.phase = Phase::Failed;
                             job.view.error = Some(format!("No se pudieron publicar los archivos. Cierre las aplicaciones que los estén usando y revise los permisos y el espacio libre del proyecto. La entrada y los archivos de trabajo se conservan: {error}"));
+                            if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_)) {
+                                job.view.error.as_mut().unwrap().push_str(" El programa puede haber completado la operación nativa; vuelve a leerlo antes de repetirla.");
+                            }
                         }
                     }
                 }
@@ -2566,6 +2609,61 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_agent_jobs_keep_credentials_private_and_bind_approval_report_and_recovery() {
+        let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::agent_editor::tests::job_fixture();
+        let connection=crate::agent_editor::tests::connection_fixture(&input);
+        assert!(workflow.propose_live_agent((Uuid::new_v4(),root.clone()),input.clone(),connection.clone()).is_err());
+        let pending=workflow.propose_live_agent(project,input.clone(),connection).unwrap();
+        assert_eq!(pending.snapshot.schema_version,15);
+        let serialized=serde_json::to_string(&pending.snapshot).unwrap();
+        assert!(!serialized.contains(&"b".repeat(64)) && !serialized.contains("pipe") && !serialized.contains("\"token\":"));
+        assert_eq!(fs::read_dir(root.join(".hazlomexa/staging")).unwrap().count(),0);
+        assert!(workflow.begin(Uuid::new_v4()).is_err());let approval=pending.approval_id.unwrap();
+        let dispatch=workflow.begin(approval).unwrap();assert!(dispatch.live_agent.is_some());
+        assert!(workflow.begin(approval).is_err());let stage=dispatch.project.reserve_stage(input.job_id).unwrap();
+        let bytes=serde_json::to_vec_pretty(&crate::agent_editor::tests::report_fixture(&input)).unwrap();
+        fs::write(stage.path.join("result.json"),&bytes).unwrap();
+        let completed=workflow.finish(dispatch,Ok(stage)).unwrap();assert_eq!(completed.snapshot.phase,Phase::Completed,"{:?}",completed.error);
+        assert_eq!(workflow.artifact(input.job_id,ArtifactFormat::LiveAgentReport).unwrap().read_text().unwrap().as_bytes(),bytes);
+        let report=root.join(".hazlomexa/artifacts").join(input.job_id.to_string()).join("result.json");
+        fs::write(&report,b"changed report").unwrap();assert!(workflow.artifact(input.job_id,ArtifactFormat::LiveAgentReport).is_err());
+        fs::write(&report,bytes).unwrap();drop(workflow);
+        let project=Project::open(&root).unwrap();let history=project.recover().unwrap();
+        assert_eq!(history[0].schema_version,15);assert_eq!(history[0].phase,Phase::Completed);drop(project);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn native_agent_cancelled_dispatch_never_claims_undo_or_publishes_a_result() {
+        let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::agent_editor::tests::job_fixture();let connection=crate::agent_editor::tests::connection_fixture(&input);
+        let pending=workflow.propose_live_agent(project,input.clone(),connection).unwrap();let approval=pending.approval_id.unwrap();
+        let dispatch=workflow.begin(approval).unwrap();workflow.cancel(input.job_id).unwrap();
+        let result=workflow.finish(dispatch,Err("Stopped awaiting native response".into())).unwrap();
+        assert_eq!(result.snapshot.phase,Phase::Cancelled);assert!(result.error.unwrap().contains("Cancelar no deshace"));
+        assert!(workflow.begin(approval).is_err());assert!(workflow.artifact(input.job_id,ArtifactFormat::LiveAgentReport).is_err());
+        drop(workflow);let project=Project::open(&root).unwrap();assert_eq!(project.recover().unwrap()[0].phase,Phase::Cancelled);drop(project);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn changing_projects_preserves_the_native_uncertainty_warning_in_old_history() {
+        let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::agent_editor::tests::job_fixture();let connection=crate::agent_editor::tests::connection_fixture(&input);
+        let pending=workflow.propose_live_agent(project,input.clone(),connection).unwrap();
+        let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();
+        let next=root.join("next-project");fs::create_dir(&next).unwrap();
+        workflow.select_project(Project::create(&next).unwrap()).unwrap();
+        assert!(workflow.finish(dispatch,Err("Stopped old native request".into())).unwrap_err().contains("puede haber terminado"));
+        assert!(workflow.view().unwrap().history.is_empty());drop(workflow);
+        let project=Project::open(&root).unwrap();let history=project.recover().unwrap();
+        assert_eq!(history[0].phase,Phase::Cancelled);
+        assert!(history[0].audit.as_ref().unwrap().error.as_ref().unwrap().contains("Cancelar no deshace"));drop(project);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn native_pcb_jobs_bind_private_connections_to_one_use_approval_and_receipt_recovery() {
         let (root,workflow)=setup();

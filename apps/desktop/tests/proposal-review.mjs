@@ -31,6 +31,12 @@ assert.match(review({dimensions_mm:{length:25.4,width:12.7,height:5}}),/milímet
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/compila para Arduino Uno/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/No se carga código/);
 assert.match(review({agent_version:"0.7.1",source_name:"Sketch.ino"}),/copia con el código propuesto/);
+const nativeAgent=review({live_agent_version:1,description:"Reduce el tiempo de espera",before:{name:"Sketch.ino",dirty:true}});
+assert.match(nativeAgent,/sketch abierto de Arduino Agent/);
+assert.match(nativeAgent,/cambios sin guardar/);
+assert.match(nativeAgent,/preferencias de guardado/);
+assert.match(nativeAgent,/No se carga código a una placa/);
+assert(!nativeAgent.includes("Guardar una copia") && !nativeAgent.includes("archivos originales se conservan"));
 for (const [unit,label] of [["mm","milímetros"],["cm","centímetros"],["m","metros"],["in","pulgadas"],["ft","pies"]]) {
   const request={operation:"add_cylinder",object:"Cylinder",units:unit,parameters:{radius:0.5,height:2,x:0,y:-1,z:3}};
   const facts=review({cadpilot_version:"0.7.7",source_name:"Part.FCStd",request});

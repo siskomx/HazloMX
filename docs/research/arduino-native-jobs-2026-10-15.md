@@ -1,0 +1,20 @@
+# Approved Arduino native editor jobs
+
+The existing approval, project journal, execution, publication and recovery path now supports an internal native Arduino Agent edit. It reuses the [native companion and Rust transport](arduino-native-host-2026-10-15.md). No live Agent tool is registered in the AI catalog yet; actual IDE acceptance and session discovery remain required.
+
+The proposed input retains the exact native buffer observation, complete proposed source and a readable description. Its schema-15 journal binds the open instance/document/revision/source digest. The private connection is held only by the pending job and its dispatch; pipe credentials are absent from proposals, history and published reports. Project changes, expired or reused approval, mismatched connection identity and proposals containing an old receipt are refused.
+
+An approved dispatch calls the native editor API through the companion and independently verifies its complete returned source. The published report retains document identity, revision, native source digest, dirty state and edit confirmation; approved source remains in the journal. Report validation recomputes that source's digest and compares every native receipt field. This keeps the report small while preserving support for a full 64 KiB sketch, including characters expanded by JSON escaping. A pinned report digest protects publication, later reads and recovery.
+
+The chat's existing read-only review now describes the open sketch, warns about existing unsaved changes, exposes current/proposed code in details and shows the native report after completion. It respects the IDE's own autosave preferences. There is no code editor form, implicit save, compile, firmware upload or hardware control. Cancellation never claims native Undo; an accepted edit may finish after the wait stops, so the user must reread the IDE before another change. Connection credentials are not restored from history.
+
+## Verification
+
+- The compiled owned host fixture completes two actual approved production-backend jobs through the real companion entry point and Windows pipe, using a controlled IDE API. Each job checks one-use approval, native readback and the verified-result tool. A stale original snapshot is refused. Earlier unsaved text, actual saved-sketch bytes and both published reports survive; reopening the project recovers two Completed schema-15 jobs.
+- Unit tests cover private binding, approval consumption, report tamper refusal, cancellation nonpublication/recovery and full-size escaped source with compact report verification. The first job test exposed an omitted schema-audit range; schema 15 is now included with the required MCP provenance, without accepting it as an older generic schema.
+- Native project-switch recovery and report-publication failures retain an explicit reread warning; this shared correction also covers FreeCAD and KiCad native jobs. A regression checks the warning in the former project after switching away.
+- All 168 regular desktop-feature Rust library tests pass, with 55 integration tests ignored. The eleven Node buffer/transport cases pass with the compiled host exercising actual approved jobs. Desktop library/example Clippy, all-target compilation, the production frontend build and proposal facts pass. The browser suite includes four native Agent review/result handoffs, one for each configured AI choice, and refuses HTML injection from the description. These are IPC fixtures, not real-provider conversation or native IDE acceptance.
+
+The same owned host build and `HAZLOMEXA_NATIVE_EDITOR_HOST` command described in the transport checkpoint now exercises the approval/job path. Private captures, credentials, runtime copies, profiles and logs stay under ignored `target/`.
+
+This does not close actual Arduino Agent visible editing/Undo, installed-session discovery, agent-native inspection/proposal catalog routing, real conversation or current installer acceptance. The latest real IDE run remains terminal after its memory-floor stop. The full application goal stays active.

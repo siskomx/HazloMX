@@ -18,7 +18,13 @@ const position = (x: number, y: number) => `horizontal ${number(x)}, vertical ${
 export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
-  if(input.live_pcb_version){
+  if(input.live_agent_version){
+    facts.push("Cambiar el sketch abierto de Arduino Agent.", "Sketch: " + input.before.name, "Objetivo: " + input.description,
+      input.before.dirty ? "La lectura incluye cambios sin guardar. Revisa que el código propuesto conserve lo que necesitas." : "La lectura corresponde al código actual del IDE.",
+      "Puedes comparar el código actual y el propuesto en los detalles del cambio.",
+      "El IDE conserva su historial de deshacer y sus preferencias de guardado. No se carga código a una placa.",
+      "Hazlo releerá el código nativo y comprobará que coincide con el cambio aprobado.");
+  } else if(input.live_pcb_version){
     const move=input.movement;
     const component=input.before.components.find(item=>item.uuid===move.uuid);
     const label=component?.value ? component.value+" ("+move.reference+")" : move.reference;
@@ -92,7 +98,7 @@ export function proposalFacts(run: Snapshot): string[] {
   } else {
     facts.push(`Comprobar que el código compila para ${input.fqbn === "arduino:avr:uno" ? "Arduino Uno" : input.fqbn}.`, "Se generarán el sketch, el informe y los archivos compilados. Revisa el código en los detalles.", "No se carga código a una placa.");
   }
-  facts.push(input.live_cad_version || input.live_pcb_version ? "El informe de la operación nativa se guarda en el proyecto." : "El resultado se guarda en el proyecto; los archivos originales se conservan.");
+  facts.push(input.live_agent_version || input.live_cad_version || input.live_pcb_version ? "El informe de la operación nativa se guarda en el proyecto." : "El resultado se guarda en el proyecto; los archivos originales se conservan.");
   if (run.audit?.destination) facts.push(`Carpeta de resultado dentro del proyecto: ${run.audit.destination}`);
   return facts;
 }

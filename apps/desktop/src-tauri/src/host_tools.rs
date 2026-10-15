@@ -1294,6 +1294,7 @@ impl HostTools {
                     OperationInput::Orca(_)=>ArtifactFormat::SliceReport,
                     OperationInput::Cadpilot(_) | OperationInput::LiveCad(_)=>ArtifactFormat::CadpilotReport,
                     OperationInput::LivePcb(_)=>ArtifactFormat::LivePcbReport,
+                    OperationInput::LiveAgent(_)=>ArtifactFormat::LiveAgentReport,
                     OperationInput::Konnect(_) | OperationInput::KonnectPcb(_)=>ArtifactFormat::KonnectReport,
                 };
                 let mut content=self.workflow.artifact(request.job_id,format)?.read_text().map_err(|e|e.to_string())?;
