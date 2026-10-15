@@ -24,7 +24,7 @@ try:
     doc.recompute()
     Gui.activeDocument = lambda: types.SimpleNamespace(Document=doc)
     Gui.getDocument = lambda name: types.SimpleNamespace(activeView=lambda: types.SimpleNamespace(redraw=lambda: None))
-    script = Path(config["script"]).read_text(encoding="utf-8")
+    script = Path(config["script"]).with_name("cadpilot_policy.py").read_text(encoding="utf-8") + "\n" + Path(config["script"]).read_text(encoding="utf-8")
 
     def call(request):
         output = []
@@ -67,11 +67,53 @@ try:
     doc.recompute()
     assert abs(box.Length.Value - 25.4) < 1e-9
     assert inspect()["state_sha256"] == original["state_sha256"]
+    from PySide import QtGui
+    import Part
+    box.Placement.Base = App.Vector(3, 4, 5)
+    doc.recompute()
+    export_before = inspect()
+    undo_before = doc.UndoCount
+    step_path = root / "Native.step"
+    Gui.getMainWindow = lambda: None
+    QtGui.QFileDialog = types.SimpleNamespace(getSaveFileName=lambda *args: (str(step_path), "STEP"))
+    request = proposal(export_before, 0)
+    request["operations"] = [{"action": "export_step", "obj_name": box.Name}]
+    exported = call(request)
+    assert exported["ok"], exported
+    assert exported["result"]["after"]["state_sha256"] == export_before["state_sha256"]
+    assert doc.UndoCount == undo_before and not doc.FileName
+    check = Part.Shape()
+    check.read(str(step_path))
+    assert check.isValid() and len(check.Solids) == 1
+    assert abs(check.Volume - 5080) < 1e-6
+    assert abs(check.BoundBox.XMin - 3) < 1e-6 and abs(check.BoundBox.YMin - 4) < 1e-6 and abs(check.BoundBox.ZMin - 5) < 1e-6
+    preserved = step_path.read_bytes()
+    request["job_id"] = str(uuid.uuid4())
+    assert call(request) == {"ok": False, "error": "native_export_destination_exists"}
+    assert step_path.read_bytes() == preserved
+    assembly = doc.addObject("App::Part", "Assembly")
+    assembly.addObject(box)
+    assembly.Placement.Base = App.Vector(100, 20, 3)
+    doc.recompute()
+    assert abs(box.Shape.BoundBox.XMin - 3) < 1e-6
+    nested_before = inspect()
+    nested_path = root / "Nested.step"
+    QtGui.QFileDialog.getSaveFileName = lambda *args: (str(nested_path), "STEP")
+    request = proposal(nested_before, 0)
+    request["operations"] = [{"action":"export_step","obj_name":box.Name}]
+    nested = call(request)
+    assert nested["ok"], nested
+    assert nested["result"]["after"]["state_sha256"] == nested_before["state_sha256"]
+    nested_check = Part.Shape()
+    nested_check.read(str(nested_path))
+    assert abs(nested_check.BoundBox.XMin - 103) < 1e-6
+    assert abs(nested_check.BoundBox.YMin - 24) < 1e-6
+    assert abs(nested_check.BoundBox.ZMin - 8) < 1e-6
     old = proposal(inspect(), 99.)
     App.closeDocument(doc.Name)
     doc = App.newDocument("OwnedLiveFixture")
     assert call(old) == {"ok": False, "error": "stale_document"}
-    receipt = {"passed": True, "freecad_version": ".".join(App.Version()[:3]), "native_edits": 2, "metric_and_imperial_verified": True, "native_undo_verified": True, "atomic_failure_verified": True, "close_reopen_refusal_verified": True, "gui_dispatch_substituted": True, "visible_window_verified": False}
+    receipt = {"passed": True, "freecad_version": ".".join(App.Version()[:3]), "native_edits": 2, "metric_and_imperial_verified": True, "native_undo_verified": True, "atomic_failure_verified": True, "close_reopen_refusal_verified": True, "native_step_roundtrip_verified": True, "export_preserves_document_and_existing_file": True, "nested_part_world_placement_verified": True, "file_dialog_substituted": True, "gui_dispatch_substituted": True, "visible_window_verified": False}
     (root / "status.json").write_text(json.dumps(receipt, indent=2), encoding="utf-8")
 except BaseException:
     (root / "error.log").write_text(traceback.format_exc(), encoding="utf-8")

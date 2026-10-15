@@ -20,10 +20,11 @@ export function proposalFacts(run: Snapshot): string[] {
   const facts: string[] = [];
   if(input.live_cad_version){
     const saving = input.operations[0]?.action === "save_as";
-    facts.push(saving ? "Guardar el documento abierto de FreeCAD." : "Cambiar el documento abierto de FreeCAD.", "Objetivo: " + input.description);
+    const exporting = input.operations[0]?.action === "export_step";
+    facts.push(saving ? "Guardar el documento abierto de FreeCAD." : exporting ? "Exportar la pieza abierta a STEP." : "Cambiar el documento abierto de FreeCAD.", "Objetivo: " + input.description);
     const actions:Record<string,string>={create_object:"Crear objeto",edit_object:"Cambiar objeto",delete_object:"Eliminar objeto",boolean:"Combinar sólidos",fillet:"Redondear bordes",chamfer:"Biselar bordes",loft:"Crear forma entre secciones",sweep:"Crear barrido",mirror:"Reflejar",pattern:"Crear patrón",move:"Mover",color:"Cambiar color",variables:"Cambiar variables",sketch:"Crear boceto",pad:"Extruir",pocket:"Crear vaciado",revolution:"Crear revolución",groove:"Crear ranura",thickness:"Cambiar espesor",draft:"Crear ángulo de salida",datum_plane:"Crear plano de referencia",hull:"Crear envolvente"};
     const names:Record<string,string>={Length:"largo",Width:"ancho",Height:"alto",Radius:"radio",Placement:"posición"};
-    for(const operation of saving ? [] : input.operations){
+    for(const operation of saving || exporting ? [] : input.operations){
       const current=input.before.find(object=>object.name===operation.obj_name);
       facts.push(`${Object.hasOwn(actions,operation.action) ? actions[operation.action] : operation.action}: ${current?.label ?? operation.obj_name ?? "nuevo objeto"}.`);
       for(const [key,value] of Object.entries(operation.obj_properties ?? {})){
@@ -34,6 +35,10 @@ export function proposalFacts(run: Snapshot): string[] {
       }
     }
     if (saving) facts.push("FreeCAD abrirá Guardar como para que elijas el archivo y confirmes allí cualquier sobrescritura.", "Guardar no es una edición de geometría que pueda deshacerse. Hazlo verificará el archivo guardado y releerá el documento.");
+    else if (exporting) {
+      const object = input.before.find(object => object.name === input.operations[0].obj_name);
+      facts.push("Pieza: " + (object?.label ?? input.operations[0].obj_name) + ".", "FreeCAD pedirá un archivo nuevo. No se sobrescriben destinos existentes.", "Se verifican los sólidos, volumen, tamaño y posición del STEP. El documento abierto no cambia ni se guarda al exportar.");
+    }
     else facts.push("Las acciones forman una transacción que puedes deshacer en FreeCAD. No se guarda ni exporta el modelo.");
     facts.push("Cancelar detiene la espera; una operación ya aceptada puede completarse después. Releeremos FreeCAD antes del siguiente cambio.");
   } else if (input.konnect_version) {

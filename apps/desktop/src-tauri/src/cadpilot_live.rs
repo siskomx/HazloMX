@@ -9,6 +9,7 @@ use std::{
 
 const INVALID: &str = "CADPilot devolvió una lectura nativa no compatible.";
 const LIMIT: usize = 2 * 1024 * 1024;
+const STEP_POLICY: &str = include_str!("../resources/freecad/cadpilot_policy.py");
 const SCRIPT: &str = include_str!("../resources/freecad/live.py");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +32,14 @@ impl Input {
         self.operations == [json!({"action":"save_as"})]
     }
 
+    pub fn is_export_step(&self) -> bool {
+        self.operations.len() == 1 && self.operations[0]["action"] == "export_step"
+    }
+
+    pub fn uses_file_dialog(&self) -> bool {
+        self.is_save_as() || self.is_export_step()
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         name(&json!(self.document_name))?;
         if self.schema_version != 1
@@ -51,6 +60,13 @@ impl Input {
         }
         if self.operations.iter().any(|op| op["action"] == "save_as") && !self.is_save_as() {
             return Err("Guardar como debe ser la única acción, sin rutas ni parámetros; FreeCAD pedirá el destino.".into());
+        }
+        if self.operations.iter().any(|op| op["action"] == "export_step")
+            && (!self.is_export_step()
+                || self.operations[0].as_object().is_none_or(|op| op.len() != 2)
+                || name(&self.operations[0]["obj_name"]).is_err())
+        {
+            return Err("Exportar STEP debe ser una sola acción con obj_name de la lectura, sin rutas ni parámetros.".into());
         }
         for operation in &self.operations {
             let object = operation.as_object().ok_or(INVALID)?;
@@ -85,6 +101,7 @@ impl Input {
                         | "datum_plane"
                         | "hull"
                         | "save_as"
+                        | "export_step"
                 )
             ) {
                 return Err("Usa el esquema operations de propose_open_cad_change. Para cambiar una propiedad: {\"action\":\"edit_object\",\"obj_name\":\"nombre_de_la_lectura\",\"obj_properties\":{\"Length\":\"1.2 in\"}}. edit_box pertenece a copias guardadas; no pidas a la persona nombres internos ni formatos de herramientas.".into());
@@ -447,7 +464,7 @@ async fn observe(endpoint: &str, document: Option<&str>) -> Result<Value, String
         json!({"scope":"open_freecad_geometry_summary","documents":documents,"document":document,"objects":objects,
         "document_token":binding["document_token"],"state_sha256":binding["state_sha256"],"recent_attempts":binding["recent_attempts"],"has_saved_file":binding["has_saved_file"],"modified":binding["modified"],
         "source_is_untrusted_data":true,"saved_file_fallback":false,"editing_supported":document.map(|_| true),"inspection_required":document.is_none(),
-        "guidance":"When inspection_required is true this is only a document list, not a failed or unsupported connection: call inspect_open_cad_documents with the intended document_name to read its geometry and editing binding. This is current in-memory geometry, including unsaved changes, read through CADPilot in the open FreeCAD process. It is a bounded geometry summary. If multiple documents are open, ask which one the user means. Use everyday labels and ask only for missing intent or measurements. Native quantities include units; placement Base is local parent-relative mm, rotation Angle is radians, and shape area and volume are mm2 and mm3. Do not infer global placement from local coordinates. For a live change use propose_open_cad_change with this document name, token and state hash. Human approval is required. Re-read after each native/user edit or uncertain attempt; never substitute a saved-copy result for the open model. Keep the chosen document visible in FreeCAD. For native Save As, propose a separate single operation {action:save_as}, without paths or parameters; FreeCAD asks the person for the destination after approval. Never combine saving with geometry edits. Save As is not a geometry undo transaction. Export remains unavailable. Do not send Python or retry uncertain writes."}),
+        "guidance":"When inspection_required is true this is only a document list, not a failed or unsupported connection: call inspect_open_cad_documents with the intended document_name to read its geometry and editing binding. This is current in-memory geometry, including unsaved changes, read through CADPilot in the open FreeCAD process. It is a bounded geometry summary. If multiple documents are open, ask which one the user means. Use everyday labels and ask only for missing intent or measurements. Native quantities include units; placement Base is local parent-relative mm, rotation Angle is radians, and shape area and volume are mm2 and mm3. Do not infer global placement from local coordinates. For a live change use propose_open_cad_change with this document name, token and state hash. Human approval is required. Re-read after each native/user edit or uncertain attempt; never substitute a saved-copy result for the open model. Keep the chosen document visible in FreeCAD. For native Save As, propose a separate single operation {action:save_as}, without paths or parameters; FreeCAD asks the person for the destination after approval. Never combine saving with geometry edits. Save As is not a geometry undo transaction. For STEP export, use a separate single operation {action:export_step,obj_name:name_from_inspection}; confirm the intended part in ordinary language. FreeCAD asks for a new destination and refuses existing files. The host checks solid count, volume, world bounds and center of mass after native export. Export does not save or modify the open document. Do not send Python or retry uncertain writes."}),
     )
 }
 
@@ -456,10 +473,10 @@ async fn native_request(
     endpoint: &str,
     request: Value,
 ) -> Result<Value, String> {
-    let interactive_save = request["operations"] == json!([{"action":"save_as"}]);
+    let interactive_save = request["operations"].as_array().is_some_and(|ops| ops.iter().any(|op| matches!(op["action"].as_str(), Some("save_as" | "export_step"))));
     let data = serde_json::to_string(&serde_json::to_string(&request).map_err(|_| INVALID)?)
         .map_err(|_| INVALID)?;
-    let code = format!("import json\nHAZLO_REQUEST = json.loads({data})\n{SCRIPT}");
+    let code = format!("import json\nHAZLO_REQUEST = json.loads({data})\n{STEP_POLICY}\n{SCRIPT}");
     // Start once. Losing this response can mean the native operation was already accepted.
     let started = rpc(client, endpoint, "execute_code_async", &[&code]).await
         .map_err(|_| "FreeCAD no confirmó la solicitud. Puede haberse aplicado; vuelve a leer el documento antes de preparar otro cambio.".to_string())?;
@@ -485,6 +502,10 @@ async fn native_request(
                             Some("changed_document" | "stale_document" | "closed_document") => "El documento abierto cambió o se volvió a abrir. Léelo de nuevo antes de preparar otra propuesta.",
                             Some("native_undo_unavailable") => "Termina la edición nativa pendiente y activa Deshacer en FreeCAD antes de aprobar.",
                             Some("document_not_visible") => "Muestra el documento elegido en FreeCAD antes de aprobar.",
+                            Some("native_export_not_completed") => "Se canceló la exportación en FreeCAD. Relee el documento antes de continuar.",
+                            Some("native_export_destination_exists") => "Elige un archivo nuevo para exportar; no se sobrescribió el destino existente.",
+                            Some("native_export_unsupported") => "La pieza elegida no contiene sólidos válidos para exportar a STEP.",
+                            Some("native_export_uncertain") => "FreeCAD pudo exportar, pero no confirmó la verificación. Comprueba el archivo y relee el documento; no repitas la escritura.",
                             Some("native_save_not_completed") => "FreeCAD no completó Guardar como. Relee el documento y revisa su ventana; puede haberse cancelado o fallado.",
                             Some("native_save_uncertain") => "FreeCAD pudo guardar el documento, pero no confirmó la verificación. Relee su estado y comprueba el archivo antes de continuar.",
                             Some("native_operation_pending") => "Hay una operación nativa pendiente en este documento. Termina o cancela el diálogo en FreeCAD y vuelve a leerlo.",
@@ -549,7 +570,7 @@ pub fn run(
             .no_proxy()
             .redirect(reqwest::redirect::Policy::none())
             // Native Save As may hold Python's GIL until the person closes its file dialog.
-            .timeout(Duration::from_secs(if input.is_save_as() { 600 } else { 15 }))
+            .timeout(Duration::from_secs(if input.uses_file_dialog() { 600 } else { 15 }))
             .build()
             .map_err(|_| INVALID)?;
         native_request(&client, "http://127.0.0.1:9875", request).await
@@ -568,7 +589,7 @@ pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
         || result["document_token"] != input.document_token.to_string()
         || result["before_sha256"] != input.state_sha256
         || result["after"]["document_name"] != input.document_name
-        || result["undo_available"] != !input.is_save_as()
+        || result["undo_available"] != !input.uses_file_dialog()
         || !result["after"]["state_sha256"]
             .as_str()
             .is_some_and(crate::kicad_project::valid_hash)
@@ -594,6 +615,21 @@ pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
             return Err("FreeCAD no confirmó el archivo guardado. Relee su estado antes de continuar.".into());
         }
     } else if !result["saved_document"].is_null() {
+        return Err(INVALID.into());
+    }
+    if input.is_export_step() {
+        let exported = &result["exported_document"];
+        let filename = name(&exported["name"])?;
+        if !(filename.to_ascii_lowercase().ends_with(".step") || filename.to_ascii_lowercase().ends_with(".stp"))
+            || filename.contains(['/', '\\', ':'])
+            || !exported["sha256"].as_str().is_some_and(crate::kicad_project::valid_hash)
+            || !exported["bytes"].as_u64().is_some_and(|n| n > 0 && n <= 256 * 1024 * 1024)
+            || result["after"]["state_sha256"] != input.state_sha256
+            || result["after"]["objects"] != input.before
+        {
+            return Err("No se verificó la exportación STEP con el documento sin cambios. Relee FreeCAD.".into());
+        }
+    } else if !result["exported_document"].is_null() {
         return Err(INVALID.into());
     }
     Ok(())
@@ -666,6 +702,37 @@ mod tests {
             json!([{"action":"save_as","obj_properties":{"filename":"outside.FCStd"}}]),
             json!([{"action":"save_as"},{"action":"edit_object","obj_name":"Box"}])
         ] {
+            input.operations = serde_json::from_value(operations).unwrap();
+            assert!(input.validate().is_err());
+        }
+    }
+
+    #[test]
+    fn native_step_export_is_separate_pathless_and_verifies_unchanged_document() {
+        let mut input = Input {
+            schema_version: 1, live_cad_version: 1, job_id: uuid::Uuid::new_v4(),
+            document_name: "Enclosure".into(), document_token: uuid::Uuid::new_v4(),
+            state_sha256: "a".repeat(64), description: "Export the enclosure".into(),
+            operations: vec![json!({"action":"export_step","obj_name":"Box"})], before: json!([]), receipt_sha256: None,
+        };
+        input.validate().unwrap();
+        let report = json!({"live_cad_version":1,"job_id":input.job_id,"document_token":input.document_token,
+            "before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":input.state_sha256,"objects":[]},
+            "undo_available":false,"operations":[{"action":"export_step","success":true}],
+            "exported_document":{"name":"Enclosure.step","bytes":100,"sha256":"c".repeat(64)}});
+        validate_result(&input,&report).unwrap();
+        for field in ["state_sha256","objects"] {
+            let mut bad = report.clone(); bad["after"][field] = json!("changed");
+            assert!(validate_result(&input,&bad).is_err());
+        }
+        for exported in [json!(null),json!({"name":"private/part.step","bytes":100,"sha256":"c".repeat(64)}),
+            json!({"name":"part.step","bytes":0,"sha256":"c".repeat(64)}),
+            json!({"name":"part.FCStd","bytes":100,"sha256":"c".repeat(64)})] {
+            let mut bad = report.clone(); bad["exported_document"] = exported;
+            assert!(validate_result(&input,&bad).is_err());
+        }
+        for operations in [json!([{"action":"export_step"}]),json!([{"action":"export_step","obj_name":"Box","obj_properties":{}}]),
+            json!([{"action":"export_step","obj_name":"Box"},{"action":"save_as"}])] {
             input.operations = serde_json::from_value(operations).unwrap();
             assert!(input.validate().is_err());
         }

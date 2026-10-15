@@ -28,7 +28,11 @@ def _state(doc):
     for obj, item in zip(doc.Objects, objects):
         # Shape reprs can contain wrapper addresses; fingerprint the actual BREP below instead.
         item["Properties"].pop("Shape", None)
-        for prop in item["Properties"]:
+        for prop in list(item["Properties"]):
+            # Native container shape caches are derived wrapper objects, not document data.
+            if obj.getTypeIdOfProperty(prop) == "Part::PropertyShapeCache":
+                del item["Properties"][prop]
+                continue
             # FreeCAD's material repr contains a fresh wrapper address on every read.
             if "Material" in obj.getTypeIdOfProperty(prop):
                 content = bytes(obj.dumpPropertyContent(prop))
@@ -56,11 +60,10 @@ def _state(doc):
     return {"document_name": doc.Name, "state_sha256": fingerprint, "objects": objects, "has_saved_file": bool(doc.FileName), "modified": bool(getattr(Gui.getDocument(doc.Name), "Modified", True))}
 
 
-def _saved_file(doc):
-    # The destination comes only from FreeCAD's human-owned Save As dialog.
-    path = doc.FileName
+def _file_receipt(path, suffixes):
+    # The destination comes only from the human-owned native file dialog.
     before = os.stat(path, follow_symlinks=False)
-    if not path.lower().endswith(".fcstd") or not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 256 * 1024 * 1024:
+    if not path.lower().endswith(suffixes) or not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 256 * 1024 * 1024:
         raise ValueError("native_save_uncertain")
     digest = hashlib.sha256()
     total = 0
@@ -75,6 +78,46 @@ def _saved_file(doc):
     if total != before.st_size or any((item.st_ino, item.st_size, item.st_mtime_ns) != (before.st_ino, before.st_size, before.st_mtime_ns) for item in (after, current)):
         raise ValueError("native_save_uncertain")
     return {"name": os.path.basename(path), "bytes": before.st_size, "sha256": digest.hexdigest()}
+
+
+def _export_step(doc, operation, before):
+    import Part
+    from PySide import QtGui
+    from rpc_server.geometry_query import body_owner, global_shape
+
+    obj = doc.getObject(operation["obj_name"])
+    if obj is None or getattr(obj, "Shape", None) is None:
+        raise ValueError("native_export_unsupported")
+    # Export mutates OpenCascade metadata; isolate it from the document-owned shape.
+    shape = global_shape(obj).copy()
+    if body_owner(obj) is None and obj.getParentGeoFeatureGroup() is not None:
+        shape.transformShape(obj.getGlobalPlacement().multiply(obj.Placement.inverse()).toMatrix())
+    if shape.isNull() or not shape.isValid() or not shape.Solids:
+        raise ValueError("native_export_unsupported")
+    path, _ = QtGui.QFileDialog.getSaveFileName(Gui.getMainWindow(), "Export STEP", "", "STEP (*.step *.stp)")
+    if not path:
+        raise ValueError("native_export_not_completed")
+    if not path.lower().endswith((".step", ".stp")):
+        path += ".step"
+    # Never let an extension correction or a dialog race overwrite an existing file.
+    if os.path.lexists(path):
+        raise ValueError("native_export_destination_exists")
+    if _state(doc)["state_sha256"] != before["state_sha256"]:
+        raise ValueError("changed_document")
+    # Reserve the new destination exclusively before the native exporter writes it.
+    with open(path, "xb"):
+        pass
+    shape.exportStep(path)
+    saved = _file_receipt(path, (".step", ".stp"))
+    check = Part.Shape()
+    check.read(path)
+    if not check.isValid():
+        raise ValueError("native_export_uncertain")
+    verify_step_solids(check.Solids, shape.Solids)
+    after = _state(doc)
+    if after != before:
+        raise ValueError("native_export_uncertain")
+    return after, saved
 
 
 def _run(request):
@@ -112,7 +155,8 @@ def _run(request):
     if before["state_sha256"] != request["state_sha256"]:
         raise ValueError("changed_document")
     saving = request["operations"] == [{"action": "save_as"}]
-    if doc.HasPendingTransaction or (not saving and doc.UndoMode != 1):
+    exporting = len(request["operations"]) == 1 and request["operations"][0]["action"] == "export_step"
+    if doc.HasPendingTransaction or (not saving and not exporting and doc.UndoMode != 1):
         raise ValueError("native_undo_unavailable")
     # Do not edit a hidden tab while the user is looking at a different document.
     if Gui.activeDocument() is None or Gui.activeDocument().Document is not doc:
@@ -134,7 +178,7 @@ def _run(request):
                 receipts[job] = {"status": "not_completed", "document_token": request["document_token"]}
                 raise ValueError("native_save_not_completed")
             after = _state(doc)
-            saved = _saved_file(doc)
+            saved = _file_receipt(doc.FileName, (".fcstd",))
             if after["modified"] or before["objects"] != after["objects"]:
                 raise ValueError("native_save_uncertain")
             receipts[job] = {"status": "completed", "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after_sha256": after["state_sha256"], "saved_document": saved}
@@ -142,6 +186,14 @@ def _run(request):
         except BaseException:
             if receipts[job]["status"] == "running":
                 receipts[job]["status"] = "uncertain"
+            raise
+    if exporting:
+        try:
+            after, exported = _export_step(doc, request["operations"][0], before)
+            receipts[job] = {"status": "completed", "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after_sha256": after["state_sha256"], "exported_document": exported}
+            return {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": [{"action": "export_step", "success": True}], "undo_available": False, "exported_document": exported}
+        except BaseException as error:
+            receipts[job]["status"] = "not_completed" if str(error) in {"native_export_not_completed", "native_export_destination_exists", "native_export_unsupported", "changed_document"} else "uncertain"
             raise
     transaction = "Hazlo Mexa: " + job
     doc.openTransaction(transaction)
@@ -173,8 +225,8 @@ def _dispatch():
         return {"ok": True, "result": _run(HAZLO_REQUEST)}
     except Exception as error:
         # Do not forward native tracebacks, paths or document contents in failures.
-        safe = {"model_limit", "closed_document", "document_limit", "stale_document", "changed_document", "native_undo_unavailable", "document_not_visible", "expired_request", "already_attempted", "receipt_limit", "native_operation_rolled_back", "rollback_uncertain", "native_save_not_completed", "native_save_uncertain", "native_operation_pending"}
+        safe = {"model_limit", "closed_document", "document_limit", "stale_document", "changed_document", "native_undo_unavailable", "document_not_visible", "expired_request", "already_attempted", "receipt_limit", "native_operation_rolled_back", "rollback_uncertain", "native_save_not_completed", "native_save_uncertain", "native_operation_pending", "native_export_unsupported", "native_export_not_completed", "native_export_destination_exists", "native_export_uncertain"}
         return {"ok": False, "error": str(error) if str(error) in safe else "native_operation_uncertain"}
 
 
-task_print(json.dumps(rpc.dispatch_to_gui(_dispatch, timeout=600 if HAZLO_REQUEST.get("operations") == [{"action": "save_as"}] else 60), ensure_ascii=False, allow_nan=False))
+task_print(json.dumps(rpc.dispatch_to_gui(_dispatch, timeout=600 if any(op.get("action") in {"save_as", "export_step"} for op in HAZLO_REQUEST.get("operations", [])) else 60), ensure_ascii=False, allow_nan=False))

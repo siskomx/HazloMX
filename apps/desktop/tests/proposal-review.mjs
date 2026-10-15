@@ -20,6 +20,13 @@ assert.match(save,/FreeCAD abrirá Guardar como/);
 assert.match(save,/Guardar no es una edición de geometría que pueda deshacerse/);
 assert(!save.includes("No se guarda ni exporta") && !save.includes("nuevo objeto"));
 
+const exported=review({live_cad_version:1,description:"Exporta la carcasa",before:[{name:"InternalBox",label:"Carcasa",properties:{}}],operations:[{action:"export_step",obj_name:"InternalBox"}]});
+assert.match(exported,/Exportar la pieza abierta a STEP/);
+assert.match(exported,/Pieza: Carcasa/);
+assert.match(exported,/No se sobrescriben destinos existentes/);
+assert.match(exported,/documento abierto no cambia ni se guarda/);
+assert(!exported.includes("InternalBox") && !exported.includes("transacción que puedes deshacer"));
+
 assert.match(review({dimensions_mm:{length:25.4,width:12.7,height:5}}),/milímetros: largo 25.4, ancho 12.7, alto 5/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/compila para Arduino Uno/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/No se carga código/);

@@ -12,7 +12,8 @@ import unittest
 import uuid
 import zipfile
 
-SCRIPT = (Path(__file__).resolve().parents[2] / "apps/desktop/src-tauri/resources/freecad/live.py").read_text()
+RESOURCES = Path(__file__).resolve().parents[2] / "apps/desktop/src-tauri/resources/freecad"
+SCRIPT = (RESOURCES / "cadpilot_policy.py").read_text() + "\n" + (RESOURCES / "live.py").read_text()
 
 
 class Document:
@@ -112,6 +113,84 @@ class LiveTests(unittest.TestCase):
     def request(self, observation, length=30.4):
         return {"action": "apply", "document_token": observation["document_token"], "state_sha256": observation["state_sha256"], "job_id": str(uuid.uuid4()), "expires_at": time.time() + 30, "operations": [{"action": "edit_object", "obj_name": "Box", "obj_properties": {"Length": length}}]}
 
+    def export_fixture(self):
+        self.export_path = Path(self.saved_folder.name) / "Finished.step"
+        self.exported_paths = []
+        self.solid = types.SimpleNamespace(Volume=100.0, BoundBox=types.SimpleNamespace(XMin=0.,YMin=0.,ZMin=0.,XMax=10.,YMax=5.,ZMax=2.), CenterOfMass=types.SimpleNamespace(x=5.,y=2.5,z=1.))
+        def export(path):
+            self.exported_paths.append(path)
+            Path(path).write_bytes(b"native STEP fixture")
+        self.export_shape = types.SimpleNamespace(isNull=lambda:False,isValid=lambda:True,Solids=[self.solid],exportStep=export)
+        self.export_shape.copy = lambda: self.export_shape
+        self.export_shape.exportBrepToString = lambda: "native BREP fixture"
+        self.read_shape = types.SimpleNamespace(isValid=lambda:True,Solids=[copy.deepcopy(self.solid)],read=lambda path:None)
+        part = types.ModuleType("Part")
+        part.Shape = lambda: self.read_shape
+        qt = types.ModuleType("PySide")
+        self.choose_export = lambda: (str(self.export_path), "STEP")
+        qt.QtGui = types.SimpleNamespace(QFileDialog=types.SimpleNamespace(getSaveFileName=lambda *args:self.choose_export()))
+        geometry = types.ModuleType("rpc_server.geometry_query")
+        geometry.global_shape = lambda obj: self.export_shape
+        geometry.body_owner = lambda obj: None
+        self.doc.Objects[0].getParentGeoFeatureGroup = lambda: None
+        self.doc.Objects[0].Shape = self.export_shape
+        self.doc.getObject = lambda name: self.doc.Objects[0] if name=="Box" else None
+        self.gui.getMainWindow = lambda: None
+        for key,module in {"Part":part,"PySide":qt,"rpc_server.geometry_query":geometry}.items():
+            self.originals[key] = sys.modules.get(key)
+            sys.modules[key] = module
+        request = self.request(self.inspect())
+        request["operations"] = [{"action":"export_step","obj_name":"Box"}]
+        return request
+
+    def test_step_export_uses_native_dialog_and_roundtrip_without_modifying_or_saving_model(self):
+        request = self.export_fixture()
+        self.doc.UndoMode = 0
+        before = self.inspect()
+        result = self.call(request)
+        self.assertTrue(result["ok"],result)
+        report = result["result"]
+        self.assertEqual(report["after"], {key:before[key] for key in report["after"]})
+        self.assertEqual(report["exported_document"], {"name":"Finished.step","bytes":19,"sha256":hashlib.sha256(b"native STEP fixture").hexdigest()})
+        self.assertFalse(report["undo_available"])
+        self.assertEqual(self.dispatch_timeouts[-1],600)
+        self.assertEqual(self.doc.FileName,"")
+        self.assertTrue(self.modified)
+        self.assertEqual(self.calls,[])
+        self.assertEqual(self.doc.UndoNames,[])
+        self.assertNotIn(str(self.export_path),json.dumps(report))
+        self.assertEqual(self.call(request)["error"],"already_attempted")
+
+    def test_step_cancel_existing_destination_and_changed_document_do_not_export(self):
+        request = self.export_fixture()
+        self.choose_export = lambda: ("","")
+        self.assertEqual(self.call(request)["error"],"native_export_not_completed")
+        self.export_path.write_bytes(b"preserve this file")
+        self.choose_export = lambda: (str(self.export_path),"STEP")
+        request["job_id"] = str(uuid.uuid4())
+        self.assertEqual(self.call(request)["error"],"native_export_destination_exists")
+        self.assertEqual(self.export_path.read_bytes(),b"preserve this file")
+        self.export_path = self.export_path.with_name("new.step")
+        def changed():
+            self.doc.Objects[0].length += 1
+            return str(self.export_path),"STEP"
+        self.choose_export = changed
+        request["job_id"] = str(uuid.uuid4())
+        self.assertEqual(self.call(request)["error"],"changed_document")
+        self.assertEqual(self.exported_paths,[])
+        self.assertFalse(self.export_path.exists())
+
+    def test_step_roundtrip_mismatch_is_uncertain_and_never_replayed(self):
+        request = self.export_fixture()
+        self.read_shape.Solids[0].BoundBox.XMax += 1
+        result = self.call(request)
+        self.assertFalse(result["ok"])
+        self.assertEqual(self.inspect()["recent_attempts"][request["job_id"]]["status"],"uncertain")
+        self.assertEqual(self.call(request)["error"],"already_attempted")
+        self.assertEqual(len(self.exported_paths),1)
+        self.assertEqual(self.doc.Objects[0].length,25.4)
+        self.assertEqual(self.doc.FileName,"")
+
     def test_save_as_uses_native_dialog_verifies_file_and_preserves_geometry_and_undo(self):
         before = self.inspect()
         self.assertEqual(self.dispatch_timeouts[-1], 60)
@@ -170,6 +249,20 @@ class LiveTests(unittest.TestCase):
         self.save_result = True
         self.assertTrue(self.call(request)["ok"])
         self.assertEqual(self.calls, [])
+
+    def test_native_container_shape_cache_does_not_invalidate_persisted_state(self):
+        obj = self.doc.Objects[0]
+        obj.getTypeIdOfProperty = lambda name: "Part::PropertyShapeCache" if name=="_Part_ShapeCache" else "App::PropertyLength"
+        count = [0]
+        def serialized(obj):
+            count[0] += 1
+            return {"Name":obj.Name,"Properties":{"Length":obj.length,"_Part_ShapeCache":f"<wrapper {count[0]}>"}}
+        self.modules["rpc_server.serialize"].serialize_object = serialized
+        before = self.inspect()
+        self.assertNotIn("_Part_ShapeCache",before["objects"][0]["Properties"])
+        self.assertEqual(before["state_sha256"],self.inspect()["state_sha256"])
+        obj.length += 1
+        self.assertNotEqual(before["state_sha256"],self.inspect()["state_sha256"])
 
     def test_material_archive_timestamps_do_not_change_state_but_content_does(self):
         obj = self.doc.Objects[0]
