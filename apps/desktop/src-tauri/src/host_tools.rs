@@ -2693,6 +2693,68 @@ mod tests {
         })).unwrap()).unwrap();
         println!("Owned native PCB observation and refresh passed; original unchanged, no job created.");
     }
+    #[cfg(feature = "desktop")]
+    #[test]
+    #[ignore = "Mutates only the explicitly launched owned KiCad fixture; backend approval fixtures"]
+    fn actual_live_pcb_approved_owned_editor_moves() {
+        use crate::project::{ArtifactFormat,Phase};
+        let workspace=PathBuf::from(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap().to_path_buf();
+        let root=PathBuf::from(std::env::var_os("HAZLOMEXA_TEST_LIVE_PCB_ROOT").expect("Supply the owned KiCad fixture"));
+        assert_eq!(root.canonicalize().unwrap().parent(),Some(workspace.join("target").canonicalize().unwrap().as_path()));
+        assert!(root.file_name().unwrap().to_str().unwrap().starts_with("kicad-live-ui-"));
+        let entry=root.join("OwnedBoard.kicad_pcb");
+        let saved=include_bytes!("../../../../docs/research/konnect-pcb-2026-10-12/Original/basic_test.kicad_pcb");
+        assert_eq!(fs::read(&entry).unwrap(),saved);
+        let project=Project::open(&root).unwrap();
+        let id=project.id;
+        let workflow=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("hazlo-live-profiles")).unwrap());
+        workflow.select_project(project).unwrap();
+        assert!(workflow.view().unwrap().history.is_empty(),"Use an owned fixture without prior jobs");
+        let host=HostTools::new(workflow.clone());
+        let connection=crate::kicad_live::Connection {endpoint:format!("ipc://{}",root.join("temp/kicad/api.sock").display()),token:String::new()};
+        let selected=host.select_live_pcb(id,entry.clone(),connection.clone(),Arc::new(AtomicBool::new(false))).unwrap();
+        let original=selected.observation.clone();
+        let mut current=original.clone();
+        let mut states=Vec::new();
+        for units in [crate::kicad::Units::Mm,crate::kicad::Units::In] {
+            let component=current.components.iter().find(|c|c.reference=="R1").unwrap();
+            let delta=if matches!(units,crate::kicad::Units::Mm) {1.0} else {2.54};
+            let input=crate::kicad_live::Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
+                board_name:"OwnedBoard.kicad_pcb".into(),description:"Move the owned resistor a confirmed distance right".into(),units,
+                before:current.clone(),movement:crate::konnect::FootprintMove {uuid:component.uuid,reference:component.reference.clone(),
+                    expected_x_mm:component.x_mm,expected_y_mm:component.y_mm,
+                    x_mm:((component.x_mm+delta)*1_000_000.).round()/1_000_000.,y_mm:component.y_mm},receipt_sha256:None};
+            let pending=workflow.propose_live_pcb((id,root.clone()),input.clone(),entry.clone(),connection.clone()).unwrap();
+            let unchanged=host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap();
+            assert_eq!(unchanged["observation"]["state_sha256"],current.state_sha256);
+            let approval=pending.approval_id.unwrap();
+            let dispatch=workflow.begin(approval).unwrap();
+            assert!(workflow.begin(approval).is_err());
+            let done=workflow.execute(dispatch).unwrap();
+            assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);
+            workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).unwrap().read_text().unwrap();
+            let verified=host.call("read_verified_result",json!({"job_id":input.job_id})).unwrap();
+            assert_eq!(verified["format"],"live_pcb_report");
+            assert!(!verified.to_string().contains(root.to_str().unwrap()));
+            let reply=host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap();
+            current=serde_json::from_value(reply["observation"].clone()).unwrap();
+            let moved=current.components.iter().find(|c|c.uuid==input.movement.uuid).unwrap();
+            assert_eq!(moved.x_mm,input.movement.x_mm);assert_eq!(moved.y_mm,input.movement.y_mm);
+            assert_eq!(current.instance_sha256,original.instance_sha256);
+            assert_eq!(current.document_sha256,original.document_sha256);
+            assert_ne!(current.state_sha256,input.before.state_sha256);
+            assert_eq!(fs::read(&entry).unwrap(),saved);
+            states.push(current.clone());
+        }
+        fs::write(root.join("hazlo-native-moves.json"),serde_json::to_vec_pretty(&json!({
+            "passed":true,"original":original,"states":states,"saved_bytes_preserved":true,"approval":"backend_fixture"
+        })).unwrap()).unwrap();
+        drop(host);drop(workflow);
+        let recovered=Project::open(&root).unwrap().recover().unwrap();
+        assert_eq!(recovered.len(),2);
+        assert!(recovered.iter().all(|s|s.phase==Phase::Completed && s.schema_version==14));
+        println!("Actual owned KiCad edit/readback/follow-up/recovery passed; native Undo still requires observation.");
+    }
     #[test]
     #[ignore = "Actual CADCraft catalog, native command plans, approval and saved geometry follow-up"]
     fn actual_native_drawing_tool_plan_and_followup() {
