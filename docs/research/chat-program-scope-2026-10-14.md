@@ -24,3 +24,15 @@ The shared reads are capabilities, project workflow status and verified-result a
 - Desktop binaries/examples compile, frontend typecheck/production build and Clippy with warnings denied pass. Raw client transcripts, test homes, paths and source fixture files remain private under ignored `target/`.
 
 The [receipt](chat-program-scope-2026-10-14.json) records these scopes. Actual Claude conversation, real-model/native UI behavior of this change and installed acceptance remain unfinished. Native UI automation is still stopped after Escape; the resume question remains pending. Prepared installer `4768e717…` includes the earlier conversation-length correction but predates this program-binding change, so it cannot establish current-source acceptance. The full application goal remains active.
+
+## Latest installer candidate
+
+Source commit `3ebd8e3` builds unsigned 0.1.0 candidate **`472af63e…`**, including both the conversation-length correction and selected-program enforcement. All 6,584 tracked inputs remain identical through the build, and targeted scans find zero builder-profile paths in the app/helper binaries. The actual release helper passes the 26-tool standalone transport check without engineering jobs.
+
+| Artifact | SHA-256 |
+|---|---|
+| Installer, 5,569,213 bytes | `472af63e4003d47a985c0b5abf18cc2c938e2cea42d89eb91e1f7d7f85391342` |
+| Unbundled release app | `4b2938915f6fd30d08564fbff922d023c3ac67e8d24075b3d8f6360c5b5573a7` |
+| Bundled helper | `02ba28ca09829087b21b2021639e61f2c926191c66b2be1d73f788f150561d26` |
+
+The new preparer's fresh check observes 2,354 MiB available against the unchanged 3,072 MiB requirement and refuses before creating a configuration or guest. The earlier `4768e717…` prepared inputs remain preserved and are marked superseded by this newer source candidate, preventing them from being mistaken for current-source acceptance. This build has no corrected native or installed acceptance; explicit UI resume is still pending.
