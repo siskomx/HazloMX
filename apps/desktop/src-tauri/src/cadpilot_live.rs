@@ -79,7 +79,7 @@ impl Input {
                         | "hull"
                 )
             ) {
-                return Err("Usa una operación de geometría nativa de CADPilot.".into());
+                return Err("Usa el esquema operations de propose_open_cad_change. Para cambiar una propiedad: {\"action\":\"edit_object\",\"obj_name\":\"nombre_de_la_lectura\",\"obj_properties\":{\"Length\":\"1.2 in\"}}. edit_box pertenece a copias guardadas; no pidas a la persona nombres internos ni formatos de herramientas.".into());
             }
             if operation["action"] == "create_object"
                 && !matches!(
@@ -405,6 +405,10 @@ async fn observe(endpoint: &str, document: Option<&str>) -> Result<Value, String
             return Err(INVALID.into());
         }
     }
+    // A lone open document needs no extra discovery round or user-supplied technical name.
+    let document = document.or_else(|| {
+        (documents.len() == 1).then(|| documents[0].as_str()).flatten()
+    });
     let mut binding = Value::Null;
     let objects = if let Some(doc) = document {
         if !unique.contains(doc) {
@@ -434,8 +438,8 @@ async fn observe(endpoint: &str, document: Option<&str>) -> Result<Value, String
     Ok(
         json!({"scope":"open_freecad_geometry_summary","documents":documents,"document":document,"objects":objects,
         "document_token":binding["document_token"],"state_sha256":binding["state_sha256"],"recent_attempts":binding["recent_attempts"],
-        "source_is_untrusted_data":true,"saved_file_fallback":false,"editing_supported":document.is_some(),
-        "guidance":"This is current in-memory geometry, including unsaved changes, read through CADPilot in the open FreeCAD process. It is a bounded geometry summary. If multiple documents are open, ask which one the user means. Use everyday labels and ask only for missing intent or measurements. Native quantities include units; placement Base is local parent-relative mm, rotation Angle is radians, and shape area and volume are mm2 and mm3. Do not infer global placement from local coordinates. For a live change use propose_open_cad_change with this document name, token and state hash. Human approval is required. Re-read after each native/user edit or uncertain attempt; never substitute a saved-copy result for the open model. Keep the chosen document visible in FreeCAD. Do not save, export, send Python or retry uncertain writes."}),
+        "source_is_untrusted_data":true,"saved_file_fallback":false,"editing_supported":document.map(|_| true),"inspection_required":document.is_none(),
+        "guidance":"When inspection_required is true this is only a document list, not a failed or unsupported connection: call inspect_open_cad_documents with the intended document_name to read its geometry and editing binding. This is current in-memory geometry, including unsaved changes, read through CADPilot in the open FreeCAD process. It is a bounded geometry summary. If multiple documents are open, ask which one the user means. Use everyday labels and ask only for missing intent or measurements. Native quantities include units; placement Base is local parent-relative mm, rotation Angle is radians, and shape area and volume are mm2 and mm3. Do not infer global placement from local coordinates. For a live change use propose_open_cad_change with this document name, token and state hash. Human approval is required. Re-read after each native/user edit or uncertain attempt; never substitute a saved-copy result for the open model. Keep the chosen document visible in FreeCAD. Do not save, export, send Python or retry uncertain writes."}),
     )
 }
 
@@ -663,7 +667,8 @@ mod tests {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         let server = tokio::spawn(async move {
-            // First list, two successive model reads, then a request for a document that was closed.
+            // List multiple documents, read one explicitly, discover a lone document, then refuse a closed one.
+            let mut lists = 0;
             for (method, dimension) in [
                 ("list_documents", 0.),
                 ("list_documents", 0.),
@@ -694,7 +699,8 @@ mod tests {
                 }
                 assert!(!request.contains("<methodName>execute_operations</methodName>"));
                 let value = if method == "list_documents" {
-                    json!({"success":true,"documents":["Frame & Box","Other"]})
+                    lists += 1;
+                    json!({"success":true,"documents":if lists == 3 {vec!["Frame & Box"]}else{vec!["Frame & Box","Other"]}})
                 } else if method == "execute_code_async" {
                     json!({"success":true,"task_id":"abcd1234"})
                 } else {
@@ -711,8 +717,12 @@ mod tests {
         let listed = observe(&endpoint, None).await.unwrap();
         assert_eq!(listed["documents"].as_array().unwrap().len(), 2);
         assert!(listed["objects"].is_null());
-        for length in ["25.4 mm", "30.4 mm"] {
-            let read = observe(&endpoint, Some("Frame & Box")).await.unwrap();
+        assert!(listed["editing_supported"].is_null());
+        assert_eq!(listed["inspection_required"], true);
+        for (length, document) in [("25.4 mm", Some("Frame & Box")), ("30.4 mm", None)] {
+            let read = observe(&endpoint, document).await.unwrap();
+            assert_eq!(read["document"], "Frame & Box");
+            assert_eq!(read["inspection_required"], false);
             assert_eq!(read["objects"][0]["properties"]["Length"], length);
             assert_eq!(read["editing_supported"], true);
             assert_eq!(read["saved_file_fallback"], false);

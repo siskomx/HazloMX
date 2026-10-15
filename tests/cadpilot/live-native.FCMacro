@@ -41,6 +41,7 @@ try:
         return {"action": "apply", "document_token": observed["document_token"], "state_sha256": observed["state_sha256"], "job_id": str(uuid.uuid4()), "expires_at": time.time() + 30, "operations": [{"action": "edit_object", "obj_name": "Target", "obj_properties": {"Length": length}}]}
 
     original = inspect()
+    time.sleep(2.1)  # Cross the native ZIP timestamp boundary before checking an unchanged document.
     second = inspect()
     assert original["state_sha256"] == second["state_sha256"]
     assert doc.UndoCount == 0

@@ -3,9 +3,11 @@
 The host supplies JSON data in HAZLO_REQUEST, never model-written Python.
 """
 import hashlib
+import io
 import json
 import time
 import uuid
+import zipfile
 
 import FreeCAD as App
 import FreeCADGui as Gui
@@ -30,7 +32,13 @@ def _state(doc):
                 content = bytes(obj.dumpPropertyContent(prop))
                 if len(content) > 1024 * 1024:
                     raise ValueError("model_limit")
-                item["Properties"][prop] = {"native_sha256": hashlib.sha256(content).hexdigest()}
+                # Native property dumps are ZIPs whose timestamps change without a model edit.
+                with zipfile.ZipFile(io.BytesIO(content)) as archive:
+                    entries = archive.infolist()
+                    if len(entries) > 32 or sum(entry.file_size for entry in entries) > 1024 * 1024:
+                        raise ValueError("model_limit")
+                    persisted = sorted((entry.filename, hashlib.sha256(archive.read(entry)).hexdigest()) for entry in entries)
+                item["Properties"][prop] = {"native_sha256": _digest(persisted)}
     shapes = []
     for obj in doc.Objects:
         shape = getattr(obj, "Shape", None)

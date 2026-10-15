@@ -1,5 +1,6 @@
 """Exercise the fixed GUI-thread glue without opening or automating a native window."""
 import copy
+import io
 import json
 from pathlib import Path
 import sys
@@ -7,6 +8,7 @@ import time
 import types
 import unittest
 import uuid
+import zipfile
 
 SCRIPT = (Path(__file__).resolve().parents[2] / "apps/desktop/src-tauri/resources/freecad/live.py").read_text()
 
@@ -88,6 +90,27 @@ class LiveTests(unittest.TestCase):
 
     def request(self, observation, length=30.4):
         return {"action": "apply", "document_token": observation["document_token"], "state_sha256": observation["state_sha256"], "job_id": str(uuid.uuid4()), "expires_at": time.time() + 30, "operations": [{"action": "edit_object", "obj_name": "Box", "obj_properties": {"Length": length}}]}
+
+    def test_material_archive_timestamps_do_not_change_state_but_content_does(self):
+        obj = self.doc.Objects[0]
+        obj.getTypeIdOfProperty = lambda name: "App::PropertyMaterial"
+        material = {"uuid": "original", "second": 0}
+
+        def dump(name):
+            data = io.BytesIO()
+            with zipfile.ZipFile(data, "w") as archive:
+                entry = zipfile.ZipInfo("Persistence.xml", (2026, 10, 14, 12, 0, material["second"]))
+                archive.writestr(entry, material["uuid"])
+            return data.getvalue()
+
+        obj.dumpPropertyContent = dump
+        first = self.inspect()
+        material["second"] = 4
+        self.assertEqual(first["state_sha256"], self.inspect()["state_sha256"])
+        material["uuid"] = "changed"
+        self.assertNotEqual(first["state_sha256"], self.inspect()["state_sha256"])
+        self.assertEqual(self.call(self.request(first))["error"], "changed_document")
+        self.assertEqual(self.calls, [])
 
     def test_two_native_changes_read_the_current_state_and_keep_one_undo_entry_each(self):
         first = self.inspect()

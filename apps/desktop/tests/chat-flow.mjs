@@ -139,8 +139,10 @@ try {
       assert.equal(call.args.program,program,"Selected program must bind the backend tool connection");
       if (provider.startsWith("ollama_")) assert.equal(call.args.profile, provider === "ollama_local" ? "local_experimental" : "cloud");
       const prompt = JSON.parse(call.args.prompt);
-      assert.equal(prompt.desktop_context.live_document_connection, false);
-      assert.equal(prompt.desktop_context.document_scope, "saved_files_and_verified_copies");
+      assert.equal(prompt.desktop_context.live_document_connection, program === "freecad" ? null : false);
+      assert.equal(prompt.desktop_context.live_mutations_allowed, program === "freecad");
+      if (program === "freecad") assert.equal(prompt.desktop_context.native_connection_check, "inspect_open_cad_documents");
+      assert.equal(prompt.desktop_context.document_scope, program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies");
       assert.equal(prompt.desktop_context.draft_fields, undefined, "Hidden form defaults were sent to the agent");
       assert.match(prompt.instruction, /no pidas rellenar formularios/);
       assert.match(prompt.instruction, /documento abierto/);
@@ -202,7 +204,8 @@ try {
   const cadSource = await page.evaluate(()=>JSON.parse(window.calls.filter(call=>call.command==="start_codex_chat").at(-1).args.prompt).desktop_context);
   assert.deepEqual(cadSource.cad_document_source,{selection:"selected-cad-document",source_sha256:"1".repeat(64)});
   assert.equal(cadSource.current_job,null);
-  assert.equal(cadSource.live_document_connection,false);
+  assert.equal(cadSource.live_document_connection,null);
+  assert.equal(cadSource.live_mutations_allowed,true);
   assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="prepare_cadpilot").length),0);
   const sourcePick = await page.evaluate(()=>window.calls.filter(call=>call.command==="discover_cad_document").at(-1));
   assert.deepEqual(Object.keys(sourcePick.args),["events"],"Source selection invented user measurements or units");
