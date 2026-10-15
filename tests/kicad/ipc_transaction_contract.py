@@ -15,32 +15,20 @@ from google.protobuf import descriptor_pb2, descriptor_pool, message_factory
 from kipy.client import KiCadClient
 from kipy.errors import ConnectionError
 from kipy.proto.common import ApiRequest, ApiResponse, ApiStatusCode
-from kipy.proto.common.commands import BeginCommit, BeginCommitResponse, EndCommit, EndCommitResponse
+from kipy.proto.common.commands import BeginCommit, BeginCommitResponse, EndCommit, EndCommitResponse, GetItems, GetItemsResponse
 from kipy.proto.common.types import DocumentSpecifier, DocumentType, ItemHeader
 
 assert importlib.metadata.version("kicad-python") == "0.8.0"
 
 
-def document_command(command, document):
-    """Preserve 10.0.7 header fields as protobuf unknown fields in the 0.8 client."""
-    tags = {"kiapi.common.commands.BeginCommit": 1, "kiapi.common.commands.EndCommit": 4}
-    number = tags[command.DESCRIPTOR.full_name]
-    assert "header" not in command.DESCRIPTOR.fields_by_name
-    assert document.type == DocumentType.DOCTYPE_PCB and document.board_filename
-    data = ItemHeader(document=document).SerializeToString()
-    length, size = bytearray(), len(data)
-    while size > 127:
-        length.append((size & 127) | 128)
-        size >>= 7
-    length.append(size)
-    command.MergeFromString(bytes([number * 8 + 2]) + length + data)
-    return command
-
-
-class BoundClient(KiCadClient):
-    def _connect(self):
-        super()._connect()
-        self._conn.resend_time = -1
+from pathlib import Path
+import importlib.util
+worker_path = Path(__file__).resolve().parents[2] / "apps/desktop/src-tauri/resources/kicad/live.py"
+spec = importlib.util.spec_from_file_location("hazlo_kicad_native", worker_path)
+worker = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(worker)
+document_command = worker.document_command
+BoundClient = worker.BoundClient
 
 
 # Independent native contract parser: the two field numbers come from KiCad 10.0.7,
@@ -65,25 +53,26 @@ for command, parser in [(BeginCommit(), native_begin), (EndCommit(), native_end)
     assert parser.FromString(type(command).FromString(payload).SerializeToString()).header.document == document
 try:
     document_command(BeginCommit(), DocumentSpecifier())
-except AssertionError:
+except worker.Refused:
     pass
 else:
     raise AssertionError("Missing target document was accepted")
 
 
-def exchange(timeout=False):
+def exchange(timeout=False, foreign=False, missing_header=False):
+    items = foreign or missing_header
     endpoint = "inproc://hazlo-commit-" + str(uuid.uuid4())
     errors = queue.Queue()
     received = []
     with pynng.Rep0(listen=endpoint, recv_timeout=1000, send_timeout=1000) as server:
         def serve():
             try:
-                for index in range(1 if timeout else 2):
+                for index in range(1 if timeout or items else 2):
                     request = ApiRequest.FromString(server.recv())
                     received.append(request)
                     parser = native_begin if index == 0 else native_end
-                    assert parser.FromString(request.message.value).header.document == document
-                    assert request.message.type_url.endswith("BeginCommit" if index == 0 else "EndCommit")
+                    assert (GetItems.FromString(request.message.value) if items else parser.FromString(request.message.value)).header.document == document
+                    assert request.message.type_url.endswith("GetItems" if items else "BeginCommit" if index == 0 else "EndCommit")
                     assert request.header.kicad_token == ("" if index == 0 else "owned-fixture-token")
                     if index:
                         end = EndCommit.FromString(request.message.value)
@@ -93,19 +82,33 @@ def exchange(timeout=False):
                     reply = ApiResponse()
                     reply.status.status = ApiStatusCode.AS_OK
                     reply.header.kicad_token = "owned-fixture-token"
-                    result = BeginCommitResponse() if index == 0 else EndCommitResponse()
-                    if index == 0:
+                    result = GetItemsResponse() if items else BeginCommitResponse() if index == 0 else EndCommitResponse()
+                    if foreign:
+                        result.header.document.CopyFrom(DocumentSpecifier(type=DocumentType.DOCTYPE_PCB, board_filename="OtherBoard.kicad_pcb"))
+                        result.status = 1
+                    elif missing_header:
+                        result.status = 1
+                    elif index == 0:
                         result.id.value = "owned-commit"
                     reply.message.Pack(result)
                     server.send(reply.SerializeToString())
             except BaseException as error:
                 errors.put(error)
 
-        worker = threading.Thread(target=serve)
-        worker.start()
+        server_thread = threading.Thread(target=serve)
+        server_thread.start()
         client = BoundClient(endpoint, "hazlo-contract-test", "", 150 if timeout else 1000)
         try:
-            if timeout:
+            if foreign:
+                try:
+                    client.send(GetItems(header=ItemHeader(document=document)), GetItemsResponse)
+                    raise AssertionError("Foreign native document reply was accepted")
+                except worker.Uncertain:
+                    pass
+            elif missing_header:
+                result = client.send(GetItems(header=ItemHeader(document=document)), GetItemsResponse)
+                assert not result.HasField("header")
+            elif timeout:
                 try:
                     client.send(document_command(BeginCommit(), document), BeginCommitResponse)
                     raise AssertionError("Missing native reply was accepted")
@@ -117,16 +120,19 @@ def exchange(timeout=False):
                 end.id.CopyFrom(commit.id)
                 client.send(document_command(end, document), EndCommitResponse)
             assert client._conn.resend_time == -1
+            assert client._conn.recv_max_size == 8 * 1024 * 1024
         finally:
             if client.connected:
                 client._conn.close()
-            worker.join(2)
-        assert not worker.is_alive()
+            server_thread.join(2)
+        assert not server_thread.is_alive()
         if not errors.empty():
             raise errors.get()
-        assert len(received) == (1 if timeout else 2)
+        assert len(received) == (1 if timeout or items else 2)
 
 
 exchange()
 exchange(timeout=True)
-print("PASS: official-client protobuf preserves native document headers; NNG transaction exchange, token binding and reply-timeout refusal; no editor contacted.")
+exchange(foreign=True)
+exchange(missing_header=True)
+print("PASS: official-client protobuf preserves native document headers; NNG transaction exchange, token binding, foreign-document and reply-timeout refusal; no editor contacted.")

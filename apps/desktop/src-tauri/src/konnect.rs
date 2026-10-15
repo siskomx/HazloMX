@@ -530,6 +530,44 @@ pub fn footprints(bytes: &[u8]) -> Result<Vec<Footprint>, String> {
     Ok(result)
 }
 /// Verify the whole board: only the chosen footprint's root X/Y may change.
+/// Bounded stdin contract for native workers to reuse the whole-board verifier.
+pub const NATIVE_MOVE_CHECK_LIMIT: usize = 32 * 1024 * 1024;
+pub fn validate_native_move_json(bytes: &[u8]) -> bool {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Request {
+        before: String,
+        movement: FootprintMove,
+    }
+    if bytes.len() > NATIVE_MOVE_CHECK_LIMIT {
+        return false;
+    }
+    let Ok(request) = serde_json::from_slice::<Request>(bytes) else {
+        return false;
+    };
+    request.before.len() <= 2 * 1024 * 1024
+        && validate_current_position(request.before.as_bytes(), &request.movement).is_ok()
+}
+pub fn check_native_move_json(bytes: &[u8]) -> bool {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Request {
+        before: String,
+        after: String,
+        movement: FootprintMove,
+    }
+    if bytes.len() > NATIVE_MOVE_CHECK_LIMIT {
+        return false;
+    }
+    let Ok(request) = serde_json::from_slice::<Request>(bytes) else {
+        return false;
+    };
+    if request.before.len() > 2 * 1024 * 1024 || request.after.len() > 2 * 1024 * 1024 {
+        return false;
+    }
+    verify_footprint_move(request.before.as_bytes(), request.after.as_bytes(), &request.movement).is_ok()
+}
+
 pub fn verify_footprint_move(
     before: &[u8],
     after: &[u8],
@@ -595,6 +633,34 @@ mod tests {
             x_mm: 203.34,
             y_mm: 155.33,
         }
+    }
+    #[test]
+    fn native_worker_verifier_accepts_only_the_approved_whole_board_translation() {
+        let before = std::str::from_utf8(BOARD).unwrap();
+        let after = before.replacen("(at 200.8 156.6)", "(at 203.34 155.33)", 1);
+        let request = serde_json::json!({"before":before,"after":after,"movement":board_move()});
+        assert!(check_native_move_json(&serde_json::to_vec(&request).unwrap()));
+        let initial = serde_json::json!({"before":before,"movement":board_move()});
+        assert!(validate_native_move_json(&serde_json::to_vec(&initial).unwrap()));
+        let mut invalid = initial;
+        invalid["movement"]["x_mm"] = serde_json::json!(200.8);
+        invalid["movement"]["y_mm"] = serde_json::json!(156.6);
+        assert!(!validate_native_move_json(&serde_json::to_vec(&invalid).unwrap()));
+
+        let mut changed = request.clone();
+        changed["after"] = serde_json::json!(after.replacen("(size 3 3)", "(size 4 3)", 1));
+        assert!(!check_native_move_json(&serde_json::to_vec(&changed).unwrap()));
+        changed = request.clone();
+        changed["movement"]["expected_x_mm"] = serde_json::json!(0.);
+        assert!(!check_native_move_json(&serde_json::to_vec(&changed).unwrap()));
+        changed = request.clone();
+        changed["path"] = serde_json::json!("must not read a file");
+        assert!(!check_native_move_json(&serde_json::to_vec(&changed).unwrap()));
+        changed = request;
+        changed["before"] = serde_json::json!(" ".repeat(2 * 1024 * 1024 + 1));
+        assert!(!check_native_move_json(&serde_json::to_vec(&changed).unwrap()));
+        assert!(!check_native_move_json(b"not json"));
+        assert!(!check_native_move_json(br#"{"before":"a","before":"b","after":"","movement":{}}"#));
     }
     #[test]
     fn board_move_verifies_whole_board_and_rejects_unrelated_changes() {

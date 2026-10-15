@@ -331,7 +331,12 @@ mod tests {
         let transport = TokioChildProcess::new(command).unwrap();
         let pid = transport.id().unwrap();
         let client = ().serve(transport).await.unwrap();
-        assert_eq!(client.list_all_tools().await.unwrap().len(), 6);
+        let actual = client.list_all_tools().await.unwrap();
+        let expected = crate::host_tools::catalog();
+        assert_eq!(
+            actual.iter().map(|tool| tool.name.as_ref()).collect::<std::collections::BTreeSet<_>>(),
+            expected.iter().map(|tool| tool.name.as_ref()).collect::<std::collections::BTreeSet<_>>()
+        );
         let result = client
             .call_tool(CallToolRequestParams::new("get_workflow_status"))
             .await
