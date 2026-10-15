@@ -1,5 +1,9 @@
 # Hazlo Mexa application goal
 
+## Current Windows acceptance — October 14, 2026
+
+The [current chat installer](research/chat-installer-windows-2026-10-14.md) passes a fresh Windows guest with 21 native jobs, installed initial chat, 26-tool transport, update/uninstall and preservation. A separate ordinary nonadministrator passes lifecycle/transport/startup and two KiCad jobs/recovery. The previous 24-tool chat installer upgrades to the exact current binaries with preserved project/app-data markers. Independent checks match 736 main and 67 ordinary-user exported files; the guest is stopped. This supersedes prepared-only package notes below. Engineering approvals use backend fixtures; real Agent conversation, broader native/ordinary-user/provider UI and live/unsaved requirements remain unfinished. The full application goal stays active.
+
 ## Product direction — October 13, 2026
 
 The user's latest clarification governs the remaining implementation: **Hazlo Mexa is a simple natural-language chat that uses the engineering programs' tools. Each engineering program owns its document, editing behavior and native view.** Hazlo connects the selected agent to those tools, gathers missing context, explains proposed changes, obtains approval when needed, and re-reads the program's actual result. All integrations below remain in scope.
