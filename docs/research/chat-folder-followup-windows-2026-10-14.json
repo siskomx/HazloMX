@@ -1,0 +1,118 @@
+{
+  "source_commit": "aac3323",
+  "artifacts": {
+    "installer": {
+      "sha256": "ffd7fb8a68d440b360022706cddf2cbcce632d9ab21c206268656432955834af",
+      "bytes": 5575000
+    },
+    "app": {
+      "sha256": "ac20b3be578147d234f86780be0fac52325ccde9d7107034919522fe6628edac",
+      "bytes": 26148352
+    },
+    "helper": {
+      "sha256": "6b04245aebf74421a3d33ed8ba23baf5f0b3c9c082923249b66c5e4e55858658",
+      "bytes": 591872
+    }
+  },
+  "build_inputs_unchanged": 6584,
+  "builder_profile_matches": {
+    "app": 0,
+    "helper": 0
+  },
+  "fresh_guest": {
+    "pass": true,
+    "windows_build": 26100,
+    "same_version_update": true,
+    "previous_build_upgrade_tested": false,
+    "programs": {
+      "arduino_agent": {
+        "pass": true,
+        "completed_jobs": 2
+      },
+      "arduino_cli": {
+        "pass": true,
+        "completed_jobs": 2
+      },
+      "kicad_checks": {
+        "pass": true,
+        "completed_jobs": 2
+      },
+      "konnect_schematic_pcb": {
+        "pass": true,
+        "completed_jobs": 4
+      },
+      "cadcraft": {
+        "pass": true,
+        "completed_jobs": 4
+      },
+      "freecad_cadpilot": {
+        "pass": true,
+        "completed_jobs": 3
+      },
+      "orca": {
+        "pass": true,
+        "completed_jobs": 4
+      }
+    },
+    "startup": {
+      "pass": true,
+      "scope": "installed release native initial chat UI and read-only IPC",
+      "program_groups": 6,
+      "agent_choices": 4,
+      "no_engineering_forms": true,
+      "no_implicit_proposal": true,
+      "send_disabled_without_project": true,
+      "reload_preserves_initial_chat": true,
+      "webview_version": "155.0.4283.45",
+      "elevated_host": true,
+      "debugger_configuration": "disposable guest per-app policy",
+      "project_pickers_operated": false,
+      "engineering_ui_workflow": false,
+      "model_inference": false
+    },
+    "ordinary_user": {
+      "pass": true,
+      "native_kicad_completed_jobs": 2,
+      "administrator_group_absent": true,
+      "native_ui_tested": false,
+      "signed_in_agents": false
+    },
+    "independent_file_matches": {
+      "main": 736,
+      "ordinary_user": 69
+    },
+    "guest_inputs_unchanged": 64,
+    "guest_stopped": true
+  },
+  "host_native_chat": {
+    "pass": true,
+    "app_sha256": "ac20b3be578147d234f86780be0fac52325ccde9d7107034919522fe6628edac",
+    "program": "CADCraft",
+    "native_project_runtime_source_pickers": true,
+    "real_existing_ollama_cloud": true,
+    "backend_fixture_approvals": false,
+    "native_ui_approved_jobs": 2,
+    "native_ui_denied_proposals": 1,
+    "imperial_move_mm": 25.4,
+    "metric_followup_mm": 5,
+    "native_final_center_mm": [
+      30.4,
+      0,
+      0
+    ],
+    "circle_diameter_mm": 20,
+    "independent_native_readback": true,
+    "first_result_files_preserved": 4,
+    "source_preserved": true,
+    "cancelled_proposal_outputs": 0,
+    "installed_app_tested": false,
+    "live_editing_tested": false,
+    "implicit_followup_pass": false,
+    "overall_chat_acceptance": false,
+    "implicit_wrong_source_proposal_denied": true,
+    "recovered_history_and_report": true,
+    "draft_preserved_during_review": true,
+    "internal_review_not_fabricated_as_user_message": true
+  },
+  "overall_application_goal_complete": false
+}

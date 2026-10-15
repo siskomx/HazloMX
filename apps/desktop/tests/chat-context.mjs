@@ -16,6 +16,8 @@ assert.deepEqual(prompt.recovered_conversation,history.filter(turn=>prompt.recov
 assert.deepEqual(prompt.desktop_context,current);
 assert.equal(prompt.user_request,request);
 assert.match(prompt.instruction,/No supongas sus datos/);
+assert.match(prompt.instruction,/Para continuar con el mismo documento/);
+assert.match(prompt.instruction,/pendiente, fallida o cancelada no sustituye ese resultado/);
 assert.deepEqual(history,original,"Composing a bounded request changed visible/saved history");
 const hugeReply=JSON.parse(agentPrompt(request,[{role:"assistant",content:"á".repeat(10000)}],current));
 assert.equal(hugeReply.omitted_conversation_turns,1);

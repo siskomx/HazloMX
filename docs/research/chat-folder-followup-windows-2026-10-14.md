@@ -1,0 +1,17 @@
+# Folder-bound chat Windows evidence — October 14, 2026
+
+Source commit aac3323 builds unsigned installer **ffd7fb8a…** (5,575,000 bytes). All 6,584 tracked inputs remain unchanged during the build; targeted app/helper scans find zero builder-profile paths. The release helper passes its 26-tool transport check without engineering jobs.
+
+A fresh Windows build 26100 guest passes current-user installation, exact installed binary identity, same-version update, connector protocol, startup, uninstall and preservation. Native backend approvals execute 21 jobs: Arduino Agent 2, Arduino CLI 2, KiCad checks 2, Konnect schematic/PCB 4, CADCraft 4, FreeCAD/CADPilot 3 and OrcaSlicer 4. This run does not test a previous-build upgrade. Actual installed initial-chat UI checks cover six program groups, four AI choices, no engineering forms or implicit proposal, disabled send without a project and reload. They do not operate pickers, approve engineering changes or run model inference.
+
+The separate ordinary nonadministrator passes installation, update, exact binary identities, connector protocol, two KiCad jobs with recovery, hidden startup, uninstall and preservation. It uses backend fixture approvals; signed-in agents and its native UI are untested. Independent hashes match 736 exported main files and 69 ordinary-user project files. All 64 prepared inputs remain unchanged. The owned guest is stopped after retaining private evidence.
+
+## Native chat and discovered follow-up gap
+
+The exact unbundled app **ac20b3be…** passes real native project/runtime/source pickers, existing Ollama cloud inference, two UI-approved CADCraft moves, one denied proposal, automatic result review and recovery. Independent CADCraft readback verifies center (0, 0) → (25.4, 0) → (30.4, 0) mm with radius 10 mm unchanged. The original source and all four first-result files remain unchanged; the denied proposal has no artifact outputs. A draft survives automatic review, and internal review requests no longer appear as fabricated user messages. The final automatic readback succeeds with bounded model context while full history remains visible. Closing/restarting, reopening the project and opening its recovered report retains the actual final geometry.
+
+This is **not full conversation acceptance**: the short follow-up “now move it five millimeters left” inspected and proposed from the original source rather than the completed copy. That proposal was denied, never executed. Clarifying that the next move starts from the last verified copy produces the correct second approved job. The model also exposes unnecessary internal IDs/tool terms in explanations.
+
+A subsequent shared-prompt correction distinguishes first edits/new selections from continuations, keeps completed results authoritative after cancelled/failed proposals and requests everyday explanations. Context-bound and browser tests pass, but this installer predates that correction. Its real-model/native regression and a fresh candidate remain required. No backend validation or approval gate was relaxed.
+
+The [sanitized receipt](chat-folder-followup-windows-2026-10-14.json) records exact hashes and scope. Raw paths, profiles, transcripts, captures, source files and guest diagnostics stay under ignored target/. Live/unsaved writes, broader current real-model UI acceptance, actual Arduino Agent conversation and authenticated Claude/Codex inference remain unfinished; the complete application goal is not achieved.
