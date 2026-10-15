@@ -62,6 +62,9 @@ pub mod orca_run;
 pub mod agent;
 
 #[cfg(windows)]
+pub mod agent_editor;
+
+#[cfg(windows)]
 pub mod project;
 
 #[cfg(windows)]
