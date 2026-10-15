@@ -1,0 +1,77 @@
+"""Real FreeCAD/CADPilot geometry and undo; GUI dispatch/view are explicit headless substitutes."""
+import json
+from pathlib import Path
+import sys
+import time
+import traceback
+import types
+import uuid
+
+import FreeCAD as App
+import FreeCADGui as Gui
+
+root = Path.cwd()
+try:
+    config = json.loads((root / "input.json").read_text(encoding="utf-8"))
+    sys.path.insert(0, config["addon"])
+    Gui.addCommand = lambda *args: None
+    from rpc_server import rpc_server as rpc
+    rpc.dispatch_to_gui = lambda callback: callback()
+    doc = App.newDocument("OwnedLiveFixture")
+    doc.UndoMode = 1
+    box = doc.addObject("Part::Box", "Target")
+    box.Length, box.Width, box.Height = 25.4, 20, 10
+    doc.recompute()
+    Gui.activeDocument = lambda: types.SimpleNamespace(Document=doc)
+    Gui.getDocument = lambda name: types.SimpleNamespace(activeView=lambda: types.SimpleNamespace(redraw=lambda: None))
+    script = Path(config["script"]).read_text(encoding="utf-8")
+
+    def call(request):
+        output = []
+        exec(compile(script, "hazlo-fixed-native-glue", "exec"), {"HAZLO_REQUEST": request, "task_print": output.append})
+        assert len(output) == 1
+        return json.loads(output[0])
+
+    def inspect():
+        result = call({"action": "inspect", "document_name": doc.Name})
+        assert result["ok"], result
+        return result["result"]
+
+    def proposal(observed, length):
+        return {"action": "apply", "document_token": observed["document_token"], "state_sha256": observed["state_sha256"], "job_id": str(uuid.uuid4()), "expires_at": time.time() + 30, "operations": [{"action": "edit_object", "obj_name": "Target", "obj_properties": {"Length": length}}]}
+
+    original = inspect()
+    second = inspect()
+    assert original["state_sha256"] == second["state_sha256"]
+    assert doc.UndoCount == 0
+    for expected, value in ((30.48, "1.2 in"), (35.48, 35.48)):
+        result = call(proposal(inspect(), value))
+        assert result["ok"], result
+        assert result["result"]["undo_available"], result
+        assert abs(box.Length.Value - expected) < 1e-9
+        assert abs(box.Shape.Volume - expected * 20 * 10) < 1e-5
+        assert inspect()["state_sha256"] == result["result"]["after"]["state_sha256"]
+    assert doc.UndoCount == 2, doc.UndoCount
+    doc.undo()
+    doc.recompute()
+    assert abs(box.Length.Value - 30.48) < 1e-9
+    before = inspect()
+    request = proposal(before, 40.)
+    request["operations"].append({"action": "edit_object", "obj_name": "Missing", "obj_properties": {"Length": 99.}})
+    result = call(request)
+    assert result == {"ok": False, "error": "native_operation_rolled_back"}, result
+    assert abs(box.Length.Value - 30.48) < 1e-9
+    assert inspect()["state_sha256"] == before["state_sha256"]
+    doc.undo()
+    doc.recompute()
+    assert abs(box.Length.Value - 25.4) < 1e-9
+    assert inspect()["state_sha256"] == original["state_sha256"]
+    old = proposal(inspect(), 99.)
+    App.closeDocument(doc.Name)
+    doc = App.newDocument("OwnedLiveFixture")
+    assert call(old) == {"ok": False, "error": "stale_document"}
+    receipt = {"passed": True, "freecad_version": ".".join(App.Version()[:3]), "native_edits": 2, "metric_and_imperial_verified": True, "native_undo_verified": True, "atomic_failure_verified": True, "close_reopen_refusal_verified": True, "gui_dispatch_substituted": True, "visible_window_verified": False}
+    (root / "status.json").write_text(json.dumps(receipt, indent=2), encoding="utf-8")
+except BaseException:
+    (root / "error.log").write_text(traceback.format_exc(), encoding="utf-8")
+    raise

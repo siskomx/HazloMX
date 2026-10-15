@@ -18,7 +18,22 @@ const position = (x: number, y: number) => `horizontal ${number(x)}, vertical ${
 export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
-  if (input.konnect_version) {
+  if(input.live_cad_version){
+    facts.push("Cambiar el documento abierto de FreeCAD.", "Objetivo: " + input.description);
+    const actions:Record<string,string>={create_object:"Crear objeto",edit_object:"Cambiar objeto",delete_object:"Eliminar objeto",boolean:"Combinar sólidos",fillet:"Redondear bordes",chamfer:"Biselar bordes",loft:"Crear forma entre secciones",sweep:"Crear barrido",mirror:"Reflejar",pattern:"Crear patrón",move:"Mover",color:"Cambiar color",variables:"Cambiar variables",sketch:"Crear boceto",pad:"Extruir",pocket:"Crear vaciado",revolution:"Crear revolución",groove:"Crear ranura",thickness:"Cambiar espesor",draft:"Crear ángulo de salida",datum_plane:"Crear plano de referencia",hull:"Crear envolvente"};
+    const names:Record<string,string>={Length:"largo",Width:"ancho",Height:"alto",Radius:"radio",Placement:"posición"};
+    for(const operation of input.operations){
+      const current=input.before.find(object=>object.name===operation.obj_name);
+      facts.push(`${Object.hasOwn(actions,operation.action) ? actions[operation.action] : operation.action}: ${current?.label ?? operation.obj_name ?? "nuevo objeto"}.`);
+      for(const [key,value] of Object.entries(operation.obj_properties ?? {})){
+        const label=Object.hasOwn(names,key) ? names[key] : key;
+        const dimension=["Length","Width","Height","Radius","Radius1","Radius2"].includes(key);
+        const display=(v:unknown)=>typeof v==="number" && dimension ? `${number(v)} mm` : typeof v==="string" ? v : JSON.stringify(v);
+        facts.push(`${label}: ${current && key in current.properties ? display(current.properties[key]) + " → " : ""}${display(value)}.`);
+      }
+    }
+    facts.push("Las acciones forman una transacción que puedes deshacer en FreeCAD. No se guarda ni exporta el modelo.", "Cancelar detiene la espera; una edición ya aceptada puede completarse después. Releeremos FreeCAD antes del siguiente cambio.");
+  } else if (input.konnect_version) {
     facts.push(`Documento: ${input.source.entry}.`);
     if (input.pcb_move) {
       const move = input.pcb_move;
@@ -59,7 +74,7 @@ export function proposalFacts(run: Snapshot): string[] {
   } else {
     facts.push(`Comprobar que el código compila para ${input.fqbn === "arduino:avr:uno" ? "Arduino Uno" : input.fqbn}.`, "Se generarán el sketch, el informe y los archivos compilados. Revisa el código en los detalles.", "No se carga código a una placa.");
   }
-  facts.push("El resultado se guarda en el proyecto; los archivos originales se conservan.");
+  facts.push(input.live_cad_version ? "El informe de la transacción se guarda en el proyecto." : "El resultado se guarda en el proyecto; los archivos originales se conservan.");
   if (run.audit?.destination) facts.push(`Carpeta de resultado dentro del proyecto: ${run.audit.destination}`);
   return facts;
 }

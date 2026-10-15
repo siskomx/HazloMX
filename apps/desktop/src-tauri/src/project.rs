@@ -66,6 +66,7 @@ pub enum OperationInput {
     Kicad(KicadInput),
     Orca(SliceInput),
     Cadpilot(cadpilot::Input),
+    LiveCad(crate::cadpilot_live::Input),
     Konnect(KonnectInput),
     KonnectPcb(crate::konnect_pcb::Input),
 }
@@ -95,6 +96,7 @@ impl OperationInput {
             Self::Kicad(_) => "kicad",
             Self::Orca(_) => "orca",
             Self::Cadpilot(_) => "cadpilot",
+            Self::LiveCad(_) => "freecad_live",
             Self::Konnect(_) => "konnect",
             Self::KonnectPcb(_) => "konnect_pcb",
         }
@@ -108,6 +110,7 @@ impl OperationInput {
             Self::Kicad(input) => input.job_id,
             Self::Orca(input) => input.job_id,
             Self::Cadpilot(input) => input.job_id,
+            Self::LiveCad(input) => input.job_id,
             Self::Konnect(input) => input.job_id,
             Self::KonnectPcb(input) => input.job_id,
         }
@@ -121,6 +124,7 @@ impl OperationInput {
             Self::Kicad(input) => input.validate(),
             Self::Orca(input) => input.validate(),
             Self::Cadpilot(input) => input.validate(),
+            Self::LiveCad(input) => input.validate(),
             Self::Konnect(input) => input.validate(),
             Self::KonnectPcb(input) => input.validate(),
         }
@@ -579,6 +583,7 @@ impl Project {
                 "Edited.step".into()
             }
             (OperationInput::Cadpilot(_), ArtifactFormat::CadpilotReport) => "result.json".into(),
+            (OperationInput::LiveCad(_), ArtifactFormat::CadpilotReport) => "result.json".into(),
             (OperationInput::KonnectPcb(input), ArtifactFormat::KonnectOriginal) => {
                 format!("Original/{}", input.source.entry)
             }
@@ -644,6 +649,7 @@ impl Project {
                 OperationInput::Kicad(_) => 6,
                 OperationInput::Orca(_) => 7,
                 OperationInput::Cadpilot(_) => 8,
+                OperationInput::LiveCad(_) => 13,
                 OperationInput::Konnect(_) => 9,
                 OperationInput::KonnectPcb(_) => 11,
             },
@@ -676,7 +682,7 @@ impl Project {
             ));
         }
         if (snapshot.schema_version == 10
-            && matches!(snapshot.input, OperationInput::KonnectPcb(_)))
+            && matches!(snapshot.input, OperationInput::KonnectPcb(_) | OperationInput::LiveCad(_)))
             || !matches!(
                 (&snapshot.input, snapshot.schema_version),
                 (OperationInput::Freecad(_), 1 | 2)
@@ -686,6 +692,7 @@ impl Project {
                     | (OperationInput::Kicad(_), 6)
                     | (OperationInput::Orca(_), 7)
                     | (OperationInput::Cadpilot(_), 8)
+                    | (OperationInput::LiveCad(_), 13)
                     | (OperationInput::Konnect(_), 9)
                     | (OperationInput::KonnectPcb(_), 11 | 12)
                     | (_, 10)
@@ -699,9 +706,9 @@ impl Project {
         }
         match (snapshot.schema_version, &snapshot.audit) {
             (1, None) => (),
-            (2..=12, Some(audit)) => {
+            (2..=13, Some(audit)) => {
                 if matches!(audit.source, RunSource::Mcp)
-                    != matches!(snapshot.schema_version, 10 | 12)
+                    != matches!(snapshot.schema_version, 10 | 12 | 13)
                 {
                     return Err(error(
                         "Origen de herramienta no compatible con la versión del estado.",
@@ -770,6 +777,14 @@ impl Project {
             let result: KonnectResult = read_json(&directory.join("result.json"))?;
             return konnect_run::validate_artifacts(directory, input, &result)
                 .map_err(io::Error::other);
+        }
+        if let OperationInput::LiveCad(input) = input {
+            let bytes = crate::kicad_project::read_regular(&directory.join("result.json"), 65536).map_err(io::Error::other)?;
+            if input.receipt_sha256.as_deref() != Some(&crate::kicad_project::digest(&bytes)) {
+                return Err(error("El informe de la transacción nativa cambió."));
+            }
+            let result: serde_json::Value = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+            return crate::cadpilot_live::validate_result(input, &result).map_err(io::Error::other);
         }
         if let OperationInput::Cadpilot(input) = input {
             let result: cadpilot::ResultDocument = read_json(&directory.join("result.json"))?;

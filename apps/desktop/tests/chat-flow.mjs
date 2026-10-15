@@ -44,7 +44,7 @@ try {
     const snapshot = { project: ["project-one", "C:\\owned\\project"], job: null, inference: null, recovered: [], freecad: "owned-freecad", freecad_available: true, codex: { version: "fixture" }, codex_login: { id: "login", sequence: 1, busy: false, cancelled: false, connected: true, auth_url: null, error: null }, claude: { version: "fixture" } };
     const copy = () => structuredClone(snapshot);
     window.setCompletedJob = input => {
-      snapshot.job = { snapshot: { schema_version: 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
+      snapshot.job = { snapshot: { schema_version: input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
     };
     window.setPendingJob = input => { window.setCompletedJob(input); snapshot.job.snapshot.phase = "awaiting_approval"; snapshot.job.approval_id = "private-approval"; };
     window.calls = []; window.approvals = 0;
@@ -508,9 +508,31 @@ try {
   assert.deepEqual(await page.locator("#conversation .message").allTextContents(),longAfter,"History beyond 8 KiB did not recover intact");
   assert.equal((await chatCalls()).length,0,"Reload replayed a model request");
   await page.locator("#new-chat").click(); assert.equal(await page.locator("#context-status").innerText(),"");
+  for(const provider of ["codex","claude","ollama_local","ollama_cloud"]){
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("freecad");
+    await page.locator("#new-chat").click();
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_cad_version:1,job_id:crypto.randomUUID(),document_name:"Enclosure",document_token:"11111111-1111-4111-8111-111111111111",state_sha256:"a".repeat(64),description:"Haz la carcasa más larga",before:[{name:"InternalBox",label:"Carcasa",type:"Part::Box",properties:{Length:"25.4 mm"}}],operations:[{action:"edit_object",obj_name:"InternalBox",obj_properties:{Length:30.4}}]}));
+    await page.locator("#program-actions button").first().click();
+    await page.locator("#approve:enabled").waitFor();
+    const facts=await page.locator("#change-facts").innerText();
+    assert.match(facts,/Carcasa[\s\S]*25.4 mm → 30.4 mm/);
+    assert.match(facts,/No se guarda ni exporta el modelo/);
+    assert(!facts.includes("InternalBox")&&!facts.includes("archivos originales se conservan"));
+    assert.equal(await page.locator("#change-details").isVisible(),false);
+    const before=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    const calls=await chatCalls();assert.equal(calls.length,before+1);
+    assert.equal(calls.at(-1).args.program,"freecad");
+    assert.match(JSON.parse(calls.at(-1).args.prompt).user_request,/inspect_open_cad_documents/);
+    assert.match(await page.locator("#job-status").innerText(),/documento abierto de FreeCAD[\s\S]*no se guardó ni exportó/);
+    if(!await page.locator("#history").isVisible())await page.locator("#results > summary").click();
+    const history=await page.locator("#history").innerText();
+    assert.match(history,/Informe de la transacción/);assert(!history.includes("STEP")&&!history.includes("HEX"));
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 explicit-approval result-review handoffs; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy and four open-FreeCAD approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

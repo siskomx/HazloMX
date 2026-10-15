@@ -1,6 +1,6 @@
-//! Read the open GUI model through CADPilot's native RPC; never substitute a saved copy.
+//! Bound native GUI transactions through CADPilot; saved files never substitute for open state.
 use quick_xml::{events::Event, Reader};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::{
     sync::atomic::{AtomicBool, Ordering},
@@ -9,6 +9,153 @@ use std::{
 
 const INVALID: &str = "CADPilot devolvió una lectura nativa no compatible.";
 const LIMIT: usize = 2 * 1024 * 1024;
+const SCRIPT: &str = include_str!("../resources/freecad/live.py");
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Input {
+    pub schema_version: u32,
+    pub live_cad_version: u32,
+    pub job_id: uuid::Uuid,
+    pub document_name: String,
+    pub document_token: uuid::Uuid,
+    pub state_sha256: String,
+    pub description: String,
+    pub operations: Vec<Value>,
+    pub before: Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receipt_sha256: Option<String>,
+}
+impl Input {
+    pub fn validate(&self) -> Result<(), String> {
+        name(&json!(self.document_name))?;
+        if self.schema_version != 1
+            || self.live_cad_version != 1
+            || self.job_id.is_nil()
+            || self.document_token.is_nil()
+            || !crate::kicad_project::valid_hash(&self.state_sha256)
+            || self.description.trim().is_empty()
+            || self.description.len() > 1024
+            || !(1..=16).contains(&self.operations.len())
+            || self.before.as_array().is_none_or(|a| a.len() > 256)
+            || self
+                .receipt_sha256
+                .as_ref()
+                .is_some_and(|s| !crate::kicad_project::valid_hash(s))
+        {
+            return Err("La propuesta nativa no es compatible.".into());
+        }
+        for operation in &self.operations {
+            let object = operation.as_object().ok_or(INVALID)?;
+            if object.keys().any(|key| {
+                !matches!(
+                    key.as_str(),
+                    "action" | "obj_type" | "obj_name" | "obj_properties"
+                )
+            }) || !matches!(
+                operation["action"].as_str(),
+                Some(
+                    "create_object"
+                        | "edit_object"
+                        | "delete_object"
+                        | "boolean"
+                        | "fillet"
+                        | "chamfer"
+                        | "loft"
+                        | "sweep"
+                        | "mirror"
+                        | "pattern"
+                        | "move"
+                        | "color"
+                        | "variables"
+                        | "sketch"
+                        | "pad"
+                        | "pocket"
+                        | "revolution"
+                        | "groove"
+                        | "thickness"
+                        | "draft"
+                        | "datum_plane"
+                        | "hull"
+                )
+            ) {
+                return Err("Usa una operación de geometría nativa de CADPilot.".into());
+            }
+            if operation["action"] == "create_object"
+                && !matches!(
+                    operation["obj_type"].as_str(),
+                    Some(
+                        "Part::Box"
+                            | "Part::Cylinder"
+                            | "Part::Cone"
+                            | "Part::Sphere"
+                            | "Part::Torus"
+                            | "Part::Wedge"
+                            | "PartDesign::Body"
+                            | "Sketcher::SketchObject"
+                            | "App::Part"
+                            | "Spreadsheet::Sheet"
+                    )
+                )
+            {
+                return Err("El tipo de objeto no es una geometría nativa admitida.".into());
+            }
+            if let Some(value) = operation.get("obj_name") {
+                name(value)?;
+            }
+            if let Some(value) = operation.get("obj_properties") {
+                if !value.is_object() {
+                    return Err(INVALID.into());
+                }
+            }
+            validate_data(operation, 0)?;
+        }
+        if serde_json::to_vec(self).map_err(|_| INVALID)?.len()
+            > if self.receipt_sha256.is_some() {
+                60128
+            } else {
+                60000
+            }
+        {
+            return Err("La propuesta nativa supera el límite del chat.".into());
+        }
+        Ok(())
+    }
+}
+
+fn validate_data(value: &Value, depth: usize) -> Result<(), String> {
+    if depth > 16 {
+        return Err(INVALID.into());
+    }
+    match value {
+        Value::Object(map) => {
+            for (key, value) in map {
+                if matches!(
+                    key.to_ascii_lowercase().as_str(),
+                    "code" | "script" | "proxy" | "filename" | "path" | "command" | "module"
+                ) {
+                    return Err("La propuesta solo admite geometría; no código ni rutas.".into());
+                }
+                validate_data(value, depth + 1)?;
+            }
+        }
+        Value::Array(list) => {
+            for value in list {
+                validate_data(value, depth + 1)?;
+            }
+        }
+        Value::String(s)
+            if s.len() > 4096
+                || s.contains("://")
+                || s.starts_with("\\\\")
+                || s.as_bytes().get(1) == Some(&b':') =>
+        {
+            return Err("La propuesta solo admite datos nativos sin rutas externas.".into())
+        }
+        _ => (),
+    }
+    Ok(())
+}
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -133,16 +280,17 @@ async fn rpc(
     client: &reqwest::Client,
     endpoint: &str,
     method: &str,
-    document: Option<&str>,
+    arguments: &[&str],
 ) -> Result<Value, String> {
-    let params = document
+    let params: String = arguments
+        .iter()
         .map(|name| {
             format!(
                 "<param><value><string>{}</string></value></param>",
-                quick_xml::escape::escape(name)
+                quick_xml::escape::escape(*name)
             )
         })
-        .unwrap_or_default();
+        .collect();
     let body = format!("<?xml version=\"1.0\"?><methodCall><methodName>{method}</methodName><params>{params}</params></methodCall>");
     let mut response = client
         .post(endpoint)
@@ -246,7 +394,7 @@ async fn observe(endpoint: &str, document: Option<&str>) -> Result<Value, String
         .timeout(Duration::from_secs(15))
         .build()
         .map_err(|_| INVALID)?;
-    let listed = rpc(&client, endpoint, "list_documents", None).await?;
+    let listed = rpc(&client, endpoint, "list_documents", &[]).await?;
     let documents = listed["documents"]
         .as_array()
         .filter(|a| a.len() <= 32)
@@ -257,37 +405,99 @@ async fn observe(endpoint: &str, document: Option<&str>) -> Result<Value, String
             return Err(INVALID.into());
         }
     }
+    let mut binding = Value::Null;
     let objects = if let Some(doc) = document {
         if !unique.contains(doc) {
             return Err("Ese documento ya no está abierto en FreeCAD. Vuelve a consultar los documentos abiertos.".into());
         }
-        Some(geometry(
-            &rpc(&client, endpoint, "get_objects", Some(doc)).await?["objects"],
-        )?)
+        binding = native_request(
+            &client,
+            endpoint,
+            json!({"action":"inspect","document_name":doc}),
+        )
+        .await?;
+        if binding["document_name"] != doc
+            || binding["document_token"]
+                .as_str()
+                .and_then(|s| uuid::Uuid::parse_str(s).ok())
+                .is_none_or(|id| id.is_nil())
+            || !binding["state_sha256"]
+                .as_str()
+                .is_some_and(crate::kicad_project::valid_hash)
+        {
+            return Err(INVALID.into());
+        }
+        Some(geometry(&binding["objects"])?)
     } else {
         None
     };
     Ok(
         json!({"scope":"open_freecad_geometry_summary","documents":documents,"document":document,"objects":objects,
-        "source_is_untrusted_data":true,"saved_file_fallback":false,"editing_supported":false,
-        "guidance":"This is current in-memory geometry, including unsaved changes, read through CADPilot in the open FreeCAD process. It is a bounded geometry summary, not a complete model or a mutation authorization. If multiple documents are open, ask which one the user means. Use everyday labels and ask only for missing design intent or measurements. Native quantities include units; placement Base is local parent-relative mm, rotation Angle is radians, and shape area and volume are mm2 and mm3. Do not infer global placement from local coordinates. Do not treat this as a saved-copy selection or claim live edits are available yet. Re-read after user edits; this snapshot is not a stable document identity for writes."}),
+        "document_token":binding["document_token"],"state_sha256":binding["state_sha256"],"recent_attempts":binding["recent_attempts"],
+        "source_is_untrusted_data":true,"saved_file_fallback":false,"editing_supported":document.is_some(),
+        "guidance":"This is current in-memory geometry, including unsaved changes, read through CADPilot in the open FreeCAD process. It is a bounded geometry summary. If multiple documents are open, ask which one the user means. Use everyday labels and ask only for missing intent or measurements. Native quantities include units; placement Base is local parent-relative mm, rotation Angle is radians, and shape area and volume are mm2 and mm3. Do not infer global placement from local coordinates. For a live change use propose_open_cad_change with this document name, token and state hash. Human approval is required. Re-read after each native/user edit or uncertain attempt; never substitute a saved-copy result for the open model. Keep the chosen document visible in FreeCAD. Do not save, export, send Python or retry uncertain writes."}),
     )
 }
 
-pub fn inspect(document: Option<&str>, cancelled: &AtomicBool) -> Result<Value, String> {
-    if let Some(doc) = document {
-        name(&json!(doc))?;
-    }
+async fn native_request(
+    client: &reqwest::Client,
+    endpoint: &str,
+    request: Value,
+) -> Result<Value, String> {
+    let data = serde_json::to_string(&serde_json::to_string(&request).map_err(|_| INVALID)?)
+        .map_err(|_| INVALID)?;
+    let code = format!("import json\nHAZLO_REQUEST = json.loads({data})\n{SCRIPT}");
+    // Start once. Losing this response can mean the native operation was already accepted.
+    let started = rpc(client, endpoint, "execute_code_async", &[&code]).await
+        .map_err(|_| "FreeCAD no confirmó la solicitud. Puede haberse aplicado; vuelve a leer el documento antes de preparar otro cambio.".to_string())?;
+    let task = started["task_id"]
+        .as_str()
+        .filter(|s| s.len() == 8 && s.bytes().all(|b| b.is_ascii_hexdigit()))
+        .ok_or(INVALID)?;
+    let poll = async {
+        loop {
+            let status = rpc(client, endpoint, "get_task_result", &[task]).await?;
+            if status["task_id"] != task {
+                return Err(INVALID.into());
+            }
+            match status["status"].as_str() {
+                Some("running") => tokio::time::sleep(Duration::from_millis(100)).await,
+                Some("done") => {
+                    let output = status["output"].as_str().filter(|s| s.len() <= 60000).ok_or(INVALID)?;
+                    let value: Value = serde_json::from_str(output).map_err(|_| INVALID)?;
+                    if value["ok"] != true {
+                        let message = match value["error"].as_str() {
+                            Some("changed_document" | "stale_document" | "closed_document") => "El documento abierto cambió o se volvió a abrir. Léelo de nuevo antes de preparar otra propuesta.",
+                            Some("native_undo_unavailable") => "Termina la edición nativa pendiente y activa Deshacer en FreeCAD antes de aprobar.",
+                            Some("document_not_visible") => "Muestra el documento elegido en FreeCAD antes de aprobar.",
+                            Some("native_operation_rolled_back") => "FreeCAD rechazó la operación y verificó que se revirtió la transacción completa.",
+                            _ => "FreeCAD no confirmó un resultado válido. Puede haber cambios; vuelve a leer el documento y sus intentos recientes antes de continuar.",
+                        };
+                        return Err(message.into());
+                    }
+                    return Ok(value["result"].clone());
+                }
+                _ => return Err("La tarea nativa no confirmó su resultado. Relee el documento antes de continuar.".into()),
+            }
+        }
+    };
+    tokio::time::timeout(Duration::from_secs(90), poll).await
+        .map_err(|_| "FreeCAD sigue sin confirmar. La operación puede terminar después; relee el documento antes de continuar.".to_string())?
+}
+
+fn wait(
+    cancelled: &AtomicBool,
+    operation: impl std::future::Future<Output = Result<Value, String>>,
+) -> Result<Value, String> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .map_err(|_| INVALID)?
         .block_on(async {
-            let operation = observe("http://127.0.0.1:9875", document);
             tokio::pin!(operation);
             loop {
                 if cancelled.load(Ordering::SeqCst) {
-                    return Err("Lectura cancelada.".into());
+                    return Err("Espera cancelada. Una operación nativa aceptada puede terminar después; relee el documento antes de continuar.".into());
                 }
                 tokio::select! {
                     result = &mut operation => return result,
@@ -297,9 +507,101 @@ pub fn inspect(document: Option<&str>, cancelled: &AtomicBool) -> Result<Value, 
         })
 }
 
+pub fn inspect(document: Option<&str>, cancelled: &AtomicBool) -> Result<Value, String> {
+    if let Some(doc) = document {
+        name(&json!(doc))?;
+    }
+    wait(cancelled, observe("http://127.0.0.1:9875", document))
+}
+
+pub fn run(
+    input: &Input,
+    directory: &std::path::Path,
+    cancelled: &AtomicBool,
+) -> Result<(), String> {
+    input.validate()?;
+    let expires = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|_| INVALID)?
+        .as_secs()
+        + 30;
+    let request = json!({"action":"apply","document_token":input.document_token,"state_sha256":input.state_sha256,"job_id":input.job_id,"expires_at":expires,"operations":input.operations});
+    let mut result = wait(cancelled, async {
+        let client = reqwest::Client::builder()
+            .no_proxy()
+            .redirect(reqwest::redirect::Policy::none())
+            .timeout(Duration::from_secs(15))
+            .build()
+            .map_err(|_| INVALID)?;
+        native_request(&client, "http://127.0.0.1:9875", request).await
+    })?;
+    result["after"]["objects"] = geometry(&result["after"]["objects"])?;
+    result["live_cad_version"] = json!(1);
+    validate_result(input, &result)?;
+    std::fs::write(directory.join("result.json"), serde_json::to_vec_pretty(&result).map_err(|_| INVALID)?)
+        .map_err(|_| "El cambio nativo pudo completarse, pero no se guardó su informe. Relee el documento antes de continuar.".into())
+}
+
+pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
+    input.validate()?;
+    if result["live_cad_version"] != 1
+        || result["job_id"] != input.job_id.to_string()
+        || result["document_token"] != input.document_token.to_string()
+        || result["before_sha256"] != input.state_sha256
+        || result["after"]["document_name"] != input.document_name
+        || result["undo_available"] != true
+        || !result["after"]["state_sha256"]
+            .as_str()
+            .is_some_and(crate::kicad_project::valid_hash)
+        || !result["after"]["objects"].is_array()
+        || !result["operations"].as_array().is_some_and(|ops| {
+            ops.len() == input.operations.len() && ops.iter().all(|op| op["success"] == true)
+        })
+    {
+        return Err(
+            "No se pudo verificar la transacción nativa. Relee FreeCAD antes de continuar.".into(),
+        );
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_proposals_reject_code_paths_and_scripted_types_before_execution() {
+        let valid = Input {
+            schema_version: 1,
+            live_cad_version: 1,
+            job_id: uuid::Uuid::new_v4(),
+            document_name: "Enclosure".into(),
+            document_token: uuid::Uuid::new_v4(),
+            state_sha256: "a".repeat(64),
+            description: "Make the enclosure longer".into(),
+            operations: vec![
+                json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"1.2 in"}}),
+            ],
+            before: json!([]),
+            receipt_sha256: None,
+        };
+        valid.validate().unwrap();
+        for operation in [
+            json!({"action":"execute_code","code":"print(1)"}),
+            json!({"action":"create_object","obj_name":"X","obj_type":"Part::FeaturePython"}),
+            json!({"action":"edit_object","obj_name":"Box","obj_properties":{"FileName":"C:/private"}}),
+            json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Label":"https://outside.invalid"}}),
+            json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Proxy":"injected"}}),
+            json!({"action":"edit_object","code":"injected"}),
+        ] {
+            let mut bad = valid.clone();
+            bad.operations = vec![operation];
+            assert!(bad.validate().is_err());
+        }
+        let mut bad = valid;
+        bad.document_token = uuid::Uuid::nil();
+        assert!(bad.validate().is_err());
+    }
 
     fn response(value: &str) -> String {
         format!("<?xml version=\"1.0\"?><methodResponse><params><param><value><struct><member><name>success</name><value><boolean>1</boolean></value></member>{value}</struct></value></param></params></methodResponse>")
@@ -365,9 +667,11 @@ mod tests {
             for (method, dimension) in [
                 ("list_documents", 0.),
                 ("list_documents", 0.),
-                ("get_objects", 25.4),
+                ("execute_code_async", 25.4),
+                ("get_task_result", 25.4),
                 ("list_documents", 0.),
-                ("get_objects", 30.4),
+                ("execute_code_async", 30.4),
+                ("get_task_result", 30.4),
                 ("list_documents", 0.),
             ] {
                 let (mut stream, _) = listener.accept().await.unwrap();
@@ -375,7 +679,7 @@ mod tests {
                 loop {
                     let mut chunk = [0; 4096];
                     let count = stream.read(&mut chunk).await.unwrap();
-                    assert!(count > 0 && request.len() + count < 8192);
+                    assert!(count > 0 && request.len() + count < 32768);
                     request.extend_from_slice(&chunk[..count]);
                     if request.windows(13).any(|s| s == b"</methodCall>") {
                         break;
@@ -383,14 +687,19 @@ mod tests {
                 }
                 let request = String::from_utf8(request).unwrap();
                 assert!(request.contains(&format!("<methodName>{method}</methodName>")));
-                if method == "get_objects" {
-                    assert!(request.contains("<string>Frame &amp; Box</string>"));
+                if method == "execute_code_async" {
+                    assert!(request.contains("Frame &amp; Box"));
+                    assert!(request.contains("inspect"));
+                    assert!(request.contains("_run_one_operation"));
                 }
-                assert!(!request.contains("execute_code") && !request.contains("FileName"));
+                assert!(!request.contains("<methodName>execute_operations</methodName>"));
                 let value = if method == "list_documents" {
                     json!({"success":true,"documents":["Frame & Box","Other"]})
+                } else if method == "execute_code_async" {
+                    json!({"success":true,"task_id":"abcd1234"})
                 } else {
-                    json!({"success":true,"objects":[{"Name":"Box","Label":"Enclosure","TypeId":"Part::Box","Properties":{"Length":format!("{dimension} mm"),"FileName":"C:/private/unsaved"},"Shape":{"Volume":dimension * 20.},"Placement":{"Base":{"x":dimension,"y":0.,"z":0.},"Rotation":{"Angle":0.}}}]})
+                    let output = json!({"ok":true,"result":{"document_name":"Frame & Box","document_token":"11111111-1111-4111-8111-111111111111","state_sha256":"a".repeat(64),"recent_attempts":{},"objects":[{"Name":"Box","Label":"Enclosure","TypeId":"Part::Box","Properties":{"Length":format!("{dimension} mm"),"FileName":"C:/private/unsaved"},"Shape":{"Volume":dimension * 20.},"Placement":{"Base":{"x":dimension,"y":0.,"z":0.},"Rotation":{"Angle":0.}}}]}});
+                    json!({"success":true,"task_id":"abcd1234","status":"done","output":output.to_string(),"error":null})
                 };
                 let body = format!(
                     "<methodResponse><params><param>{}</param></params></methodResponse>",
@@ -405,7 +714,7 @@ mod tests {
         for length in ["25.4 mm", "30.4 mm"] {
             let read = observe(&endpoint, Some("Frame & Box")).await.unwrap();
             assert_eq!(read["objects"][0]["properties"]["Length"], length);
-            assert_eq!(read["editing_supported"], false);
+            assert_eq!(read["editing_supported"], true);
             assert_eq!(read["saved_file_fallback"], false);
             assert!(!read.to_string().contains("C:/private"));
         }

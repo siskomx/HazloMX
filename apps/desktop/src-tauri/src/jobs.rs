@@ -2074,7 +2074,9 @@ impl Workflow {
             .map_err(|e| e.to_string())?;
         snapshot.audit.as_mut().unwrap().source = source;
         if matches!(snapshot.audit.as_ref().unwrap().source, RunSource::Mcp) {
-            snapshot.schema_version = if matches!(snapshot.input, OperationInput::KonnectPcb(_)) {
+            snapshot.schema_version = if matches!(snapshot.input, OperationInput::LiveCad(_)) {
+                13
+            } else if matches!(snapshot.input, OperationInput::KonnectPcb(_)) {
                 12
             } else {
                 10
@@ -2123,6 +2125,16 @@ impl Workflow {
         job.view.approval_id = Some(Uuid::new_v4());
         job.view.sequence += 1;
         Ok(job.view.clone())
+    }
+
+    pub fn propose_live_cad(&self, project: (Uuid, PathBuf), input: crate::cadpilot_live::Input) -> Result<JobView, String> {
+        let mut state = self.state.lock().map_err(|e| e.to_string())?;
+        inference_idle(&state)?;
+        if input.receipt_sha256.is_some() { return Err("La propuesta ya contiene un resultado anterior.".into()); }
+        if state.project.as_ref().map(|p| (p.id,p.root.clone())) != Some(project) {
+            return Err("El proyecto cambió. Lee el documento de nuevo.".into());
+        }
+        Self::propose_operation_locked(&mut state, OperationInput::LiveCad(input), RunSource::Mcp)
     }
 
     pub fn begin(&self, approval_id: Uuid) -> Result<Dispatch, String> {
@@ -2350,6 +2362,9 @@ impl Workflow {
                         dispatch.cancelled.clone(),
                     )?;
                 }
+                OperationInput::LiveCad(input) => {
+                    crate::cadpilot_live::run(input, &stage.path, &dispatch.cancelled)?;
+                }
                 OperationInput::Cadpilot(input) => {
                     cadpilot::run(
                         &self.executable.lock().map_err(|e| e.to_string())?.clone(),
@@ -2465,7 +2480,14 @@ impl Workflow {
         self.finish(dispatch, result)
     }
 
-    fn finish(&self, dispatch: Dispatch, result: Result<Stage, String>) -> Result<JobView, String> {
+    fn finish(&self, mut dispatch: Dispatch, result: Result<Stage, String>) -> Result<JobView, String> {
+        let result = result.and_then(|stage| {
+            if let OperationInput::LiveCad(input) = &mut dispatch.snapshot.input {
+                let bytes = crate::kicad_project::read_regular(&stage.path.join("result.json"), 65536)?;
+                input.receipt_sha256 = Some(crate::kicad_project::digest(&bytes));
+            }
+            Ok(stage)
+        });
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         let active = state
             .project
@@ -2487,12 +2509,18 @@ impl Workflow {
         let job = state.job.as_mut().unwrap();
         if dispatch.cancelled.load(Ordering::SeqCst) {
             job.view.snapshot.phase = Phase::Cancelled;
+            if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_)) {
+                job.view.error = Some("La espera se canceló. FreeCAD puede haber aplicado la transacción; vuelve a leer el documento antes de continuar. Cancelar no deshace una edición nativa.".into());
+            }
             if matches!(dispatch.snapshot.input, OperationInput::Agent(_)) {
                 job.view.error = Some("La espera se canceló. Agent puede terminar de modificar su copia temporal; no se publicaron esos cambios ni se modificó el original.".into());
             }
         } else {
             match result {
                 Ok(stage) => {
+                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_)) {
+                        job.view.snapshot.input = dispatch.snapshot.input.clone();
+                    }
                     if let Some(audit) = &mut job.view.snapshot.audit {
                         audit.files_verified = true;
                     }
@@ -2524,6 +2552,42 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_changes_require_one_time_approval_and_persist_a_verified_receipt_hash() {
+        let (root,workflow)=setup();
+        let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::cadpilot_live::Input {schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Enclosure".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Make it longer".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"1.2 in"}})],before:serde_json::json!([]),receipt_sha256:None};
+        assert!(workflow.propose_live_cad((Uuid::new_v4(),project.1.clone()),input.clone()).is_err());
+        let pending=workflow.propose_live_cad(project,input.clone()).unwrap();
+        assert_eq!(pending.snapshot.schema_version,13);
+        assert_eq!(pending.snapshot.phase,Phase::AwaitingApproval);
+        assert_eq!(fs::read_dir(root.join(".hazlomexa/staging")).unwrap().count(),0);
+        let approval=pending.approval_id.unwrap();
+        assert!(workflow.begin(Uuid::new_v4()).is_err());
+        let dispatch=workflow.begin(approval).unwrap();
+        assert!(workflow.begin(approval).is_err());
+        let stage=dispatch.project.reserve_stage(input.job_id).unwrap();
+        let report=serde_json::json!({"live_cad_version":1,"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"success":true}],"undo_available":true});
+        let bytes=serde_json::to_vec_pretty(&report).unwrap();
+        fs::write(stage.path.join("result.json"),&bytes).unwrap();
+        let done=workflow.finish(dispatch,Ok(stage)).unwrap();
+        assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);
+        let OperationInput::LiveCad(completed)=&done.snapshot.input else {panic!("Wrong native input")};
+        assert_eq!(completed.receipt_sha256.as_deref(),Some(crate::kicad_project::digest(&bytes).as_str()));
+        assert_eq!(workflow.artifact(input.job_id,ArtifactFormat::CadpilotReport).unwrap().read_text().unwrap().as_bytes(),bytes);
+        let path=root.join(".hazlomexa/artifacts").join(input.job_id.to_string()).join("result.json");
+        fs::write(&path,serde_json::to_vec(&report).unwrap()).unwrap();
+        assert!(workflow.artifact(input.job_id,ArtifactFormat::CadpilotReport).is_err(),"Changed receipt bytes were accepted");
+        fs::write(&path,&bytes).unwrap();
+        drop(workflow);
+        let reopened=Project::open(&root).unwrap();
+        let recovered=reopened.recover().unwrap();
+        assert_eq!(recovered[0].schema_version,13);
+        assert_eq!(recovered[0].phase,Phase::Completed);
+        drop(reopened);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        fs::remove_dir_all(root).unwrap();
+    }
     #[allow(dead_code)]
     mod read_barrier {
         include!(concat!(

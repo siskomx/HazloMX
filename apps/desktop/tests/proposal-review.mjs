@@ -7,6 +7,13 @@ const {code} = await transformWithOxc(source,"proposal-review.ts");
 const {proposalFacts} = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 const review = input => proposalFacts({input}).join("\n");
 
+const live=review({live_cad_version:1,description:"Haz la carcasa más larga",before:[{name:"InternalBox",label:"Carcasa",properties:{Length:"25.4 mm"}}],operations:[{action:"edit_object",obj_name:"InternalBox",obj_properties:{Length:30.4}}]});
+assert.match(live,/documento abierto de FreeCAD/);
+assert.match(live,/Cambiar objeto: Carcasa/);
+assert.match(live,/largo: 25.4 mm → 30.4 mm/);
+assert.match(live,/No se guarda ni exporta el modelo/);
+assert(!live.includes("InternalBox") && !live.includes("archivos originales se conservan"));
+
 assert.match(review({dimensions_mm:{length:25.4,width:12.7,height:5}}),/milímetros: largo 25.4, ancho 12.7, alto 5/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/compila para Arduino Uno/);
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/No se carga código/);
