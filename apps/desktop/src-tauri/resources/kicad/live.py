@@ -270,4 +270,8 @@ def response(data):
 
 
 if __name__ == "__main__":
-    print(json.dumps(response(sys.stdin.buffer.read(131073)), ensure_ascii=False, allow_nan=False))
+    if sys.argv[1:] == ["--self-check"]:
+        assert importlib.metadata.version("kicad-python") == "0.8.0"
+        print(json.dumps({"native_pcb_version": 1, "client_version": "0.8.0"}))
+    elif len(sys.argv) == 1:
+        print(json.dumps(response(sys.stdin.buffer.read(131073)), ensure_ascii=False, allow_nan=False))

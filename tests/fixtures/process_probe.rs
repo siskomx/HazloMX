@@ -1,8 +1,13 @@
-use std::{env, fs, io::{self, Write}, process::Command, thread, time::Duration};
+use std::{env, fs, io::{self, Read, Write}, process::Command, thread, time::Duration};
 
 fn main() {
     let arguments: Vec<_> = env::args().skip(1).collect();
     match arguments[0].as_str() {
+        "input" => {
+            let mut bytes = Vec::new();
+            io::stdin().lock().take(256 * 1024 + 1).read_to_end(&mut bytes).unwrap();
+            io::stdout().lock().write_all(&bytes).unwrap();
+        }
         "leaf" => {
             fs::write("leaf.pid", std::process::id().to_string()).unwrap();
             thread::sleep(Duration::from_secs(60));

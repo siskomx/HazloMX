@@ -11,6 +11,7 @@ import uuid
 parser = argparse.ArgumentParser()
 parser.add_argument("--site", required=True)
 parser.add_argument("--verifier", required=True)
+parser.add_argument("--worker", help="Frozen helper for real NNG subprocess coverage")
 args = parser.parse_args()
 sys.path.insert(0, args.site)
 os.environ["HAZLOMEXA_PCB_VERIFIER"] = str(Path(args.verifier).resolve())
@@ -93,6 +94,45 @@ class Board:
                     raise ConnectionError("private native commit detail")
             return EndCommitResponse()
         raise AssertionError(name)
+
+
+def native_reply(board, command, response_type):
+    from kipy.proto.common.types import ItemHeader
+    from google.protobuf.unknown_fields import UnknownFieldSet
+    name = command.DESCRIPTOR.name
+    if name == "GetVersion":
+        response = response_type()
+        response.version.major = 10
+        response.version.minor = 0
+        response.version.patch = 7
+        return response
+    if name == "GetOpenDocuments":
+        response = response_type()
+        response.documents.append(board.document)
+        return response
+    if name == "GetItems":
+        assert command.header.document == board.document
+        response = response_type()
+        response.status = 1
+        response.items.add().Pack(board.item.proto)
+        return response
+    if name == "UpdateItems":
+        assert command.header.document == board.document
+        proto = FootprintInstance().proto
+        assert command.items[0].Unpack(proto)
+        updated = board.update_items([FootprintInstance(proto)])
+        response = response_type()
+        response.status = 1
+        for item in updated:
+            result = response.updated_items.add()
+            result.status.code = 1
+            result.item.Pack(item.proto)
+        return response
+    if name in {"BeginCommit", "EndCommit"}:
+        field = next(iter(UnknownFieldSet(command)))
+        assert field.field_number == (1 if name == "BeginCommit" else 4)
+        assert ItemHeader.FromString(field.data).document == board.document
+    return board.send(command, response_type)
 
 
 class Tests(unittest.TestCase):
@@ -207,9 +247,86 @@ class Tests(unittest.TestCase):
         finally:
             worker.run = original
 
+    @unittest.skipUnless(args.worker, "Supply --worker to test the frozen subprocess")
+    def test_frozen_subprocess_inspects_and_moves_over_real_native_transport(self):
+        import json
+        import queue
+        import threading
+        import pynng
+        from google.protobuf import symbol_database
+        from kipy.proto.common import ApiRequest, ApiResponse, ApiStatusCode
+        root = Path(__file__).resolve().parents[2] / "target/native-pcb-worker" / str(uuid.uuid4())
+        root.mkdir()
+        endpoint = "ipc://" + str(root / "api.sock")
+        self.board.document.project.path = "C:/owned"
+        failures = queue.Queue()
+        stop = threading.Event()
+        count = []
+        types = {"GetVersion": "GetVersionResponse", "GetOpenDocuments": "GetOpenDocumentsResponse",
+                 "GetItems": "GetItemsResponse", "UpdateItems": "UpdateItemsResponse",
+                 "BeginCommit": "BeginCommitResponse", "EndCommit": "EndCommitResponse",
+                 "SaveDocumentToString": "SavedDocumentResponse"}
+        with pynng.Rep0(listen=endpoint, recv_timeout=100, send_timeout=1000) as server:
+            def serve():
+                while not stop.is_set():
+                    try:
+                        packet = server.recv()
+                    except pynng.Timeout:
+                        continue
+                    try:
+                        request = ApiRequest.FromString(packet)
+                        self.assertIn(request.header.kicad_token, ("", "owned-fixture-token"))
+                        name = request.message.type_url.rsplit(".", 1)[-1]
+                        count.append(name)
+                        cls = symbol_database.Default().GetSymbol("kiapi.common.commands." + name)
+                        response_type = symbol_database.Default().GetSymbol("kiapi.common.commands." + types[name])
+                        command = cls.FromString(request.message.value)
+                        native = native_reply(self.board, command, response_type)
+                        reply = ApiResponse()
+                        reply.status.status = ApiStatusCode.AS_OK
+                        reply.header.kicad_token = "owned-fixture-token"
+                        reply.message.Pack(native)
+                        server.send(reply.SerializeToString())
+                    except BaseException as error:
+                        failures.put(error)
+                        return
+            thread = threading.Thread(target=serve)
+            thread.start()
+            env = {key:os.environ[key] for key in ("SystemRoot", "WINDIR", "COMSPEC") if key in os.environ}
+            env.update({"TEMP":str(root), "TMP":str(root), "KICAD_API_SOCKET":endpoint,
+                        "HAZLOMEXA_PCB_VERIFIER":str(Path(args.verifier).resolve())})
+            def call(request):
+                result = subprocess.run([str(Path(args.worker).resolve())], input=json.dumps(request).encode(),
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, cwd=root,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), timeout=30)
+                (root / ("call-" + str(len(count)) + ".log")).write_bytes(result.stdout + result.stderr)
+                self.assertEqual(result.returncode, 0)
+                self.assertEqual(result.stderr, b"")
+                reply = json.loads(result.stdout)
+                self.assertTrue(reply["ok"], reply)
+                self.assertNotIn("C:/owned", str(reply))
+                self.assertNotIn("owned-fixture-token", str(reply))
+                return reply["result"]
+            try:
+                base = {"job_id":str(uuid.uuid4()), "board_path":"C:/owned/OwnedBoard.kicad_pcb"}
+                initial = call({**base, "action":"inspect"})
+                result = call({**base, "action":"move", "movement":self.request["movement"],
+                    **{key:initial[key] for key in ("instance_sha256", "document_sha256", "state_sha256")}})
+                self.assertEqual(result["status"], "completed")
+                self.assertFalse(result["saved"])
+                self.assertEqual(result["after"]["components"][0]["x_mm"], 35.4)
+                self.assertEqual(self.board.calls, ["begin", "update", "commit"])
+                self.assertEqual(count.count("BeginCommit"), 1)
+                self.assertEqual(count.count("EndCommit"), 1)
+                self.assertEqual(count.count("UpdateItems"), 1)
+            finally:
+                stop.set()
+                thread.join(3)
+            self.assertFalse(thread.is_alive())
+            if not failures.empty():
+                raise failures.get()
+
     def test_public_inspection_and_move_use_real_sdk_board_and_version_wrappers(self):
-        from kipy.proto.common.types import ItemHeader
-        from google.protobuf.unknown_fields import UnknownFieldSet
         board = self.board
         board.document.project.path = "C:/owned"
 
@@ -219,40 +336,7 @@ class Tests(unittest.TestCase):
                 self.connected = False
 
             def send(self, command, response_type):
-                name = command.DESCRIPTOR.name
-                if name == "GetVersion":
-                    response = response_type()
-                    response.version.major = 10
-                    response.version.minor = 0
-                    response.version.patch = 7
-                    return response
-                if name == "GetOpenDocuments":
-                    response = response_type()
-                    response.documents.append(board.document)
-                    return response
-                if name == "GetItems":
-                    assert command.header.document == board.document
-                    response = response_type()
-                    response.status = 1
-                    response.items.add().Pack(board.item.proto)
-                    return response
-                if name == "UpdateItems":
-                    assert command.header.document == board.document
-                    proto = FootprintInstance().proto
-                    assert command.items[0].Unpack(proto)
-                    updated = board.update_items([FootprintInstance(proto)])
-                    response = response_type()
-                    response.status = 1
-                    for item in updated:
-                        result = response.updated_items.add()
-                        result.status.code = 1
-                        result.item.Pack(item.proto)
-                    return response
-                if name in {"BeginCommit", "EndCommit"}:
-                    field = next(iter(UnknownFieldSet(command)))
-                    assert field.field_number == (1 if name == "BeginCommit" else 4)
-                    assert ItemHeader.FromString(field.data).document == board.document
-                return board.send(command, response_type)
+                return native_reply(board, command, response_type)
 
         original_client = worker.BoundClient
         original_endpoint = os.environ.get("KICAD_API_SOCKET")

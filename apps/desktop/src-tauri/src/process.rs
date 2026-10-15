@@ -3,7 +3,7 @@ use std::{
     collections::BTreeMap,
     ffi::{OsStr, OsString},
     fs::File,
-    io::{self, Read},
+    io::{self, Read, Write},
     mem::{size_of, zeroed},
     os::windows::{
         ffi::OsStrExt,
@@ -235,6 +235,22 @@ pub fn run_owned(
     cancelled: Arc<AtomicBool>,
     timeout: Duration,
 ) -> io::Result<ProcessOutput> {
+    run_owned_input(executable, arguments, cwd, variables, cancelled, timeout, &[])
+}
+
+/// Private stdin stays off command lines and disk; cancellation also stops a blocked writer.
+pub fn run_owned_input(
+    executable: &Path,
+    arguments: &[OsString],
+    cwd: &Path,
+    variables: &BTreeMap<OsString, OsString>,
+    cancelled: Arc<AtomicBool>,
+    timeout: Duration,
+    input: &[u8],
+) -> io::Result<ProcessOutput> {
+    if input.len() > LOG_LIMIT {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Stdin exceeds limit"));
+    }
     if cancelled.load(Ordering::SeqCst) {
         return Ok(ProcessOutput {
             reason: StopReason::Cancelled,
@@ -319,11 +335,16 @@ pub fn run_owned(
         return Err(error);
     }
     drop(stdin_read);
-    drop(stdin_write);
     drop(stdout_write);
     drop(stderr_write);
     let stdout = thread::Builder::new().spawn(move || drain(stdout_read))?;
     let stderr = thread::Builder::new().spawn(move || drain(stderr_read))?;
+    let input = input.to_vec();
+    let stdin = thread::Builder::new().spawn(move || {
+        // SAFETY: the writer owns the transferred handle; closing it sends EOF.
+        let mut file = unsafe { File::from_raw_handle(stdin_write.into_raw_handle()) };
+        file.write_all(&input)
+    })?;
     if !cancelled.load(Ordering::SeqCst)
         && unsafe { ResumeThread(primary_thread.as_raw_handle()) } == u32::MAX
     {
@@ -354,6 +375,10 @@ pub fn run_owned(
     let mut exit_code = 0;
     if unsafe { GetExitCodeProcess(process.as_raw_handle(), &mut exit_code) } == 0 {
         return Err(io::Error::last_os_error());
+    }
+    let written = stdin.join().map_err(|_| io::Error::other("Stdin writer panicked"))?;
+    if reason == StopReason::Completed {
+        written?;
     }
     let (stdout, stdout_truncated) = stdout
         .join()
@@ -529,6 +554,53 @@ pub(crate) mod tests {
         let actual: Vec<String> =
             serde_json::from_slice(&fs::read(root.join("arguments.json")).unwrap()).unwrap();
         assert_eq!(actual, ["á's spaces", "quote\"inside", "ends\\", ""]);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn private_input_roundtrips_and_eof_is_delivered() {
+        let root = workspace();
+        let input = vec![b'x'; LOG_LIMIT];
+        let result = run_owned_input(
+            probe(), &["input".into()], &root, &variables(),
+            Arc::new(AtomicBool::new(false)), Duration::from_secs(10), &input,
+        ).unwrap();
+        assert_eq!(result.reason, StopReason::Completed);
+        assert_eq!(result.exit_code, Some(0));
+        assert_eq!(result.stdout, input);
+        assert!(!result.truncated);
+        assert!(result.stderr.is_empty());
+        assert!(run_owned_input(
+            probe(), &["input".into()], &root, &variables(),
+            Arc::new(AtomicBool::new(false)), Duration::from_secs(10),
+            &vec![b'x'; LOG_LIMIT + 1],
+        ).is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn cancellation_releases_blocked_stdin_writer_and_owned_tree() {
+        let root = workspace();
+        let cancel = Arc::new(AtomicBool::new(false));
+        let signal = cancel.clone();
+        let signal_root = root.clone();
+        let setter = thread::spawn(move || {
+            let started = Instant::now();
+            while !signal_root.join("child.pid").exists() && started.elapsed() < Duration::from_secs(5) {
+                thread::sleep(Duration::from_millis(10));
+            }
+            signal.store(true, Ordering::SeqCst);
+        });
+        let started = Instant::now();
+        let output = run_owned_input(
+            probe(), &["tree".into()], &root, &variables(), cancel,
+            Duration::from_secs(10), &vec![b'x'; LOG_LIMIT],
+        ).unwrap();
+        setter.join().unwrap();
+        assert_eq!(output.reason, StopReason::Cancelled);
+        assert!(started.elapsed() < Duration::from_secs(5));
+        let child: u32 = fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();
+        assert!(!is_alive(child));
         fs::remove_dir_all(root).unwrap();
     }
 

@@ -1,4 +1,4 @@
-# Isolated Windows CPython 3.11 protocol probe only; not an application runtime.
+# Pinned Windows CPython 3.11 client for protocol tests and the packaged native worker.
 kicad-python==0.8.0 --hash=sha256:3d43af4aa2515e88829a9d30e408b8ce89537431a802104ee2a50392f0deaa16
 jsonschema==4.26.0 --hash=sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce
 protobuf==5.29.6 --hash=sha256:7e6ad413275be172f67fdee0f43484b6de5a904cc1c3ea9804cb6fe2ff366eda
