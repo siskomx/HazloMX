@@ -2705,7 +2705,9 @@ mod tests {
         let entry=root.join("OwnedBoard.kicad_pcb");
         let saved=include_bytes!("../../../../docs/research/konnect-pcb-2026-10-12/Original/basic_test.kicad_pcb");
         assert_eq!(fs::read(&entry).unwrap(),saved);
-        let project=Project::open(&root).unwrap();
+        let project_root=root.join(format!("move-project-{}",Uuid::new_v4()));
+        fs::create_dir(&project_root).unwrap();
+        let project=Project::create(&project_root).unwrap();
         let id=project.id;
         let workflow=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("hazlo-live-profiles")).unwrap());
         workflow.select_project(project).unwrap();
@@ -2724,7 +2726,7 @@ mod tests {
                 before:current.clone(),movement:crate::konnect::FootprintMove {uuid:component.uuid,reference:component.reference.clone(),
                     expected_x_mm:component.x_mm,expected_y_mm:component.y_mm,
                     x_mm:((component.x_mm+delta)*1_000_000.).round()/1_000_000.,y_mm:component.y_mm},receipt_sha256:None};
-            let pending=workflow.propose_live_pcb((id,root.clone()),input.clone(),entry.clone(),connection.clone()).unwrap();
+            let pending=workflow.propose_live_pcb((id,project_root.clone()),input.clone(),entry.clone(),connection.clone()).unwrap();
             let unchanged=host.call("inspect_selected_live_pcb",json!({"selection":selected.id})).unwrap();
             assert_eq!(unchanged["observation"]["state_sha256"],current.state_sha256);
             let approval=pending.approval_id.unwrap();
@@ -2750,10 +2752,38 @@ mod tests {
             "passed":true,"original":original,"states":states,"saved_bytes_preserved":true,"approval":"backend_fixture"
         })).unwrap()).unwrap();
         drop(host);drop(workflow);
-        let recovered=Project::open(&root).unwrap().recover().unwrap();
+        let recovered=Project::open(&project_root).unwrap().recover().unwrap();
         assert_eq!(recovered.len(),2);
         assert!(recovered.iter().all(|s|s.phase==Phase::Completed && s.schema_version==14));
         println!("Actual owned KiCad edit/readback/follow-up/recovery passed; native Undo still requires observation.");
+    }
+    #[cfg(feature = "desktop")]
+    #[test]
+    #[ignore = "Read-only verification after an observed native Undo in the owned KiCad window"]
+    fn actual_live_pcb_owned_native_undo_readback() {
+        let workspace=PathBuf::from(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap().to_path_buf();
+        let root=PathBuf::from(std::env::var_os("HAZLOMEXA_TEST_LIVE_PCB_ROOT").expect("Supply the owned KiCad fixture"));
+        assert_eq!(root.canonicalize().unwrap().parent(),Some(workspace.join("target").canonicalize().unwrap().as_path()));
+        assert!(root.file_name().unwrap().to_str().unwrap().starts_with("kicad-live-ui-"));
+        let step=std::env::var("HAZLOMEXA_TEST_PCB_UNDO_STEP").expect("Supply the observed Undo step (1 or 2)");
+        assert!(matches!(step.as_str(),"1"|"2"));
+        let evidence:Value=serde_json::from_slice(&fs::read(root.join("hazlo-native-moves.json")).unwrap()).unwrap();
+        assert_eq!(evidence["passed"],true);
+        let expected=if step=="1" {&evidence["states"][0]} else {&evidence["original"]};
+        let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("hazlo-undo-profiles")).unwrap();
+        workflow.select_project(Project::open(&root).unwrap()).unwrap();
+        let current=workflow.read_live_pcb(&root.join("OwnedBoard.kicad_pcb"),&crate::kicad_live::Connection {
+            endpoint:format!("ipc://{}",root.join("temp/kicad/api.sock").display()),token:String::new()
+        },Arc::new(AtomicBool::new(false))).unwrap();
+        assert_eq!(current.instance_sha256,expected["instance_sha256"].as_str().unwrap());
+        assert_eq!(current.document_sha256,expected["document_sha256"].as_str().unwrap());
+        assert_eq!(current.state_sha256,expected["state_sha256"].as_str().unwrap());
+        assert_eq!(fs::read(root.join("OwnedBoard.kicad_pcb")).unwrap(),
+            include_bytes!("../../../../docs/research/konnect-pcb-2026-10-12/Original/basic_test.kicad_pcb"));
+        fs::write(root.join(format!("hazlo-native-undo-{step}.json")),serde_json::to_vec(&json!({
+            "passed":true,"step":step,"whole_board_state_restored":true,"source_unchanged":true
+        })).unwrap()).unwrap();
+        println!("Observed native Undo restored the exact whole-board state; saved bytes unchanged.");
     }
     #[test]
     #[ignore = "Actual CADCraft catalog, native command plans, approval and saved geometry follow-up"]

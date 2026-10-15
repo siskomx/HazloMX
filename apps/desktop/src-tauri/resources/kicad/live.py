@@ -146,14 +146,9 @@ def apply_move(board, instance, request, verify):
         updated = board.update_items([clone])
         if len(updated) != 1 or updated[0].proto != clone.proto:
             raise Refused("native_move_mismatch")
-        after = board_snapshot(board)
-        try:
-            verified = verify(before, after, movement)
-        except Exception as error:
-            raise Refused("verification_failed") from error
-        if not verified:
-            raise Refused("unapproved_change")
-        if board_snapshot(board) != after:
+        # KiCad 10 queues footprint removal/replacement in BOARD_COMMIT. UpdateItems
+        # returns that replacement, but the board itself must remain unchanged until push.
+        if board_snapshot(board) != before:
             raise Uncertain("changed_before_commit")
         command = EndCommit(action=1, message="Hazlo Mexa approved component move")
         command.id.CopyFrom(commit)
@@ -164,11 +159,14 @@ def apply_move(board, instance, request, verify):
         raise Uncertain("native_outcome_unknown") from error
     except Exception as error:
         confirmed = isinstance(error, Refused) and str(error) in {
-            "changed_document", "native_move_mismatch", "unapproved_change", "verification_failed"}
+            "changed_document", "native_move_mismatch"}
         if finishing or not confirmed:
             raise Uncertain("native_outcome_unknown") from error
         if commit is not None:
             try:
+                # Never drop a transaction over a concurrently changed native board.
+                if board_snapshot(board) != before:
+                    raise Uncertain("rollback_not_isolated")
                 command = EndCommit(action=2)
                 command.id.CopyFrom(commit)
                 board.client.send(document_command(command, board.document), EndCommitResponse)
@@ -180,7 +178,9 @@ def apply_move(board, instance, request, verify):
         raise
     try:
         final, final_snapshot, _ = observation(board, instance)
-        if final_snapshot != after:
+        if not verify(before, final_snapshot, movement):
+            raise Uncertain("unapproved_final_state")
+        if board_snapshot(board) != final_snapshot:
             raise Uncertain("changed_after_commit")
     except Exception as error:
         raise Uncertain("readback_unknown") from error

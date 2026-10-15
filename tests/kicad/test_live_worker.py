@@ -50,6 +50,7 @@ class Board:
         self.fault = ""
         self.calls = []
         self.committed = False
+        self.pending = None
 
     def snapshot(self):
         x, y = self.item.position.x / 1_000_000, self.item.position.y / 1_000_000
@@ -61,13 +62,13 @@ class Board:
 
     def update_items(self, items):
         self.calls.append("update")
-        self.item = FootprintInstance(items[0].proto)
+        self.pending = FootprintInstance(items[0].proto)
         if self.fault == "lost_update":
             raise ConnectionError("private native transport detail")
         if self.fault == "malformed_update":
             raise ValueError("private malformed native response")
         self.extra = self.fault == "unrelated_change"
-        return [] if self.fault == "partial_update" else [FootprintInstance(self.item.proto)]
+        return [] if self.fault in {"partial_update", "lost_drop"} else [FootprintInstance(self.pending.proto)]
 
     def send(self, command, response_type):
         name = command.DESCRIPTOR.name
@@ -79,6 +80,8 @@ class Board:
             self.calls.append("begin")
             if self.fault == "lost_begin":
                 raise ConnectionError("private native begin detail")
+            self.original = FootprintInstance(self.item.proto)
+            self.original_extra = self.extra
             reply = BeginCommitResponse()
             reply.id.value = "owned-commit"
             return reply
@@ -88,10 +91,15 @@ class Board:
                 if self.fault == "lost_drop":
                     raise ConnectionError("private native rollback detail")
                 self.item = FootprintInstance(self.original.proto)
-                self.extra = False
+                self.pending = None
+                self.extra = self.original_extra
             else:
                 self.calls.append("commit")
+                self.item = self.pending
+                self.pending = None
                 self.committed = True
+                if self.fault == "bad_commit":
+                    self.extra = True
                 if self.fault == "lost_commit":
                     raise ConnectionError("private native commit detail")
             return EndCommitResponse()
@@ -149,7 +157,13 @@ class Tests(unittest.TestCase):
         return worker.apply_move(self.board, "a" * 64, self.request, verify)
 
     def test_actual_sdk_move_and_rust_whole_board_verifier_complete_one_commit(self):
-        result = self.apply()
+        phases = []
+        def verify(before, after, movement):
+            phases.append("before" if after is None else "after")
+            self.assertEqual(self.board.committed, after is not None)
+            return worker.verify_with_host(before, after, movement)
+        result = self.apply(verify)
+        self.assertEqual(phases, ["before", "after"])
         self.assertEqual(result["status"], "completed")
         self.assertTrue(result["native_commit_confirmed"])
         self.assertFalse(result["saved"])
@@ -173,15 +187,26 @@ class Tests(unittest.TestCase):
                 self.apply()
         self.assertEqual(self.board.calls, [])
 
-    def test_unrelated_changes_and_partial_native_updates_are_rolled_back(self):
-        for fault in ("unrelated_change", "partial_update"):
-            with self.subTest(fault=fault):
-                self.setUp()
-                original = self.board.snapshot()
-                self.board.fault = fault
-                self.assertEqual(self.apply()["status"], "rolled_back")
-                self.assertEqual(self.board.calls, ["begin", "update", "drop"])
-                self.assertEqual(self.board.snapshot(), original)
+    def test_partial_queued_native_update_is_dropped_without_changing_the_board(self):
+        original = self.board.snapshot()
+        self.board.fault = "partial_update"
+        self.assertEqual(self.apply()["status"], "rolled_back")
+        self.assertEqual(self.board.calls, ["begin", "update", "drop"])
+        self.assertEqual(self.board.snapshot(), original)
+
+    def test_unrelated_change_before_commit_is_uncertain_without_drop(self):
+        self.board.fault = "unrelated_change"
+        with self.assertRaises(worker.Uncertain):
+            self.apply()
+        self.assertEqual(self.board.calls, ["begin", "update"])
+        self.assertTrue(self.board.extra)
+
+    def test_unapproved_native_commit_is_uncertain_and_never_rolled_back_blindly(self):
+        self.board.fault = "bad_commit"
+        with self.assertRaises(worker.Uncertain):
+            self.apply()
+        self.assertEqual(self.board.calls, ["begin", "update", "commit"])
+        self.assertTrue(self.board.extra)
 
     def test_lost_replies_never_cause_a_blind_drop_or_retry(self):
         for fault, calls in [("lost_begin", ["begin"]),
@@ -204,13 +229,13 @@ class Tests(unittest.TestCase):
             return valid
         with self.assertRaises(worker.Uncertain):
             self.apply(concurrent)
-        self.assertEqual(self.board.calls, ["begin", "update"])
+        self.assertEqual(self.board.calls, ["begin", "update", "commit"])
         self.assertTrue(self.board.extra)
 
     def test_failed_rollback_stays_uncertain(self):
         self.board.fault = "lost_drop"
         with self.assertRaises(worker.Uncertain):
-            self.apply(lambda before, after, movement: after is None)
+            self.apply()
         self.assertEqual(self.board.calls, ["begin", "update", "drop"])
 
     def test_locked_components_and_missing_verifier_never_begin(self):
