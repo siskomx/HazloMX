@@ -12,7 +12,7 @@ use std::{
         Arc,
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use windows_sys::Win32::System::RemoteDesktop::{
     WTSActive, WTSFreeMemory, WTSQuerySessionInformationW, WTSSessionInfoEx, WTSINFOEXW,
@@ -165,17 +165,23 @@ fn main() {
     let finished = done.clone();
     let observed = root.clone();
     let monitor = thread::spawn(move || {
+        let mut failure_seen = None;
         while !finished.load(Ordering::SeqCst) {
             let result = fs::read(observed.join("native-api-result.json"))
                 .ok()
                 .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok());
+            // Retain a failed owned window briefly for actual UI diagnosis. Memory/lock/Stop
+            // still win immediately; this does not retry or turn the failure into success.
+            if result.as_ref().is_some_and(|r| r.get("error").is_some()) {
+                failure_seen.get_or_insert_with(Instant::now);
+            }
             let reason = if observed.join("stop-owned-agent").exists() {
                 Some("explicit_owned_stop")
             } else if !desktop_unlocked() {
                 Some("desktop_not_unlocked")
             } else if !memory_available() {
                 Some("memory_floor")
-            } else if result.as_ref().is_some_and(|r| r.get("error").is_some()) {
+            } else if failure_seen.is_some_and(|at| at.elapsed() >= Duration::from_secs(30)) {
                 Some("native_probe_failed")
             } else {
                 None
@@ -189,14 +195,16 @@ fn main() {
         "process_finished"
     });
     let args = vec![
+        // Agent scans all existing path arguments for its initial sketch, including
+        // option values. Put the actual sketch before the private profile directories.
+        root.join("sketchbook/OwnedSketch/OwnedSketch.ino")
+            .into_os_string(),
         "--electronUserData".into(),
         root.join("runtime/resources/app/data/app-data")
             .into_os_string(),
         "--config-dir".into(),
         profile.join(".arduinoIDE").into_os_string(),
         "--hostname=127.0.0.1".into(),
-        root.join("sketchbook/OwnedSketch/OwnedSketch.ino")
-            .into_os_string(),
     ];
     let output = run_owned(
         &executable,

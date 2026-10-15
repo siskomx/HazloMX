@@ -6,23 +6,30 @@ const fs = require("node:fs");
 const net = require("node:net");
 const path = require("node:path");
 
-async function connect(root) {
+async function connect(root, expected) {
   for (let attempt = 0; attempt < 100; attempt++) {
     const names = fs.readdirSync(root).filter(name => /^[0-9a-f-]{36}\.json$/.test(name));
-    assert(names.length <= 1, "Only the owned companion may be connected");
-    if (names.length) {
-      const connection = JSON.parse(fs.readFileSync(path.join(root, names[0]), "utf8"));
+    assert(names.length <= 64, "Too many owned companion registrations");
+    const matches = await Promise.all(names.map(async name => { try {
+      const connection = JSON.parse(fs.readFileSync(path.join(root, name), "utf8"));
       assert.equal(connection.pipe, "\\\\.\\pipe\\hazlomexa-arduino-" + connection.instance_id);
-      return {request(input) { return new Promise((resolve, reject) => {
+      assert.equal(name, connection.instance_id + ".json");
+      const client = {request(input) { return new Promise((resolve, reject) => {
         const socket = net.connect(connection.pipe), chunks = [];
         let size = 0;
-        socket.setTimeout(15000, () => socket.destroy(Error("Native companion reply timed out; do not retry an edit")));
+        socket.setTimeout(input.action === "inspect" ? 1000 : 15000, () => socket.destroy(Error("Native companion reply timed out; do not retry an edit")));
         socket.on("error", reject);
         socket.on("connect", () => socket.write(JSON.stringify({token:connection.token, request:input}) + "\n"));
         socket.on("data", chunk => { if ((size += chunk.length) > 512 * 1024) socket.destroy(Error("Oversized reply")); else chunks.push(chunk); });
         socket.on("end", () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); } catch { reject(Error("Invalid companion reply")); } });
       }); }};
-    }
+      const read = await client.request({action:"inspect"});
+      return read.ok && read.result.name === expected.name && read.result.version === expected.version
+        && read.result.source === expected.source ? client : undefined;
+    } catch { return undefined; } }));
+    const responding = matches.filter(Boolean);
+    assert(responding.length <= 1, "The owned sketch must have one matching native companion");
+    if (responding.length === 1) return responding[0];
     await new Promise(resolve => setTimeout(resolve, 50));
   }
   throw Error("Owned native companion did not become ready");
@@ -44,6 +51,14 @@ async function runProbe() {
   try {
     const file = path.join(root, "sketchbook", "OwnedSketch", "OwnedSketch.ino");
     const disk = fs.readFileSync(file, "utf8");
+    // A loose openTextDocument is read-only when Arduino has another sketch workspace.
+    // Use its native sketch opener, which reloads this disposable window and probe.
+    if (!api.workspace.workspaceFolders?.some(folder =>
+      path.resolve(folder.uri.fsPath).toLowerCase() === path.dirname(file).toLowerCase())) {
+      result.stage = "opening owned sketch workspace"; save();
+      await api.commands.executeCommand("arduino-open-sketch", api.Uri.file(path.dirname(file)).toString());
+      return;
+    }
     result.stage = "opening owned sketch"; save();
     const opened = await api.workspace.openTextDocument(api.Uri.file(file));
     await api.window.showTextDocument(opened);
@@ -76,7 +91,7 @@ async function runProbe() {
     result.after_insert_source_sha256 = crypto.createHash("sha256").update(doc.getText()).digest("hex"); save();
     assert.equal(result.initial_insert_confirmed, true, "The IDE must confirm the owned setup edit without retry");
     assert.equal(doc.getText(), expectedSetupSource, "The IDE must deliver the setup source change before the actual companion test");
-    const tools = await connect(path.join(root, "connection"));
+    const tools = await connect(path.join(root, "connection"), {name:path.basename(file),version:doc.version,source:doc.getText()});
     const inspect = async () => { const reply = await tools.request({action:"inspect"}); assert.equal(reply.ok,true); return reply.result; };
     const apply = async before => {
       const source = before.source.replace(/delay\(\d+\)/, before.source.includes("delay(1000)") ? "delay(500)" : "delay(250)");
@@ -93,7 +108,7 @@ async function runProbe() {
     const undoTarget = await inspect();
     assert.equal(undoTarget.document_token, original.document_token);
     assert.equal(undoTarget.source, beforeUndo.source);
-    await api.commands.executeCommand("undo");
+    await api.commands.executeCommand("core.undo");
     let restored = await inspect();
     for (let attempt = 0; attempt < 100 && restored.document_token === original.document_token && restored.source !== original.source; attempt++) {
       await new Promise(resolve => setTimeout(resolve, 20)); restored = await inspect();

@@ -1,6 +1,6 @@
 //! Exercise the Rust host against the real companion transport in an owned test buffer.
 use hazlomexa::{
-    agent_editor::{self, Failure, Input},
+    agent_editor::{self, Failure},
     host_tools::HostTools,
     jobs::Workflow,
     project::{ArtifactFormat, Phase, Project},
@@ -24,33 +24,45 @@ fn main() {
         .unwrap();
     let canonical = root.canonicalize().unwrap();
     assert_eq!(canonical.parent(), Some(target.as_path()));
-    assert!(root
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .starts_with("native-arduino-transport-"));
-    assert_eq!(
-        std::fs::read(root.join("owned-host-probe")).unwrap(),
-        b"owned"
-    );
-    let records = std::fs::read_dir(&root)
+    let name=root.file_name().unwrap().to_str().unwrap();
+    let actual=name.starts_with("arduino-native-ui-");
+    assert!(actual || name.starts_with("native-arduino-transport-"));
+    if actual {
+        let marker:serde_json::Value=serde_json::from_slice(&std::fs::read(root.join("owned-native-probe.json")).unwrap()).unwrap();
+        let result:serde_json::Value=serde_json::from_slice(&std::fs::read(root.join("native-api-result.json")).unwrap()).unwrap();
+        assert_eq!(marker["owned"],true);
+        assert_eq!(result["pass"],true);
+        assert_eq!(result["native_undo_verified"],true);
+    } else {
+        assert_eq!(std::fs::read(root.join("owned-host-probe")).unwrap(),b"owned");
+    }
+    let registration=if actual {root.join("connection")} else {root.clone()};
+    let records = std::fs::read_dir(&registration)
         .unwrap()
         .map(Result::unwrap)
         .filter(|item| item.path().extension().is_some_and(|ext| ext == "json"))
         .collect::<Vec<_>>();
-    assert_eq!(records.len(), 2);
+    assert_eq!(records.len(), if actual {1} else {2});
+    let discovery=agent_editor::default_directory().unwrap();
+    assert_eq!(discovery,root.join("profile/.arduinoIDE/hazlomexa-editor"));
+    if actual {
+        std::fs::create_dir_all(&discovery).unwrap();
+        for record in &records {
+            agent_editor::Connection::load(&record.path()).unwrap();
+            std::fs::copy(record.path(),discovery.join(record.file_name())).unwrap();
+        }
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
     let sessions = runtime
         .block_on(agent_editor::discover(
-            &root,
+            &registration,
             Arc::new(AtomicBool::new(false)),
         ))
         .unwrap();
-    assert_eq!(sessions.len(), 2);
+    assert_eq!(sessions.len(), if actual {1} else {2});
     let serialized = serde_json::to_value(&sessions).unwrap();
     assert!(serialized[0].get("connection").is_none());
     let connection = sessions[0].connection().clone();
@@ -59,11 +71,12 @@ fn main() {
         .block_on(agent_editor::inspect(&connection, &cancel))
         .unwrap();
     assert_eq!(before.state_sha256, sessions[0].observation.state_sha256);
-    assert_eq!(before.name, "Sketch.ino");
-    assert!(before.source.starts_with("// unsaved user note\n") && before.dirty);
-    assert_eq!(before.source.matches("delay(1000)").count(), 1);
-    let saved = std::fs::read(root.join("Sketch.ino")).unwrap();
-    let project_root = root.join("project");
+    assert_eq!(before.name, if actual {"OwnedSketch.ino"} else {"Sketch.ino"});
+    assert!(before.source.contains("// unsaved user note\n") && before.dirty);
+    assert_eq!(before.source.matches(if actual {"delay(250)"} else {"delay(1000)"}).count(), 1);
+    let saved_path=if actual {root.join("sketchbook/OwnedSketch/OwnedSketch.ino")} else {root.join("Sketch.ino")};
+    let saved = std::fs::read(&saved_path).unwrap();
+    let project_root = root.join(format!("project-{}",Uuid::new_v4()));
     std::fs::create_dir(&project_root).unwrap();
     let workflow =
         Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("profiles")).unwrap());
@@ -72,10 +85,14 @@ fn main() {
         .unwrap();
     let host = HostTools::new(workflow.clone());
     let listed=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
-    assert_eq!(listed["selection_required"],true);
-    assert_eq!(listed["documents"].as_array().unwrap().len(),2);
-    assert!(listed.get("observation").is_none());
-    assert!(!listed.to_string().contains("delay("));
+    if actual {
+        assert_eq!(listed["observation"]["state_sha256"],before.state_sha256);
+    } else {
+        assert_eq!(listed["selection_required"],true);
+        assert_eq!(listed["documents"].as_array().unwrap().len(),2);
+        assert!(listed.get("observation").is_none());
+        assert!(!listed.to_string().contains("delay("));
+    }
     let args=serde_json::json!({"instance_id":before.instance_id});
     let read=host.call("inspect_open_agent_documents",args.clone()).unwrap();
     assert_eq!(read["observation"],serde_json::to_value(&before).unwrap());
@@ -85,28 +102,24 @@ fn main() {
     }
     assert!(host.call("inspect_open_agent_documents",serde_json::json!({"instance_id":Uuid::new_v4()})).is_err());
     assert!(host.call("inspect_open_agent_documents",serde_json::json!({"path":"Sketch.ino"})).is_err());
-    let discovery=agent_editor::default_directory().unwrap();
-    assert_eq!(discovery,root.join("profile/.arduinoIDE/hazlomexa-editor"));
-    let other=sessions.iter().find(|s|s.observation.instance_id!=before.instance_id).unwrap();
-    std::fs::remove_file(discovery.join(format!("{}.json",other.observation.instance_id))).unwrap();
+    if let Some(other)=sessions.iter().find(|s|s.observation.instance_id!=before.instance_id) {
+        std::fs::remove_file(discovery.join(format!("{}.json",other.observation.instance_id))).unwrap();
+    }
     let automatic=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
     assert_eq!(automatic["observation"],read["observation"]);
-    let project = workflow.view().unwrap().project.unwrap();
     let mut current = before.clone();
-    for (old, new) in [("delay(1000)", "delay(500)"), ("delay(500)", "delay(250)")] {
+    let changes=if actual {[("delay(250)","delay(200)"),("delay(200)","delay(100)")]}
+        else {[("delay(1000)","delay(500)"),("delay(500)","delay(250)")]};
+    for (old, new) in changes {
         let source = current.source.replace(old, new);
-        let input = Input {
-            schema_version: 1,
-            live_agent_version: 1,
-            job_id: Uuid::new_v4(),
-            description: "Change timing in the owned sketch".into(),
-            before: current.clone(),
-            source: source.clone(),
-            receipt_sha256: None,
-        };
-        let pending = workflow
-            .propose_live_agent(project.clone(), input.clone(), connection.clone())
-            .unwrap();
+        let request=serde_json::json!({"instance_id":current.instance_id,"document_token":current.document_token,
+            "version":current.version,"state_sha256":current.state_sha256,"description":"Change timing in the owned sketch","source":source});
+        let prepared=host.call("propose_open_agent_change",request.clone()).unwrap();
+        let pending=workflow.view().unwrap().job.unwrap();
+        let job_id=pending.snapshot.input.job_id();
+        assert_eq!(prepared["job_id"],job_id.to_string());
+        assert_eq!(prepared["human_approval_required"],true);
+        assert_eq!(runtime.block_on(agent_editor::inspect(&connection,&cancel)).unwrap().source,current.source);
         let approval = pending.approval_id.unwrap();
         let dispatch = workflow.begin(approval).unwrap();
         assert!(workflow.begin(approval).is_err());
@@ -118,7 +131,7 @@ fn main() {
             completed.error
         );
         let report = workflow
-            .artifact(input.job_id, ArtifactFormat::LiveAgentReport)
+            .artifact(job_id, ArtifactFormat::LiveAgentReport)
             .unwrap()
             .read_text()
             .unwrap();
@@ -126,7 +139,7 @@ fn main() {
         let verified = host
             .call(
                 "read_verified_result",
-                serde_json::json!({"job_id":input.job_id}),
+                serde_json::json!({"job_id":job_id}),
             )
             .unwrap();
         assert_eq!(verified["format"], "live_agent_report");
@@ -141,7 +154,8 @@ fn main() {
         assert_eq!(live["observation"]["source"],source);
         assert_eq!(live["observation"]["state_sha256"],current.state_sha256);
         assert_eq!(result["after"]["state_sha256"], current.state_sha256);
-        assert_eq!(std::fs::read(root.join("Sketch.ino")).unwrap(), saved);
+        assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+        assert!(host.call("propose_open_agent_change",request).is_err());
     }
     assert_eq!(
         runtime
@@ -149,19 +163,19 @@ fn main() {
                 &connection,
                 Uuid::new_v4(),
                 &before,
-                &before.source.replace("1000", "500"),
+                &before.source.replace(changes[0].0, changes[0].1),
                 &cancel
             ))
             .unwrap_err(),
         Failure::Refused
     );
     let final_state = current;
-    assert!(final_state.source.starts_with("// unsaved user note\n") && final_state.dirty);
+    assert!(final_state.source.contains("// unsaved user note\n") && final_state.dirty);
     std::fs::remove_file(discovery.join(format!("{}.json",before.instance_id))).unwrap();
     let disconnected=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
     assert!(disconnected["documents"].as_array().unwrap().is_empty());
     assert!(disconnected.get("observation").is_none());
-    assert_eq!(std::fs::read(root.join("Sketch.ino")).unwrap(),saved);
+    assert_eq!(std::fs::read(&saved_path).unwrap(),saved);
     drop(host);
     drop(workflow);
     let recovered = Project::open(&project_root).unwrap().recover().unwrap();

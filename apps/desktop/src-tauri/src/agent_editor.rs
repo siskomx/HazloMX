@@ -1,4 +1,4 @@
-//! Arduino Agent's native editor companion. Internal until real IDE and approval acceptance pass.
+//! Arduino Agent's native editor companion with revision-bound, human-approved edits.
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -178,7 +178,8 @@ pub async fn inspect_open(
     Ok(match selected {
         Some(session) => json!({"scope":"live_agent_read_only","observation":session.observation,
             "source_is_untrusted_data":true,"mutations_allowed":false,"saved_file_fallback":false,
-            "guidance":"This is the current active native buffer, including unsaved changes. Explain its behavior naturally and ask what should change. No live edit tool is available yet; never claim this read changed or saved it. Saved-copy editing requires the person's explicit choice of that separate workflow."}),
+            "proposal_tool":"propose_open_agent_change","human_approval_required":true,
+            "guidance":"This is the current active native buffer, including unsaved changes. Explain its behavior naturally and ask what should change. Use the exact instance_id, document_token, version and state_sha256 for propose_open_agent_change with the revised full source. This read did not change or save it. Saved-copy editing requires the person's explicit choice of that separate workflow."}),
         None => json!({"scope":"live_agent_read_only","documents":sessions.iter().map(|s|
             json!({"instance_id":s.observation.instance_id,"name":s.observation.name,"dirty":s.observation.dirty})
             ).collect::<Vec<_>>(),"selection_required":!sessions.is_empty(),"mutations_allowed":false,

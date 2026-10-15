@@ -139,10 +139,15 @@ try {
       assert.equal(call.args.program,program,"Selected program must bind the backend tool connection");
       if (provider.startsWith("ollama_")) assert.equal(call.args.profile, provider === "ollama_local" ? "local_experimental" : "cloud");
       const prompt = JSON.parse(call.args.prompt);
-      assert.equal(prompt.desktop_context.live_document_connection, program === "freecad" ? null : false);
-      assert.equal(prompt.desktop_context.live_mutations_allowed, program === "freecad");
+      assert.equal(prompt.desktop_context.live_document_connection, program === "freecad" || program === "agent" ? null : false);
+      assert.equal(prompt.desktop_context.live_mutations_allowed, program === "freecad" || program === "agent");
       if (program === "freecad") assert.equal(prompt.desktop_context.native_connection_check, "inspect_open_cad_documents");
-      assert.equal(prompt.desktop_context.document_scope, program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies");
+      if (program === "agent") {
+        assert.equal(prompt.desktop_context.native_connection_check,"inspect_open_agent_documents");
+        assert.match(prompt.instruction,/propose_open_agent_change/);
+        assert.match(await page.locator("#document-scope").innerText(),/incluso sin guardar/);
+      }
+      assert.equal(prompt.desktop_context.document_scope, program === "agent" ? "open_agent_and_explicit_saved_copies" : program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies");
       assert.equal(prompt.desktop_context.draft_fields, undefined, "Hidden form defaults were sent to the agent");
       assert.match(prompt.instruction, /no pidas rellenar formularios/);
       assert.match(prompt.instruction, /documento abierto/);
@@ -321,7 +326,7 @@ try {
     ["freecad", { cadpilot_version: "fixture", source_name: "Part.FCStd", request: { operation: "inspect", object: "Target", units: "mm", parameters: {} }, preview: { measurements: {} } }, "Seleccionar documento guardado e inspeccionar…"],
     ["drawing", { cadcraft_version: "fixture", source_name: "Plano.dxf", units: "in", output_format: "dxf" }, "Seleccionar dibujo…"],
     ["arduino", { fqbn: "arduino:avr:uno", source: "void setup() {}" }],
-    ["agent", { agent_version: "fixture", source_name: "Sketch.ino", original_source: "void setup() {}", source: "void setup() {}" }, "Seleccionar sketch…"],
+    ["agent", { agent_version: "fixture", source_name: "Sketch.ino", original_source: "void setup() {}", source: "void setup() {}" }, "Seleccionar copia guardada del sketch…"],
     ["kicad", { kicad_version: "10.0.7", entry: "Board.kicad_pcb", units: "mm", files: [] }, "Seleccionar PCB…"],
     ["kicad", { konnect_version: "fixture", source: {entry:"Circuit.kicad_sch"}, edit: { reference: "R1", expected_value: "1k", value: "2k" } }, "Seleccionar esquema…"],
     ["kicad", { konnect_version: "fixture", source: {entry:"Board.kicad_pcb"}, pcb_move: { reference: "R1", expected_x_mm: 10, expected_y_mm: 10, x_mm: 20, y_mm: 10 } }, "Seleccionar PCB…"],
