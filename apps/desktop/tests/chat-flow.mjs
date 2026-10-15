@@ -79,7 +79,7 @@ try {
         const chat = snapshot.chat;
         const finish = () => {
           if (snapshot.chat?.id !== chat.id || chat.cancelled) return;
-          chat.sequence++; chat.busy = false; chat.question = null; chat.text = "Primero revisemos el documento. <img src=x onerror=window.injection=true>";
+          chat.sequence++; chat.busy = false; chat.question = null; chat.text = window.replyText ?? "Primero revisemos el documento. <img src=x onerror=window.injection=true>";
           if (provider === "codex" || provider === "claude") snapshot[provider === "codex" ? "codex_conversation_ready" : "claude_conversation_ready"] = true;
           if (window.makeProposal) {
             window.makeProposal = false;
@@ -471,6 +471,38 @@ try {
   const beforeRecovered = (await chatCalls()).length;
   await page.locator("#program-actions button").first().click(); await page.locator("#send:enabled").waitFor();
   assert.equal((await chatCalls()).length,beforeRecovered,"An existing completed result started a new review");
+  await page.locator("#provider").selectOption("ollama_cloud");
+  await page.locator("#new-chat").click();
+  await page.evaluate(()=>{window.replyText="Respuesta extensa conservada: "+"La copia usa milímetros; lee el resultado antes de continuar. ".repeat(70);});
+  await send("Primera intención que debe seguir guardada.");
+  await send("Segunda intención, con datos confirmados del documento.");
+  const longBefore=await page.locator("#conversation .message").allTextContents();
+  await page.evaluate(()=>window.setPendingJob({schema_version:1,job_id:"long-history-review",dimensions_mm:{length:25.4,width:10,height:5}}));
+  await page.locator("#program-actions button").first().click(); await page.locator("#approve:enabled").waitFor();
+  const beforeLongReview=(await chatCalls()).length;
+  await page.locator("#approve").click(); await page.locator("#send:enabled").waitFor();
+  const longCalls=await chatCalls(); assert.equal(longCalls.length,beforeLongReview+1);
+  const longPrompt=JSON.parse(longCalls.at(-1).args.prompt);
+  assert(Buffer.byteLength(longCalls.at(-1).args.prompt)<=8192);
+  assert(longPrompt.omitted_conversation_turns>0);
+  assert.deepEqual(longPrompt.desktop_context.current_job,{id:"long-history-review",phase:"completed"});
+  assert.match(longPrompt.user_request,/Lee read_verified_result/);
+  assert(!JSON.stringify(longPrompt).includes("private-approval"));
+  assert.match(await page.locator("#context-status").innerText(),/parte del historial/);
+  assert.deepEqual(longPrompt.recovered_conversation.filter(t=>t.role==="user").map(t=>`Tú: ${t.content}`),longBefore.filter(t=>t.startsWith("Tú:")),"Long replies displaced confirmed user requests");
+  assert.equal(await page.locator("#error").isVisible(),false);
+  const longAfter=await page.locator("#conversation .message").allTextContents();
+  assert.deepEqual(longAfter.slice(0,longBefore.length),longBefore,"Request trimming erased visible history");
+  assert.match(await page.locator("#storage-status").innerText(),/Conversación guardada localmente/);
+  const longProject=await page.evaluate(async()=>(await window.__TAURI_INTERNALS__.invoke("get_snapshot")).project);
+  await page.reload(); await page.locator("#setup").click(); await page.locator("#provider").selectOption("ollama_cloud");
+  assert(!await page.locator("#conversation").innerText().then(text=>text.includes("Primera intención que debe seguir guardada")),"Other-folder history leaked into the default project");
+  await page.evaluate(project=>{window.otherFolder=project[1]==="C:\\owned\\other-folder";},longProject);
+  await page.locator("#open-project").click();
+  await page.locator("#send:enabled").waitFor();
+  assert.deepEqual(await page.locator("#conversation .message").allTextContents(),longAfter,"History beyond 8 KiB did not recover intact");
+  assert.equal((await chatCalls()).length,0,"Reload replayed a model request");
+  await page.locator("#new-chat").click(); assert.equal(await page.locator("#context-status").innerText(),"");
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });

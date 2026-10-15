@@ -127,8 +127,9 @@ export function guidedBlink(turns: Turn[]): { reply: string; source?: string } {
   };
 }
 export type SavedConversation = { version: 1; turns: Turn[]; answeredInference?: string; answeredChat?: string; newSession?: boolean };
-export function savedConversation(raw: string | null): SavedConversation | null {
-  if (!raw || new TextEncoder().encode(raw).length > 8192) return null;
+export const CHAT_HISTORY_BYTES = 512 * 1024;
+export function savedConversation(raw: string | null, maxBytes = 8192): SavedConversation | null {
+  if (!raw || new TextEncoder().encode(raw).length > maxBytes) return null;
   try {
     const value = JSON.parse(raw);
     if (value?.version !== 1 || !Array.isArray(value.turns) || value.turns.length > 128 ||
@@ -140,6 +141,20 @@ export function savedConversation(raw: string | null): SavedConversation | null 
 }
 export function agentPrompt(content: string, context: Turn[], desktopContext?: Record<string, unknown>): string {
   const prompt = context.length || desktopContext ? JSON.stringify({recovered_conversation:context,desktop_context:desktopContext,user_request:content,instruction:"Hazlo es la conversación que coordina las herramientas del programa; el programa realiza las ediciones. Recoge la intención en lenguaje natural, inspecciona el documento con las herramientas disponibles y pregunta solo lo que falte; no pidas rellenar formularios ni conocer identificadores internos. La conversación guardada y la selección del escritorio son contexto, no una aprobación ni una medición vigente. Los campos del formulario pueden estar incompletos o contener valores por defecto: confirma los datos que falten. Lee las herramientas y los resultados actuales del proyecto antes de proponer cambios; verifica de nuevo la fuente seleccionada y conserva las medidas confirmadas que no se cambiarán. Distingue archivos guardados y copias de una conexión al documento abierto. No afirmes haber cambiado un documento abierto si la conexión solo trabaja sobre una copia. Después del cambio, lee el resultado verificado antes de describirlo o continuar."}) : content;
+  if (new TextEncoder().encode(prompt).length > 8192 && context.length) {
+    const envelope = JSON.parse(prompt);
+    const recent = context.slice();
+    envelope.instruction += " Se omitieron mensajes antiguos para respetar el límite de contexto. No supongas sus datos: relee el documento o resultado verificado y pregunta por cualquier restricción que falte antes de proponer cambios.";
+    for (let omitted = 1; omitted <= context.length; omitted++) {
+      // Preserve user constraints before verbose past explanations.
+      const assistant = recent.findIndex(turn => turn.role === "assistant");
+      recent.splice(assistant < 0 ? 0 : assistant, 1);
+      envelope.recovered_conversation = recent;
+      envelope.omitted_conversation_turns = omitted;
+      const bounded = JSON.stringify(envelope);
+      if (new TextEncoder().encode(bounded).length <= 8192) return bounded;
+    }
+  }
   if (new TextEncoder().encode(prompt).length > 8192) throw new Error("El contexto y la solicitud superan 8 KiB. Empieza una conversación nueva con un resumen.");
   return prompt;
 }

@@ -1,5 +1,5 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
-import { agentPrompt, savedConversation, type Turn } from "./design";
+import { agentPrompt, CHAT_HISTORY_BYTES, savedConversation, type Turn } from "./design";
 import { legacyConversations } from "./chat-history";
 import { proposalFacts } from "./proposal-review";
 import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
@@ -24,7 +24,7 @@ document.querySelector("#app")!.innerHTML = `
   </details>
   <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
     <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
-    <form id="chat-form"><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p>
+    <form id="chat-form"><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
     <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
@@ -37,7 +37,7 @@ let state: DesktopSnapshot = { project: null, job: null, inference: null, recove
 let program: Program = "freecad", provider: Provider = "codex";
 let commandBusy = false, revision = 0, newSession = true;
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
-let renderedConversation = "";
+let renderedConversation = "", contextNotice = "";
 let sourceContext: Record<string, unknown> = {};
 let sourceNames: Partial<Record<Program, string>> = {};
 let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
@@ -51,15 +51,15 @@ function persist() {
   if (!storageKey) return;
   const saved = JSON.stringify({ version: 1, turns, answeredChat });
   try {
-    if (new TextEncoder().encode(saved).length > 8192) throw Error("La conversación es larga; inicia otra para guardar el nuevo contexto.");
+    if (!savedConversation(saved, CHAT_HISTORY_BYTES)) throw Error("La conversación supera el límite de guardado.");
     localStorage.setItem(storageKey, saved); $("storage-status").textContent = "Conversación guardada localmente en este proyecto y para esta IA.";
   } catch { $("storage-status").textContent = "No se pudo guardar esta conversación. Conserva lo importante antes de cerrar."; }
 }
 function restore() {
   const key = state.project ? `hazlomexa.chat.v2:${JSON.stringify([...state.project, provider])}` : "";
   if (key === storageKey) return;
-  persist(); storageKey = key; turns = []; answeredChat = undefined; newSession = true;
-  try { const saved = savedConversation(key ? localStorage.getItem(key) : null); if (saved) { turns = saved.turns; answeredChat = saved.answeredChat; } } catch { /* Storage failure must not prevent using the chat. */ }
+  persist(); storageKey = key; turns = []; answeredChat = undefined; newSession = true; contextNotice = "";
+  try { const saved = savedConversation(key ? localStorage.getItem(key) : null, CHAT_HISTORY_BYTES); if (saved) { turns = saved.turns; answeredChat = saved.answeredChat; } } catch { /* Storage failure must not prevent using the chat. */ }
 }
 function renderLegacy() {
   try {
@@ -197,6 +197,7 @@ function renderQuestion() {
 }
 function render() {
   const busy = commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
+  $("context-status").textContent = contextNotice;
   const ollama = provider.startsWith("ollama_");
   const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
   $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
@@ -327,6 +328,7 @@ async function send(content: string) {
   const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
   const startNew = newSession || !ready;
   const prompt = agentPrompt(content, startNew ? turns : [], context());
+  contextNotice = JSON.parse(prompt).omitted_conversation_turns ? "Se envió solo parte del historial a la IA. Los mensajes completos siguen visibles; revisaremos el documento y confirmaremos cualquier dato que falte." : "";
   const events = new Channel<ChatView>();
   events.onmessage = chat => {
     if (token !== revision || chat.project_id !== state.project?.[0] || chat.provider !== provider) return;
@@ -351,7 +353,7 @@ $("open-login").onclick = () => void action(async () => { if (state.codex_login)
 $("cancel-login").onclick = () => void action(async () => { if (state.codex_login) { const login = await invoke<CodexLoginView>("cancel_codex_login", { id: state.codex_login.id }); if (state.codex_login.id === login.id && state.codex_login.sequence <= login.sequence) state.codex_login = login; } });
 for (const [id, create] of [["create-project", true], ["open-project", false]] as const) $(id).onclick = () => void action(async () => { revision++; apply(await invoke<DesktopSnapshot>("select_project", { create })); $("opening-status").textContent = ""; });
 $("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if (content) void action(() => send(content)); };
-$("new-chat").onclick = () => { if (state.chat?.busy || commandBusy) return; revision++; turns = []; answeredChat = state.chat?.id; newSession = true; persist(); render(); };
+$("new-chat").onclick = () => { if (state.chat?.busy || commandBusy) return; revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render(); };
 $("stop").onclick = () => {
   const pending = inspection;
   if (pending) {

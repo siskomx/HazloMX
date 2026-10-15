@@ -10,6 +10,8 @@
 
 The current screen has one chat and connection controls. See the [first workflow](first-workflow-demo.md) and [drawing example](drawing-workflow-demo.md).
 
+The [latest source correction](research/chat-context-window-2026-10-14.md) keeps longer chats usable by sending a bounded portion of history, favoring your requests over older AI explanations, and displaying a notice when messages are omitted. Current chat history is saved separately up to 512 KiB/128 messages; storage failures are shown explicitly. The AI rereads actual documents/results and may clarify missing constraints. This correction still needs native/installed acceptance; the previously tested installer predates it.
+
 ## AI connections
 
 | Choice | Setup | Current limits |
