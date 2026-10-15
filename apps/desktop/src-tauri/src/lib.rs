@@ -17,6 +17,9 @@ pub mod cadcraft;
 pub mod cadpilot;
 
 #[cfg(windows)]
+pub mod cadpilot_live;
+
+#[cfg(windows)]
 pub mod kicad;
 
 #[cfg(windows)]

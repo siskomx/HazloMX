@@ -19,7 +19,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "=0.10.9"
 zip = { version = "=9.0.2", default-features = false, features = ["deflate"] }
-quick-xml = "=0.42.0"
+quick-xml = { version = "=0.42.0", features = ["serialize"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 reqwest = { version = "=0.13.5", default-features = false, features = ["json", "stream"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "net", "io-util", "io-std", "sync"] }
