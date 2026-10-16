@@ -43,6 +43,7 @@ fn main() {
             "read_kicad_summary",
             "start_compile",
             "edit_compile",
+            "install_agent_companion",
             "connect_agent",
             "select_agent_sketch",
             "start_agent_edit",

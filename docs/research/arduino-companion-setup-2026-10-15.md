@@ -1,0 +1,15 @@
+# Arduino Agent companion setup — October 15, 2026
+
+The chat's Conexiones panel now offers an explicit **Instalar complemento para el sketch abierto** action for Arduino Agent. The native companion is embedded in the executable, so this setup requires no separate download, runtime or extension packaging tool. The action is unavailable during chat, execution or pending approval and is not exposed as an agent tool.
+
+The production installer uses the existing local `.arduinoIDE` profile and publishes a complete three-file plugin directory beneath its `plugins` folder. It refuses missing profiles, network paths and linked/reparse directories through the existing filesystem validation. It does not change preferences, restart the IDE, save a sketch or replace another plugin. Repeating setup verifies identical bytes and reports that it is already installed; modified or different existing contents are preserved and refused. A new install is staged outside the plugin scan directory and renamed into place without replacement. The UI asks the person to save their work and restart Agent to activate it.
+
+## Evidence
+
+- The real Windows test preparer no longer copies the companion itself. Its supervisor invokes the production Rust installer in a fresh owned profile before starting the pinned Arduino Agent 0.7.1 executable.
+- This actual editor loaded the installed companion and passed authenticated native reads, unsaved edits, native Undo, follow-up, earlier unsaved work preservation and saved-byte preservation. No hardware operation ran. The fixture's pipe registration location is still explicitly isolated by its environment; this does not prove default-profile registration or ordinary-user acceptance.
+- After the native probe completed successfully, the unchanged memory monitor stopped the owned editor at its 1 GB floor. The later extra Rust host check found no responding companion and failed before making a proposal. That check is not counted as passed; the earlier separate host approval gate remains historical evidence only.
+- The setup regression checks a Unicode profile, missing-profile refusal, exact installed bytes, repeat setup, refusal of changed companion content, preservation of settings and unrelated plugin content, and no staging residue.
+- All 174 regular desktop Rust tests pass serially, with 58 integration/native tests opt-in. Desktop library, executable and supervisor Clippy pass. The desktop executable compiles; production frontend build and browser chat regressions pass, including explicit setup, restart guidance, installation refusal and exact command/permission wiring. Browser command replies use IPC fixtures.
+
+Raw profiles, source observations and logs remain private under ignored build output. This closes the missing source-app setup action and proves the production installer's output loads in the real IDE. Actual Hazlo native setup/approval UI, default-profile registration, ordinary-user installed acceptance, real-provider conversations and the current Windows installer remain unfinished. Existing different companion versions require manual review rather than automatic replacement.

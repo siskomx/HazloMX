@@ -47,7 +47,6 @@ def main(launch):
     (config / "arduino-cli.yaml").write_text(json.dumps({"directories":{
         "data":str(root / "data"),"downloads":str(root / "downloads"),"user":str(root / "sketchbook")}}))
     plugins = config / "plugins"
-    shutil.copytree(ROOT / "apps/desktop/src-tauri/resources/arduino-editor", plugins / "arduino-editor")
     shutil.copytree(ROOT / "tests/arduino/native-editor-probe", plugins / "native-probe")
     (root / "owned-native-probe.json").write_text(json.dumps({"owned":True}))
     state = {"root":str(root),"executable":str(executable),"launched":False}

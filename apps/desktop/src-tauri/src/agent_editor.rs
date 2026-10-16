@@ -70,6 +70,54 @@ pub fn default_directory() -> Result<PathBuf, String> {
     Ok(root)
 }
 
+const COMPANION_FILES: [(&str, &[u8]); 3] = [
+    ("package.json", include_bytes!("../resources/arduino-editor/package.json")),
+    ("extension.cjs", include_bytes!("../resources/arduino-editor/extension.cjs")),
+    ("core.cjs", include_bytes!("../resources/arduino-editor/core.cjs")),
+];
+
+/// Explicit desktop setup only; agents cannot install or replace editor plugins.
+pub fn install_companion(profile: &Path) -> Result<bool, String> {
+    use std::{fs, io::Write};
+    let invalid = "Abre Arduino Agent una vez antes de instalar su complemento. Su perfil debe estar en una carpeta local sin enlaces.";
+    let _profile = crate::project::pin_lineage(profile).map_err(|_| invalid)?;
+    let plugins = profile.join("plugins");
+    match fs::create_dir(&plugins) {
+        Ok(()) => (),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
+        Err(_) => return Err("No se pudo preparar la carpeta de complementos de Arduino Agent.".into()),
+    }
+    let _plugins = crate::project::pin_directory(&plugins, false).map_err(|_| invalid)?;
+    let destination = plugins.join("hazlomexa-arduino-editor");
+    if destination.try_exists().map_err(|_| invalid)? {
+        let _installed = crate::project::pin_directory(&destination, false).map_err(|_| invalid)?;
+        let unchanged = fs::read_dir(&destination).map_err(|_| invalid)?.count() == COMPANION_FILES.len()
+            && COMPANION_FILES.iter().all(|(name, bytes)|
+                crate::kicad_project::read_regular(&destination.join(name), bytes.len() as u64)
+                    .is_ok_and(|current| current == *bytes));
+        return if unchanged { Ok(false) } else {
+            Err("Ya existe otro contenido en el complemento de Hazlo. No se reemplazó; revísalo antes de instalar esta versión.".into())
+        };
+    }
+    // Publish the manifest with the complete directory, never an incomplete plugin.
+    let staging = profile.join(format!(".hazlomexa-editor-install-{}", Uuid::new_v4()));
+    fs::create_dir(&staging).map_err(|_| "No se pudo preparar el complemento local.")?;
+    let result = (|| -> std::io::Result<()> {
+        for (name, bytes) in COMPANION_FILES {
+            let mut file = fs::OpenOptions::new().write(true).create_new(true).open(staging.join(name))?;
+            file.write_all(bytes)?;
+            file.sync_all()?;
+        }
+        fs::rename(&staging, &destination)
+    })();
+    if result.is_err() {
+        for (name, _) in COMPANION_FILES { let _ = fs::remove_file(staging.join(name)); }
+        let _ = fs::remove_dir(&staging);
+        return Err("No se pudo instalar el complemento. No se reemplazó ningún complemento existente.".into());
+    }
+    Ok(true)
+}
+
 #[derive(Clone, Serialize)]
 pub struct DiscoveredEditor {
     pub id: Uuid,
@@ -502,6 +550,38 @@ pub async fn apply(
 pub(crate) mod tests {
     use super::*;
     use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
+
+    #[test]
+    fn companion_install_is_complete_repeatable_and_never_replaces_other_content() {
+        use std::fs;
+        let root = std::env::temp_dir().join(format!("hazlomexa-editor-setup-{}", Uuid::new_v4()));
+        fs::create_dir(&root).unwrap();
+        let profile = root.join("perfil ñ");
+        assert!(install_companion(&profile).is_err());
+        assert!(!profile.exists(), "Setup must not invent a missing IDE profile");
+        fs::create_dir(&profile).unwrap();
+        fs::write(profile.join("settings.json"), b"user-settings").unwrap();
+        let plugins = profile.join("plugins");
+        fs::create_dir(&plugins).unwrap();
+        fs::write(plugins.join("other-plugin"), b"other-content").unwrap();
+        assert!(install_companion(&profile).unwrap());
+        assert!(!install_companion(&profile).unwrap());
+        let installed = plugins.join("hazlomexa-arduino-editor");
+        for (name, bytes) in COMPANION_FILES { assert_eq!(fs::read(installed.join(name)).unwrap(), bytes); }
+        fs::write(installed.join("core.cjs"), b"locally-modified").unwrap();
+        assert!(install_companion(&profile).is_err());
+        assert_eq!(fs::read(installed.join("core.cjs")).unwrap(), b"locally-modified");
+        assert_eq!(fs::read(profile.join("settings.json")).unwrap(), b"user-settings");
+        assert_eq!(fs::read(plugins.join("other-plugin")).unwrap(), b"other-content");
+        assert_eq!(fs::read_dir(&profile).unwrap().count(), 2, "No staging directory left behind");
+        for (name, _) in COMPANION_FILES { fs::remove_file(installed.join(name)).unwrap(); }
+        fs::remove_dir(installed).unwrap();
+        fs::remove_file(plugins.join("other-plugin")).unwrap();
+        fs::remove_dir(plugins).unwrap();
+        fs::remove_file(profile.join("settings.json")).unwrap();
+        fs::remove_dir(profile).unwrap();
+        fs::remove_dir(root).unwrap();
+    }
 
     fn observation(instance_id: Uuid) -> Observation {
         let source = "void loop() { delay(1000); }\n// unsaved note\n".to_string();

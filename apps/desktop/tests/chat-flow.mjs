@@ -51,6 +51,10 @@ try {
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
       if (command === "get_snapshot") return copy();
+      if (command === "install_agent_companion") {
+        if (window.refuseCompanionInstall) throw "No se reemplazó el complemento existente.";
+        return "Complemento instalado. Guarda tu trabajo y reinicia Arduino Agent para activarlo.";
+      }
       if (["discover_cad_document","discover_drawing","discover_slice","discover_live_pcb"].includes(command)) {
         if(window.rejectInspectionPicker) throw "Selección cancelada.";
         window.previousInspectionEvent = window.inspectionEvent;
@@ -123,6 +127,18 @@ try {
   assert.equal(await page.locator("#length, #pcb-x, #konnect-value, #sketch-source, #workflow").count(), 0, "Editing forms leaked into the new production entry");
   assert.match(await page.locator("#conversation").innerText(), /No necesitas conocer/);
   await page.locator("#setup").click();
+  await page.locator("#program").selectOption("agent");
+  assert.equal(await page.evaluate(() => window.calls.filter(call => call.command === "install_agent_companion").length), 0);
+  const installCompanion = page.getByRole("button", {name:"Instalar complemento para el sketch abierto",exact:true});
+  await installCompanion.click();
+  await page.locator("#send:enabled").waitFor();
+  assert.match(await page.locator("#chat-progress").innerText(), /Guarda tu trabajo y reinicia Arduino Agent/);
+  assert.equal(await page.evaluate(() => window.calls.filter(call => call.command === "install_agent_companion").length), 1);
+  assert.deepEqual(await page.evaluate(() => window.calls.find(call => call.command === "install_agent_companion").args), {});
+  await page.evaluate(() => { window.refuseCompanionInstall = true; });
+  await installCompanion.click();
+  await page.locator("#send:enabled").waitFor();
+  assert.match(await page.locator("#error").innerText(), /No se reemplazó/);
   const send = async text => { await page.locator("#prompt").fill(text); await page.locator("#send").click(); await page.locator("#send:enabled").waitFor(); };
   for (const provider of ["codex", "claude", "ollama_local", "ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);

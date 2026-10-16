@@ -109,6 +109,10 @@ fn main() {
         "d7c6e956ceecf5214867ff063e0ecf6bf0276946950ddb1f34946de31d2c5cd9"
     );
     let profile = root.join("profile");
+    let installed = hazlomexa::agent_editor::install_companion(&profile.join(".arduinoIDE")).unwrap();
+    fs::write(root.join("companion-install.json"), serde_json::to_vec(&serde_json::json!({
+        "production_installer":true,"installed":installed,"already_current":!installed
+    })).unwrap()).unwrap();
     let mut env = BTreeMap::<OsString, OsString>::new();
     for key in ["SystemRoot", "WINDIR", "COMSPEC", "PATH"] {
         if let Some(value) = std::env::var_os(key) {

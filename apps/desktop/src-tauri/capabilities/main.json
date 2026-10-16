@@ -19,7 +19,7 @@
     "allow-select-orca", "allow-prepare-slice", "allow-discover-slice",
     "allow-prepare-cadpilot", "allow-read-cadpilot-result", "allow-prepare-cadpilot-followup",
     "allow-discover-cad-document",
-    "allow-connect-agent", "allow-select-agent-sketch", "allow-start-agent-edit", "allow-edit-agent-proposal",
+    "allow-install-agent-companion", "allow-connect-agent", "allow-select-agent-sketch", "allow-start-agent-edit", "allow-edit-agent-proposal",
     "allow-start-proposal", "allow-edit-proposal", "allow-approve-operation",
     "allow-cancel-job", "allow-open-artifact", "allow-start-inference", "allow-cancel-inference"
   ]

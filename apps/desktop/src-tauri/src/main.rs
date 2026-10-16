@@ -1044,6 +1044,21 @@ async fn select_arduino(
 }
 
 #[tauri::command]
+async fn install_agent_companion(state: State<'_, AppState>) -> Result<String, String> {
+    let view = state.workflow.view()?;
+    if desktop_codex::agent_busy(&state)? || view.inference.is_some_and(|item| item.busy)
+        || view.job.is_some_and(|job| job.busy || job.snapshot.phase == hazlomexa::project::Phase::AwaitingApproval) {
+        return Err("Termina o detén la operación actual antes de instalar el complemento.".into());
+    }
+    let directory = hazlomexa::agent_editor::default_directory()?;
+    let profile = directory.parent().ok_or("No se encontró el perfil de Arduino Agent.")?.to_path_buf();
+    let installed = tauri::async_runtime::spawn_blocking(move || hazlomexa::agent_editor::install_companion(&profile))
+        .await.map_err(|_| "No se pudo completar la instalación del complemento.")??;
+    Ok(if installed { "Complemento instalado. Guarda tu trabajo y reinicia Arduino Agent para activarlo; después describe el cambio en el chat." }
+       else { "El complemento ya está instalado. Si aún no responde, guarda tu trabajo y reinicia Arduino Agent." }.into())
+}
+
+#[tauri::command]
 async fn connect_agent(state: State<'_, AppState>) -> Result<DesktopSnapshot, String> {
     let connection = agent::connect().await?;
     state.workflow.set_agent(connection)?;
@@ -1273,7 +1288,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 
