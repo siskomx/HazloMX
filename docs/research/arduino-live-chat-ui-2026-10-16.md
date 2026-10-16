@@ -61,3 +61,17 @@ conversation, compilation, hardware upload, arbitrary-sketch fidelity or
 in-flight cancellation proof. No exact model-tool-call trace was recorded;
 the evidence is the observed UI, independent native state and verified jobs.
 The full multi-program goal remains unfinished.
+
+## Installer follow-up
+
+The [rebuilt candidate](arduino-live-chat-ui-2026-10-16/package-candidate.json)
+from `5871c0a` includes the chat error-placement fix as well as the runtime
+compatibility change used by the successful native conversations. Packaging,
+unchanged tracked-input checks, app/helper profile-path scans and the actual
+release helper's 33-tool protocol check pass. A retained installer copy is
+bound by SHA-256 independently of the mutable build-output folder.
+
+The fresh guest launch is refused before creation because available memory
+is below the unchanged 3 GiB prerequisite. The preceding package's lifecycle
+and installed UI evidence remains separate; lifecycle and installed
+conversation acceptance are not claimed for this rebuilt candidate.
