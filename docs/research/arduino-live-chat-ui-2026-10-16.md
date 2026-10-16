@@ -71,7 +71,15 @@ unchanged tracked-input checks, app/helper profile-path scans and the actual
 release helper's 33-tool protocol check pass. A retained installer copy is
 bound by SHA-256 independently of the mutable build-output folder.
 
-The fresh guest launch is refused before creation because available memory
-is below the unchanged 3 GiB prerequisite. The preceding package's lifecycle
-and installed UI evidence remains separate; lifecycle and installed
-conversation acceptance are not claimed for this rebuilt candidate.
+Two initial guest launches refuse before creation below the unchanged 3 GiB
+memory prerequisite. Once memory recovers, a fresh guest starts above that
+floor and passes the [scoped lifecycle check](arduino-live-chat-ui-2026-10-16/package-lifecycle.json):
+previous-package installation and upgrade, same-version update, exact app
+and helper identities, both installed/updated 33-tool transports, hidden
+startup, uninstall and project/app-data preservation. Independent host
+hashes match all three exported project files. The disposable guest is
+stopped and its absence is checked.
+
+This does not repeat engineering workflows, ordinary-user acceptance or
+interactive conversation on the installed candidate. Earlier package UI
+and backend evidence remains separately identified.
