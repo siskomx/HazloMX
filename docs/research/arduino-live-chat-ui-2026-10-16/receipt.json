@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "source_commit": "8a7cbc0",
+  "app_sha256": "53463d0221d8ac004e01d547865dd9e6819e3ada5f59127d01e7d1cbb11be7b1",
+  "editor_version": 1,
+  "provider": "existing Ollama cloud",
+  "actual_hazlo_ui_approvals": 3,
+  "live_edits": 2,
+  "native_saves": 1,
+  "native_inspections": 7,
+  "same_instance_and_document": true,
+  "delay_ms": [
+    100,
+    250,
+    500
+  ],
+  "note_and_other_code_preserved": true,
+  "native_saved_buffer_matches_disk": true,
+  "completed_schema15_jobs": 3,
+  "history_visible": true,
+  "automatic_agent_reviews_visible": true,
+  "security_prompt_absent_this_attempt": true,
+  "hardware_actions": 0,
+  "installed_conversation_acceptance": false,
+  "in_flight_ui_cancellation_tested": false,
+  "conversation_recovery_tested": false,
+  "history_recovery_pass": true,
+  "project_files_preserved": 7,
+  "recovered_report_dispatch_pass": true,
+  "owned_apps_stopped": true
+}
