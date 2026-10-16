@@ -81,6 +81,16 @@ assert.match(review({cadpilot_version:"0.7.7",source_name:"Part.FCStd",request:{
 const schematic=review({konnect_version:"0.13.0",source:{entry:"Circuit.kicad_sch"},edit:{reference:"R1",expected_value:"1k",value:"4.7k"}});
 assert.match(schematic,/R1: 1k → 4.7k/);
 const pcb=review({konnect_version:"0.13.0",source:{entry:"Board.kicad_pcb"},pcb_move:{reference:"J1",expected_x_mm:20,expected_y_mm:-10,x_mm:45.4,y_mm:-10}});
+for (const [units,x,y,expected] of [["mm",201,198,"1 milímetro a la derecha y 2 milímetros hacia arriba"],
+  ["in",197.46,200,"0.1 pulgadas a la izquierda"],["mils",200,200.254,"10 milésimas de pulgada hacia abajo"]]) {
+  const input={live_pcb_version:1,board_name:"Board.kicad_pcb",description:"Mueve la pieza elegida",units,
+    before:{components:[{uuid:"chosen",reference:"R1",value:"10k"}]},
+    movement:{uuid:"chosen",reference:"R1",expected_x_mm:200,expected_y_mm:200,x_mm:x,y_mm:y}};
+  const original=JSON.stringify(input), facts=review(input);
+  assert(facts.includes("Desplazamiento: "+expected+"."));
+  assert.match(facts,/Las pistas conservan su posición/);
+  assert.equal(JSON.stringify(input),original,"Natural movement review must not alter the native proposal");
+}
 assert.match(pcb,/actual: horizontal 20, vertical -10 mm/);
 assert.match(pcb,/Nueva posición: horizontal 45.4, vertical -10 mm/);
 assert.match(pcb,/posiciones son absolutas/);

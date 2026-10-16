@@ -264,21 +264,24 @@ try {
   await page.locator("#program").selectOption("kicad");
   await page.locator("#kicad-endpoint").fill("ipc://C:/owned/kicad/api.sock");
   await page.locator("#kicad-api-token").fill("fixture-api-secret");
-  await page.getByRole("button", { name: "Leer PCB abierta en KiCad…", exact: true }).click();
+  await page.getByRole("button", { name: "Conectar PCB abierta en KiCad…", exact: true }).click();
   await page.locator("#send:enabled").waitFor();
   assert.equal(await page.locator("#kicad-api-token").inputValue(), "");
   await send("Lee la posición actual del conector sin guardar ni modificar la PCB.");
   const nativeContext = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt));
-  assert.equal(nativeContext.desktop_context.document_scope, "live_pcb_read_only");
+  assert.equal(nativeContext.desktop_context.document_scope, "open_native_pcb");
   assert.equal(nativeContext.desktop_context.live_document_connection, true);
-  assert.equal(nativeContext.desktop_context.live_mutations_allowed, false);
+  assert.equal(nativeContext.desktop_context.live_mutations_allowed, true);
+  assert.equal(nativeContext.desktop_context.native_connection_check,"inspect_selected_live_pcb");
+  assert.equal(nativeContext.desktop_context.live_pcb_source.human_approval_required,true);
+  assert.match(nativeContext.instruction,/propose_selected_live_pcb_move/);
   assert.equal(nativeContext.desktop_context.live_pcb_source.selection, "live-board");
   assert.equal(nativeContext.desktop_context.live_pcb_source.document_sha256, "2".repeat(64));
   assert.equal(nativeContext.desktop_context.pcb_source, undefined);
   assert.equal(nativeContext.desktop_context.current_job, null);
   assert(!JSON.stringify(nativeContext).includes("fixture-api-secret"));
   assert(!await page.evaluate(() => Object.values(localStorage).join(" ").includes("fixture-api-secret")));
-  assert.match(await page.locator("#document-scope").innerText(), /No permite modificar/);
+  assert.match(await page.locator("#document-scope").innerText(), /prepara movimientos para tu aprobación/);
   await page.getByRole("button", { name: "Seleccionar PCB…", exact: true }).click();
   await send("Ahora consulta la copia guardada que seleccioné expresamente.");
   const savedContext = await page.evaluate(() => JSON.parse(window.calls.filter(call => call.command === "start_codex_chat").at(-1).args.prompt));
@@ -375,7 +378,7 @@ try {
     ["freecad","Seleccionar documento guardado e inspeccionar…","cad_document_source","selected-cad-document"],
     ["drawing","Seleccionar dibujo…","drawing_source","selected-drawing"],
     ["slice","Seleccionar modelo y perfiles…","slice_source","selected-slice"],
-    ["kicad","Leer PCB abierta en KiCad…","pcb_source","selected-board"],
+    ["kicad","Conectar PCB abierta en KiCad…","pcb_source","selected-board"],
   ]) {
     await page.locator("#program").selectOption(program);
     if(program==="kicad") {

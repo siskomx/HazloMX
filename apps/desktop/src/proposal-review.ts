@@ -49,9 +49,15 @@ export function proposalFacts(run: Snapshot): string[] {
     const label=component?.value ? component.value+" ("+move.reference+")" : move.reference;
     const scale=input.units==="in" ? 25.4 : input.units==="mils" ? .0254 : 1;
     const coordinates=(x:number,y:number)=>"horizontal "+number(x/scale)+", vertical "+number(y/scale)+" "+unitNames[input.units];
+    const dx=Math.round((move.x_mm-move.expected_x_mm)*1e6)/1e6/scale,dy=Math.round((move.y_mm-move.expected_y_mm)*1e6)/1e6/scale;
+    const distance=(v:number)=>number(Math.abs(v))+" "+(Math.abs(v)===1 ? {mm:"milímetro",in:"pulgada",mils:"milésima de pulgada"}[input.units] : unitNames[input.units]);
+    const displacement=[dx ? distance(dx)+(dx>0 ? " a la derecha" : " a la izquierda") : "",
+      dy ? distance(dy)+(dy>0 ? " hacia abajo" : " hacia arriba") : ""].filter(Boolean).join(" y ");
     facts.push("Mover un componente en la PCB abierta de KiCad.", "PCB: " + input.board_name, "Objetivo: " + input.description,
+      "Desplazamiento: " + displacement + ".",
       label + ": " + coordinates(move.expected_x_mm,move.expected_y_mm) + " → " + coordinates(move.x_mm,move.y_mm) + ".",
       "KiCad mostrará el cambio en el documento abierto. El archivo todavía no se guardará.",
+      "Las pistas conservan su posición; este movimiento no vuelve a conectarlas.",
       "Hazlo comprobará el movimiento y releerá el estado nativo antes de darlo por terminado.");
   } else if(input.live_cad_version){
     const saving = input.operations[0]?.action === "save_as";
