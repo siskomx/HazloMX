@@ -7,6 +7,7 @@ from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import subprocess
+import time
 import uuid
 import zipfile
 
@@ -35,7 +36,7 @@ def main(launch):
     profile = root / "profile"
     config = profile / ".arduinoIDE"
     config.mkdir(parents=True)
-    for name in ["connection", "temp", "data", "downloads", "profile/Documents/Arduino", "profile/Desktop", "profile/AppData/Roaming", "profile/AppData/Local"]:
+    for name in ["temp", "data", "downloads", "profile/Documents/Arduino", "profile/Desktop", "profile/AppData/Roaming", "profile/AppData/Local"]:
         (root / name).mkdir(parents=True, exist_ok=True)
     sketch = root / "sketchbook/OwnedSketch/OwnedSketch.ino"
     sketch.parent.mkdir(parents=True)
@@ -52,7 +53,9 @@ def main(launch):
     state = {"root":str(root),"executable":str(executable),"launched":False}
     if launch:
         supervisor = ROOT / "target/debug/examples/owned_arduino_editor_probe.exe"
+        host = ROOT / "target/debug/examples/owned_agent_editor_host.exe"
         assert supervisor.is_file(), "Build the owned_arduino_editor_probe example before launching"
+        assert host.is_file(), "Build the owned_agent_editor_host example before launching"
         env = os.environ.copy()
         env["HAZLOMEXA_TEST_AGENT_ROOT"] = str(root)
         with (root / "supervisor.log").open("wb") as log:
@@ -62,8 +65,31 @@ def main(launch):
     (ROOT / "target/current-arduino-native-ui.json").write_text(json.dumps(state,indent=2))
     print("Owned portable Arduino Agent fixture " + ("launched." if launch else "prepared."), flush=True)
     if launch:
+        native = root / "native-api-result.json"
+        host_result = None
+        while process.poll() is None:
+            try:
+                ready = json.loads(native.read_text()).get("pass") is True
+            except (FileNotFoundError, json.JSONDecodeError):
+                ready = False
+            if ready:
+                host_env = dict(os.environ, USERPROFILE=str(profile), HAZLOMEXA_NATIVE_EDITOR_TEST_ROOT=str(root))
+                with (root / "host-stdout.log").open("wb") as stdout, (root / "host-stderr.log").open("wb") as stderr:
+                    try:
+                        host_result = subprocess.run([str(host)], cwd=ROOT, env=host_env, stdout=stdout, stderr=stderr,
+                            creationflags=subprocess.CREATE_NO_WINDOW, timeout=30).returncode
+                    except subprocess.TimeoutExpired:
+                        host_result = -1
+                (root / "host-default-profile.json").write_text(json.dumps({
+                    "passed":host_result == 0,"exit_code":host_result,"copied_registration":False,
+                    "registration_override":False,"native_ui_approval":False,"real_provider":False}))
+                print("Default-profile native host check " + ("passed." if host_result == 0 else "failed; private evidence retained."), flush=True)
+                break
+            time.sleep(0.1)
         code = process.wait()
         print("Owned native supervisor finished:", code)
+        if code or host_result != 0:
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":

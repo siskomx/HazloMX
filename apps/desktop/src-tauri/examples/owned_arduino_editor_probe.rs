@@ -126,7 +126,6 @@ fn main() {
         ("LOCALAPPDATA", profile.join("AppData/Local")),
         ("TEMP", root.join("temp")),
         ("TMP", root.join("temp")),
-        ("HAZLOMEXA_AGENT_EDITOR_ROOT", root.join("connection")),
         ("HAZLOMEXA_AGENT_EDITOR_PROBE_ROOT", root.clone()),
     ] {
         env.insert(key.into(), path.into_os_string());

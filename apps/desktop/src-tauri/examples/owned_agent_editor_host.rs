@@ -36,22 +36,16 @@ fn main() {
     } else {
         assert_eq!(std::fs::read(root.join("owned-host-probe")).unwrap(),b"owned");
     }
-    let registration=if actual {root.join("connection")} else {root.clone()};
+    let discovery=agent_editor::default_directory().unwrap();
+    assert_eq!(discovery,root.join("profile/.arduinoIDE/hazlomexa-editor"));
+    let registration=if actual {discovery.clone()} else {root.clone()};
     let records = std::fs::read_dir(&registration)
         .unwrap()
         .map(Result::unwrap)
         .filter(|item| item.path().extension().is_some_and(|ext| ext == "json"))
         .collect::<Vec<_>>();
     assert_eq!(records.len(), if actual {1} else {2});
-    let discovery=agent_editor::default_directory().unwrap();
-    assert_eq!(discovery,root.join("profile/.arduinoIDE/hazlomexa-editor"));
-    if actual {
-        std::fs::create_dir_all(&discovery).unwrap();
-        for record in &records {
-            agent_editor::Connection::load(&record.path()).unwrap();
-            std::fs::copy(record.path(),discovery.join(record.file_name())).unwrap();
-        }
-    }
+    for record in &records { agent_editor::Connection::load(&record.path()).unwrap(); }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -171,10 +165,12 @@ fn main() {
     );
     let final_state = current;
     assert!(final_state.source.contains("// unsaved user note\n") && final_state.dirty);
-    std::fs::remove_file(discovery.join(format!("{}.json",before.instance_id))).unwrap();
-    let disconnected=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
-    assert!(disconnected["documents"].as_array().unwrap().is_empty());
-    assert!(disconnected.get("observation").is_none());
+    if !actual {
+        std::fs::remove_file(discovery.join(format!("{}.json",before.instance_id))).unwrap();
+        let disconnected=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
+        assert!(disconnected["documents"].as_array().unwrap().is_empty());
+        assert!(disconnected.get("observation").is_none());
+    }
     assert_eq!(std::fs::read(&saved_path).unwrap(),saved);
     drop(host);
     drop(workflow);

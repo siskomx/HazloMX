@@ -91,7 +91,7 @@ async function runProbe() {
     result.after_insert_source_sha256 = crypto.createHash("sha256").update(doc.getText()).digest("hex"); save();
     assert.equal(result.initial_insert_confirmed, true, "The IDE must confirm the owned setup edit without retry");
     assert.equal(doc.getText(), expectedSetupSource, "The IDE must deliver the setup source change before the actual companion test");
-    const tools = await connect(path.join(root, "connection"), {name:path.basename(file),version:doc.version,source:doc.getText()});
+    const tools = await connect(path.join(root, "profile", ".arduinoIDE", "hazlomexa-editor"), {name:path.basename(file),version:doc.version,source:doc.getText()});
     const inspect = async () => { const reply = await tools.request({action:"inspect"}); assert.equal(reply.ok,true); return reply.result; };
     const apply = async before => {
       const source = before.source.replace(/delay\(\d+\)/, before.source.includes("delay(1000)") ? "delay(500)" : "delay(250)");
