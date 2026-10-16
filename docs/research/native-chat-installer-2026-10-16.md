@@ -62,8 +62,12 @@ setup, paths, credentials and diagnostic logs remain private under ignored
 
 A new `mdns-discovery` Windows Security prompt was observed inside the guest
 after the Arduino Agent test. No action was taken on it. The host desktop then
-reported locked, and native UI work stopped. The guest is retained for the
-human unlock/prompt handoff and the installed-app UI check.
+reported locked, and native UI work stopped. The guest was retained at this
+checkpoint. When work resumed it was no longer running and the host was
+unlocked. A separate [installed-chat UI checkpoint](installed-chat-ui-2026-10-16.md)
+now passes release startup, project picker creation/cancellation and clean
+uninstall with preservation. That UI-only guest has been stopped; the full
+installed conversation/engineering acceptance remains unfinished.
 
 This supersedes the prior package's prepared-only Windows backend status.
 The [one-move native KiCad UI checkpoint](kicad-native-ui-checkpoint-2026-10-16.md)
