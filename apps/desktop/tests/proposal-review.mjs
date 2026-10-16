@@ -59,6 +59,10 @@ assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/compila para Arduin
 assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/No se carga código/);
 assert.match(review({agent_version:"0.7.1",source_name:"Sketch.ino"}),/copia con el código propuesto/);
 const nativeAgent=review({live_agent_version:1,description:"Reduce el tiempo de espera",before:{name:"Sketch.ino",dirty:true}});
+const nativeSave=review({live_agent_version:1,save:true,description:"Guarda mi sketch",before:{name:"Sketch.ino",dirty:true}});
+assert.match(nativeSave,/Guardar el sketch abierto/);assert.match(nativeSave,/no se elige otra ruta/);
+assert.match(nativeSave,/Guardar no se deshace/);assert.match(nativeSave,/sin cambios pendientes/);
+assert(!nativeSave.includes("Código propuesto"));
 assert.match(nativeAgent,/sketch abierto de Arduino Agent/);
 assert.match(nativeAgent,/cambios sin guardar/);
 assert.match(nativeAgent,/preferencias de guardado/);

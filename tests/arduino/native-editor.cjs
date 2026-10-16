@@ -43,6 +43,53 @@ function apply(before, source) {
     document_token:before.document_token, version:before.version, state_sha256:before.state_sha256, source};
 }
 
+function save(before) {
+  const {source,...request}=apply(before,before.source);
+  return {...request,action:"save"};
+}
+test("explicit native save retains the exact buffer and edit history", async()=>{
+  const f=fixture(),before=await read(f);let saves=0;
+  f.doc.save=async()=>{saves++;f.doc.isDirty=false;return true;};
+  const result=await f.tools.request(save(before));
+  assert.equal(result.ok,true);assert.equal(result.result.native_save_confirmed,true);
+  assert.equal(result.result.native_edit_confirmed,false);assert.equal(result.result.after.source,before.source);
+  assert.equal(result.result.after.version,before.version);assert.equal(result.result.after.dirty,false);
+  assert.equal(saves,1);assert.equal(f.editor.calls,0);assert.deepEqual(f.editor.history,[]);
+  assert.equal((await f.tools.request(save(before))).outcome,"refused");assert.equal(saves,1);
+});
+test("stale or path-bearing save requests never invoke native save", async()=>{
+  for(const field of ["instance_id","document_token","version","state_sha256","path"]){
+    const f=fixture(),before=await read(f);let saves=0;
+    f.doc.save=async()=>{saves++;return true;};
+    const request=save(before);request[field]=field==="version"?before.version+1:"invalid";
+    assert.equal((await f.tools.request(request)).outcome,"refused");assert.equal(saves,0);
+  }
+});
+test("save waits for a delayed clean notification without resaving and blocks another edit", async()=>{
+  const f=fixture(),before=await read(f);let saves=0,release;
+  const hold=new Promise(resolve=>{release=resolve;});
+  f.doc.save=async()=>{saves++;await hold;setTimeout(()=>{f.doc.isDirty=false;},40);return true;};
+  const pending=f.tools.request(save(before));
+  assert.equal((await f.tools.request(apply(before,before.source.replace("1000","500")))).outcome,"refused");
+  release();const result=await pending;
+  assert.equal(result.ok,true);assert.equal(result.result.after.dirty,false);assert.equal(saves,1);assert.equal(f.editor.calls,0);
+});
+test("save failure, concurrent edits or an unconfirmed clean state remain uncertain without retries", async()=>{
+  for(const mode of ["false","throw","dirty","edit","rename"]){
+    const f=fixture(),before=await read(f);let saves=0;
+    f.doc.save=async()=>{
+      saves++;if(mode==="throw")throw Error("private save detail");if(mode==="false")return false;
+      if(mode!=="dirty")f.doc.isDirty=false;
+      if(mode==="edit"){f.doc.text+="// user edit";f.doc.version++;}
+      if(mode==="rename")f.doc.uri.fsPath="C:\\owned\\Another.ino";
+      return true;
+    };
+    const result=await f.tools.request(save(before));
+    assert.equal(result.outcome,"uncertain");assert.equal(saves,1);assert.equal(f.editor.calls,0);
+    assert(!JSON.stringify(result).includes("private save detail"));
+  }
+});
+
 test("inspection reads the dirty native buffer and excludes its private URI", async () => {
   const f = fixture(), state = await read(f);
   assert.equal(state.dirty, true); assert.equal(state.source, f.doc.text);

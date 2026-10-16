@@ -226,8 +226,8 @@ pub async fn inspect_open(
     Ok(match selected {
         Some(session) => json!({"scope":"live_agent_read_only","observation":session.observation,
             "source_is_untrusted_data":true,"mutations_allowed":false,"saved_file_fallback":false,
-            "proposal_tool":"propose_open_agent_change","human_approval_required":true,
-            "guidance":"This is the current active native buffer, including unsaved changes. Explain its behavior naturally and ask what should change. Use the exact instance_id, document_token, version and state_sha256 for propose_open_agent_change with the revised full source. This read did not change or save it. Saved-copy editing requires the person's explicit choice of that separate workflow."}),
+            "proposal_tool":"propose_open_agent_change","save_tool":"propose_open_agent_save","human_approval_required":true,
+            "guidance":"This is the current active native buffer, including unsaved changes. Explain its behavior naturally and ask what should change. Use the exact instance_id, document_token, version and state_sha256 for propose_open_agent_change with the revised full source. For an explicit request to save, use propose_open_agent_save with fresh identities and separate human approval; never include revised code or a path. If the buffer is already clean there is no pending save. This read did not change or save it. Saved-copy editing requires the person's explicit choice of that separate workflow."}),
         None => json!({"scope":"live_agent_read_only","documents":sessions.iter().map(|s|
             json!({"instance_id":s.observation.instance_id,"name":s.observation.name,"dirty":s.observation.dirty})
             ).collect::<Vec<_>>(),"selection_required":!sessions.is_empty(),"mutations_allowed":false,
@@ -309,6 +309,8 @@ pub struct Receipt {
     pub before_sha256: String,
     pub after: Observation,
     pub native_edit_confirmed: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub native_save_confirmed: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -320,6 +322,8 @@ pub struct Input {
     pub description: String,
     pub before: Observation,
     pub source: String,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub save: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receipt_sha256: Option<String>,
 }
@@ -329,11 +333,11 @@ impl Input {
         if self.schema_version != 1
             || self.live_agent_version != 1
             || self.job_id.is_nil()
-            || self.before.version >= 9007199254740991
+            || (!self.save && self.before.version >= 9007199254740991)
             || self.description.trim().is_empty()
             || self.description.len() > 1024
             || self.description.chars().any(char::is_control)
-            || self.source == self.before.source
+            || if self.save { self.source != self.before.source || !self.before.dirty } else { self.source == self.before.source }
             || !source_valid(&self.source, self.before.eol)
             || self
                 .receipt_sha256
@@ -367,7 +371,7 @@ pub fn validate_report(input: &Input, report: &serde_json::Value) -> Result<(), 
     let receipt: Receipt =
         serde_json::from_value(expanded).map_err(|_| "Informe nativo no compatible.")?;
     receipt
-        .validate(input.job_id, &input.before, &input.source)
+        .validate_operation(input.job_id, &input.before, &input.source, input.save)
         .map_err(|error| error.message().into())
 }
 
@@ -385,15 +389,15 @@ pub(crate) fn run(
         .enable_all()
         .build()
         .map_err(|_| "No se pudo iniciar la conexión al editor.")?;
-    let receipt = runtime
-        .block_on(apply(
+    let receipt = if input.save {
+        runtime.block_on(save(connection,input.job_id,&input.before,cancel))
+    } else { runtime.block_on(apply(
             connection,
             input.job_id,
             &input.before,
             &input.source,
             cancel,
-        ))
-        .map_err(|error| error.message())?;
+        )) }.map_err(|error| error.message())?;
     let mut report = serde_json::to_value(receipt).map_err(|_| Failure::Uncertain.message())?;
     report["after"]
         .as_object_mut()
@@ -406,20 +410,24 @@ pub(crate) fn run(
 }
 impl Receipt {
     pub fn validate(&self, job: Uuid, before: &Observation, source: &str) -> Result<(), Failure> {
+        self.validate_operation(job,before,source,false)
+    }
+    fn validate_operation(&self, job: Uuid, before: &Observation, source: &str, saving: bool) -> Result<(), Failure> {
         let valid = before.validate().is_ok()
             && self.after.validate().is_ok()
             && !job.is_nil()
             && self.editor_version == 1
             && self.job_id == job
             && self.status == "completed"
-            && self.native_edit_confirmed
+            && self.native_edit_confirmed != saving
+            && self.native_save_confirmed == saving
             && self.before_sha256 == before.state_sha256
-            && source != before.source
+            && if saving { source == before.source && before.dirty } else { source != before.source }
             && self.after.instance_id == before.instance_id
             && self.after.document_token == before.document_token
             && self.after.name == before.name
             && self.after.eol == before.eol
-            && self.after.version > before.version
+            && if saving { self.after.version == before.version && !self.after.dirty } else { self.after.version > before.version }
             && self.after.source == source;
         if valid {
             Ok(())
@@ -543,6 +551,17 @@ pub async fn apply(
         "instance_id":before.instance_id,"document_token":before.document_token,"version":before.version,
         "state_sha256":before.state_sha256,"source":source}), true, cancel, Duration::from_secs(15)).await?;
     receipt.validate(job, before, source)?;
+    Ok(receipt)
+}
+
+// A save is a separately approved effect; it never changes source or supplies a path.
+pub async fn save(connection:&Connection,job:Uuid,before:&Observation,cancel:&AtomicBool) -> Result<Receipt,Failure> {
+    connection.validate_for(before)?;
+    if job.is_nil() || !before.dirty { return Err(Failure::Refused); }
+    let receipt:Receipt=exchange(connection,json!({"action":"save","job_id":job,
+        "instance_id":before.instance_id,"document_token":before.document_token,"version":before.version,
+        "state_sha256":before.state_sha256}),true,cancel,Duration::from_secs(15)).await?;
+    receipt.validate_operation(job,before,&before.source,true)?;
     Ok(receipt)
 }
 
@@ -773,6 +792,7 @@ pub(crate) mod tests {
             job_id: Uuid::new_v4(),
             description: "Make the LED blink faster".into(),
             source: before.source.replace("1000", "500"),
+            save: false,
             before,
             receipt_sha256: None,
         }
@@ -786,9 +806,37 @@ pub(crate) mod tests {
         }
     }
     pub(crate) fn report_fixture(input: &Input) -> serde_json::Value {
-        let mut report = receipt(input.job_id, &input.before, &input.source);
+        let mut report = if input.save {
+            let mut after=input.before.clone();after.dirty=false;
+            json!({"editor_version":1,"job_id":input.job_id,"status":"completed","before_sha256":input.before.state_sha256,
+                "after":after,"native_edit_confirmed":false,"native_save_confirmed":true})
+        } else { receipt(input.job_id, &input.before, &input.source) };
         report["after"].as_object_mut().unwrap().remove("source");
         report
+    }
+
+    #[test]
+    fn native_save_requires_unchanged_dirty_source_and_a_distinct_confirmed_receipt() {
+        let legacy=job_fixture();
+        let json=serde_json::to_value(&legacy).unwrap();
+        assert!(json.get("save").is_none());
+        assert!(!serde_json::from_value::<Input>(json).unwrap().save);
+        let mut input=legacy;
+        input.save=true;input.source=input.before.source.clone();
+        input.validate().unwrap();
+        let report=report_fixture(&input);validate_report(&input,&report).unwrap();
+        for field in ["dirty","version","document_token","state_sha256"] {
+            let mut altered=report.clone();
+            altered["after"][field]=match field {"dirty"=>json!(true),"version"=>json!(input.before.version+1),
+                "document_token"=>json!(Uuid::new_v4()),_=>json!("0".repeat(64))};
+            assert!(validate_report(&input,&altered).is_err(),"{field}");
+        }
+        let mut altered=report.clone();altered["native_save_confirmed"]=json!(false);
+        assert!(validate_report(&input,&altered).is_err());
+        altered=report;altered["native_edit_confirmed"]=json!(true);
+        assert!(validate_report(&input,&altered).is_err());
+        input.source.push_str("// changed");assert!(input.validate().is_err());
+        input.source=input.before.source.clone();input.before.dirty=false;assert!(input.validate().is_err());
     }
 
     #[test]

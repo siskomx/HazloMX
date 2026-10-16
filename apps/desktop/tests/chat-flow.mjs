@@ -646,6 +646,21 @@ try {
     if(!await page.locator("#history").isVisible())await page.locator("#results > summary").click();
     const history=await page.locator("#history").innerText();assert.match(history,/Informe del cambio en Arduino Agent/);
     assert(!history.includes("HEX") && !history.includes("ELF"));
+    await page.evaluate(()=>{
+      const source="// my unsaved note\nvoid loop() { delay(500); }\n";
+      window.setPendingJob({schema_version:1,live_agent_version:1,save:true,job_id:crypto.randomUUID(),description:"Guarda el sketch actual",
+        before:{editor_version:1,instance_id:crypto.randomUUID(),document_token:crypto.randomUUID(),name:"Sketch.ino",version:4,
+          state_sha256:"b".repeat(64),source,eol:1,dirty:true,source_is_untrusted_data:true},source});
+    });
+    await page.locator("#program-actions button").first().click();await page.locator("#approve:enabled").waitFor();
+    const savingFacts=await page.locator("#change-facts").innerText();
+    assert.match(savingFacts,/Guardar el sketch abierto/);assert.match(savingFacts,/Guardar no se deshace/);
+    assert.match(await page.locator("#change-details").textContent(),/Código actual que guardará Arduino Agent/);
+    const beforeSaving=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    const savedCalls=await chatCalls();assert.equal(savedCalls.length,beforeSaving+1);
+    assert.match(JSON.parse(savedCalls.at(-1).args.prompt).instruction,/propose_open_agent_save/);
+    assert.match(await page.locator("#job-status").innerText(),/confirmó el guardado[\s\S]*sin cambios pendientes/);
   }
   for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);

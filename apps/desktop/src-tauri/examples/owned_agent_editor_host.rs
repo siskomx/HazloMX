@@ -165,17 +165,34 @@ fn main() {
     );
     let final_state = current;
     assert!(final_state.source.contains("// unsaved user note\n") && final_state.dirty);
+    assert_eq!(std::fs::read(&saved_path).unwrap(),saved);
+    let saving=std::env::var("HAZLOMEXA_NATIVE_SAVE_TEST").as_deref()==Ok("1");
+    if saving {
+        let request=serde_json::json!({"instance_id":final_state.instance_id,"document_token":final_state.document_token,
+            "version":final_state.version,"state_sha256":final_state.state_sha256,"description":"Save the reviewed current sketch"});
+        let reply=host.call("propose_open_agent_save",request.clone()).unwrap();
+        assert_eq!(reply["human_approval_required"],true);
+        let pending=workflow.view().unwrap().job.unwrap();
+        assert_eq!(std::fs::read(&saved_path).unwrap(),saved,"Preparing save must not write");
+        let outcome=workflow.execute(workflow.begin(pending.approval_id.unwrap()).unwrap()).unwrap();
+        assert_eq!(outcome.snapshot.phase,Phase::Completed,"{:?}",outcome.error);
+        let report=host.call("read_verified_result",serde_json::json!({"job_id":outcome.snapshot.input.job_id()})).unwrap();
+        assert_eq!(report["format"],"live_agent_report");
+        let after=runtime.block_on(agent_editor::inspect(&connection,&cancel)).unwrap();
+        assert_eq!(after.source,final_state.source);assert_eq!(after.version,final_state.version);assert!(!after.dirty);
+        assert_eq!(std::fs::read(&saved_path).unwrap(),final_state.source.as_bytes());
+        assert!(host.call("propose_open_agent_save",request).is_err(),"A clean buffer must not prepare a second save");
+    }
     if !actual {
         std::fs::remove_file(discovery.join(format!("{}.json",before.instance_id))).unwrap();
         let disconnected=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
         assert!(disconnected["documents"].as_array().unwrap().is_empty());
         assert!(disconnected.get("observation").is_none());
     }
-    assert_eq!(std::fs::read(&saved_path).unwrap(),saved);
     drop(host);
     drop(workflow);
     let recovered = Project::open(&project_root).unwrap().recover().unwrap();
-    assert_eq!(recovered.len(), 2);
+    assert_eq!(recovered.len(), if saving {3} else {2});
     assert!(recovered
         .iter()
         .all(|run| run.phase == Phase::Completed && run.schema_version == 15));

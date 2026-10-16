@@ -33,6 +33,28 @@ function createEditorTools(api) {
       if (fields(input, ["action"]) && input.action === "inspect") {
         return {ok:true, result:observe(api.window.activeTextEditor)};
       }
+      if (fields(input, ["action", "job_id", "instance_id", "document_token", "version", "state_sha256"])
+          && input.action === "save" && uuid(input.job_id) && !busy) {
+        const editor = api.window.activeTextEditor, before = observe(editor);
+        if (input.instance_id !== before.instance_id || input.document_token !== before.document_token
+            || input.version !== before.version || input.state_sha256 !== before.state_sha256
+            || !before.dirty || typeof editor.document.save !== "function") throw Error("stale");
+        busy = true; ownsBusy = true; sent = true;
+        // Saving is separate from editing; never replace the buffer or choose a new destination.
+        const saved = await editor.document.save();
+        let after = observe(editor);
+        for (let attempt = 0; saved === true && attempt < 100 && after.dirty
+            && after.document_token === before.document_token && after.name === before.name
+            && after.eol === before.eol && after.version === before.version && after.source === before.source; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 20));
+          after = observe(editor);
+        }
+        if (saved !== true || after.document_token !== before.document_token || after.name !== before.name
+            || after.eol !== before.eol || after.version !== before.version || after.source !== before.source
+            || after.dirty) throw Error("save_readback");
+        return {ok:true, result:{editor_version:1, job_id:input.job_id, status:"completed",
+          before_sha256:before.state_sha256, after, native_edit_confirmed:false, native_save_confirmed:true}};
+      }
       if (!fields(input, ["action", "job_id", "instance_id", "document_token", "version", "state_sha256", "source"])
           || input.action !== "apply" || !uuid(input.job_id) || busy) throw Error("request");
       const editor = api.window.activeTextEditor, before = observe(editor);

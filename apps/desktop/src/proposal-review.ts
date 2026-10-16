@@ -38,11 +38,18 @@ export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
   if(input.live_agent_version){
+    if(input.save) facts.push("Guardar el sketch abierto con Arduino Agent.", "Sketch: " + input.before.name,
+      "Objetivo: " + input.description, "Se guardará el código actual, incluida tu nota y los cambios sin guardar.",
+      "El IDE usa el archivo actual; no se elige otra ruta ni se reemplaza el código del editor.",
+      "Guardar no se deshace como una edición. Las preferencias del IDE pueden actuar al guardar; si cambian el código, Hazlo pedirá revisar el estado actual.",
+      "Hazlo comprobará que el IDE confirmó el guardado y que el mismo código sigue abierto sin cambios pendientes.");
+    else {
     facts.push("Cambiar el sketch abierto de Arduino Agent.", "Sketch: " + input.before.name, "Objetivo: " + input.description,
       input.before.dirty ? "La lectura incluye cambios sin guardar. Revisa que el código propuesto conserve lo que necesitas." : "La lectura corresponde al código actual del IDE.",
       "Puedes comparar el código actual y el propuesto en los detalles del cambio.",
       "El IDE conserva su historial de deshacer y sus preferencias de guardado. No se carga código a una placa.",
       "Hazlo releerá el código nativo y comprobará que coincide con el cambio aprobado.");
+    }
   } else if(input.live_pcb_version){
     const move=input.movement;
     const component=input.before.components.find(item=>item.uuid===move.uuid);

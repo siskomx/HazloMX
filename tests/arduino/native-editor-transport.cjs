@@ -16,13 +16,14 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
   const savedSketch = "void loop() { delay(1000); }\n";
   await fs.writeFile(path.join(root, "Sketch.ino"), savedSketch);
   const env = process.env.HAZLOMEXA_AGENT_EDITOR_ROOT, loader = Module._load;
-  let reads = 0, edits = 0;
+  let reads = 0, edits = 0, saves = 0;
   const doc = {uri:{scheme:"file", fsPath:path.join(root,"Sketch.ino")}, version:1, eol:1, isDirty:true, isClosed:false,
     source:"// unsaved user note\nvoid loop() { delay(1000); }\n", getText() { reads++; return this.source; }, positionAt(offset) { return offset; }};
   const editor = {document:doc, async edit(callback, options) {
     assert.deepEqual(options, {undoStopBefore:true, undoStopAfter:true});
     edits++; callback({replace(range, source) {doc.source = source;}}); doc.version++; return true;
   }};
+  doc.save=async()=>{saves++;await fs.writeFile(path.join(root,"Sketch.ino"),doc.source);doc.isDirty=false;return true;};
   const api = {env:{appName:"Arduino Agent"}, window:{activeTextEditor:editor}, Range:class {}};
   const context = {subscriptions:[]};
   try {
@@ -80,8 +81,11 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
       });
       assert(result.stdout.includes("stale refusal passed")); assert.equal(result.stderr, "");
       assert.equal(edits, 3); assert(doc.source.includes("delay(250)"));
-      assert.equal(await fs.readFile(path.join(root,"Sketch.ino"),"utf8"), savedSketch);
-      t.diagnostic("Actual approved Rust jobs and companion pipe passed edit/readback/follow-up, stale refusal, saved-file preservation and recovery against the controlled IDE API.");
+      const saving=process.env.HAZLOMEXA_NATIVE_SAVE_TEST==="1";
+      assert.equal(saves,saving?1:0);
+      assert.equal(await fs.readFile(path.join(root,"Sketch.ino"),"utf8"), saving?doc.source:savedSketch);
+      t.diagnostic(saving ? "Actual Rust approval and companion pipe passed native edit/follow-up/save, disk readback and three-job recovery against the controlled IDE API."
+        : "Actual approved Rust jobs and companion pipe passed edit/readback/follow-up, stale refusal, saved-file preservation and recovery against the controlled IDE API.");
     }
   } finally {
     Module._load = loader;

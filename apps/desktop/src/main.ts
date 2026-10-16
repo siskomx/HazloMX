@@ -329,7 +329,7 @@ function artifactButtons(job: Snapshot, parent: HTMLElement) {
     formats=[["original_cad","Mostrar FCStd original"],["cadpilot_report","Ver mediciones y operación"]];
     if(job.input.request.operation!=="inspect") formats.push(["fcstd","Abrir FCStd editado"],["step","Abrir STEP editado"]);
   }
-  if (job.input.live_agent_version) formats=[["live_agent_report","Ver informe del cambio en Arduino Agent"]];
+  if (job.input.live_agent_version) formats=[["live_agent_report",job.input.save ? "Ver informe del guardado en Arduino Agent" : "Ver informe del cambio en Arduino Agent"]];
   else if (job.input.live_pcb_version) formats=[["live_pcb_report","Ver informe del cambio PCB"]];
   if (job.input.konnect_version) {
     formats=[["konnect_original","Mostrar esquema original"],["konnect_edited","Mostrar copia editada"]];
