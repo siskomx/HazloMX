@@ -117,7 +117,9 @@ fn editor(workspace: &Path, owned: &Path, board: &Path, logs: &Path) -> Editor {
         let observed = directory.clone();
         let monitor = thread::spawn(move || {
             while !finished.load(Ordering::SeqCst) {
-                let reason = if !unlocked() {
+                let reason = if observed.join("stop-owned-editors").exists() {
+                    Some("explicit_stop")
+                } else if !unlocked() {
                     Some("desktop_locked")
                 } else if !memory_available() {
                     Some("memory_floor")
@@ -125,12 +127,11 @@ fn editor(workspace: &Path, owned: &Path, board: &Path, logs: &Path) -> Editor {
                     None
                 };
                 if let Some(reason) = reason {
-                    fs::write(
+                    cancel.store(true, Ordering::SeqCst);
+                    let _ = fs::write(
                         observed.join("editor-monitor-stop.json"),
                         serde_json::to_vec(&json!({"reason":reason})).unwrap(),
-                    )
-                    .unwrap();
-                    cancel.store(true, Ordering::SeqCst);
+                    );
                     break;
                 }
                 thread::sleep(Duration::from_millis(100));
@@ -208,10 +209,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mode = args.next();
     assert!(matches!(
         mode.as_deref(),
-        None | Some("--export-only" | "--with-export")
+        None | Some("--export-only" | "--with-export" | "--hazlo-ui")
     ));
     let export_only = mode.as_deref() == Some("--export-only");
     let with_export = mode.as_deref() == Some("--with-export");
+    let hazlo_ui = mode.as_deref() == Some("--hazlo-ui");
     assert!(args.next().is_none());
     let owned = PathBuf::from(
         std::env::var_os("HAZLOMEXA_REAL_PCB_ROOT").ok_or("Pass owned KiCad profile root")?,
@@ -247,7 +249,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     fs::write(&board, &source)?;
     let guard = editor(workspace, &owned, &board, &root);
-    let project = root.join("project");
+    let project = root.join(if hazlo_ui {
+        "observer-project"
+    } else {
+        "project"
+    });
+    if hazlo_ui {
+        fs::create_dir(&project)?;
+    }
     let selected_project = Project::create(&project)?;
     let id = selected_project.id;
     let workflow = Arc::new(Workflow::new(
@@ -298,6 +307,61 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map_err(|_| "Missing native PCB state".into())
         })
     };
+    if hazlo_ui {
+        let executable = workspace.join("target/debug/hazlomexa.exe");
+        for name in [
+            "profile/AppData/Local",
+            "profile/AppData/Roaming",
+            "profile/Desktop",
+            "profile/Documents",
+        ] {
+            fs::create_dir_all(root.join(name))?;
+        }
+        let mut environment = BTreeMap::<OsString, OsString>::new();
+        for key in ["SystemRoot", "WINDIR", "COMSPEC", "PATH"] {
+            if let Some(value) = std::env::var_os(key) {
+                environment.insert(key.into(), value);
+            }
+        }
+        for (key, name) in [
+            ("USERPROFILE", "profile"),
+            ("APPDATA", "appdata"),
+            ("LOCALAPPDATA", "local"),
+            ("WEBVIEW2_USER_DATA_FOLDER", "webview"),
+            ("HAZLOMEXA_SMOKE_PROJECT", "project"),
+            ("TEMP", "temp"),
+            ("TMP", "temp"),
+        ] {
+            fs::create_dir_all(root.join(name))?;
+            environment.insert(key.into(), root.join(name).into_os_string());
+        }
+        fs::write(
+            root.join("ui-connection.json"),
+            serde_json::to_vec(&json!({"board":board,"endpoint":connection.endpoint,
+            "initial_observation":initial,"source_sha256":format!("{:x}",Sha256::digest(&source))}))?,
+        )?;
+        let sha256 = format!("{:x}", Sha256::digest(fs::read(&executable)?));
+        let output = tokio::task::block_in_place(|| {
+            run_owned(
+                &executable,
+                &[],
+                &root,
+                &environment,
+                guard.stop.clone(),
+                Duration::from_secs(600),
+            )
+        })?;
+        fs::write(root.join("hazlo-stdout.log"), output.stdout)?;
+        fs::write(root.join("hazlo-stderr.log"), output.stderr)?;
+        fs::write(
+            root.join("hazlo-stopped.json"),
+            serde_json::to_vec(&json!({"stopped":true,
+            "reason":format!("{:?}",output.reason),"exe_sha256":sha256,"native_ui_pass":false,"human_observation_required":true}))?,
+        )?;
+        drop(guard);
+        println!("Owned Hazlo and KiCad stopped; native UI evidence requires separate review");
+        return Ok(());
+    }
     let target = initial
         .components
         .iter()
