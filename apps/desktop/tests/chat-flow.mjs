@@ -641,6 +641,17 @@ try {
     const history=await page.locator("#history").innerText();
     assert.match(history,/Informe del cambio PCB/);
     assert(!history.includes("Gerber")&&!history.includes("HEX"));
+    await page.locator("#kicad-endpoint").fill("ipc://C:/owned/kicad/api.sock");
+    await page.locator("#kicad-api-token").fill("fixture-api-secret");
+    await page.getByRole("button",{name:"Conectar PCB abierta en KiCad…",exact:true}).click();
+    await send("Inspecciona la PCB que acabo de conectar antes de sugerir cambios.");
+    const reconnected=JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context;
+    assert.equal(reconnected.live_pcb_source.selection,"live-board");
+    assert.equal(reconnected.current_job,null,`${provider}: reconnected native PCB retained the previous document's result`);
+    await page.evaluate(async()=>{const previous=(await window.__TAURI_INTERNALS__.invoke("get_snapshot")).job.snapshot.input;window.setCompletedJob({...previous,job_id:"reconnected-board-result"});});
+    await page.locator("#program-actions button").first().click();
+    await send("Lee el resultado nuevo de esta PCB.");
+    assert.deepEqual(JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context.current_job,{id:"reconnected-board-result",phase:"completed"});
   }
   for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);

@@ -1,5 +1,7 @@
 # Hazlo Mexa application goal
 
+**October 15 — reconnecting a native PCB clears the prior result context:** selecting an open KiCad PCB now uses the same source-change handling as the saved-document pickers. The reproduced regression previously sent the old native PCB job as `current_job` after reconnection. The production frontend build and browser chat suite pass, including old-result exclusion and new-result handoff across Codex, Claude and both existing Ollama routes. This is an IPC fixture check; native reconnection UI acceptance remains open, and the package checkpoint below predates this frontend fix.
+
 **October 15 — current native-chat package built:** the [Windows package checkpoint](research/native-chat-package-2026-10-15.md) records the successful current NSIS build and 33-tool release-helper protocol check. The guest fixture is ready, but its launch was refused below the existing RAM requirement; a host lifecycle attempt also refused an existing installation. Current installed/native UI acceptance and the full application goal remain unfinished.
 
 ## Governing user flow — October 14, 2026
