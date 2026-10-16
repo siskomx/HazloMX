@@ -1,0 +1,14 @@
+{
+  "source_commit": "014aa06b5f1644b5730e1d6153989e1687337111",
+  "installer_sha256": "ae93bd9cf4e6dde74d69ae624ae37f2b922cf8f4fb11a52bc1cd641045d54534",
+  "unbundled_app_sha256": "f4de962b30da1077133c42e85ea61e38bb22adb0496b772a3011dfcde4e10e6d",
+  "expected_installed_app_sha256": "4b822239f8cc881e488ff2e2d54775006c62dd7d2052e2c13946a281cbb3a387",
+  "helper_sha256": "74902f4e4dce7b60f79a84411dfa230d037edd3ec90dde6bdb4faf9cb7dbe533",
+  "protocol_harness_sha256": "1122c18d41f0b2455c40012c074f355d8b1edab9bd89ff4c5cb0f309de3403a9",
+  "tool_count": 33,
+  "package_build_pass": true,
+  "release_helper_protocol_pass": true,
+  "current_installed_binary_verified": false,
+  "current_guest_lifecycle_verified": false,
+  "native_ui_verified": false
+}

@@ -1,5 +1,7 @@
 # Hazlo Mexa application goal
 
+**October 15 — current native-chat package built:** the [Windows package checkpoint](research/native-chat-package-2026-10-15.md) records the successful current NSIS build and 33-tool release-helper protocol check. The guest fixture is ready, but its launch was refused below the existing RAM requirement; a host lifecycle attempt also refused an existing installation. Current installed/native UI acceptance and the full application goal remain unfinished.
+
 ## Governing user flow — October 14, 2026
 
 1. **Idea.** The user describes what they want to create or change in ordinary language.
