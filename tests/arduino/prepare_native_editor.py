@@ -14,7 +14,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def main(launch):
+def main(launch, hold_for_conversation=False):
     archive = ROOT / "target/arduino-agent-probe/arduino-agent-windows.zip"
     with archive.open("rb") as source:
         assert hashlib.file_digest(source, "sha256").hexdigest() == "a02ccf9fb97fa1e88b421ace4387bb5d912abe622152fcef2a9b89cae2603f58"
@@ -58,6 +58,8 @@ def main(launch):
         assert host.is_file(), "Build the owned_agent_editor_host example before launching"
         env = os.environ.copy()
         env["HAZLOMEXA_TEST_AGENT_ROOT"] = str(root)
+        if hold_for_conversation:
+            env["HAZLOMEXA_TEST_AGENT_CONVERSATION"] = "1"
         with (root / "supervisor.log").open("wb") as log:
             process = subprocess.Popen([str(supervisor)], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                 creationflags=subprocess.CREATE_NO_WINDOW)
@@ -95,4 +97,8 @@ def main(launch):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--launch", action="store_true")
-    main(parser.parse_args().launch)
+    parser.add_argument("--hold-for-conversation", action="store_true", help="Keep the supervised owned editor available for a bounded real-provider test")
+    args = parser.parse_args()
+    if args.hold_for_conversation and not args.launch:
+        parser.error("--hold-for-conversation requires --launch")
+    main(args.launch, args.hold_for_conversation)

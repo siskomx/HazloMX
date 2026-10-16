@@ -209,13 +209,16 @@ fn main() {
         profile.join(".arduinoIDE").into_os_string(),
         "--hostname=127.0.0.1".into(),
     ];
+    let timeout = if std::env::var("HAZLOMEXA_TEST_AGENT_CONVERSATION").as_deref() == Ok("1") {
+        Duration::from_secs(600)
+    } else { Duration::from_secs(150) };
     let output = run_owned(
         &executable,
         &args,
         &root,
         &env,
         cancel,
-        Duration::from_secs(150),
+        timeout,
     );
     done.store(true, Ordering::SeqCst);
     let reason = monitor.join().unwrap();
