@@ -486,7 +486,9 @@ mod tests {
     #[tokio::test]
     async fn missing_tool_capability_never_receives_the_user_prompt() {
         let (root, workflow, host, project) = setup();
-        let (port, fixture, _) = server(metadata_replies());
+        let mut replies = metadata_replies();
+        replies[0] = reply(r#"{"version":"0.40.5"}"#, "application/json");
+        let (port, fixture, _) = server(replies);
         assert!(run(
             OllamaClient::new(port, "fixture", DIGEST).unwrap(),
             workflow.clone(),
@@ -510,10 +512,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn invalid_runtime_metadata_never_receives_prompt_or_dispatches_tools() {
+        for version in [
+            Value::Null,
+            json!(405),
+            json!(""),
+            json!("x".repeat(65)),
+            json!("0.40.5\n"),
+        ] {
+            let (root, workflow, host, project) = setup();
+            let (port, fixture, _) = server(vec![reply(
+                &json!({"version":version}).to_string(),
+                "application/json",
+            )]);
+            assert!(run(
+                OllamaClient::new(port, "fixture", DIGEST).unwrap(),
+                workflow.clone(),
+                host,
+                project,
+                "PRIVATE TEST PROMPT".into(),
+                Arc::new(AtomicBool::new(false)),
+                |_| {},
+            )
+            .await
+            .unwrap_err()
+            .contains("versión de Ollama no es válida"));
+            assert!(!fixture
+                .join()
+                .unwrap()
+                .join(" ")
+                .contains("PRIVATE TEST PROMPT"));
+            assert!(workflow.view().unwrap().job.is_none());
+            drop(workflow);
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[tokio::test]
     async fn explicit_cloud_chat_keeps_the_pinned_route_and_shared_tool_catalog() {
         let (root, workflow, host, project) = setup();
         let replies = vec![
-            reply(r#"{"version":"0.35.1"}"#, "application/json"),
+            reply(r#"{"version":"0.40.5"}"#, "application/json"),
             reply(&json!({"models":[{"name":"fixture:cloud","digest":DIGEST,"size":0,"remote_model":"fixture","remote_host":"https://ollama.com:443"}]}).to_string(), "application/json"),
             reply(r#"{"capabilities":["completion","tools"]}"#, "application/json"),
             reply(&record("¿Qué quieres crear y para qué lo necesitas?",vec![]).to_string(), "application/json"),

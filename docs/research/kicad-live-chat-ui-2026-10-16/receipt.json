@@ -1,0 +1,53 @@
+{
+  "scope": "real_owned_Hazlo_and_KiCad_chat_UI",
+  "pass": true,
+  "kicad_version": "10.0.7",
+  "provider": "existing_ollama_cloud",
+  "runtime_version": "0.40.5",
+  "app_sha256": "7623e9cae21950802ab5809a0baa583a684df6d671369a73bbc439d0750fb233",
+  "source_inputs_recorded": 179,
+  "natural_target_without_user_supplied_id": true,
+  "completed_native_jobs": 3,
+  "cancelled_before_execution": 1,
+  "metric_edit_mm": [
+    2,
+    0
+  ],
+  "imperial_followup_in": [
+    0,
+    0.1
+  ],
+  "initial_position_mm": [
+    197,
+    141
+  ],
+  "after_metric_mm": [
+    199,
+    141
+  ],
+  "after_followup_mm": [
+    199,
+    143.54
+  ],
+  "actual_UI_approvals": 3,
+  "independent_live_inspections": 7,
+  "other_components_unchanged": true,
+  "original_saved_board_preserved": true,
+  "native_commit_receipts_verified": 2,
+  "cancelled_export_not_published": true,
+  "fresh_export_sha256": "407bd305454fd5addf749a7dbfa68134edf7acb348b4db72162862fb796ae1eb",
+  "native_state_unchanged_by_export": true,
+  "independent_KiCad_CLI_position_check_mm": true,
+  "automatic_result_reviews_observed": 3,
+  "read_only_report_UI_pass": true,
+  "recovered_completed_jobs": 3,
+  "recovered_cancelled_jobs": 1,
+  "recovery_project_files_unchanged": 11,
+  "owned_test_windows_closed": true,
+  "exact_model_tool_call_sequence_recorded": false,
+  "unsaved_buffer_restored_after_shutdown": false,
+  "execution_cancellation_UI_tested": false,
+  "other_AI_routes_tested_here": false,
+  "installer_includes_runtime_fix": false,
+  "full_application_goal_complete": false
+}

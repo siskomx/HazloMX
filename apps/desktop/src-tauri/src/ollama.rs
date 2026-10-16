@@ -377,7 +377,19 @@ impl OllamaClient {
 
     async fn check_capabilities(&self, cancel: &AtomicBool, tools: bool) -> Result<(), String> {
         let version = self.metadata("/api/version", None, cancel).await?;
-        if version.get("version").and_then(Value::as_str) != Some("0.35.1") {
+        let runtime = version
+            .get("version")
+            .and_then(Value::as_str)
+            .filter(|value| {
+                !value.is_empty()
+                    && value.len() <= 64
+                    && value
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || b".+-".contains(&byte))
+            })
+            .ok_or("La versión de Ollama no es válida.")?;
+        // Chat checks the API/model capabilities below; legacy generation retains its audited runtime.
+        if !tools && runtime != "0.35.1" {
             return Err(
                 "Este perfil requiere Ollama 0.35.1; la versión detectada no está verificada."
                     .into(),
