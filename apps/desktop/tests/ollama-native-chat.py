@@ -12,13 +12,13 @@ import traceback
 
 parser=argparse.ArgumentParser(description='Real existing Ollama cloud native gate; owned fixture copies, backend approval only, private recording under target.')
 parser.add_argument('--run-real-cloud',action='store_true',help='Run five real cloud conversation turns using the existing profile and account.')
-parser.add_argument('--program',choices=['schematic','pcb','freecad','drawing','arduino','agent','agent-live','slice'],default='schematic',help='Saved-copy, open Arduino Agent buffer, slicing or compile-only workflow to exercise.')
+parser.add_argument('--program',choices=['schematic','pcb','pcb-live','freecad','drawing','arduino','agent','agent-live','slice'],default='schematic',help='Saved-copy, open Arduino Agent/KiCad PCB, slicing or compile-only workflow to exercise.')
 args=parser.parse_args()
 if not args.run_real_cloud:
     parser.error('Pass --run-real-cloud for the real-provider acceptance gate.')
 
 workspace = Path(__file__).resolve().parents[3]
-example_name={'schematic':'ollama_schematic_chat','pcb':'ollama_pcb_chat','freecad':'ollama_cad_chat','drawing':'ollama_drawing_chat','arduino':'ollama_arduino_chat','agent':'ollama_agent_chat','agent-live':'ollama_agent_live_chat','slice':'ollama_slice_chat'}[args.program]
+example_name={'schematic':'ollama_schematic_chat','pcb':'ollama_pcb_chat','pcb-live':'ollama_pcb_live_chat','freecad':'ollama_cad_chat','drawing':'ollama_drawing_chat','arduino':'ollama_arduino_chat','agent':'ollama_agent_chat','agent-live':'ollama_agent_live_chat','slice':'ollama_slice_chat'}[args.program]
 example = workspace/'target/debug/examples'/f'{example_name}.exe'
 if not example.is_file():
     parser.error(f'Build the {example_name} Rust example before running this gate.')
@@ -28,6 +28,10 @@ if args.program == 'agent-live':
     if not editor.is_absolute() or not (editor/'host-default-profile.json').is_file():
         parser.error('Pass HAZLOMEXA_REAL_AGENT_ROOT for the live owned Arduino fixture.')
     child_env['USERPROFILE'] = str(editor/'profile')
+if args.program == 'pcb-live':
+    owned = Path(os.environ.get('HAZLOMEXA_REAL_PCB_ROOT', ''))
+    if not owned.is_absolute() or not (owned/'profile').is_dir():
+        parser.error('Pass HAZLOMEXA_REAL_PCB_ROOT for the configured owned KiCad profile.')
 case = workspace/'target'/('ollama-'+args.program+'-chat-'+str(uuid.uuid4()))
 case.mkdir()
 lock = threading.Condition()
@@ -135,7 +139,7 @@ try:
             assert not any(home in text.lower() or home.replace('\\','/') in text.lower() for text in strings(payload)),'Builder home path entered a provider request'
         assert summary['completed_native_jobs']==2 and summary['conversation_turns']==5
         scope=json.loads((case/'run/conversation/program-scope.json').read_text())
-        expected_program={'schematic':'kicad','pcb':'kicad','freecad':'freecad','drawing':'drawing','arduino':'arduino','agent':'agent','agent-live':'agent','slice':'slice'}[args.program]
+        expected_program={'schematic':'kicad','pcb':'kicad','pcb-live':'kicad','freecad':'freecad','drawing':'drawing','arduino':'arduino','agent':'agent','agent-live':'agent','slice':'slice'}[args.program]
         assert scope['program']==expected_program
         chats=[record for record in records if record['path']=='/api/chat']
         assert chats and all([tool['function']['name'] for tool in record['request']['tools']]==scope['tools'] for record in chats),'Provider received tools outside the selected program scope'
