@@ -2666,9 +2666,14 @@ mod tests {
 
     #[test]
     fn native_pcb_jobs_bind_private_connections_to_one_use_approval_and_receipt_recovery() {
+        for export_copy in [false,true] {
         let (root,workflow)=setup();
         let project=workflow.view().unwrap().project.unwrap();
-        let input=crate::kicad_live::tests::move_fixture();
+        let mut input=crate::kicad_live::tests::move_fixture();
+        let exported=b"(kicad_pcb (version 20260101))";
+        if export_copy {
+            input.export_copy=true;input.movement=None;input.before.state_sha256=crate::kicad_project::digest(exported);
+        }
         let connection=crate::kicad_live::Connection {endpoint:format!("ipc://{}",root.join("owned.sock").display()),token:"owned-private-session".into()};
         let board=root.join("Owned.kicad_pcb");
         assert!(workflow.propose_live_pcb((Uuid::new_v4(),root.clone()),input.clone(),board.clone(),connection.clone()).is_err());
@@ -2686,11 +2691,20 @@ mod tests {
         let stage=dispatch.project.reserve_stage(input.job_id).unwrap();
         let bytes=serde_json::to_vec_pretty(&crate::kicad_live::tests::receipt_fixture(&input)).unwrap();
         fs::write(stage.path.join("result.json"),&bytes).unwrap();
+        if export_copy {fs::write(stage.path.join("Board.kicad_pcb"),exported).unwrap();}
         let done=workflow.finish(dispatch,Ok(stage)).unwrap();
         assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);
         let OperationInput::LivePcb(completed)=&done.snapshot.input else {panic!("Wrong native input")};
         assert_eq!(completed.receipt_sha256.as_deref(),Some(crate::kicad_project::digest(&bytes).as_str()));
         assert_eq!(workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).unwrap().read_text().unwrap().as_bytes(),bytes);
+        if export_copy {
+            let artifact=workflow.artifact(input.job_id,ArtifactFormat::KicadSource).unwrap();
+            assert_eq!(fs::read(&artifact.path).unwrap(),exported);let exported_path=artifact.path.clone();drop(artifact);
+            fs::write(&exported_path,b"tampered").unwrap();
+            assert!(workflow.artifact(input.job_id,ArtifactFormat::KicadSource).is_err());
+            assert!(workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).is_err());
+            fs::write(&exported_path,exported).unwrap();
+        }
         let path=root.join(".hazlomexa/artifacts").join(input.job_id.to_string()).join("result.json");
         fs::write(&path,b"changed receipt").unwrap();
         assert!(workflow.artifact(input.job_id,ArtifactFormat::LivePcbReport).is_err());
@@ -2703,6 +2717,7 @@ mod tests {
         drop(project);
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
         fs::remove_dir_all(root).unwrap();
+        }
     }
 
     #[test]

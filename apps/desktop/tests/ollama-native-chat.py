@@ -13,7 +13,10 @@ import traceback
 parser=argparse.ArgumentParser(description='Real existing Ollama cloud native gate; owned fixture copies, backend approval only, private recording under target.')
 parser.add_argument('--run-real-cloud',action='store_true',help='Run five real cloud conversation turns using the existing profile and account.')
 parser.add_argument('--program',choices=['schematic','pcb','pcb-live','freecad','drawing','arduino','agent','agent-live','slice'],default='schematic',help='Saved-copy, open Arduino Agent/KiCad PCB, slicing or compile-only workflow to exercise.')
+parser.add_argument("--export-final-copy",action="store_true",help="Include a separate approved open-PCB export and final readback (pcb-live only).")
 args=parser.parse_args()
+if args.export_final_copy and args.program != "pcb-live":
+    parser.error("--export-final-copy requires --program pcb-live")
 if not args.run_real_cloud:
     parser.error('Pass --run-real-cloud for the real-provider acceptance gate.')
 
@@ -108,7 +111,9 @@ process=None
 passed=False
 try:
     with (case/'stdout.log').open('wb') as output,(case/'stderr.log').open('wb') as errors:
-        process=subprocess.Popen([str(example),str(server.server_port),str(case/'run')],stdout=output,stderr=errors,env=child_env,creationflags=subprocess.CREATE_NO_WINDOW)
+        command=[str(example),str(server.server_port),str(case/"run")]
+        if args.export_final_copy: command.append("--with-export")
+        process=subprocess.Popen(command,stdout=output,stderr=errors,env=child_env,creationflags=subprocess.CREATE_NO_WINDOW)
         (case/'process.json').write_text(json.dumps({'pid':process.pid}),encoding='utf-8')
         code=process.wait(timeout=1800)
     with lock:
@@ -137,7 +142,8 @@ try:
         for path in case.glob('wire-*.json'):
             payload=json.loads(path.read_text(encoding='utf-8')).get('request')
             assert not any(home in text.lower() or home.replace('\\','/') in text.lower() for text in strings(payload)),'Builder home path entered a provider request'
-        assert summary['completed_native_jobs']==2 and summary['conversation_turns']==5
+        assert summary['completed_native_jobs']==(3 if args.export_final_copy else 2) and summary['conversation_turns']==(7 if args.export_final_copy else 5)
+        if args.export_final_copy: assert summary['export_copy_verified'] is True
         scope=json.loads((case/'run/conversation/program-scope.json').read_text())
         expected_program={'schematic':'kicad','pcb':'kicad','pcb-live':'kicad','freecad':'freecad','drawing':'drawing','arduino':'arduino','agent':'agent','agent-live':'agent','slice':'slice'}[args.program]
         assert scope['program']==expected_program

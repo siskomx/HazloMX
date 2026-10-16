@@ -187,8 +187,14 @@ fn proposal(
     assert_eq!(input.before.instance_sha256, before.instance_sha256);
     assert_eq!(input.before.document_sha256, before.document_sha256);
     assert_eq!(input.before.state_sha256, before.state_sha256);
-    assert_eq!(input.movement.reference, "R1");
-    assert_eq!((input.movement.x_mm, input.movement.y_mm), (x, y));
+    assert_eq!(input.movement.as_ref().unwrap().reference, "R1");
+    assert_eq!(
+        (
+            input.movement.as_ref().unwrap().x_mm,
+            input.movement.as_ref().unwrap().y_mm
+        ),
+        (x, y)
+    );
     Ok(())
 }
 #[tokio::main]
@@ -199,6 +205,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
     let port: u16 = args.next().ok_or("Pass owned recording port")?.parse()?;
     let root = PathBuf::from(args.next().ok_or("Pass fresh conversation root")?);
+    let mode = args.next();
+    assert!(matches!(
+        mode.as_deref(),
+        None | Some("--export-only" | "--with-export")
+    ));
+    let export_only = mode.as_deref() == Some("--export-only");
+    let with_export = mode.as_deref() == Some("--with-export");
     assert!(args.next().is_none());
     let owned = PathBuf::from(
         std::env::var_os("HAZLOMEXA_REAL_PCB_ROOT").ok_or("Pass owned KiCad profile root")?,
@@ -217,6 +230,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_str()
         .unwrap()
         .starts_with("kicad-live-ui-"));
+    assert!(root
+        .parent()
+        .ok_or("Missing owned root parent")?
+        .canonicalize()?
+        .starts_with(workspace.join("target").canonicalize()?));
     fs::create_dir(&root)?;
     for name in ["project", "conversation"] {
         fs::create_dir(root.join(name))?;
@@ -274,6 +292,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "inspect_selected_live_pcb",
                 json!({"selection":selected.id}),
             )?;
+            assert_eq!(result["coordinate_system"]["positive_y"], "down");
+            assert_eq!(result["coordinate_system"]["topmost"], "smallest_y_mm");
             serde_json::from_value(result["observation"].clone())
                 .map_err(|_| "Missing native PCB state".into())
         })
@@ -300,6 +320,81 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "live_pcb_source":{"selection":selected.id,"instance_sha256":initial.instance_sha256,
                 "document_sha256":initial.document_sha256,"state_sha256":initial.state_sha256}}),
     )?;
+    if export_only {
+        tokio::task::block_in_place(|| {
+            host.call("propose_selected_live_pcb_move", json!({
+            "selection":selected.id,"instance_sha256":initial.instance_sha256,"document_sha256":initial.document_sha256,
+            "state_sha256":initial.state_sha256,"component":target.uuid,"units":"mm","x":target.x_mm+2.,"y":target.y_mm,
+            "description":"Owned unsaved edit before export"
+        }))
+        })?;
+        let moved_job = chat.approve_fixture().await?;
+        let moved_report = workflow.artifact(moved_job, ArtifactFormat::LivePcbReport)?;
+        let preserved = fs::read(&moved_report.path)?;
+        let before = read()?;
+        assert_ne!(before.state_sha256, initial.state_sha256);
+        let invalid = json!({"selection":selected.id,"instance_sha256":before.instance_sha256,"document_sha256":before.document_sha256,
+            "state_sha256":before.state_sha256,"description":"Export","destination":"C:/unselected/Board.kicad_pcb"});
+        assert!(tokio::task::block_in_place(
+            || host.call("propose_selected_live_pcb_export", invalid)
+        )
+        .is_err());
+        let stale = json!({"selection":selected.id,"instance_sha256":before.instance_sha256,"document_sha256":before.document_sha256,
+            "state_sha256":initial.state_sha256,"description":"Export stale state"});
+        assert!(tokio::task::block_in_place(
+            || host.call("propose_selected_live_pcb_export", stale)
+        )
+        .is_err());
+        assert_eq!(
+            workflow.view()?.job.unwrap().snapshot.input.job_id(),
+            moved_job
+        );
+        tokio::task::block_in_place(|| {
+            host.call("propose_selected_live_pcb_export",json!({
+            "selection":selected.id,"instance_sha256":before.instance_sha256,"document_sha256":before.document_sha256,
+            "state_sha256":before.state_sha256,"description":"Export the approved open PCB without saving it"
+        }))
+        })?;
+        assert_eq!(read()?.state_sha256, before.state_sha256);
+        let export_job = chat.approve_fixture().await?;
+        let result = host.call("read_verified_result", json!({"job_id":export_job}))?;
+        assert_eq!(result["format"], "live_pcb_report");
+        let artifact = workflow.artifact(export_job, ArtifactFormat::KicadSource)?;
+        let exported = fs::read(&artifact.path)?;
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&exported)),
+            before.state_sha256
+        );
+        let components = hazlomexa::konnect::footprints(&exported)?;
+        let exported_target = components.iter().find(|c| c.uuid == target.uuid).unwrap();
+        assert_eq!(
+            (exported_target.x_mm, exported_target.y_mm),
+            (target.x_mm + 2., target.y_mm)
+        );
+        assert_eq!(read()?.state_sha256, before.state_sha256);
+        assert_eq!(fs::read(&board)?, source);
+        assert_eq!(fs::read(&moved_report.path)?, preserved);
+        drop(artifact);
+        drop(moved_report);
+        drop(chat);
+        drop(host);
+        drop(workflow);
+        let history = Project::open(&project)?.recover()?;
+        assert_eq!(history.len(), 2);
+        assert!(history
+            .iter()
+            .all(|s| s.phase == Phase::Completed && s.schema_version == 14));
+        drop(guard);
+        let summary = json!({"pass":true,"native_export_copy":true,"unsaved_edit_exported":true,
+            "original_and_native_state_preserved":true,"recovery_verified":true,"editor_stopped":true,
+            "approval":"backend_fixture_only","provider_tested":false,"chat_export_tool_registered":true});
+        fs::write(
+            root.join("export-summary.json"),
+            serde_json::to_vec_pretty(&summary)?,
+        )?;
+        println!("{summary}");
+        return Ok(());
+    }
     let (reply,tools)=chat.say("Quiero recolocar una resistencia de la PCB abierta, pero no conozco sus nombres técnicos ni las posiciones. Inspecciona la placa y ayúdame a identificar cuál y definir el movimiento. Pregunta lo que falte; no prepares el cambio todavía.").await?;
     assert!(tools.contains("inspect_selected_live_pcb") && reply.contains('?'));
     assert!(workflow.view()?.job.is_none());
@@ -343,17 +438,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "live_pcb_report"
         );
     }
+    let completed_jobs = if with_export {
+        let (_,tools)=chat.say("Para finalizar, quiero una copia editable de la PCB tal como está abierta ahora, con nuestros cambios sin guardar. Prepara la exportación para revisar; conserva el original y no guardes el documento abierto ni cambies las pistas.").await?;
+        assert!(
+            tools.contains("inspect_selected_live_pcb")
+                && tools.contains("propose_selected_live_pcb_export")
+        );
+        let pending = workflow.view()?.job.unwrap();
+        let OperationInput::LivePcb(input) = &pending.snapshot.input else {
+            panic!("Missing native export")
+        };
+        assert!(input.export_copy && input.movement.is_none());
+        assert_eq!(input.before.state_sha256, final_state.state_sha256);
+        assert!(workflow
+            .artifact(input.job_id, ArtifactFormat::KicadSource)
+            .is_err());
+        assert_eq!(read()?.state_sha256, final_state.state_sha256);
+        let exported = chat.approve_fixture().await?;
+        let artifact = workflow.artifact(exported, ArtifactFormat::KicadSource)?;
+        assert_eq!(
+            format!("{:x}", Sha256::digest(fs::read(&artifact.path)?)),
+            final_state.state_sha256
+        );
+        let (reply,tools)=chat.say("Ya aprobé la exportación de la copia. Lee el resultado verificado y el estado de la PCB abierta, y explica qué archivo se conservó y qué sigue sin guardar. No prepares otro cambio.").await?;
+        assert!(
+            tools.contains("read_verified_result") && tools.contains("inspect_selected_live_pcb")
+        );
+        assert!(reply.to_lowercase().contains("copia"));
+        assert_eq!(read()?.state_sha256, final_state.state_sha256);
+        assert_eq!(fs::read(&board)?, source);
+        assert_eq!(fs::read(&first_report.path)?, preserved);
+        3
+    } else {
+        2
+    };
     drop(chat);
     drop(host);
     drop(workflow);
     let history = Project::open(&project)?.recover()?;
-    assert_eq!(history.len(), 2);
+    assert_eq!(history.len(), completed_jobs);
     assert!(history
         .iter()
         .all(|s| s.phase == Phase::Completed && s.schema_version == 14));
     drop(guard);
     assert!(root.join("editor-stopped.json").is_file());
-    let summary = json!({"pass":true,"program":"pcb-live","conversation_turns":5,"completed_native_jobs":2,
+    let summary = json!({"pass":true,"program":"pcb-live","conversation_turns":if with_export {7}else{5},"completed_native_jobs":completed_jobs,
+        "export_copy_verified":with_export,
         "natural_component_resolution":true,"metric_and_imperial_moves":true,"fresh_native_readback":true,
         "source_and_first_receipt_preserved":true,"recovery_verified":true,"editor_stopped":true,
         "approval":"backend_fixture_only","native_ui_approval":false,"installed_main_ui_tested":false});

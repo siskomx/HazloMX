@@ -6,6 +6,12 @@ const source = await readFile(new URL("../src/proposal-review.ts",import.meta.ur
 const {code} = await transformWithOxc(source,"proposal-review.ts");
 const {proposalFacts} = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 const review = input => proposalFacts({input}).join("\n");
+const pcbExport=review({live_pcb_version:1,export_copy:true,board_name:"Placa.kicad_pcb",description:"Conserva una copia de la placa abierta"});
+assert.match(pcbExport,/Exportar una copia editable/);
+assert.match(pcbExport,/incluidos sus cambios sin guardar/);
+assert.match(pcbExport,/No se guarda ni se cambia el documento abierto/);
+assert.match(pcbExport,/No se incluyen archivos externos/);
+assert(!pcbExport.includes("Mover un componente")&&!pcbExport.includes("undefined"));
 
 const live=review({live_cad_version:1,description:"Haz la carcasa más larga",before:[{name:"InternalBox",label:"Carcasa",properties:{Length:"25.4 mm"}}],operations:[{action:"edit_object",obj_name:"InternalBox",obj_properties:{Length:30.4}}]});
 assert.match(live,/documento abierto de FreeCAD/);

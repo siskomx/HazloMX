@@ -188,13 +188,38 @@ def apply_move(board, instance, request, verify):
             "native_commit_confirmed": True, "saved": False}
 
 
+def export_copy(board, instance, request):
+    current, before, _ = observation(board, instance)
+    if any(request.get(key) != current[key] for key in ("instance_sha256", "document_sha256", "state_sha256")):
+        raise Refused("changed_document")
+    destination = request["destination"]
+    if (not isinstance(destination, str) or not ntpath.isabs(destination)
+            or len(ntpath.splitdrive(destination)[0]) != 2 or len(destination) > 4096
+            or any(ord(c) < 32 for c in destination) or ntpath.basename(destination) != "Board.kicad_pcb"
+            or ntpath.normcase(ntpath.normpath(destination)) == ntpath.normcase(ntpath.normpath(request["board_path"]))):
+        raise Refused("invalid_destination")
+    # Serialize through KiCad's read API; SaveCopyOfDocument also persists original project settings.
+    with open(destination, "xb") as output:
+        output.write(before.encode("utf-8"))
+    try:
+        after, _, _ = observation(board, instance)
+    except Exception as error:
+        raise Uncertain("export_readback_unknown") from error
+    if after != current:
+        raise Uncertain("changed_during_export")
+    return {"status": "completed", "before_sha256": current["state_sha256"], "after": after,
+            "native_commit_confirmed": False, "saved": False, "exported_sha256": digest(before.encode("utf-8"))}
+
+
 def run(request):
     if importlib.metadata.version("kicad-python") != "0.8.0":
         raise Refused("unsupported_client")
     fields = {"action", "job_id", "board_path"}
     if request.get("action") == "move":
         fields |= {"instance_sha256", "document_sha256", "state_sha256", "movement"}
-    if set(request) != fields or request["action"] not in {"inspect", "move"}:
+    elif request.get("action") == "export":
+        fields |= {"instance_sha256", "document_sha256", "state_sha256", "destination"}
+    if set(request) != fields or request["action"] not in {"inspect", "move", "export"}:
         raise Refused("invalid_request")
     board_path = request["board_path"]
     if not ntpath.isabs(board_path) or len(ntpath.splitdrive(board_path)[0]) != 2 or len(board_path) > 4096 or any(ord(c) < 32 for c in board_path):
@@ -233,8 +258,10 @@ def run(request):
         instance = digest(client._kicad_token.encode())
         if request["action"] == "inspect":
             result, _, _ = observation(board, instance)
-        else:
+        elif request["action"] == "move":
             result = apply_move(board, instance, request, verify_with_host)
+        else:
+            result = export_copy(board, instance, request)
         result["job_id"] = str(job)
         result["native_pcb_version"] = 1
         return result

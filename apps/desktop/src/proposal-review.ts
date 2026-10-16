@@ -51,7 +51,9 @@ export function proposalFacts(run: Snapshot): string[] {
       "Hazlo releerá el código nativo y comprobará que coincide con el cambio aprobado.");
     }
   } else if(input.live_pcb_version){
-    const move=input.movement;
+    if(input.export_copy) facts.push("Exportar una copia editable de la PCB abierta de KiCad.", "PCB: "+input.board_name, "Objetivo: "+input.description, "KiCad aporta el documento actual, incluidos sus cambios sin guardar. Hazlo conserva una copia nueva y verificada en este proyecto.", "No se guarda ni se cambia el documento abierto, ni sus ajustes de proyecto. No se incluyen archivos externos ni se vuelven a trazar pistas.", "Hazlo comprobará la copia completa y que el documento abierto conserve su estado aprobado.");
+    else {
+    const move=input.movement!;
     const component=input.before.components.find(item=>item.uuid===move.uuid);
     const label=component?.value ? component.value+" ("+move.reference+")" : move.reference;
     const scale=input.units==="in" ? 25.4 : input.units==="mils" ? .0254 : 1;
@@ -66,6 +68,7 @@ export function proposalFacts(run: Snapshot): string[] {
       "KiCad mostrará el cambio en el documento abierto. El archivo todavía no se guardará.",
       "Las pistas conservan su posición; este movimiento no vuelve a conectarlas.",
       "Hazlo comprobará el movimiento y releerá el estado nativo antes de darlo por terminado.");
+    }
   } else if(input.live_cad_version){
     const saving = input.operations[0]?.action === "save_as";
     const exporting = input.operations[0]?.action === "export_step";

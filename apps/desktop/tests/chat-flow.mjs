@@ -702,6 +702,29 @@ try {
     const approved=await page.evaluate(async()=>(await window.__TAURI_INTERNALS__.invoke("get_snapshot")).job.snapshot.input.operations[0].obj_properties);
     assert.deepEqual(approved,{Radius1:"0.5 in",Radius2:"0.25 in"});
   }
+  for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("kicad");
+    await page.locator("#new-chat").click();
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_pcb_version:1,export_copy:true,job_id:crypto.randomUUID(),
+      board_name:"Placa.kicad_pcb",description:"Exporta una copia de la placa actual",units:"mm",
+      before:{job_id:crypto.randomUUID(),native_pcb_version:1,instance_sha256:"a".repeat(64),document_sha256:"b".repeat(64),
+        state_sha256:"c".repeat(64),source_is_untrusted_data:true,components:[]}}));
+    await page.locator("#program-actions button").first().click();
+    await page.locator("#approve:enabled").waitFor();
+    const facts=await page.locator("#change-facts").innerText();
+    assert.match(facts,/Exportar una copia editable/);
+    assert.match(facts,/No se guarda ni se cambia el documento abierto/);
+    assert(!facts.includes("Mover un componente"));
+    const before=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    assert.equal((await chatCalls()).length,before+1);
+    assert.match(await page.locator("#job-status").innerText(),/PCB exportada y verificada/);
+    if (!await page.locator("#history").isVisible()) await page.locator("#results > summary").click();
+    await page.getByRole("button",{name:"PCB exportada",exact:true}).last().click();
+    assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="open_artifact").at(-1).args.format),"kicad_source");
+    if (await page.locator("#report").isVisible()) await page.locator("#report button").click();
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });

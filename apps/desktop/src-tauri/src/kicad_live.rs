@@ -84,23 +84,33 @@ pub struct Input {
     pub description: String,
     pub units: crate::kicad::Units,
     pub before: Observation,
-    pub movement: crate::konnect::FootprintMove,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub movement: Option<crate::konnect::FootprintMove>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub export_copy: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receipt_sha256: Option<String>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
         self.before.validate(self.before.job_id)?;
-        self.movement.validate()?;
-        let target=self.before.components.iter().find(|c| c.uuid==self.movement.uuid
-            && c.reference==self.movement.reference).ok_or("Falta el componente de la lectura nativa.")?;
+        if self.export_copy {
+            if self.movement.is_some() { return Err("Exportar requiere una propuesta separada sin movimiento.".into()); }
+        } else {
+            let movement=self.movement.as_ref().ok_or("Falta el movimiento aprobado.")?;
+            movement.validate()?;
+            let target=self.before.components.iter().find(|c| c.uuid==movement.uuid
+                && c.reference==movement.reference).ok_or("Falta el componente de la lectura nativa.")?;
+            if target.locked || target.x_mm!=movement.expected_x_mm || target.y_mm!=movement.expected_y_mm {
+                return Err("El componente requiere una lectura actual y editable.".into());
+            }
+        }
         if self.schema_version!=1 || self.live_pcb_version!=1 || self.job_id.is_nil()
             || self.board_name.is_empty() || self.board_name.len()>1024
             || self.board_name.chars().any(|c|c.is_control() || matches!(c,'/'|'\\'|':'))
             || !self.board_name.ends_with(".kicad_pcb")
             || self.description.trim().is_empty() || self.description.len()>1024
-            || self.description.chars().any(char::is_control) || target.locked
-            || target.x_mm!=self.movement.expected_x_mm || target.y_mm!=self.movement.expected_y_mm
+            || self.description.chars().any(char::is_control)
             || self.receipt_sha256.as_ref().is_some_and(|s|!crate::kicad_project::valid_hash(s))
             || serde_json::to_vec(self).map_err(|_|"Propuesta PCB no compatible.")?.len()>if self.receipt_sha256.is_some() {60128} else {60000}
         {
@@ -120,11 +130,15 @@ pub struct Receipt {
     pub after: serde_json::Value,
     pub native_commit_confirmed: bool,
     pub saved: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exported_sha256: Option<String>,
 }
 pub fn validate_result(input:&Input, result:&Receipt) -> Result<(),String> {
     input.validate()?;
     if result.native_pcb_version!=1 || result.job_id!=input.job_id || result.status!="completed"
-        || result.before_sha256!=input.before.state_sha256 || !result.native_commit_confirmed || result.saved
+        || result.before_sha256!=input.before.state_sha256 || result.saved
+        || result.native_commit_confirmed==input.export_copy
+        || if input.export_copy {result.exported_sha256.as_deref()!=Some(input.before.state_sha256.as_str())} else {result.exported_sha256.is_some()}
     {
         return Err("KiCad no confirmó el cambio aprobado.".into());
     }
@@ -138,17 +152,30 @@ pub fn validate_result(input:&Input, result:&Receipt) -> Result<(),String> {
     let after:Observation=serde_json::from_value(after).map_err(|_|"La lectura final nativa no es compatible.")?;
     after.validate(input.job_id)?;
     if after.instance_sha256!=input.before.instance_sha256
-        || after.document_sha256!=input.before.document_sha256 || after.state_sha256==input.before.state_sha256
+        || after.document_sha256!=input.before.document_sha256
+        || (after.state_sha256==input.before.state_sha256)!=input.export_copy
     {
         return Err("La identidad o el estado final de la PCB no coincide.".into());
     }
     let mut expected=input.before.components.clone();
-    let target=expected.iter_mut().find(|c|c.uuid==input.movement.uuid)
-        .ok_or("Falta el componente aprobado.")?;
-    target.x_mm=input.movement.x_mm; target.y_mm=input.movement.y_mm;
+    if let Some(movement)=&input.movement {
+        let target=expected.iter_mut().find(|c|c.uuid==movement.uuid).ok_or("Falta el componente aprobado.")?;
+        target.x_mm=movement.x_mm; target.y_mm=movement.y_mm;
+    }
     expected.sort_by_key(|c|c.uuid);
     let mut actual=after.components;actual.sort_by_key(|c|c.uuid);
     if actual!=expected { return Err("La lectura final no coincide con el movimiento aprobado.".into()); }
+    Ok(())
+}
+
+pub(crate) fn validate_artifacts(directory:&Path, input:&Input, result:&Receipt) -> Result<(),String> {
+    validate_result(input,result)?;
+    if input.export_copy {
+        let bytes=crate::kicad_project::read_regular(&directory.join("Board.kicad_pcb"),2*1024*1024)?;
+        if crate::kicad_project::digest(&bytes)!=input.before.state_sha256 {
+            return Err("La PCB exportada no coincide con el estado aprobado.".into());
+        }
+    }
     Ok(())
 }
 
@@ -253,9 +280,14 @@ pub(crate) fn run(
     let verifier=std::env::current_exe().map_err(|_|"Falta el verificador nativo de Hazlo.")?;
     #[cfg(test)]
     let verifier=Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap().join("target/debug/hazlomexa.exe");
-    let request=serde_json::json!({"action":"move","job_id":input.job_id,"board_path":binding.board,
+    let mut request=serde_json::json!({"action":"move","job_id":input.job_id,"board_path":binding.board,
         "instance_sha256":input.before.instance_sha256,"document_sha256":input.before.document_sha256,
         "state_sha256":input.before.state_sha256,"movement":input.movement});
+    if input.export_copy {
+        request["action"]=serde_json::json!("export");
+        request.as_object_mut().unwrap().remove("movement");
+        request["destination"]=serde_json::json!(stage.join("Board.kicad_pcb"));
+    }
     let failed="KiCad no confirmó el resultado de la edición. Vuelve a leer el documento antes de continuar; no repitas la operación a ciegas.";
     let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(&verifier))
         .map_err(|_|failed)?;
@@ -264,7 +296,7 @@ pub(crate) fn run(
     struct Reply { ok:bool, result:Receipt }
     let reply:Reply=serde_json::from_slice(&bytes).map_err(|_|failed)?;
     if !reply.ok {return Err(failed.into());}
-    validate_result(input,&reply.result).map_err(|_|failed)?;
+    validate_artifacts(stage,input,&reply.result).map_err(|_|failed)?;
     let report=serde_json::to_vec_pretty(&reply.result).map_err(|_|failed)?;
     crate::kicad_project::write_new(&stage.join("result.json"),&report).map_err(|_|failed)?;
     Ok(())
@@ -302,19 +334,47 @@ pub(crate) mod tests {
         let mut before=fixture();
         before.components.push(Component {uuid:id,reference:"R1".into(),value:"10k".into(),x_mm:10.,y_mm:20.,locked:false});
         Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),board_name:"Owned.kicad_pcb".into(),description:"Move the resistor right by one inch".into(),
-            units:crate::kicad::Units::In,before,movement:crate::konnect::FootprintMove {
+            units:crate::kicad::Units::In,before,export_copy:false,movement:Some(crate::konnect::FootprintMove {
                 uuid:id,reference:"R1".into(),expected_x_mm:10.,expected_y_mm:20.,x_mm:35.4,y_mm:22.5
-            },receipt_sha256:None}
+            }),receipt_sha256:None}
     }
     pub(crate) fn receipt_fixture(input:&Input) -> Receipt {
         let mut after=serde_json::to_value(&input.before).unwrap();
         let map=after.as_object_mut().unwrap();
         map.remove("job_id");map.remove("native_pcb_version");
-        after["state_sha256"]=json!("d".repeat(64));
-        after["components"][0]["x_mm"]=json!(input.movement.x_mm);
-        after["components"][0]["y_mm"]=json!(input.movement.y_mm);
+        if let Some(movement)=&input.movement {
+            after["state_sha256"]=json!("d".repeat(64));
+            after["components"][0]["x_mm"]=json!(movement.x_mm);
+            after["components"][0]["y_mm"]=json!(movement.y_mm);
+        }
         Receipt {native_pcb_version:1,job_id:input.job_id,status:"completed".into(),
-            before_sha256:input.before.state_sha256.clone(),after,native_commit_confirmed:true,saved:false}
+            before_sha256:input.before.state_sha256.clone(),after,native_commit_confirmed:!input.export_copy,saved:false,
+            exported_sha256:input.export_copy.then(||input.before.state_sha256.clone())}
+    }
+    #[test]
+    fn exports_require_separate_approval_and_exact_preserved_native_state_and_bytes() {
+        let mut input=move_fixture();
+        let legacy=serde_json::to_value(&input).unwrap();
+        assert!(legacy.get("export_copy").is_none());
+        serde_json::from_value::<Input>(legacy).unwrap().validate().unwrap();
+        input.export_copy=true;
+        assert!(input.validate().is_err());
+        input.movement=None;
+        input.validate().unwrap();
+        for field in ["changed_state","commit","saved","missing_hash","wrong_hash","changed_component"] {
+            let mut receipt=receipt_fixture(&input);
+            match field {
+                "changed_state"=>receipt.after["state_sha256"]=json!("d".repeat(64)),
+                "commit"=>receipt.native_commit_confirmed=true,
+                "saved"=>receipt.saved=true,
+                "missing_hash"=>receipt.exported_sha256=None,
+                "wrong_hash"=>receipt.exported_sha256=Some("d".repeat(64)),
+                _=>receipt.after["components"][0]["value"]=json!("changed"),
+            }
+            assert!(validate_result(&input,&receipt).is_err(),"{field}");
+        }
+        input.export_copy=false;
+        assert!(input.validate().is_err());
     }
     #[test]
     fn approved_moves_and_receipts_require_exact_native_identity_and_geometry() {
@@ -325,10 +385,10 @@ pub(crate) mod tests {
             let mut bad=input.clone();
             match change {
                 "locked"=>bad.before.components[0].locked=true,
-                "stale_position"=>bad.movement.expected_x_mm=9.,
+                "stale_position"=>bad.movement.as_mut().unwrap().expected_x_mm=9.,
                 "invalid_state"=>bad.before.state_sha256="bad".into(),
-                "noop"=>{bad.movement.x_mm=10.;bad.movement.y_mm=20.;},
-                _=>bad.movement.x_mm=35.4000004,
+                "noop"=>{bad.movement.as_mut().unwrap().x_mm=10.;bad.movement.as_mut().unwrap().y_mm=20.;},
+                _=>bad.movement.as_mut().unwrap().x_mm=35.4000004,
             }
             assert!(bad.validate().is_err(),"{change}");
         }

@@ -7,6 +7,8 @@ import sys
 import subprocess
 import unittest
 import uuid
+import tempfile
+from unittest.mock import patch
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--site", required=True)
@@ -441,6 +443,52 @@ class Tests(unittest.TestCase):
                 os.environ.pop("KICAD_API_SOCKET", None)
             else:
                 os.environ["KICAD_API_SOCKET"] = original_endpoint
+
+
+class NativeExport(unittest.TestCase):
+    def test_export_serializes_current_native_state_without_save_or_commit(self):
+        board = Board()
+        current, text, _ = worker.observation(board, "a" * 64)
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[2] / "target") as directory:
+            path = Path(directory) / "Board.kicad_pcb"
+            request = {**current, "board_path": "C:/owned/Original.kicad_pcb", "destination": str(path)}
+            result = worker.export_copy(board, "a" * 64, request)
+            self.assertEqual(path.read_bytes(), text.encode("utf-8"))
+            self.assertEqual(result["exported_sha256"], current["state_sha256"])
+            self.assertEqual(result["after"], current)
+            self.assertFalse(result["saved"] or result["native_commit_confirmed"])
+            self.assertEqual(board.calls, [])
+            with self.assertRaises(FileExistsError):
+                worker.export_copy(board, "a" * 64, request)
+            self.assertEqual(path.read_bytes(), text.encode("utf-8"))
+
+    def test_stale_and_invalid_destinations_never_create_an_export(self):
+        board = Board()
+        current, _, _ = worker.observation(board, "a" * 64)
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[2] / "target") as directory:
+            path = Path(directory) / "Board.kicad_pcb"
+            request = {**current, "board_path": "C:/owned/Original.kicad_pcb", "destination": str(path)}
+            with self.assertRaises(worker.Refused):
+                worker.export_copy(board, "b" * 64, request)
+            for destination in ["Board.kicad_pcb", str(path.with_name("Other.kicad_pcb")), request["board_path"]]:
+                with self.assertRaises(worker.Refused):
+                    worker.export_copy(board, "a" * 64, {**request, "destination": destination})
+            self.assertFalse(path.exists())
+            self.assertEqual(board.calls, [])
+
+    def test_changed_or_lost_readback_is_uncertain_without_repeating_export(self):
+        board = Board()
+        current, text, _ = worker.observation(board, "a" * 64)
+        for final in [({**current, "state_sha256": "b" * 64}, text, []), ConnectionError("private")]:
+            with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[2] / "target") as directory:
+                path = Path(directory) / "Board.kicad_pcb"
+                request = {**current, "board_path": "C:/owned/Original.kicad_pcb", "destination": str(path)}
+                with patch.object(worker, "observation", side_effect=[(current, text, []), final]) as read:
+                    with self.assertRaises(worker.Uncertain):
+                        worker.export_copy(board, "a" * 64, request)
+                    self.assertEqual(read.call_count, 2)
+                self.assertEqual(path.read_bytes(), text.encode("utf-8"))
+                self.assertEqual(board.calls, [])
 
 
 unittest.main(argv=[sys.argv[0]])

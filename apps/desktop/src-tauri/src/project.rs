@@ -594,6 +594,7 @@ impl Project {
             }
             (OperationInput::Cadpilot(_), ArtifactFormat::CadpilotReport) => "result.json".into(),
             (OperationInput::LiveCad(_), ArtifactFormat::CadpilotReport) => "result.json".into(),
+            (OperationInput::LivePcb(input), ArtifactFormat::KicadSource) if input.export_copy => "Board.kicad_pcb".into(),
             (OperationInput::LivePcb(_), ArtifactFormat::LivePcbReport) => "result.json".into(),
             (OperationInput::LiveAgent(_), ArtifactFormat::LiveAgentReport) => "result.json".into(),
             (OperationInput::KonnectPcb(input), ArtifactFormat::KonnectOriginal) => {
@@ -808,7 +809,7 @@ impl Project {
                 return Err(error("El informe de la edición PCB cambió."));
             }
             let result:crate::kicad_live::Receipt=serde_json::from_slice(&bytes).map_err(io::Error::other)?;
-            return crate::kicad_live::validate_result(input,&result).map_err(io::Error::other);
+            return crate::kicad_live::validate_artifacts(directory,input,&result).map_err(io::Error::other);
         }
         if let OperationInput::LiveCad(input) = input {
             let bytes = crate::kicad_project::read_regular(&directory.join("result.json"), 65536).map_err(io::Error::other)?;
