@@ -1,0 +1,61 @@
+{
+  "pass": true,
+  "current_user_install": true,
+  "binaries_match_package_build": true,
+  "same_version_update": true,
+  "previous_build_update": true,
+  "native_konnect_missing_runtime_refusal": true,
+  "app_alive": true,
+  "uninstalled": true,
+  "user_files_preserved": true,
+  "lifecycle_pass": true,
+  "tool_count": 33,
+  "completed_native_jobs": 21,
+  "native_workflows": {
+    "agent": {
+      "pass": true,
+      "completed_jobs": 2,
+      "denied_jobs": 1,
+      "recovery_verified": true,
+      "hardware_mutations": false
+    },
+    "arduino": {
+      "pass": true,
+      "completed_jobs": 2,
+      "denied_jobs": 1,
+      "failed_jobs": 1,
+      "recovery_verified": true,
+      "hardware_mutations": false
+    },
+    "kicad": {
+      "pass": true,
+      "completed_jobs": 2,
+      "recovery_verified": true
+    },
+    "konnect": {
+      "pass": true,
+      "completed_jobs": 4,
+      "recovery_verified": true,
+      "hardware_mutations": false
+    },
+    "cadcraft": {
+      "pass": true,
+      "completed_jobs": 4,
+      "recovery_verified": true
+    },
+    "cadpilot": {
+      "pass": true,
+      "completed_jobs": 3,
+      "recovery_verified": true
+    },
+    "orca": {
+      "pass": true,
+      "completed_jobs": 4,
+      "recovery_verified": true,
+      "printer_control": false
+    }
+  },
+  "approval_driver": "shared_backend_fixture",
+  "native_ui_verified": false,
+  "signed_in_agents": false
+}

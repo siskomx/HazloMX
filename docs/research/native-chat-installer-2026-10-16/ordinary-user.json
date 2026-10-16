@@ -1,0 +1,17 @@
+{
+  "pass": true,
+  "ordinary_nonadministrator": true,
+  "administrator_group_absent": true,
+  "current_user_install": true,
+  "binaries_match_package": true,
+  "same_version_update": true,
+  "installed_helper_protocol_pass": true,
+  "native_kicad_completed_jobs": 2,
+  "native_kicad_recovery": true,
+  "hidden_startup_pass": true,
+  "uninstalled": true,
+  "user_files_preserved": true,
+  "native_ui_automation": false,
+  "signed_in_agents": false,
+  "approval_driver": "shared_backend_test"
+}

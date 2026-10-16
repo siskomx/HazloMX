@@ -1,0 +1,12 @@
+{
+  "installer_sha256": "d9ee64438abd5b31d58de21b93e656c2619da8d99e086b07334e37e7cbcb9a3f",
+  "app_sha256": "c5f9d7bdd4b21f45f8624f683d360329cc72d1fbcc09335dd40b293f3d649a6d",
+  "unbundled_app_sha256": "92d6902f72c4ec5127dd6650e80382f9713eb13493198a89bd7dac53eb4afb1d",
+  "helper_sha256": "7114ff5a1ff627b99f531dd147804e5aaa9a4da665167c6e5d829daff4b2f18e",
+  "bundle_marker": "NSS",
+  "version": "0.1.0",
+  "tool_count": 33,
+  "source_commit": "542591fa2b186e4c60d61d4c3b2b9255670139e9",
+  "verified_source_inputs": 179,
+  "raw_profile_path_scan_pass": true
+}
