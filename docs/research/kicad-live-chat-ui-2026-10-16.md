@@ -70,10 +70,22 @@ build pass. The real native sequence above then passes on 0.40.5.
 
 ## Limits
 
+After the native sequence, the [candidate rebuilt from `54d54ed`](kicad-live-chat-ui-2026-10-16/package-candidate.json)
+includes the runtime fix. The build preserves all 6,653 tracked inputs and
+passes profile-path scans for the app, helper and native worker. The release
+helper passes the 33-tool protocol check. A [fresh Windows guest](kicad-live-chat-ui-2026-10-16/package-lifecycle.json)
+then passes exact install/update binary checks, current-user registration,
+upgrade from the previous package, same-version update, both installed helper
+transports, hidden startup, uninstall and project/app-data preservation.
+Independent post-uninstall export hashes match all three project files. The
+owned guest is stopped. Engineering workflows, ordinary-user and interactive
+conversation acceptance were not repeated for this candidate; their earlier
+receipts retain their original package identities.
+
 This is an owned debug/native UI test, not an installed signed-in conversation
 or proof of every provider. Exact model HTTP/tool-call sequences were not
 recorded for these UI turns. Cancellation is before execution; interrupting an
 in-flight write is a separate gate. There is no rerouting, DRC, electrical or
-manufacturing validation. The prior tested installer predates this runtime
-compatibility fix and needs a later rebuild. Arduino's full visible flow and
+manufacturing validation. Installed interactive acceptance of the new runtime
+compatibility fix remains pending. Arduino's full visible flow and
 the other integration limitations remain unfinished; the overall goal is active.

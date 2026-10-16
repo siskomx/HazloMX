@@ -1,0 +1,15 @@
+{
+  "source_commit": "54d54ed",
+  "build_pass": true,
+  "installer_sha256": "b0b95c451b0879826aa39523a26f89926d8aa1c109bb8b54803910b85d107ccc",
+  "unbundled_app_sha256": "07eaa2c9c4c323989da3b7b94322571546ecab94e75341e9ba691ac9b24ac3ca",
+  "expected_installed_app_sha256": "a1759f78c42fcc85e99cba3be9bdd252a5a8dddaaf0c695c391b44e9a689d673",
+  "helper_sha256": "abe35548785cbc8ceb23e030eef28e74ec680525f6571e9c41c8b0ff0e99fd84",
+  "native_worker_sha256": "675c740c400f15616f7e24e054ec8d5d38b9e8f4f3af3c7f4ff81e49da94c7e8",
+  "tracked_inputs_unchanged": 6653,
+  "profile_path_scan_pass": true,
+  "release_helper_protocol_pass": true,
+  "tool_count": 33,
+  "includes_chat_runtime_compatibility_fix": true,
+  "candidate_installed_acceptance_pass": false
+}
