@@ -195,10 +195,10 @@ mod tests {
     }
     #[tokio::test]
     async fn program_scopes_advertise_and_enforce_the_selected_engineering_tools() {
-        let programs = [Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice];
+        let programs = [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice];
         for tool in crate::host_tools::catalog() {
             let count = programs.iter().filter(|program| program.allows(&tool.name)).count();
-            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result") { 6 } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
+            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result") { if tool.name == "get_design_capabilities" { 7 } else { 6 } } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
         }
         assert!(serde_json::from_str::<Program>("\"unknown\"").is_err());
         for program in programs {
@@ -227,9 +227,20 @@ mod tests {
             assert!(workflow.view().unwrap().history.is_empty());
             let capabilities = client.call_tool(CallToolRequestParams::new("get_design_capabilities")).await.unwrap().structured_content.unwrap();
             assert_eq!(capabilities["program"], serde_json::to_value(program).unwrap());
-            assert_eq!(capabilities.get("arduino").is_some(), program == Program::Arduino);
-            assert_eq!(capabilities.get("cadpilot").is_some(), program == Program::Freecad);
-            assert_eq!(capabilities.get("agent").is_some(), program == Program::Agent);
+            assert_eq!(capabilities.get("arduino").is_some(), matches!(program, Program::Planning | Program::Arduino));
+            assert_eq!(capabilities.get("cadpilot").is_some(), matches!(program, Program::Planning | Program::Freecad));
+            assert_eq!(capabilities.get("agent").is_some(), matches!(program, Program::Planning | Program::Agent));
+            if program == Program::Planning {
+                assert_eq!(capabilities["kicad"]["open_document"]["document_type"], "pcb_only");
+                assert_eq!(capabilities["kicad"]["open_document"]["schematic_live_editing"], false);
+                assert_eq!(actual.len(), 1);
+                for tool in crate::host_tools::catalog().into_iter().filter(|t| t.name != "get_design_capabilities") {
+                    let result = client.call_tool(CallToolRequestParams::new(tool.name)).await.unwrap();
+                    assert_eq!(result.is_error, Some(true));
+                }
+                assert!(workflow.view().unwrap().job.is_none());
+                assert!(workflow.view().unwrap().history.is_empty());
+            }
             if matches!(program, Program::Freecad | Program::Arduino) {
                 let (name, arguments) = if program == Program::Freecad {
                     ("propose_rectangular_solid", serde_json::json!({"project_id":id,"units":"in","length":1,"width":1,"height":1}))

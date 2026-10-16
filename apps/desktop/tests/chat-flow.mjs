@@ -142,6 +142,26 @@ try {
   const send = async text => { await page.locator("#prompt").fill(text); await page.locator("#send").click(); await page.locator("#send:enabled").waitFor(); };
   for (const provider of ["codex", "claude", "ollama_local", "ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("planning");
+    assert.equal(await page.locator("#program-actions button").count(), 0);
+    await send("Quiero crear algo para sujetar una planta y no sé qué programa usar.");
+    const call = await page.evaluate(() => window.calls.filter(call => call.command.startsWith("start_")).at(-1));
+    assert.equal(call.args.program, "planning");
+    const prompt = JSON.parse(call.args.prompt);
+    assert.equal(prompt.desktop_context.program_selection_required, true);
+    assert.equal(prompt.desktop_context.live_mutations_allowed, false);
+    assert.equal(prompt.desktop_context.document_scope, "choose_program");
+    assert.equal(prompt.desktop_context.current_job, null);
+    assert.equal(prompt.desktop_context.cad_document_source, undefined);
+    assert.deepEqual(Object.keys(prompt.desktop_context.available_programs), ["freecad", "drawing", "arduino", "agent", "kicad", "slice"]);
+    assert.match(prompt.instruction, /no afirmes haber cambiado la selección/);
+    await page.locator("#choose-program").click();
+    assert.equal(await page.locator("#connections").getAttribute("open"), "");
+    assert.equal(await page.evaluate(() => document.activeElement.id), "program");
+    assert.equal(await page.evaluate(() => window.approvals), 0);
+  }
+  for (const provider of ["codex", "claude", "ollama_local", "ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
     if (provider.startsWith("ollama_")) {
       assert.equal(await page.locator("#select-client").isVisible(), false);
       assert.equal(await page.locator("#connect-account").isVisible(), false);

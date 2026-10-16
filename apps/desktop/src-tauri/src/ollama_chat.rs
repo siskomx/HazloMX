@@ -287,7 +287,7 @@ mod tests {
     #[tokio::test]
     async fn scoped_chat_refuses_a_cross_program_batch_before_any_proposal() {
         use crate::host_tools::Program;
-        for program in [Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice] {
+        for program in [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice] {
             let (root, workflow, host, project) = setup();
             let tools = McpTools::for_program(host, project.clone(), program).unwrap();
             let wrong = if program == Program::Freecad {

@@ -18,6 +18,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Program {
+    Planning,
     Freecad,
     Drawing,
     Arduino,
@@ -27,10 +28,12 @@ pub enum Program {
 }
 impl Program {
     pub fn allows(self, name: &str) -> bool {
+        if self == Self::Planning { return name == "get_design_capabilities"; }
         if matches!(name, "get_design_capabilities" | "get_workflow_status" | "read_verified_result") {
             return true;
         }
         match self {
+            Self::Planning => false,
             Self::Freecad => matches!(name, "inspect_open_cad_documents" | "propose_open_cad_change" | "inspect_selected_cad_document" | "propose_selected_cad_document_change" | "propose_rectangular_solid" | "propose_cad_document_change"),
             Self::Drawing => matches!(name, "inspect_drawing_native_tools" | "propose_drawing_native_tools" | "inspect_selected_drawing" | "propose_selected_drawing_change" | "propose_drawing_change"),
             Self::Arduino => name == "propose_arduino_compile",
@@ -1571,12 +1574,13 @@ impl McpTools {
     fn scope_result(&self, name: &str, result: Result<Value, String>) -> Result<Value, String> {
         let mut value = result?;
         if name == "get_design_capabilities" {
-            value["kicad"]["open_document"] = json!({"inspection_tool":"inspect_selected_live_pcb",
+            value["kicad"]["open_document"] = json!({"document_type":"pcb_only","schematic_live_editing":false,"inspection_tool":"inspect_selected_live_pcb",
                 "proposal_tool":"propose_selected_live_pcb_move","requires_explicit_native_selection":true,
                 "human_approval_required":true,"units":["mm","in","mils"],"save":false,"saved_file_fallback":false});
             if let Some(program) = self.2 {
                 if let Some(fields) = value.as_object_mut() {
                     fields.retain(|key, _| key == "approval" || match program {
+                        Program::Planning => true,
                         Program::Freecad => matches!(key.as_str(), "design" | "cadpilot"),
                         Program::Drawing => key == "cadcraft",
                         Program::Arduino => key == "arduino",
@@ -1586,7 +1590,7 @@ impl McpTools {
                     });
                 }
                 value["program"] = serde_json::to_value(program).map_err(|e| e.to_string())?;
-                if program == Program::Agent {
+                if matches!(program, Program::Agent | Program::Planning) {
                     value["agent"] = json!({"source":"human_selected_sketch","operation":"edit_copy_only","inspection_tool":"inspect_selected_sketch","proposal_tool":"propose_selected_sketch_edit","open_document_inspection":{"tool":"inspect_open_agent_documents","scope":"live_agent_read_only","requires":"running_Arduino_Agent_with_Hazlo_native_editor_companion","proposal_tool":"propose_open_agent_change","save_tool":"propose_open_agent_save","human_approval_required":true,"saved_file_fallback":false},"compilation":false,"hardware_control":false});
                 }
             }

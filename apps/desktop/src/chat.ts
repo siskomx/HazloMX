@@ -5,7 +5,7 @@ import { proposalFacts } from "./proposal-review";
 import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import "./chat.css";
 
-const programs = { freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
+const programs = { planning: "Ayúdame a elegir", freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
 const phases: Record<Snapshot["phase"], string> = { awaiting_approval: "Pendiente de aprobación", running: "En curso", cancelled: "Cancelada", failed: "Falló", interrupted: "Interrumpida", completed: "Completada" };
 type Program = keyof typeof programs;
 type Provider = "codex" | "claude" | "ollama_local" | "ollama_cloud";
@@ -22,7 +22,7 @@ document.querySelector("#app")!.innerHTML = `
     <p id="document-scope" class="fine"></p>
     <h2>Proyecto local</h2><p id="project-name" class="fine"></p><div class="actions"><button id="create-project" class="secondary">Crear proyecto…</button><button id="open-project" class="secondary">Abrir proyecto…</button></div>
   </details>
-  <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
+  <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><button id="choose-program" class="secondary">Elegir el programa que acordamos</button><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
     <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
     <form id="chat-form"><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
@@ -34,7 +34,7 @@ document.querySelector("#app")!.innerHTML = `
 for (const [value, label] of Object.entries(programs)) $("program").append(new Option(label, value));
 
 let state: DesktopSnapshot = { project: null, job: null, inference: null, recovered: [], freecad: "", freecad_available: false };
-let program: Program = "freecad", provider: Provider = "codex";
+let program: Program = "planning", provider: Provider = "codex";
 let commandBusy = false, revision = 0, newSession = true;
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
@@ -212,10 +212,11 @@ function render() {
   const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
   $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
+  $("choose-program").hidden = program !== "planning";
   $("live-pcb-setup").hidden = program !== "kicad";
-  $("document-scope").textContent = native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
-  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : "archivos guardados"}`;
-  $("source-status").textContent = sourceNames[program] ?? (program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
+  $("document-scope").textContent = program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
+  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${program === "planning" ? "vamos a elegir el programa" : native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : "archivos guardados"}`;
+  $("source-status").textContent = program === "planning" ? "La IA puede explicar las opciones disponibles. Elige el programa que acuerden para habilitar sus herramientas." : sourceNames[program] ?? (program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
   if (JSON.stringify(messages) !== renderedConversation) {
     renderedConversation = JSON.stringify(messages);
@@ -277,6 +278,7 @@ async function inspectSource<T>(command: string, args: Record<string,unknown> = 
 }
 function renderConnections(disabled: boolean) {
   $("program-actions").replaceChildren();
+  if (program === "planning") return;
   const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
   if (program === "freecad") {
     connect("Elegir FreeCAD…", "select_freecad");
@@ -331,6 +333,7 @@ function jobProgram(run: Snapshot): Program | undefined {
   if (input.fqbn) return "arduino";
 }
 function context() {
+  if (program === "planning") return { program: "planning", current_job: null, available_programs: Object.fromEntries(Object.entries(programs).filter(([key]) => key !== "planning")), program_selection_required: true, document_scope: "choose_program", live_document_connection: false, live_mutations_allowed: false };
   let job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
   if (job && (jobProgram(job) !== program || job.input.job_id === sourcePreviousJobs[program])) job = undefined;
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
@@ -355,6 +358,7 @@ async function send(content: string, userInitiated = true) {
   const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
 }
+$("choose-program").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("program").focus(); };
 $("setup").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("provider").focus(); };
 $("provider").onchange = () => { persist(); revision++; provider = $<HTMLSelectElement>("provider").value as Provider; storageKey = ""; turns = []; answeredChat = undefined; restore(); render(); };
 $("program").onchange = () => { program = $<HTMLSelectElement>("program").value as Program; $("opening-status").textContent = ""; render(); };
