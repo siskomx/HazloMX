@@ -197,6 +197,48 @@ fn main() {
         }
         "process_finished"
     });
+    let hazlo = if std::env::var("HAZLOMEXA_TEST_AGENT_HAZLO_UI").as_deref() == Ok("1") {
+        assert_eq!(std::env::var("HAZLOMEXA_TEST_AGENT_CONVERSATION").as_deref(), Ok("1"));
+        let executable = workspace.join("target/debug/hazlomexa.exe");
+        assert!(executable.is_file());
+        let observed = root.clone();
+        let signal = cancel.clone();
+        let mut environment = env.clone();
+        Some(thread::spawn(move || {
+            while !signal.load(Ordering::SeqCst) {
+                let prerequisite = fs::read(observed.join("host-default-profile.json"))
+                    .ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok());
+                if let Some(prerequisite) = prerequisite {
+                    if prerequisite["passed"] != true { return; }
+                    break;
+                }
+                thread::sleep(Duration::from_millis(100));
+            }
+            if signal.load(Ordering::SeqCst) { return; }
+            let directory = observed.join("hazlo-ui");
+            for name in ["project", "webview", "appdata", "local"] {
+                fs::create_dir_all(directory.join(name)).unwrap();
+            }
+            for (key, name) in [("HAZLOMEXA_SMOKE_PROJECT", "project"), ("WEBVIEW2_USER_DATA_FOLDER", "webview"),
+                ("APPDATA", "appdata"), ("LOCALAPPDATA", "local")] {
+                environment.insert(key.into(), directory.join(name).into_os_string());
+            }
+            environment.remove(&OsString::from("HAZLOMEXA_AGENT_EDITOR_PROBE_ROOT"));
+            let sha256 = format!("{:x}", Sha256::digest(fs::read(&executable).unwrap()));
+            let output = run_owned(&executable, &[], &directory, &environment, signal, Duration::from_secs(600));
+            match output {
+                Ok(output) => {
+                    fs::write(directory.join("stdout.log"), output.stdout).unwrap();
+                    fs::write(directory.join("stderr.log"), output.stderr).unwrap();
+                    fs::write(directory.join("stopped.json"), serde_json::to_vec(&serde_json::json!({
+                        "stopped":true,"reason":format!("{:?}",output.reason),"exe_sha256":sha256,
+                        "native_ui_pass":false,"human_observation_required":true
+                    })).unwrap()).unwrap();
+                }
+                Err(_) => { fs::write(directory.join("stopped.json"), b"{\"launch_failed\":true,\"native_ui_pass\":false}").unwrap(); }
+            }
+        }))
+    } else { None };
     let args = vec![
         // Agent scans all existing path arguments for its initial sketch, including
         // option values. Put the actual sketch before the private profile directories.
@@ -217,10 +259,12 @@ fn main() {
         &args,
         &root,
         &env,
-        cancel,
+        cancel.clone(),
         timeout,
     );
+    cancel.store(true, Ordering::SeqCst);
     done.store(true, Ordering::SeqCst);
+    if let Some(hazlo) = hazlo { hazlo.join().unwrap(); }
     let reason = monitor.join().unwrap();
     match output {
         Ok(output) => {

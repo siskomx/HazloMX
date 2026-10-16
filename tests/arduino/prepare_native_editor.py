@@ -14,7 +14,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def main(launch, hold_for_conversation=False):
+def main(launch, hold_for_conversation=False, with_hazlo=False):
     archive = ROOT / "target/arduino-agent-probe/arduino-agent-windows.zip"
     with archive.open("rb") as source:
         assert hashlib.file_digest(source, "sha256").hexdigest() == "a02ccf9fb97fa1e88b421ace4387bb5d912abe622152fcef2a9b89cae2603f58"
@@ -60,6 +60,9 @@ def main(launch, hold_for_conversation=False):
         env["HAZLOMEXA_TEST_AGENT_ROOT"] = str(root)
         if hold_for_conversation:
             env["HAZLOMEXA_TEST_AGENT_CONVERSATION"] = "1"
+        if with_hazlo:
+            assert (ROOT / "target/debug/hazlomexa.exe").is_file(), "Build the bundled desktop first"
+            env["HAZLOMEXA_TEST_AGENT_HAZLO_UI"] = "1"
         with (root / "supervisor.log").open("wb") as log:
             process = subprocess.Popen([str(supervisor)], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                 creationflags=subprocess.CREATE_NO_WINDOW)
@@ -98,7 +101,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--launch", action="store_true")
     parser.add_argument("--hold-for-conversation", action="store_true", help="Keep the supervised owned editor available for a bounded real-provider test")
+    parser.add_argument("--with-hazlo", action="store_true", help="Launch the owned bundled Hazlo UI after native/default-profile checks; requires conversation mode")
     args = parser.parse_args()
     if args.hold_for_conversation and not args.launch:
         parser.error("--hold-for-conversation requires --launch")
-    main(args.launch, args.hold_for_conversation)
+    if args.with_hazlo and not args.hold_for_conversation:
+        parser.error("--with-hazlo requires --hold-for-conversation")
+    main(args.launch, args.hold_for_conversation, args.with_hazlo)
