@@ -1271,15 +1271,21 @@ fn main() {
             }
             // CDP cannot operate native folder dialogs; debug tests seed a validated real project.
             #[cfg(debug_assertions)]
-                if let Some(root) = std::env::var_os("HAZLOMEXA_SMOKE_PROJECT") {
+            let smoke_project = std::env::var_os("HAZLOMEXA_SMOKE_PROJECT");
+            #[cfg(debug_assertions)]
+                if let Some(root) = smoke_project.as_ref() {
                     let root = PathBuf::from(root);
                     let project = if root.join("hazlomx.json").exists() { Project::open(&root)? } else { Project::create(&root)? };
                     workflow.select_project(project)?;
-                    tauri::WebviewWindowBuilder::new(app, "unprivileged", tauri::WebviewUrl::App("index.html".into()))
-                        .title("Unprivileged IPC smoke test").visible(false).build()?;
                 }
             let tools = Arc::new(HostTools::new(workflow.clone()));
             app.manage(AppState { workflow, freecad:Mutex::new(freecad), tools, bridge:Mutex::new(None), claude:Mutex::new(None), codex:Mutex::new(None), codex_login:Arc::new(Mutex::new(None)), codex_session:Mutex::new(None), chat:Arc::new(Mutex::new(None)), chat_session:Mutex::new(None) });
+            // Building another WebView can dispatch IPC into the already loading main window.
+            #[cfg(debug_assertions)]
+            if smoke_project.is_some() {
+                tauri::WebviewWindowBuilder::new(app, "unprivileged", tauri::WebviewUrl::App("index.html".into()))
+                    .title("Unprivileged IPC smoke test").visible(false).build()?;
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
