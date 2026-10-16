@@ -24,13 +24,14 @@ document.querySelector("#app")!.innerHTML = `
   </details>
   <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><button id="choose-program" class="secondary">Elegir el programa que acordamos</button><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
     <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
+    <p id="error" role="alert" hidden></p>
     <form id="chat-form"><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
     <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
   <details id="past-chats" class="panel" hidden><summary>Conversaciones de la versión anterior</summary><p class="fine">Puedes leerlas sin enviarlas a una IA. Para continuar con sus mensajes, empieza una conversación vacía y elige la IA con la que seguirás. Solo se enviarán cuando pulses Enviar. No se restauran documentos, medidas ni aprobaciones; inspeccionaremos de nuevo la selección actual.</p><div id="past-chat-list"></div></details>
   <details id="results" class="panel"><summary>Resultados e historial verificados</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
-  <p id="error" role="alert" hidden></p><dialog id="report"><h2>Resultado guardado · solo lectura</h2><pre id="report-text"></pre><form method="dialog"><button>Cerrar</button></form></dialog>`;
+  <dialog id="report"><h2>Resultado guardado · solo lectura</h2><pre id="report-text"></pre><form method="dialog"><button>Cerrar</button></form></dialog>`;
 for (const [value, label] of Object.entries(programs)) $("program").append(new Option(label, value));
 
 let state: DesktopSnapshot = { project: null, job: null, inference: null, recovered: [], freecad: "", freecad_available: false };

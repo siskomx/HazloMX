@@ -78,12 +78,14 @@ try {
       if (command === "select_agent_sketch") { snapshot.agent_source = { project_id: snapshot.project[0], source_name: "Sketch.ino", source: "void setup() {}" }; return copy(); }
       if (command === "select_project") { snapshot.project = window.otherFolder ? ["project-one", "C:\\owned\\other-folder"] : ["project-one", "C:\\owned\\project"]; snapshot.job = null; if (snapshot.chat) snapshot.chat.text = "PREVIOUS FOLDER RESPONSE"; return copy(); }
       if (command === "start_codex_chat" || command === "start_claude_chat" || command === "start_ollama_chat") {
+        if (window.chatFailure === "start") throw Error("No se pudo conectar con la IA. <img src=x onerror=window.failureInjected=true>");
         const provider = command === "start_codex_chat" ? "codex" : command === "start_claude_chat" ? "claude" : args.profile === "cloud" ? "ollama_cloud" : "ollama_local";
         snapshot.chat = { provider, id: crypto.randomUUID(), project_id: snapshot.project[0], sequence: 1, busy: true, cancelled: false, text: "", error: null };
         const chat = snapshot.chat;
         const finish = () => {
           if (snapshot.chat?.id !== chat.id || chat.cancelled) return;
           chat.sequence++; chat.busy = false; chat.question = null; chat.text = window.replyText ?? "Primero revisemos el documento. <img src=x onerror=window.injection=true>";
+          if (window.chatFailure === "event") { chat.text = ""; chat.error = "La IA interrumpió la conexión. <img src=x onerror=window.failureInjected=true>"; }
           if (provider === "codex" || provider === "claude") snapshot[provider === "codex" ? "codex_conversation_ready" : "claude_conversation_ready"] = true;
           if (window.makeProposal) {
             window.makeProposal = false;
@@ -140,6 +142,26 @@ try {
   await page.locator("#send:enabled").waitFor();
   assert.match(await page.locator("#error").innerText(), /No se reemplazó/);
   const send = async text => { await page.locator("#prompt").fill(text); await page.locator("#send").click(); await page.locator("#send:enabled").waitFor(); };
+  await page.setViewportSize({width:1200,height:760});
+  for (const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("planning");
+    if(await page.locator("#connections").getAttribute("open")!==null) await page.locator("#connections > summary").click();
+    for(const failure of ["start","event"]) {
+      await page.evaluate(failure=>{window.chatFailure=failure;},failure);
+      await send("Quiero modificar mi diseño, pero no sé las medidas.");
+      await page.locator("#error:visible").waitFor();
+      assert.match(await page.locator("#error").innerText(),/conexión|conectar/);
+      assert(await page.locator("#error").evaluate(node=>{const r=node.getBoundingClientRect();return r.top>=0 && r.bottom<=innerHeight;}),"Chat failure explanation was outside the message viewport");
+      assert.equal(await page.locator("#error img").count(),0);
+      assert.equal(await page.evaluate(()=>window.failureInjected),undefined);
+      assert.equal(await page.evaluate(()=>window.approvals),0);
+      await page.locator("#new-chat").click();
+    }
+    await page.locator("#setup").click();
+  }
+  await page.evaluate(()=>{delete window.chatFailure;});
+  await page.setViewportSize({width:1200,height:1000});
   for (const provider of ["codex", "claude", "ollama_local", "ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);
     await page.locator("#program").selectOption("planning");
@@ -740,5 +762,5 @@ try {
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, failure, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }
