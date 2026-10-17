@@ -32,6 +32,7 @@ assert(!planning.instruction.includes("propose_open_cad_change"),"Choosing softw
 assert.deepEqual(planning.recovered_conversation.filter(t=>t.role==="user"),history.filter(t=>t.role==="user"));
 const native=JSON.parse(agentPrompt("Prepara el cambio acordado.",[],{native_tools:{program:"slice",transport:"mcp"},current_job:{id:"native-result",phase:"completed"}}));
 assert.match(native.instruction,/lee primero read_verified_result con su id/);
+assert.match(native.instruction,/native_tool_followup.guard/);
 assert.match(native.instruction,/no prepares otra consulta de aprobación solo para recuperar esos datos/);
 assert.match(native.instruction,/el guard vuelve a consultar el estado nativo y rechaza si cambió/);
 assert.match(native.instruction,/Los cambios siempre requieren propose_native_tool_calls y aprobación humana/);

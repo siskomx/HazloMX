@@ -26,6 +26,18 @@ inspected. These changes apply to every program using the shared native route.
 Prompt-context checks and the production frontend build pass. Fresh real-chat
 editing acceptance and a rebuilt installer remain required for this change.
 
+The `d788204` retry confirms the corrected labels in the rebuilt native window,
+but the instruction-only change did **not** resolve repeated read proposals.
+Its failed observation is retained separately. Inspection of the actual native
+result found that it stores the reply and readback hash, but omits the query
+needed for the next edit's guard. The shared result tool now returns
+`native_tool_followup`: the original query, matching state hash, connection and
+catalog identity. The next proposal can use that exact guard; execution still
+repeats the query, refuses changed state and requires approval. This adds result
+metadata, without predefined program operations or automatic writes. The six
+program routing fixture now consumes the returned guard directly and retains
+its stale-state refusal check. Real conversation acceptance remains required.
+
 KiCad 10 remains selected; live schematic editing and Claude sign-in acceptance
 stay pending by explicit user choice. Existing program-specific evidence retains
 its original scope in the [status matrix](../native-flow-status.md).

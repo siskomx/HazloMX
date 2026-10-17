@@ -3,7 +3,9 @@
 [Real Orca chat inspection](research/orca-chat-continuation-2026-10-17.md) confirms
 the open cube through UI approval and existing cloud inference. Repeated query
 proposals blocked the first width-edit conversation; shared instructions now
-retrieve completed native results before requesting duplicate reads. Connection
+retrieve completed native results before requesting duplicate reads. An
+instruction-only retry still repeated the query; the result response now also
+supplies the original guard query and state hash instead of omitting them. Connection
 labels distinguish MCP tools and CLI files. Fresh editing and package acceptance
 remain required for this correction.
 
