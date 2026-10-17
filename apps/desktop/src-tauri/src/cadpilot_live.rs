@@ -33,6 +33,9 @@ impl Input {
         self.validate()?;
         for operation in &self.operations {
             if operation["action"] != "create_object" { continue; }
+            if ["x","y","z"].iter().any(|axis| operation["obj_properties"].get(*axis).is_some()) {
+                return Err("Las coordenadas no son propiedades de una pieza nueva. Usa Placement.Base con coordenadas numéricas en mm; no pongas x, y o z directamente en obj_properties.".into());
+            }
             let required:&[&str]=match operation["obj_type"].as_str() {
                 Some("Part::Box")=>&["Length","Width","Height"],
                 Some("Part::Cylinder")=>&["Radius","Height"],
@@ -697,6 +700,28 @@ mod tests {
             input.validate_for_dispatch().unwrap();
         }
         input.operations=vec![json!({"action":"edit_object","obj_name":"Existing","obj_properties":{"Height":"1 in"}})];
+        input.validate_for_dispatch().unwrap();
+    }
+
+    #[test]
+    fn creation_coordinates_use_native_placement_before_dispatch() {
+        let mut input=Input {schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
+            document_name:"NewPart".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),
+            description:"Create a support".into(),before:json!([]),receipt_sha256:None,
+            operations:vec![json!({"action":"create_object","obj_type":"Part::Box","obj_name":"Support",
+                "obj_properties":{"Length":"0.5 in","Width":"2 cm","Height":"10 mm"}})]};
+        for axis in ["x","y","z"] {
+            input.operations[0]["obj_properties"][axis]=json!("0 mm");
+            input.validate().unwrap();
+            assert!(input.validate_for_dispatch().is_err(),"Invalid coordinate reached native dispatch: {axis}");
+            input.receipt_sha256=Some("b".repeat(64));
+            input.validate().unwrap();
+            assert!(input.validate_for_dispatch().is_err());
+            input.receipt_sha256=None;
+            input.operations[0]["obj_properties"].as_object_mut().unwrap().remove(axis);
+        }
+        input.operations[0]["obj_properties"]["Placement"]=json!({"Base":{"x":0,"y":0,"z":0},
+            "Rotation":{"Axis":{"x":0,"y":0,"z":1},"Angle":0}});
         input.validate_for_dispatch().unwrap();
     }
 

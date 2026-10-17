@@ -2748,12 +2748,14 @@ mod tests {
     fn native_primitive_creation_refuses_hidden_default_dimensions_before_approval() {
         let (root,workflow)=setup();
         let project=workflow.view().unwrap().project.unwrap();
-        let input=crate::cadpilot_live::Input {schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),
+        let mut input=crate::cadpilot_live::Input {schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),
             document_name:"NewPart".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),
             description:"Create a box; its size is not known yet".into(),
             operations:vec![serde_json::json!({"action":"create_object","obj_type":"Part::Box","obj_name":"Box"})],
             before:serde_json::json!([]),receipt_sha256:None};
-        assert!(workflow.propose_live_cad(project,input).is_err(),"Missing dimensions reached human approval");
+        assert!(workflow.propose_live_cad(project.clone(),input.clone()).is_err(),"Missing dimensions reached human approval");
+        input.operations[0]["obj_properties"]=serde_json::json!({"Length":"0.5 in","Width":"2 cm","Height":"10 mm","x":"0 mm","y":"0 mm","z":"0 mm"});
+        assert!(workflow.propose_live_cad(project,input).is_err(),"Invalid coordinates reached human approval");
         assert!(workflow.current().unwrap().is_none());
         drop(workflow);
         let reopened=Project::open(&root).unwrap();
