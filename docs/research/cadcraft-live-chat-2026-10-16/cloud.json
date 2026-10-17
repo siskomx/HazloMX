@@ -1,0 +1,20 @@
+{
+  "pass": true,
+  "real_cloud_turns": 5,
+  "native_jobs": 2,
+  "natural_parameter_clarification": true,
+  "metric_edit_and_inch_followup": true,
+  "native_final_x_mm": 3.54,
+  "fresh_native_reads": true,
+  "first_receipt_preserved": true,
+  "approval": "backend_fixture_only",
+  "native_ui_approval": false,
+  "saved": false,
+  "other_providers_tested": false,
+  "source_preserved": true,
+  "host_settings_preserved": true,
+  "native_process_stopped": true,
+  "runtime_sha256": "9b3d00dfcfb466f39c3a66af1bd05c4e16d68527c3b52d2dc2e09db663438092",
+  "builder_paths_excluded": true,
+  "recorded_requests": 29
+}

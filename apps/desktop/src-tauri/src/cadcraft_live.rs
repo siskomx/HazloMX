@@ -1,0 +1,796 @@
+//! Checked edits in the explicitly selected patched CADCraft window.
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::{
+    collections::BTreeSet,
+    fs::{File, OpenOptions},
+    io::{Read, Write},
+    mem::{offset_of, size_of},
+    net::{Ipv4Addr, SocketAddr, TcpStream},
+    os::windows::{
+        fs::{MetadataExt, OpenOptionsExt},
+        io::{AsRawHandle, FromRawHandle, OwnedHandle},
+    },
+    path::Path,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
+    time::{Duration, Instant},
+};
+use uuid::Uuid;
+use windows_sys::Win32::{
+    Foundation::{ERROR_INSUFFICIENT_BUFFER, WAIT_TIMEOUT},
+    NetworkManagement::IpHelper::{GetTcpTable2, MIB_TCPROW2, MIB_TCPTABLE2},
+    Storage::FileSystem::{
+        FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_READ,
+    },
+    System::Threading::{
+        OpenProcess, QueryFullProcessImageNameW, WaitForSingleObject,
+        PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
+    },
+};
+
+pub const RUNTIME_SHA256: &str = "9b3d00dfcfb466f39c3a66af1bd05c4e16d68527c3b52d2dc2e09db663438092";
+const INVALID: &str = "CADCraft no confirmó el estado esperado. Relee el dibujo antes de continuar; no repitas una escritura incierta.";
+const FRAME_LIMIT: usize = 256 * 1024;
+
+// Socket, native binding and runtime handles never enter a model response or saved job.
+#[derive(Clone)]
+pub struct Connection(Arc<Mutex<Session>>);
+struct Session {
+    stream: TcpStream,
+    process: OwnedHandle,
+    _files: Vec<File>,
+    instance: Uuid,
+    next: u64,
+    failed: bool,
+    binding: Option<(Value, Observation)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Observation {
+    pub instance_id: Uuid,
+    pub binding_sha256: String,
+    pub title: String,
+    pub dirty: bool,
+    pub insunits: u64,
+    pub entities: Vec<Value>,
+}
+impl Observation {
+    fn validate(&self) -> Result<(), String> {
+        let mut handles = BTreeSet::new();
+        if self.instance_id.is_nil()
+            || !crate::kicad_project::valid_hash(&self.binding_sha256)
+            || self.title.is_empty()
+            || self.title.len() > 1024
+            || self.title.chars().any(char::is_control)
+            || !matches!(self.insunits, 1 | 4)
+            || self.entities.len() > 128
+            || serde_json::to_vec(self).map_err(|_| INVALID)?.len() > 25000
+            || self.entities.iter().any(|e| {
+                !e["handle"].as_str().is_some_and(|h| {
+                    !h.is_empty()
+                        && h.len() <= 32
+                        && h.bytes().all(|b| b.is_ascii_hexdigit())
+                        && handles.insert(h.to_ascii_uppercase())
+                }) || !e["type"].is_string()
+                    || !e["geometry"].is_object()
+                    || !e["layer"].is_string()
+            })
+        {
+            return Err(INVALID.into());
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Operation {
+    // shortcut: enable more native commands only with typed inputs and checked geometry readback.
+    Circle { center: [f64; 2], diameter: f64 },
+    MoveCircle { handle: String, delta: [f64; 2] },
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Input {
+    pub schema_version: u32,
+    pub live_drawing_version: u32,
+    pub job_id: Uuid,
+    pub description: String,
+    pub units: crate::cadcraft::Units,
+    pub operation: Operation,
+    pub before: Observation,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receipt_sha256: Option<String>,
+}
+impl Input {
+    fn native(&self, value: f64) -> f64 {
+        match (self.units, self.before.insunits) {
+            (crate::cadcraft::Units::In, 4) => value * 25.4,
+            (crate::cadcraft::Units::Mm, 1) => value / 25.4,
+            _ => value,
+        }
+    }
+    pub fn validate(&self) -> Result<(), String> {
+        self.before.validate()?;
+        if self.schema_version != 1
+            || self.live_drawing_version != 1
+            || self.job_id.is_nil()
+            || self.description.trim().is_empty()
+            || self.description.len() > 1024
+            || self.description.chars().any(char::is_control)
+            || self
+                .receipt_sha256
+                .as_ref()
+                .is_some_and(|h| !crate::kicad_project::valid_hash(h))
+        {
+            return Err(INVALID.into());
+        }
+        let bounded = |n: f64| n.is_finite() && self.native(n).abs() <= 10000.;
+        match &self.operation {
+            Operation::Circle { center, diameter } => {
+                if self.before.entities.len() >= 128
+                    || !center.iter().copied().all(bounded)
+                    || !bounded(*diameter)
+                    || self.native(*diameter) < 0.001
+                {
+                    return Err(
+                        "Confirma el centro y el diámetro del círculo con sus unidades.".into(),
+                    );
+                }
+            }
+            Operation::MoveCircle { handle, delta } => {
+                if !delta.iter().copied().all(bounded) || *delta == [0., 0.] {
+                    return Err(INVALID.into());
+                }
+                let e = self
+                    .before
+                    .entities
+                    .iter()
+                    .find(|e| e["handle"].as_str() == Some(handle))
+                    .ok_or(INVALID)?;
+                circle_geometry(e)?;
+                let c = &e["geometry"]["center"];
+                if (c["x"].as_f64().ok_or(INVALID)? + self.native(delta[0])).abs() > 10000.
+                    || (c["y"].as_f64().ok_or(INVALID)? + self.native(delta[1])).abs() > 10000.
+                {
+                    return Err(INVALID.into());
+                }
+            }
+        }
+        Ok(())
+    }
+    fn command(&self) -> (&str, Value) {
+        match &self.operation {
+            Operation::Circle { center, diameter } => (
+                "circle",
+                json!({"center":[self.native(center[0]),self.native(center[1])],"diameter":self.native(*diameter)}),
+            ),
+            Operation::MoveCircle { handle, delta } => (
+                "move",
+                json!({"handles":[handle],"delta":[self.native(delta[0]),self.native(delta[1])]}),
+            ),
+        }
+    }
+}
+
+fn circle_geometry(e: &Value) -> Result<(), String> {
+    if e["type"] != "Circle"
+        || e["geometry"]["type"] != "circle"
+        || !e["geometry"]["radius"]
+            .as_f64()
+            .is_some_and(|v| v.is_finite() && v > 0.)
+        || ["x", "y", "z"].iter().any(|k| {
+            !e["geometry"]["center"][k]
+                .as_f64()
+                .is_some_and(f64::is_finite)
+        })
+    {
+        return Err("Esta operación requiere un círculo de la lectura actual.".into());
+    }
+    Ok(())
+}
+
+/// Explicit user-selected executable and port; no scanning or arbitrary host addresses.
+pub fn connect(
+    executable: &Path,
+    port: u16,
+    cancel: &AtomicBool,
+) -> Result<(Connection, Observation), String> {
+    if port == 0 {
+        return Err("Indica el puerto local configurado en CADCraft.".into());
+    }
+    crate::project::valid_location(executable).map_err(|_| INVALID)?;
+    let mut files =
+        crate::project::pin_lineage(executable.parent().ok_or(INVALID)?).map_err(|_| INVALID)?;
+    let mut file = OpenOptions::new()
+        .read(true)
+        .share_mode(FILE_SHARE_READ)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(executable)
+        .map_err(|_| INVALID)?;
+    let metadata = file.metadata().map_err(|_| INVALID)?;
+    if !metadata.is_file()
+        || metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+        || metadata.len() > 512 * 1024 * 1024
+    {
+        return Err(INVALID.into());
+    }
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 65536];
+    loop {
+        stop(cancel)?;
+        let n = file.read(&mut buffer).map_err(|_| INVALID)?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buffer[..n]);
+    }
+    if format!("{:x}", hasher.finalize()) != RUNTIME_SHA256 {
+        return Err(
+            "Selecciona el runtime CADCraft parcheado y probado; el instalado no se reemplaza."
+                .into(),
+        );
+    }
+    files.push(file);
+    stop(cancel)?;
+    let stream = TcpStream::connect_timeout(
+        &SocketAddr::from((Ipv4Addr::LOCALHOST, port)),
+        Duration::from_secs(1),
+    )
+    .map_err(|_| INVALID)?;
+    let process = server_process(&stream, executable)?;
+    stream
+        .set_read_timeout(Some(Duration::from_millis(100)))
+        .map_err(|_| INVALID)?;
+    stream
+        .set_write_timeout(Some(Duration::from_secs(1)))
+        .map_err(|_| INVALID)?;
+    let connection = Connection(Arc::new(Mutex::new(Session {
+        stream,
+        process,
+        _files: files,
+        instance: Uuid::new_v4(),
+        next: 0,
+        failed: false,
+        binding: None,
+    })));
+    let observation = connection.inspect(cancel)?;
+    Ok((connection, observation))
+}
+
+fn row_matches(row: &MIB_TCPROW2, local: SocketAddr, peer: SocketAddr) -> bool {
+    let (SocketAddr::V4(local), SocketAddr::V4(peer)) = (local, peer) else {
+        return false;
+    };
+    row.dwState == 5
+        && row.dwLocalAddr == u32::from_ne_bytes(peer.ip().octets())
+        && row.dwRemoteAddr == u32::from_ne_bytes(local.ip().octets())
+        && u16::from_be(row.dwLocalPort as u16) == peer.port()
+        && u16::from_be(row.dwRemotePort as u16) == local.port()
+}
+fn server_process(stream: &TcpStream, executable: &Path) -> Result<OwnedHandle, String> {
+    let local = stream.local_addr().map_err(|_| INVALID)?;
+    let peer = stream.peer_addr().map_err(|_| INVALID)?;
+    let mut bytes = 0;
+    // SAFETY: the first call only requests the required byte count.
+    if unsafe { GetTcpTable2(std::ptr::null_mut(), &mut bytes, 0) } != ERROR_INSUFFICIENT_BUFFER
+        || !(4..=4 * 1024 * 1024).contains(&bytes)
+    {
+        return Err(INVALID.into());
+    }
+    let mut buffer = vec![0u32; (bytes as usize).div_ceil(size_of::<u32>())];
+    // SAFETY: the u32 buffer has the ABI alignment and at least the reported size.
+    if unsafe { GetTcpTable2(buffer.as_mut_ptr().cast(), &mut bytes, 0) } != 0 {
+        return Err(INVALID.into());
+    }
+    let offset = offset_of!(MIB_TCPTABLE2, table);
+    let count = buffer[0] as usize;
+    if offset + count.checked_mul(size_of::<MIB_TCPROW2>()).ok_or(INVALID)? > bytes as usize
+        || bytes as usize > buffer.len() * size_of::<u32>()
+    {
+        return Err(INVALID.into());
+    }
+    // SAFETY: count, byte bounds and alignment were verified above.
+    let rows = unsafe {
+        std::slice::from_raw_parts(
+            buffer
+                .as_ptr()
+                .cast::<u8>()
+                .add(offset)
+                .cast::<MIB_TCPROW2>(),
+            count,
+        )
+    };
+    let mut matches = rows.iter().filter(|r| row_matches(r, local, peer));
+    let pid = matches.next().ok_or(INVALID)?.dwOwningPid;
+    if matches.next().is_some() {
+        return Err(INVALID.into());
+    }
+    // SAFETY: query-only owned process handle, retained until this connection is dropped.
+    let raw = unsafe {
+        OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE,
+            0,
+            pid,
+        )
+    };
+    if raw.is_null() {
+        return Err(INVALID.into());
+    }
+    let process = unsafe { OwnedHandle::from_raw_handle(raw) };
+    let mut path = vec![0u16; 32768];
+    let mut length = path.len() as u32;
+    // SAFETY: valid handle and writable UTF-16 buffer with its actual length.
+    if unsafe {
+        QueryFullProcessImageNameW(process.as_raw_handle(), 0, path.as_mut_ptr(), &mut length)
+    } == 0
+        || unsafe { WaitForSingleObject(process.as_raw_handle(), 0) } != WAIT_TIMEOUT
+    {
+        return Err(INVALID.into());
+    }
+    let actual = std::path::PathBuf::from(
+        String::from_utf16(&path[..length as usize]).map_err(|_| INVALID)?,
+    );
+    if actual.canonicalize().map_err(|_| INVALID)?
+        != executable.canonicalize().map_err(|_| INVALID)?
+    {
+        return Err(INVALID.into());
+    }
+    Ok(process)
+}
+fn stop(cancel: &AtomicBool) -> Result<(), String> {
+    if cancel.load(Ordering::SeqCst) {
+        Err("Espera cancelada; relee CADCraft antes de continuar. Cancelar no deshace una edición nativa.".into())
+    } else {
+        Ok(())
+    }
+}
+impl Session {
+    fn call(&mut self, method: &str, params: Value, cancel: &AtomicBool) -> Result<Value, String> {
+        if self.failed {
+            return Err("La conexión terminó. Vuelve a conectar el dibujo desde Conexiones y relee su estado. No repitas una escritura incierta.".into());
+        }
+        let result = self.call_inner(method, params, cancel);
+        if result.is_err() {
+            self.failed = true;
+            self.binding = None;
+            let _ = self.stream.shutdown(std::net::Shutdown::Both);
+        }
+        result
+    }
+    fn call_inner(
+        &mut self,
+        method: &str,
+        params: Value,
+        cancel: &AtomicBool,
+    ) -> Result<Value, String> {
+        stop(cancel)?;
+        if unsafe { WaitForSingleObject(self.process.as_raw_handle(), 0) } != WAIT_TIMEOUT {
+            return Err(INVALID.into());
+        }
+        self.next = self.next.checked_add(1).ok_or(INVALID)?;
+        let mut request =
+            serde_json::to_vec(&json!({"id":self.next,"method":method,"params":params}))
+                .map_err(|_| INVALID)?;
+        if request.len() > 16384 {
+            return Err(INVALID.into());
+        }
+        request.push(b'\n');
+        self.stream.write_all(&request).map_err(|_| INVALID)?;
+        let deadline = Instant::now() + Duration::from_secs(8);
+        let mut frame = Vec::new();
+        loop {
+            stop(cancel)?;
+            if Instant::now() >= deadline || frame.len() >= FRAME_LIMIT {
+                return Err(INVALID.into());
+            }
+            let mut byte = [0];
+            match self.stream.read(&mut byte) {
+                Ok(1) if byte[0] == b'\n' => break,
+                Ok(1) => frame.push(byte[0]),
+                Err(e)
+                    if matches!(
+                        e.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                    ) =>
+                {
+                    continue
+                }
+                _ => return Err(INVALID.into()),
+            }
+        }
+        let reply: Value = serde_json::from_slice(&frame).map_err(|_| INVALID)?;
+        if reply["id"] != self.next || reply["ok"] != true || reply.get("error").is_some() {
+            return Err(INVALID.into());
+        }
+        reply.get("result").cloned().ok_or_else(|| INVALID.into())
+    }
+    fn read(&mut self, cancel: &AtomicBool) -> Result<Observation, String> {
+        self.binding = None;
+        let token = self.call("document.binding", json!({}), cancel)?;
+        if !token["token"].as_str().is_some_and(|s| {
+            !s.is_empty() && s.len() <= 32 && s.bytes().all(|b| b.is_ascii_digit())
+        }) {
+            return Err(INVALID.into());
+        }
+        let drawing = self.call(
+            "drawing.inspect",
+            json!({"entities":true,"limit":128}),
+            cancel,
+        )?;
+        let units = self.call(
+            "engine.execute",
+            json!({"command":"units","params":{}}),
+            cancel,
+        )?;
+        let entities = drawing["entities"].as_array().ok_or(INVALID)?.clone();
+        if drawing["space"] != "Model"
+            || !drawing["blockEditor"].is_null()
+            || drawing["entityCount"].as_u64() != Some(entities.len() as u64)
+            || drawing["skipped"]["count"] != 0
+        {
+            return Err("Esta conexión requiere un dibujo completo en Modelo, sin bloques en edición ni geometría omitida.".into());
+        }
+        let observation = Observation {
+            instance_id: self.instance,
+            binding_sha256: crate::kicad_project::digest(
+                &serde_json::to_vec(&json!([self.instance, token])).map_err(|_| INVALID)?,
+            ),
+            title: drawing["title"].as_str().ok_or(INVALID)?.into(),
+            dirty: drawing["dirty"].as_bool().ok_or(INVALID)?,
+            insunits: units["insunits"].as_u64().ok_or(INVALID)?,
+            entities,
+        };
+        observation.validate()?;
+        self.binding = Some((json!({"token":token["token"]}), observation.clone()));
+        Ok(observation)
+    }
+}
+impl Connection {
+    pub fn inspect(&self, cancel: &AtomicBool) -> Result<Observation, String> {
+        self.0.lock().map_err(|_| INVALID)?.read(cancel)
+    }
+    pub fn validate_for(&self, before: &Observation) -> Result<(), String> {
+        if self
+            .0
+            .lock()
+            .map_err(|_| INVALID)?
+            .binding
+            .as_ref()
+            .is_none_or(|(_, b)| b != before)
+        {
+            return Err(INVALID.into());
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Receipt {
+    pub native_drawing_version: u32,
+    pub job_id: Uuid,
+    pub before_sha256: String,
+    pub after: Observation,
+    pub saved: bool,
+    pub native_undo_available: bool,
+}
+pub fn validate_report(input: &Input, report: &Receipt) -> Result<(), String> {
+    input.validate()?;
+    report.after.validate()?;
+    if report.native_drawing_version != 1
+        || report.job_id != input.job_id
+        || report.before_sha256 != input.before.binding_sha256
+        || report.after.instance_id != input.before.instance_id
+        || report.after.title != input.before.title
+        || report.after.binding_sha256 == input.before.binding_sha256
+        || report.after.insunits != input.before.insunits
+        || report.saved
+        || !report.native_undo_available
+        || !report.after.dirty
+    {
+        return Err(INVALID.into());
+    }
+    let mut expected = input.before.entities.clone();
+    let mut actual = report.after.entities.clone();
+    match &input.operation {
+        Operation::MoveCircle { handle, delta } => {
+            let e = expected
+                .iter_mut()
+                .find(|e| e["handle"].as_str() == Some(handle))
+                .ok_or(INVALID)?;
+            for (axis, d) in ["x", "y"].into_iter().zip(delta) {
+                e["geometry"]["center"][axis] = json!(
+                    e["geometry"]["center"][axis].as_f64().ok_or(INVALID)? + input.native(*d)
+                );
+            }
+        }
+        Operation::Circle { center, diameter } => {
+            let added: Vec<_> = actual
+                .iter()
+                .filter(|a| !expected.iter().any(|e| e["handle"] == a["handle"]))
+                .collect();
+            if added.len() != 1 {
+                return Err(INVALID.into());
+            }
+            let added = added[0];
+            circle_geometry(added)?;
+            let c = &added["geometry"]["center"];
+            let close = |a: f64, b: f64| (a - b).abs() <= 1e-8;
+            if !close(c["x"].as_f64().ok_or(INVALID)?, input.native(center[0]))
+                || !close(c["y"].as_f64().ok_or(INVALID)?, input.native(center[1]))
+                || c["z"] != 0.
+                || !close(
+                    added["geometry"]["radius"].as_f64().ok_or(INVALID)?,
+                    input.native(*diameter) / 2.,
+                )
+            {
+                return Err(INVALID.into());
+            }
+            expected.push(added.clone());
+        }
+    }
+    expected.sort_by_key(|e| e["handle"].to_string());
+    actual.sort_by_key(|e| e["handle"].to_string());
+    if actual != expected {
+        return Err(INVALID.into());
+    }
+    Ok(())
+}
+pub fn run(
+    input: &Input,
+    connection: &Connection,
+    stage: &Path,
+    cancel: &AtomicBool,
+) -> Result<(), String> {
+    input.validate()?;
+    let mut session = connection.0.lock().map_err(|_| INVALID)?;
+    let (binding, before) = session.binding.take().ok_or(INVALID)?;
+    if before != input.before {
+        return Err(INVALID.into());
+    }
+    let (command, params) = input.command();
+    session.call(
+        "engine.execute_checked",
+        json!({"expected":binding,"command":command,"params":params}),
+        cancel,
+    )?;
+    let after = session.read(cancel)?;
+    let report = Receipt {
+        native_drawing_version: 1,
+        job_id: input.job_id,
+        before_sha256: input.before.binding_sha256.clone(),
+        after,
+        saved: false,
+        native_undo_available: true,
+    };
+    validate_report(input, &report)?;
+    let bytes = serde_json::to_vec_pretty(&report).map_err(|_| INVALID)?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(stage.join("result.json"))
+        .map_err(|_| INVALID)?;
+    file.write_all(&bytes)
+        .and_then(|_| file.sync_all())
+        .map_err(|_| INVALID.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn fixture_input() -> Input {
+        Input {
+            schema_version: 1,
+            live_drawing_version: 1,
+            job_id: Uuid::new_v4(),
+            description: "Move right by one tenth of an inch".into(),
+            units: crate::cadcraft::Units::In,
+            operation: Operation::MoveCircle {
+                handle: "100".into(),
+                delta: [0.1, 0.],
+            },
+            receipt_sha256: None,
+            before: Observation {
+                instance_id: Uuid::new_v4(),
+                binding_sha256: "a".repeat(64),
+                title: "Owned.dxf".into(),
+                dirty: true,
+                insunits: 4,
+                entities: vec![
+                    json!({"handle":"100","type":"Circle","layer":"0","geometry":{"type":"circle","center":{"x":0.,"y":0.,"z":0.},"radius":10.}}),
+                ],
+            },
+        }
+    }
+    fn receipt(input: &Input) -> Receipt {
+        let mut after = input.before.clone();
+        after.binding_sha256 = "b".repeat(64);
+        after.entities[0]["geometry"]["center"]["x"] = json!(2.54);
+        Receipt {
+            native_drawing_version: 1,
+            job_id: input.job_id,
+            before_sha256: input.before.binding_sha256.clone(),
+            after,
+            saved: false,
+            native_undo_available: true,
+        }
+    }
+    #[test]
+    fn converts_requested_units_once_and_checks_complete_readback() {
+        let mut input = fixture_input();
+        input.validate().unwrap();
+        assert_eq!(
+            input.command(),
+            ("move", json!({"handles":["100"],"delta":[2.54,0.]}))
+        );
+        let mut report = receipt(&input);
+        validate_report(&input, &report).unwrap();
+        report.after.entities[0]["geometry"]["radius"] = json!(11.);
+        assert!(
+            validate_report(&input, &report).is_err(),
+            "Unrequested geometry must not pass"
+        );
+        report = receipt(&input);
+        report.after.instance_id = Uuid::new_v4();
+        assert!(validate_report(&input, &report).is_err());
+        report = receipt(&input);
+        report.saved = true;
+        assert!(validate_report(&input, &report).is_err());
+        input.before.insunits = 1;
+        input.units = crate::cadcraft::Units::Mm;
+        input.operation = Operation::Circle {
+            center: [25.4, 0.],
+            diameter: 50.8,
+        };
+        assert_eq!(
+            input.command(),
+            ("circle", json!({"center":[1.,0.],"diameter":2.}))
+        );
+    }
+    #[test]
+    fn refuses_unknown_commands_nonfinite_ambiguous_and_missing_targets() {
+        let mut input = fixture_input();
+        assert!(serde_json::from_value::<Operation>(json!({"action":"qsave"})).is_err());
+        assert!(serde_json::from_value::<Operation>(
+            json!({"action":"circle","center":[0,0],"diameter":2,"path":"ignored"})
+        )
+        .is_err());
+        input.operation = Operation::Circle {
+            center: [f64::NAN, 0.],
+            diameter: 1.,
+        };
+        assert!(input.validate().is_err());
+        input.operation = Operation::Circle {
+            center: [0., 0.],
+            diameter: 0.,
+        };
+        assert!(input.validate().is_err());
+        input.operation = Operation::MoveCircle {
+            handle: "MISSING".into(),
+            delta: [1., 0.],
+        };
+        assert!(input.validate().is_err());
+        input = fixture_input();
+        input.before.entities.push(input.before.entities[0].clone());
+        assert!(input.validate().is_err());
+    }
+
+    #[test]
+    fn native_journal_round_trip_uses_its_own_mcp_schema() {
+        use crate::project::{OperationInput, Phase, Project, RunSource};
+        let root =
+            std::env::temp_dir().join(format!("hazlomexa-drawing-journal-{}", Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let project = Project::create(&root).unwrap();
+        let mut snapshot = project
+            .snapshot(
+                OperationInput::LiveDrawing(fixture_input()),
+                Phase::AwaitingApproval,
+            )
+            .unwrap();
+        assert_eq!(snapshot.schema_version, 16);
+        snapshot.audit.as_mut().unwrap().source = RunSource::Mcp;
+        project.save(&snapshot).unwrap();
+        assert_eq!(project.recover().unwrap()[0].schema_version, 16);
+        snapshot.schema_version = 10;
+        assert!(project.save(&snapshot).is_err());
+        drop(project);
+        assert_eq!(
+            root.canonicalize().unwrap().parent(),
+            Some(std::env::temp_dir().canonicalize().unwrap().as_path())
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn tcp_owner_uses_server_side_established_tuple_and_pins_process() {
+        let listener = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        let (server, _) = listener.accept().unwrap();
+        let process = server_process(&client, &std::env::current_exe().unwrap()).unwrap();
+        assert_eq!(
+            unsafe { WaitForSingleObject(process.as_raw_handle(), 0) },
+            WAIT_TIMEOUT
+        );
+        assert!(server_process(&client, Path::new("C:/not-the-selected-runtime.exe")).is_err());
+        drop(server);
+    }
+    fn mock(reply: Vec<u8>) -> (Session, std::thread::JoinHandle<()>) {
+        use std::io::BufRead;
+        let listener = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        let (server, _) = listener.accept().unwrap();
+        let process = server_process(&client, &std::env::current_exe().unwrap()).unwrap();
+        client
+            .set_read_timeout(Some(Duration::from_millis(100)))
+            .unwrap();
+        let task = std::thread::spawn(move || {
+            let mut stream = std::io::BufReader::new(server);
+            let mut request = String::new();
+            stream.read_line(&mut request).unwrap();
+            assert_eq!(serde_json::from_str::<Value>(&request).unwrap()["id"], 1);
+            let _ = stream.get_mut().write_all(&reply);
+            request.clear();
+            assert_eq!(
+                stream.read_line(&mut request).unwrap_or(0),
+                0,
+                "Failed connection sent another request"
+            );
+        });
+        (
+            Session {
+                stream: client,
+                process,
+                _files: vec![],
+                instance: Uuid::new_v4(),
+                next: 0,
+                failed: false,
+                binding: None,
+            },
+            task,
+        )
+    }
+    #[test]
+    fn bad_frames_close_connection_and_never_retry() {
+        for reply in [
+            b"{\"id\":2,\"ok\":true,\"result\":{}}\n".to_vec(),
+            b"{invalid}\n".to_vec(),
+            vec![b'x'; FRAME_LIMIT],
+            b"{\"id\":1,\"ok\":false,\"error\":\"private path\"}\n".to_vec(),
+        ] {
+            let (mut session, task) = mock(reply);
+            let error = session
+                .call("drawing.inspect", json!({}), &AtomicBool::new(false))
+                .unwrap_err();
+            assert!(!error.contains("private path"));
+            assert!(session
+                .call("drawing.inspect", json!({}), &AtomicBool::new(false))
+                .unwrap_err().contains("Conexiones"));
+            assert_eq!(session.next, 1);
+            task.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn cancelled_inflight_read_closes_instead_of_reusing_a_late_reply() {
+        let (mut session, task) = mock(Vec::new());
+        let cancel = Arc::new(AtomicBool::new(false));
+        let flag = cancel.clone();
+        let cancelling = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(30));
+            flag.store(true, Ordering::SeqCst);
+        });
+        assert!(session.call("drawing.inspect", json!({}), &cancel).is_err());
+        cancelling.join().unwrap();
+        assert!(session.failed && session.next == 1);
+        assert!(session
+            .call("drawing.inspect", json!({}), &AtomicBool::new(false))
+            .is_err());
+        task.join().unwrap();
+    }
+}

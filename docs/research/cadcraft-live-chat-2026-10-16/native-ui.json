@@ -1,0 +1,29 @@
+{
+  "pass": true,
+  "debug_main_ui": true,
+  "installed_package_tested": false,
+  "native_picker": true,
+  "real_cloud_chat": true,
+  "native_jobs": 2,
+  "final_x_mm": 3.54,
+  "fresh_native_readback": true,
+  "source_preserved": true,
+  "host_settings_preserved": true,
+  "saved": false,
+  "other_providers_tested": false,
+  "runtime_sha256": "9b3d00dfcfb466f39c3a66af1bd05c4e16d68527c3b52d2dc2e09db663438092",
+  "app_sha256": "c70c290df3f5cfafd82ae7a5eb070b5b8b7ce891c96a1c9759086cd9e6944e62",
+  "approval": "owned_native_ui",
+  "owned_ui_approval_clicks": 2,
+  "independent_native_positions_mm": [
+    0.0,
+    1.0,
+    1.0,
+    3.54
+  ],
+  "read_only_report_opening": true,
+  "final_review_visible": true,
+  "native_window_observed": true,
+  "native_view_partly_clipped": true,
+  "owned_processes_stopped": true
+}

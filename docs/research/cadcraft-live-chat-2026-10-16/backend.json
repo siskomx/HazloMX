@@ -1,0 +1,20 @@
+{
+  "pass": true,
+  "completed_jobs": 3,
+  "cancelled_jobs": 1,
+  "refused_jobs": 1,
+  "native_mm_move": 1,
+  "native_inch_followup": 0.1,
+  "final_x_mm": 3.54,
+  "native_undo_steps": 3,
+  "stale_unprojected_change_refused": true,
+  "units_query_preserved_state": true,
+  "approval_replay_refused": true,
+  "recovery_pass": true,
+  "real_provider": false,
+  "desktop_approval": false,
+  "source_preserved": true,
+  "host_settings_preserved": true,
+  "native_process_stopped": true,
+  "runtime_sha256": "9b3d00dfcfb466f39c3a66af1bd05c4e16d68527c3b52d2dc2e09db663438092"
+}

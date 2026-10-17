@@ -1,0 +1,13 @@
+{
+  "pass": true,
+  "regular_rust_tests_passed": 189,
+  "separately_scoped_tests_ignored": 54,
+  "clippy_warnings_denied": true,
+  "desktop_and_helper_build": true,
+  "typescript_and_vite_build": true,
+  "frontend_context_check": true,
+  "four_provider_native_cadcraft_approval_fixtures": true,
+  "real_cloud_tested": true,
+  "real_claude_and_codex_tested": false,
+  "patched_runtime_automatically_installed": false
+}

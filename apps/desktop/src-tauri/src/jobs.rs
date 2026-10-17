@@ -114,6 +114,7 @@ pub struct InferenceDispatch {
 struct Job {
     live_agent: Option<crate::agent_editor::Connection>,
     live_pcb: Option<crate::kicad_live::Binding>,
+    live_drawing: Option<crate::cadcraft_live::Connection>,
     view: JobView,
     cancelled: Arc<AtomicBool>,
 }
@@ -165,6 +166,7 @@ impl AgentSource {
 pub struct Dispatch {
     live_agent: Option<crate::agent_editor::Connection>,
     live_pcb: Option<crate::kicad_live::Binding>,
+    live_drawing: Option<crate::cadcraft_live::Connection>,
     project: Arc<Project>,
     snapshot: Snapshot,
     cancelled: Arc<AtomicBool>,
@@ -2054,6 +2056,8 @@ impl Workflow {
         if matches!(snapshot.audit.as_ref().unwrap().source, RunSource::Mcp) {
             snapshot.schema_version = if matches!(snapshot.input, OperationInput::LiveCad(_)) {
                 13
+            } else if matches!(snapshot.input, OperationInput::LiveDrawing(_)) {
+                16
             } else if matches!(snapshot.input, OperationInput::LiveAgent(_)) {
                 15
             } else if matches!(snapshot.input, OperationInput::LivePcb(_)) {
@@ -2075,6 +2079,7 @@ impl Workflow {
         state.job = Some(Job {
             live_agent: None,
             live_pcb: None,
+            live_drawing: None,
             view: view.clone(),
             cancelled: Arc::new(AtomicBool::new(false)),
         });
@@ -2120,6 +2125,21 @@ impl Workflow {
             return Err("El proyecto cambió. Lee el documento de nuevo.".into());
         }
         Self::propose_operation_locked(&mut state, OperationInput::LiveCad(input), RunSource::Mcp)
+    }
+
+    pub fn propose_live_drawing(&self, project:(Uuid,PathBuf), input:crate::cadcraft_live::Input,
+        connection:crate::cadcraft_live::Connection) -> Result<JobView,String> {
+        input.validate()?;
+        connection.validate_for(&input.before)?;
+        if input.receipt_sha256.is_some() { return Err("La propuesta ya contiene un resultado anterior.".into()); }
+        let mut state=self.state.lock().map_err(|e|e.to_string())?;
+        inference_idle(&state)?;
+        if state.project.as_ref().map(|p|(p.id,p.root.clone()))!=Some(project) {
+            return Err("El proyecto cambió. Relee CADCraft.".into());
+        }
+        let view=Self::propose_operation_locked(&mut state,OperationInput::LiveDrawing(input),RunSource::Mcp)?;
+        state.job.as_mut().unwrap().live_drawing=Some(connection);
+        Ok(view)
     }
 
     pub fn propose_live_agent(
@@ -2189,6 +2209,9 @@ impl Workflow {
         let live_pcb=if matches!(job.view.snapshot.input,OperationInput::LivePcb(_)) {
             Some(job.live_pcb.clone().ok_or("La conexión nativa venció. Vuelve a leer la PCB.")?)
         } else {None};
+        let live_drawing=if matches!(job.view.snapshot.input,OperationInput::LiveDrawing(_)) {
+            Some(job.live_drawing.clone().ok_or("La conexión CADCraft venció. Relee el dibujo.")?)
+        } else {None};
         let mut snapshot = job.view.snapshot.clone();
         snapshot.phase = Phase::Running;
         snapshot.advance();
@@ -2200,6 +2223,7 @@ impl Workflow {
         Ok(Dispatch {
             live_agent,
             live_pcb,
+            live_drawing,
             project,
             snapshot,
             cancelled: job.cancelled.clone(),
@@ -2392,6 +2416,10 @@ impl Workflow {
                         dispatch.cancelled.clone(),
                     )?;
                 }
+                OperationInput::LiveDrawing(input) => {
+                    crate::cadcraft_live::run(input,dispatch.live_drawing.as_ref().ok_or("La conexión CADCraft venció.")?,
+                        &stage.path,&dispatch.cancelled)?;
+                }
                 OperationInput::LiveAgent(input) => {
                     crate::agent_editor::run(input,dispatch.live_agent.as_ref().ok_or("La conexión al sketch venció.")?,
                         &stage.path,&dispatch.cancelled)?;
@@ -2524,6 +2552,10 @@ impl Workflow {
                 let bytes = crate::kicad_project::read_regular(&stage.path.join("result.json"), 65536)?;
                 input.receipt_sha256 = Some(crate::kicad_project::digest(&bytes));
             }
+            if let OperationInput::LiveDrawing(input)=&mut dispatch.snapshot.input {
+                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
+                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
+            }
             if let OperationInput::LiveAgent(input)=&mut dispatch.snapshot.input {
                 let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
                 input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
@@ -2546,7 +2578,7 @@ impl Workflow {
             let mut snapshot = dispatch.snapshot;
             snapshot.phase = Phase::Cancelled;
             snapshot.advance();
-            let warning = matches!(snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_))
+            let warning = matches!(snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_))
                 .then_some("El proyecto cambió y no se publicó el informe. La operación nativa puede haber terminado; vuelve a leer el programa antes de continuar. Cancelar no deshace una edición nativa.");
             if let (Some(message), Some(audit)) = (warning, snapshot.audit.as_mut()) { audit.error = Some(message.into()); }
             dispatch
@@ -2564,6 +2596,9 @@ impl Workflow {
             if matches!(dispatch.snapshot.input,OperationInput::LiveAgent(_)) {
                 job.view.error=Some("La espera se canceló. Arduino Agent puede haber completado el cambio; vuelve a leer el sketch. Cancelar no deshace una edición nativa.".into());
             }
+            if matches!(dispatch.snapshot.input,OperationInput::LiveDrawing(_)) {
+                job.view.error=Some("La espera se canceló. CADCraft puede haber completado el cambio; relee el dibujo. Cancelar no deshace una edición nativa.".into());
+            }
             if matches!(dispatch.snapshot.input,OperationInput::LivePcb(_)) {
                 job.view.error=Some("La espera se canceló. KiCad puede haber completado el cambio; vuelve a leer la PCB. Cancelar no deshace una edición nativa.".into());
             }
@@ -2573,7 +2608,7 @@ impl Workflow {
         } else {
             match result {
                 Ok(stage) => {
-                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_)) {
+                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_)) {
                         job.view.snapshot.input = dispatch.snapshot.input.clone();
                     }
                     if let Some(audit) = &mut job.view.snapshot.audit {
@@ -2584,7 +2619,7 @@ impl Workflow {
                         Err(error) => {
                             job.view.snapshot.phase = Phase::Failed;
                             job.view.error = Some(format!("No se pudieron publicar los archivos. Cierre las aplicaciones que los estén usando y revise los permisos y el espacio libre del proyecto. La entrada y los archivos de trabajo se conservan: {error}"));
-                            if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_)) {
+                            if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_)) {
                                 job.view.error.as_mut().unwrap().push_str(" El programa puede haber completado la operación nativa; vuelve a leerlo antes de repetirla.");
                             }
                         }

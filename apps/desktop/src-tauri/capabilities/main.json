@@ -15,7 +15,7 @@
     "allow-discover-drawing", "allow-prepare-selected-drawing",
     "allow-select-kicad", "allow-prepare-kicad", "allow-read-kicad-summary",
     "allow-select-konnect", "allow-prepare-konnect",
-    "allow-discover-pcb", "allow-discover-live-pcb", "allow-prepare-pcb-move", "allow-discover-schematic", "allow-prepare-discovered-schematic",
+    "allow-discover-pcb", "allow-discover-live-pcb", "allow-discover-live-drawing", "allow-prepare-pcb-move", "allow-discover-schematic", "allow-prepare-discovered-schematic",
     "allow-select-orca", "allow-prepare-slice", "allow-discover-slice",
     "allow-prepare-cadpilot", "allow-read-cadpilot-result", "allow-prepare-cadpilot-followup",
     "allow-discover-cad-document",

@@ -30,6 +30,7 @@ fn main() {
             "discover_schematic",
             "discover_pcb",
             "discover_live_pcb",
+            "discover_live_drawing",
             "prepare_pcb_move",
             "prepare_discovered_schematic",
             "select_orca",

@@ -37,7 +37,13 @@ function doubledLength(value: unknown): string | undefined {
 export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
-  if(input.live_agent_version){
+  if(input.live_drawing_version){
+    facts.push("Cambiar el dibujo abierto en CADCraft.","Dibujo: "+input.before.title,"Objetivo: "+input.description);
+    const op=input.operation, unit=unitNames[input.units];
+    if(op.action==="circle") facts.push(`Crear un círculo de ${number(op.diameter)} ${unit} de diámetro (ancho completo), con centro horizontal ${number(op.center[0])}, vertical ${number(op.center[1])} ${unit}.`);
+    else facts.push(`Mover el círculo ${number(op.delta[0])} ${unit} en horizontal y ${number(op.delta[1])} ${unit} en vertical.`);
+    facts.push("Verás el cambio en CADCraft y puedes deshacerlo allí. No se guarda ni exporta el dibujo.","Hazlo comprobará la identidad nativa y releerá la geometría. Cancelar detiene la espera y no deshace una edición aceptada.");
+  } else if(input.live_agent_version){
     if(input.save) facts.push("Guardar el sketch abierto con Arduino Agent.", "Sketch: " + input.before.name,
       "Objetivo: " + input.description, "Se guardará el código actual, incluida tu nota y los cambios sin guardar.",
       "El IDE usa el archivo actual; no se elige otra ruta ni se reemplaza el código del editor.",
@@ -141,7 +147,7 @@ export function proposalFacts(run: Snapshot): string[] {
   } else {
     facts.push(`Comprobar que el código compila para ${input.fqbn === "arduino:avr:uno" ? "Arduino Uno" : input.fqbn}.`, "Se generarán el sketch, el informe y los archivos compilados. Revisa el código en los detalles.", "No se carga código a una placa.");
   }
-  facts.push(input.live_agent_version || input.live_cad_version || input.live_pcb_version ? "El informe de la operación nativa se guarda en el proyecto." : "El resultado se guarda en el proyecto; los archivos originales se conservan.");
+  facts.push(input.live_agent_version || input.live_drawing_version || input.live_cad_version || input.live_pcb_version ? "El informe de la operación nativa se guarda en el proyecto." : "El resultado se guarda en el proyecto; los archivos originales se conservan.");
   if (run.audit?.destination) facts.push(`Carpeta de resultado dentro del proyecto: ${run.audit.destination}`);
   return facts;
 }

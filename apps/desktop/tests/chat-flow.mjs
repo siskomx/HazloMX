@@ -44,7 +44,7 @@ try {
     const snapshot = { project: ["project-one", "C:\\owned\\project"], job: null, inference: null, recovered: [], freecad: "owned-freecad", freecad_available: true, codex: { version: "fixture" }, codex_login: { id: "login", sequence: 1, busy: false, cancelled: false, connected: true, auth_url: null, error: null }, claude: { version: "fixture" } };
     const copy = () => structuredClone(snapshot);
     window.setCompletedJob = input => {
-      snapshot.job = { snapshot: { schema_version: input.live_agent_version ? 15 : input.live_pcb_version ? 14 : input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
+      snapshot.job = { snapshot: { schema_version: input.live_drawing_version ? 16 : input.live_agent_version ? 15 : input.live_pcb_version ? 14 : input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
     };
     window.setPendingJob = input => { window.setCompletedJob(input); snapshot.job.snapshot.phase = "awaiting_approval"; snapshot.job.approval_id = "private-approval"; };
     window.calls = []; window.approvals = 0;
@@ -55,7 +55,7 @@ try {
         if (window.refuseCompanionInstall) throw "No se reemplazó el complemento existente.";
         return "Complemento instalado. Guarda tu trabajo y reinicia Arduino Agent para activarlo.";
       }
-      if (["discover_cad_document","discover_drawing","discover_slice","discover_live_pcb"].includes(command)) {
+      if (["discover_cad_document","discover_drawing","discover_slice","discover_live_pcb","discover_live_drawing"].includes(command)) {
         if(window.rejectInspectionPicker) throw "Selección cancelada.";
         window.previousInspectionEvent = window.inspectionEvent;
         window.inspectionEvent = id => args.events.onmessage(id);
@@ -72,6 +72,10 @@ try {
       if (command === "discover_schematic") return { id: "selected-sheet", project_id: snapshot.project[0], name: "Circuito.kicad_sch", sha256: "a".repeat(64), components: [] };
       if (command === "discover_pcb") return { id: "selected-board", project_id: window.foreignSource ? "foreign-project" : snapshot.project[0], name: "Placa.kicad_pcb", sha256: "b".repeat(64), components: [] };
       if (command === "discover_live_pcb") { if (args.connection.endpoint !== "ipc://C:/owned/kicad/api.sock" || args.connection.token !== "fixture-api-secret") throw Error("Incorrect native connection fixture"); return { id: window.holdInspection ? "late-live-board" : "live-board", project_id: snapshot.project[0], name: "Placa.kicad_pcb", observation: { document_sha256: "2".repeat(64), job_id: "native-read", native_pcb_version: 1, instance_sha256: "a".repeat(64), state_sha256: "d".repeat(64), source_is_untrusted_data: true, components: [] } }; }
+      if (command === "discover_live_drawing") {
+        if(args.port!==47321) throw Error("Wrong selected native port");
+        return {id:"selected-native-drawing",project_id:snapshot.project[0],observation:{instance_id:"native-instance",binding_sha256:"d".repeat(64),title:"Plano abierto.dxf",insunits:4,dirty:true,entities:[]}};
+      }
       if (command === "discover_drawing") return { id: window.holdInspection ? "late-selected-drawing" : "selected-drawing", project_id: snapshot.project[0], inspection: { source_name: "Plano.dxf", source_sha256: "c".repeat(64) } };
       if (command === "discover_cad_document") return { id: window.holdInspection ? "late-selected-cad-document" : "selected-cad-document", project_id: window.foreignCad ? "foreign-project" : snapshot.project[0], inspection: { source_name: "Pieza.FCStd", source_sha256: "1".repeat(64), preview: {catalog:{Target:"Part::Box"},measurements:{Target:{dimensions_mm:{length:10,width:20,height:30}}}} } };
       if (command === "discover_slice") return { id: window.holdInspection ? "late-selected-slice" : "selected-slice", project_id: window.foreignSlice ? "foreign-project" : snapshot.project[0], preview: { source_name: "Pieza.stl", source_sha256: "e".repeat(64), selection_sha256: "f".repeat(64), triangles: 12, bounds_file_coordinates: [[0,0,0],[10,10,10]], declared_bed: null, bed_profiles: [] } };
@@ -807,9 +811,53 @@ try {
     assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="open_artifact").at(-1).args.format),"kicad_source");
     if (await page.locator("#report").isVisible()) await page.locator("#report button").click();
   }
+  for(const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    await page.locator("#program").selectOption("drawing");
+    await page.locator("#new-chat").click();
+    await page.locator("#cadcraft-port").fill("47321");
+    await page.getByRole("button",{name:"Conectar dibujo abierto en CADCraft parcheado…",exact:true}).click();
+    await send("Lee el dibujo abierto y pregunta lo que falta; todavía no prepares cambios.");
+    const context=JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context;
+    assert.equal(context.live_drawing_source.selection,"selected-native-drawing");
+    assert.equal(context.drawing_source,undefined);
+    assert.equal(context.document_scope,"open_native_drawing");
+    assert.equal(context.live_document_connection,true);
+    assert.equal(context.live_mutations_allowed,true);
+    assert.equal(context.native_connection_check,"inspect_open_drawing");
+    assert.equal(context.current_job,null);
+    assert(!JSON.stringify(context).includes("47321"),"Connection details leaked into model context");
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_drawing_version:1,job_id:crypto.randomUUID(),
+      description:"Mueve el círculo <img src=x onerror=window.nativeInjected=true>",units:"in",
+      before:{instance_id:"native-instance",binding_sha256:"d".repeat(64),title:"Plano abierto.dxf",dirty:true,insunits:4,entities:[]},
+      operation:{action:"move_circle",handle:"100",delta:[0.1,0]}}));
+    await page.getByRole("button",{name:"Elegir CADCraft CLI para copias…",exact:true}).click();
+    await page.locator("#approve:enabled").waitFor();
+    const facts=await page.locator("#change-facts").innerText();
+    assert.match(facts,/dibujo abierto en CADCraft/);
+    assert.match(facts,/0[.,]1 pulgadas en horizontal/);
+    assert.match(facts,/No se guarda ni exporta/);
+    assert.equal(await page.locator("#change-facts img").count(),0);
+    const count=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    assert.equal((await chatCalls()).length,count+1);
+    const review=JSON.parse((await chatCalls()).at(-1).args.prompt);
+    assert.match(review.user_request,/inspect_open_drawing/);
+    assert.equal(review.desktop_context.current_job.phase,"completed");
+    assert.match(await page.locator("#job-status").innerText(),/CADCraft[\s\S]*todavía no se guardó/);
+    if(!await page.locator("#history").isVisible()) await page.locator("#results > summary").click();
+    assert.match(await page.locator("#history").innerText(),/Informe del cambio en CADCraft/);
+    assert(!/Mostrar PNG|Mostrar HEX/.test(await page.locator("#history").innerText()));
+    await page.getByRole("button",{name:"Seleccionar dibujo…",exact:true}).click();
+    await send("Ahora inspecciona solamente la copia que elegí.");
+    const copy=JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context;
+    assert.equal(copy.live_drawing_source,undefined);
+    assert.equal(copy.live_document_connection,false);
+    assert.equal(copy.drawing_source.selection,"selected-drawing");
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

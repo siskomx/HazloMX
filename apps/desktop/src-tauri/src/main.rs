@@ -161,6 +161,23 @@ fn source_inspection(state: &AppState) -> Result<hazlomexa::host_tools::SourceIn
 }
 
 #[tauri::command]
+async fn discover_live_drawing(
+    app:tauri::AppHandle, state:State<'_,AppState>, port:u16, events:Channel<Uuid>,
+) -> Result<hazlomexa::host_tools::DiscoveredLiveDrawing,String> {
+    let inspection=source_inspection(&state)?;
+    let project_id=state.workflow.view()?.project.ok_or("Selecciona un proyecto.")?.0;
+    let tools=state.tools.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let executable=app.dialog().file().set_title("Selecciona el CADCraft parcheado y probado que está abierto con su puerto local")
+            .add_filter("CADCraft parcheado",&["exe"]).blocking_pick_file().ok_or("Selección cancelada.")?
+            .into_path().map_err(|e|e.to_string())?;
+        events.send(inspection.id).map_err(|_|"La inspección perdió su conversación.")?;
+        let result=tools.select_live_drawing(project_id,executable,port,inspection.cancelled.clone());
+        drop(inspection); result
+    }).await.map_err(|e|e.to_string())?
+}
+
+#[tauri::command]
 async fn discover_live_pcb(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
@@ -1191,6 +1208,7 @@ fn open_artifact(
             | ArtifactFormat::KicadReport
             | ArtifactFormat::SliceReport
             | ArtifactFormat::CadpilotReport
+            | ArtifactFormat::LiveDrawingReport
             | ArtifactFormat::LivePcbReport
             | ArtifactFormat::KonnectReport
     ) {
@@ -1294,7 +1312,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 

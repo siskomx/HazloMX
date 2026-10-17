@@ -14,6 +14,9 @@ pub mod arduino;
 pub mod cadcraft;
 
 #[cfg(windows)]
+pub mod cadcraft_live;
+
+#[cfg(windows)]
 pub mod cadpilot;
 
 #[cfg(windows)]
