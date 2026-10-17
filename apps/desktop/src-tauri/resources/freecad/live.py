@@ -216,7 +216,9 @@ def _run(request):
         raise ValueError("native_operation_rolled_back" if restored else "rollback_uncertain") from None
     undo_available = after["state_sha256"] == before["state_sha256"] or transaction in doc.UndoNames
     receipts[job] = {"status": "completed", "before_sha256": before["state_sha256"], "after_sha256": after["state_sha256"], "document_token": request["document_token"], "undo_available": undo_available}
-    Gui.getDocument(doc.Name).activeView().redraw()
+    view = Gui.getDocument(doc.Name).activeView()
+    view.fitAll()
+    view.redraw()
     return {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": results, "undo_available": undo_available}
 
 

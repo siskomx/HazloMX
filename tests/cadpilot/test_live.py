@@ -54,6 +54,7 @@ class LiveTests(unittest.TestCase):
         self.opened = {self.doc.Name: self.doc}
         self.calls = []
         self.draws = []
+        self.view_events = []
         self.rpc = types.ModuleType("rpc_server.rpc_server")
         self.dispatch_timeouts = []
         def dispatch(callback, **options):
@@ -82,7 +83,10 @@ class LiveTests(unittest.TestCase):
             return self.save_result
 
         self.save_as = save_as
-        self.gui.getDocument = lambda name: types.SimpleNamespace(Modified=self.modified, saveAs=lambda: self.save_as(), activeView=lambda: types.SimpleNamespace(redraw=lambda: self.draws.append(name)))
+        def redraw(name):
+            self.draws.append(name)
+            self.view_events.append("redraw")
+        self.gui.getDocument = lambda name: types.SimpleNamespace(Modified=self.modified, saveAs=lambda: self.save_as(), activeView=lambda: types.SimpleNamespace(redraw=lambda: redraw(name),fitAll=lambda:self.view_events.append("fit")))
         package = types.ModuleType("rpc_server")
         package.rpc_server = self.rpc
         serialize = types.ModuleType("rpc_server.serialize")
@@ -159,6 +163,7 @@ class LiveTests(unittest.TestCase):
         self.assertEqual(self.calls,[])
         self.assertEqual(self.doc.UndoNames,[])
         self.assertNotIn(str(self.export_path),json.dumps(report))
+        self.assertEqual(self.view_events,[])
         self.assertEqual(self.call(request)["error"],"already_attempted")
 
     def test_step_cancel_existing_destination_and_changed_document_do_not_export(self):
@@ -211,6 +216,7 @@ class LiveTests(unittest.TestCase):
         self.assertEqual(self.calls, [])
         self.assertEqual(self.doc.UndoNames, [])
         self.assertNotIn(str(self.saved_path), json.dumps(result))
+        self.assertEqual(self.view_events, [])
         self.assertEqual(self.call(request)["error"], "changed_document")
 
     def test_save_as_cancel_and_uncertain_failure_do_not_claim_a_completed_save(self):
@@ -285,6 +291,11 @@ class LiveTests(unittest.TestCase):
         self.assertEqual(self.call(self.request(first))["error"], "changed_document")
         self.assertEqual(self.calls, [])
 
+    def test_successful_native_geometry_fits_the_view_before_redrawing(self):
+        result=self.call(self.request(self.inspect()))
+        self.assertTrue(result["ok"],result)
+        self.assertEqual(self.view_events,["fit","redraw"])
+
     def test_two_native_changes_read_the_current_state_and_keep_one_undo_entry_each(self):
         first = self.inspect()
         self.assertFalse(self.doc.HasPendingTransaction)
@@ -322,6 +333,7 @@ class LiveTests(unittest.TestCase):
         self.assertEqual(after["state_sha256"], before["state_sha256"])
         self.assertTrue(after["recent_attempts"][request["job_id"]]["rollback_verified"])
         self.assertEqual(self.doc.UndoNames, [])
+        self.assertEqual(self.view_events, [])
 
     def test_expired_hidden_pending_and_undo_disabled_requests_do_not_write(self):
         before = self.inspect()
