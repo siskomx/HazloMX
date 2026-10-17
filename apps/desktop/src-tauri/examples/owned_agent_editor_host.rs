@@ -183,6 +183,55 @@ fn main() {
         assert_eq!(std::fs::read(&saved_path).unwrap(),final_state.source.as_bytes());
         assert!(host.call("propose_open_agent_save",request).is_err(),"A clean buffer must not prepare a second save");
     }
+    let cancelling=std::env::var("HAZLOMEXA_NATIVE_CANCEL_TEST").as_deref()==Ok("1");
+    if cancelling {
+        assert!(!actual && !saving,"Delayed delivery is a controlled IDE fixture only");
+        let source=final_state.source.replace("delay(250)","delay(125)");
+        assert_ne!(source,final_state.source);
+        let request=serde_json::json!({"instance_id":final_state.instance_id,"document_token":final_state.document_token,
+            "version":final_state.version,"state_sha256":final_state.state_sha256,"description":"Owned delayed edit","source":source});
+        host.call("propose_open_agent_change",request.clone()).unwrap();
+        let pending=workflow.view().unwrap().job.unwrap();
+        let job_id=pending.snapshot.input.job_id();
+        let approval=pending.approval_id.unwrap();
+        let dispatch=workflow.begin(approval).unwrap();
+        let executing=workflow.clone();
+        let worker=std::thread::spawn(move||executing.execute(dispatch).unwrap());
+        let deadline=std::time::Instant::now()+std::time::Duration::from_secs(5);
+        while !root.join("edit-delivered").is_file() {
+            assert!(std::time::Instant::now()<deadline,"Native delivery not observed");
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        assert_eq!(runtime.block_on(agent_editor::inspect(&connection,&cancel)).unwrap().source,final_state.source);
+        assert_eq!(workflow.cancel(job_id).unwrap().snapshot.phase,Phase::Cancelled);
+        let outcome=worker.join().unwrap();
+        assert_eq!(outcome.snapshot.phase,Phase::Cancelled);
+        assert!(!outcome.busy);
+        assert!(outcome.error.as_deref().unwrap().contains("Cancelar no deshace"));
+        assert!(workflow.begin(approval).is_err());
+        assert!(workflow.artifact(job_id,ArtifactFormat::LiveAgentReport).is_err());
+        assert!(host.call("read_verified_result",serde_json::json!({"job_id":job_id})).is_err());
+        std::fs::write(root.join("release-edit"),b"owned").unwrap();
+        let deadline=std::time::Instant::now()+std::time::Duration::from_secs(5);
+        let after=loop {
+            let observed=runtime.block_on(agent_editor::inspect(&connection,&cancel)).unwrap();
+            if observed.source==source {break observed;}
+            assert!(std::time::Instant::now()<deadline,"Late edit not observed");
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        };
+        assert_eq!(after.instance_id,final_state.instance_id);
+        assert_eq!(after.document_token,final_state.document_token);
+        assert_eq!(after.version,final_state.version+1);
+        assert!(after.dirty && after.source.contains("// unsaved user note"));
+        let read=host.call("inspect_open_agent_documents",args).unwrap();
+        assert_eq!(read["observation"],serde_json::to_value(&after).unwrap());
+        assert!(host.call("propose_open_agent_change",request).is_err());
+        assert_eq!(std::fs::read(&saved_path).unwrap(),saved);
+        assert_eq!(workflow.view().unwrap().job.unwrap().snapshot.phase,Phase::Cancelled);
+        assert!(workflow.artifact(job_id,ArtifactFormat::LiveAgentReport).is_err());
+        assert!(host.call("read_verified_result",serde_json::json!({"job_id":job_id})).is_err());
+        println!("late native edit after cancellation passed");
+    }
     if !actual {
         std::fs::remove_file(discovery.join(format!("{}.json",before.instance_id))).unwrap();
         let disconnected=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
@@ -192,9 +241,10 @@ fn main() {
     drop(host);
     drop(workflow);
     let recovered = Project::open(&project_root).unwrap().recover().unwrap();
-    assert_eq!(recovered.len(), if saving {3} else {2});
+    assert_eq!(recovered.len(), if saving || cancelling {3} else {2});
+    assert_eq!(recovered.iter().filter(|run|run.phase==Phase::Cancelled).count(),usize::from(cancelling));
     assert!(recovered
         .iter()
-        .all(|run| run.phase == Phase::Completed && run.schema_version == 15));
+        .all(|run| matches!(run.phase,Phase::Completed|Phase::Cancelled) && run.schema_version == 15));
     println!("Rust host and companion protocol: edit/readback/follow-up/stale refusal passed");
 }

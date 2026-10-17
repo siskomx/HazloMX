@@ -21,7 +21,18 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     source:"// unsaved user note\nvoid loop() { delay(1000); }\n", getText() { reads++; return this.source; }, positionAt(offset) { return offset; }};
   const editor = {document:doc, async edit(callback, options) {
     assert.deepEqual(options, {undoStopBefore:true, undoStopAfter:true});
-    edits++; callback({replace(range, source) {doc.source = source;}}); doc.version++; return true;
+    edits++;
+    let replacement;
+    callback({replace(range, source) {replacement = source;}});
+    if (process.env.HAZLOMEXA_NATIVE_CANCEL_TEST === "1" && replacement.includes("delay(125)")) {
+      await fs.writeFile(path.join(root,"edit-delivered"),"owned");
+      const deadline=Date.now()+10000;
+      while (!(await fs.access(path.join(root,"release-edit")).then(()=>true,()=>false))) {
+        if (Date.now()>deadline) throw Error("Owned edit release deadline");
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+    }
+    doc.source = replacement; doc.version++; return true;
   }};
   doc.save=async()=>{saves++;await fs.writeFile(path.join(root,"Sketch.ino"),doc.source);doc.isDirty=false;return true;};
   const api = {env:{appName:"Arduino Agent"}, window:{activeTextEditor:editor}, Range:class {}};
@@ -80,10 +91,15 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
         windowsHide:true,
       });
       assert(result.stdout.includes("stale refusal passed")); assert.equal(result.stderr, "");
-      assert.equal(edits, 3); assert(doc.source.includes("delay(250)"));
+      const cancelling=process.env.HAZLOMEXA_NATIVE_CANCEL_TEST==="1";
+      assert.equal(edits, cancelling?4:3); assert(doc.source.includes(cancelling?"delay(125)":"delay(250)"));
       const saving=process.env.HAZLOMEXA_NATIVE_SAVE_TEST==="1";
       assert.equal(saves,saving?1:0);
       assert.equal(await fs.readFile(path.join(root,"Sketch.ino"),"utf8"), saving?doc.source:savedSketch);
+      if(cancelling) {
+        assert(result.stdout.includes("late native edit after cancellation passed"));
+        t.diagnostic("Approved Rust cancellation, delayed companion delivery, fresh readback, stale refusal and cancelled history passed against a controlled IDE API.");
+      }
       t.diagnostic(saving ? "Actual Rust approval and companion pipe passed native edit/follow-up/save, disk readback and three-job recovery against the controlled IDE API."
         : "Actual approved Rust jobs and companion pipe passed edit/readback/follow-up, stale refusal, saved-file preservation and recovery against the controlled IDE API.");
     }
