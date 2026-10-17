@@ -363,6 +363,7 @@ function renderConnections(disabled: boolean) {
       $("program-actions").append(details);
     }
   }
+  if (program === "rea") return;
   if(["drawing","arduino","kicad","slice"].includes(program)) connectionButton("Usar herramientas de la CLI instalada",disabled,()=>nativeConnect(false));
   const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
   if (program === "freecad") {

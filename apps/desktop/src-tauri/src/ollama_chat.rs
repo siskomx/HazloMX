@@ -153,7 +153,8 @@ pub async fn run_scoped(
         jobs: Vec::new(),
     };
     // Bound autonomous tool rounds; a human turn starts a fresh inspection rather than retrying a call.
-    for _ in 0..8 {
+    // Native catalog discovery may need several schema queries before a proposal.
+    for _ in 0..16 {
         check()?;
         let request =
             json!({"model":client.model,"messages":messages,"tools":functions,"stream":false});
@@ -405,6 +406,38 @@ mod tests {
             .contains(&pending.approval_id.unwrap().to_string()));
         drop(workflow);
         fs::remove_dir_all(root).unwrap();
+    }
+    #[tokio::test]
+    async fn longer_discovery_preserves_approval_and_endless_reads_still_stop() {
+        for finish in [true, false] {
+            let (root, workflow, host, project) = setup();
+            let mut replies = metadata();
+            let reads = if finish { 9 } else { 16 };
+            for _ in 0..reads {
+                replies.push(reply(&record("", vec![call("get_design_capabilities", json!({}))]).to_string(), "application/json"));
+            }
+            if finish {
+                replies.push(reply(&record("", vec![proposal(project.0)]).to_string(), "application/json"));
+                replies.push(reply(&record("Revisa la propuesta; requiere tu aprobación.", vec![]).to_string(), "application/json"));
+            }
+            let (port, fixture, _) = server(replies);
+            let result = run(OllamaClient::new(port, "fixture", DIGEST).unwrap(), workflow.clone(), host.clone(), project,
+                "Descubre las capacidades antes de preparar el cambio.".into(), Arc::new(AtomicBool::new(false)), |_| {}).await;
+            let requests = fixture.join().unwrap();
+            if finish {
+                assert!(result.unwrap().contains("aprobación"));
+                let pending = workflow.view().unwrap().job.unwrap();
+                assert_eq!(pending.snapshot.phase, Phase::AwaitingApproval);
+                assert!(!pending.busy);
+                assert!(!requests.join(" ").contains(&pending.approval_id.unwrap().to_string()));
+            } else {
+                assert!(result.unwrap_err().contains("límite de herramientas"));
+                assert!(workflow.view().unwrap().job.is_none());
+            }
+            assert!(workflow.view().unwrap().history.iter().all(|job| job.phase != Phase::Completed));
+            drop(host); drop(workflow);
+            fs::remove_dir_all(root).unwrap();
+        }
     }
     #[tokio::test]
     async fn actual_http_chat_uses_host_tools_and_leaves_approval_to_the_human() {

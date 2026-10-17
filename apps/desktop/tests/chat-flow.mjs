@@ -875,6 +875,7 @@ try {
     await page.locator("#provider").selectOption(provider);
     for(const program of ["freecad","drawing","arduino","agent","kicad","slice","rea"]) {
       await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
+      if(program==="rea") assert.deepEqual(await page.locator("#program-actions button").allTextContents(),["Conectar MCP nativo…"],"Rea inherited another program's file controls");
       await page.getByRole("button",{name:"Conectar MCP nativo…",exact:true}).click();await page.locator("#send:enabled").waitFor();
       assert.match(await page.locator("#program-actions").innerText(),/Catálogo del programa/);
       assert.match(await page.locator("#connection-status").innerText(),/herramientas MCP conectadas/);
