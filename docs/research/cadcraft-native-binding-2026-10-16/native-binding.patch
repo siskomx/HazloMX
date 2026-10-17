@@ -126,7 +126,7 @@ diff --git a/crates/ui-egui/tests/control_binding.rs b/crates/ui-egui/tests/cont
 new file mode 100644
 --- /dev/null
 +++ b/crates/ui-egui/tests/control_binding.rs
-@@ -0,0 +1,117 @@
+@@ -0,0 +1,138 @@
 +use cadcraft_engine::Session;
 +use cadcraft_ui_egui::control::{ControlRequest, Outcome, handle};
 +use cadcraft_ui_egui::{CadApp, Services};
@@ -201,6 +201,27 @@ new file mode 100644
 +    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
 +    assert!(app.session.running.is_some());
 +    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++}
++
++#[test]
++fn waiting_lisp_refuses_dispatch_and_the_person_can_finish_their_routine() {
++    let (mut app, ctx) = setup();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    assert_eq!(call(&mut app, &ctx, "cmdline.input", json!({"text":"(progn (setq p (getpoint)) (command \"_.CIRCLE\" p 1))"}))["ok"], true);
++    assert!(app.session.lisp_running());
++    assert!(app.session.running.is_none());
++    assert_eq!(call(&mut app, &ctx, "document.binding", json!({}))["ok"], false);
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert!(app.session.lisp_running());
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++    assert_eq!(call(&mut app, &ctx, "cmdline.input", json!({"text":"4,5"}))["ok"], true);
++    assert!(!app.session.lisp_running());
++    let inspected = call(&mut app, &ctx, "drawing.inspect", json!({}));
++    assert_eq!(inspected["result"]["entityCount"], 1);
++    assert_eq!(inspected["result"]["entities"][0]["type"], "Circle");
++    assert_eq!(inspected["result"]["entities"][0]["geometry"]["center"]["x"], 4.0);
++    assert_eq!(inspected["result"]["entities"][0]["geometry"]["center"]["y"], 5.0);
++    assert_eq!(inspected["result"]["entities"][0]["geometry"]["radius"], 1.0);
 +}
 +
 +#[test]
