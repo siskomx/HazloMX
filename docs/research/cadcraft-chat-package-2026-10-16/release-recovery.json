@@ -1,0 +1,23 @@
+{
+  "pass": true,
+  "source_commit": "18134bf",
+  "release_image": true,
+  "installed_registration_tested": false,
+  "native_project_picker": true,
+  "schema16_jobs_recovered": 2,
+  "prior_chat_messages_restored": 8,
+  "real_cloud_review": true,
+  "historical_and_current_native_states_distinguished": true,
+  "new_jobs": 0,
+  "preserved_project_files": 5,
+  "source_preserved": true,
+  "host_settings_preserved": true,
+  "expected_installed_app_sha256": "df0b8ccac5114bbb00ff30f4ba3721569c10e684c8b94adccfd71b714c0bddeb",
+  "installer_sha256": "b36a164bb3e74d4222fd2660218a4fe05e419f1521f10825dc4e4b56e4e82e86",
+  "restored_message_order_and_text_exact": true,
+  "current_message_count": 10,
+  "recovered_report_opened_read_only": true,
+  "no_recovered_approval": true,
+  "owned_processes_stopped": true,
+  "fresh_engineering_writes_retested": false
+}

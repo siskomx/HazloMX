@@ -1,0 +1,21 @@
+{
+  "pass": true,
+  "current_user_install": true,
+  "binaries_match_package_build": true,
+  "same_version_update": true,
+  "previous_build_update": true,
+  "app_alive": true,
+  "uninstalled": true,
+  "user_files_preserved": true,
+  "lifecycle_pass": true,
+  "source_commit": "18134bf",
+  "installer_sha256": "b36a164bb3e74d4222fd2660218a4fe05e419f1521f10825dc4e4b56e4e82e86",
+  "installed_and_updated_helper_tools": 35,
+  "independent_exported_files_match": 3,
+  "owned_guest_stopped": true,
+  "native_ui_automation": false,
+  "engineering_workflows_retested": false,
+  "ordinary_user_retested": false,
+  "signed_in_conversation_tested": false,
+  "full_installed_acceptance_pass": false
+}
