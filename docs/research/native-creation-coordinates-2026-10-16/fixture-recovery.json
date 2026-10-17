@@ -1,0 +1,10 @@
+{
+  "initial_attempt_pass": false,
+  "initial_failure": "Protocol test harness could not load its omitted Visual C++ runtime DLL.",
+  "fixture_only": true,
+  "shipped_binaries_import_runtime_dll": false,
+  "same_guest_resumed": true,
+  "runtime_signature_valid": true,
+  "runtime_microsoft_signer": true,
+  "resumed_lifecycle_pass": true
+}
