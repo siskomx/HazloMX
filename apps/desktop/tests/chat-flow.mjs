@@ -877,6 +877,8 @@ try {
       await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
       await page.getByRole("button",{name:"Conectar MCP nativo…",exact:true}).click();await page.locator("#send:enabled").waitFor();
       assert.match(await page.locator("#program-actions").innerText(),/Catálogo del programa/);
+      assert.match(await page.locator("#connection-status").innerText(),/herramientas MCP conectadas/);
+      assert.match(await page.locator("#chat-progress").innerText(),/Catálogo de herramientas conectado/);
       await page.getByRole("button",{name:"Actualizar herramientas y versiones",exact:true}).click();await page.locator("#send:enabled").waitFor();
       assert((await page.evaluate(()=>window.calls)).some(c=>c.command==="connect_native_tools"&&c.args.refresh===true));
       await send("Quiero cambiar esta pieza usando las herramientas de su programa.");
@@ -902,6 +904,7 @@ try {
         await send("Primero consulta la ayuda de esta CLI.");
         const cliPrompt=JSON.parse((await chatCalls()).at(-1).args.prompt);
         assert.equal(cliPrompt.desktop_context.native_tools.transport,"cli");
+        assert.match(await page.locator("#connection-status").innerText(),/CLI instalada · archivos guardados/);
         assert.equal(cliPrompt.desktop_context.document_scope,"native_cli_not_live_editor");
         assert.equal(cliPrompt.desktop_context.live_document_connection,null);
         assert.equal(cliPrompt.desktop_context.native_tools.catalog_sha256,undefined,"An initial catalog digest must not override refreshed discovery");

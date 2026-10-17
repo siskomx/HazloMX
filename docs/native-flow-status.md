@@ -1,5 +1,12 @@
 # Current native-flow status
 
+[Real Orca chat inspection](research/orca-chat-continuation-2026-10-17.md) confirms
+the open cube through UI approval and existing cloud inference. Repeated query
+proposals blocked the first width-edit conversation; shared instructions now
+retrieve completed native results before requesting duplicate reads. Connection
+labels distinguish MCP tools and CLI files. Fresh editing and package acceptance
+remain required for this correction.
+
 **Orca source packaged (`2f0d564`):** the [updated installer checkpoint](research/orca-live-native-mcp-2026-10-17.md#windows-package) passes fresh guest install/update/identity/helper/startup/uninstall and three independently matched preserved project files. Native Orca edits remain separately scoped host evidence. KiCad 10 and pending Claude/live schematic choices remain unchanged.
 
 [Orca live MCP checks](research/orca-live-native-mcp-2026-10-17.md) now pass on the explicitly selected maintained fork and native MCP server. Its 53 discovered tools drive visible geometry/settings edits and native readback; transform Undo is unavailable in the tested build, so restoration is a separately reviewed inverse edit. Installed stock OrcaSlicer remains unchanged. The person explicitly keeps KiCad 10 and leaves live schematics plus Claude sign-in pending.
