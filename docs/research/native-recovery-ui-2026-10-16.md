@@ -60,3 +60,27 @@ file write or geometry commit, lost-acknowledgement recovery for every
 integration, installed conversation acceptance, or another provider's model
 behavior. The current installer predates these source changes. The full
 multi-program goal remains unfinished.
+
+## Current installer
+
+The [rebuilt candidate](native-recovery-ui-2026-10-16/package-candidate.json)
+from `c5bfe36` now includes the natural-target and uncertain-outcome changes.
+Packaging, unchanged tracked inputs, app/helper profile-path scans and the
+actual release helper's 33-tool protocol check pass.
+
+A fresh Windows guest starts above the unchanged 3 GiB memory prerequisite.
+It passes the [scoped lifecycle check](native-recovery-ui-2026-10-16/package-lifecycle.json),
+using the retained `5871c0a` candidate as its previous-package upgrade source.
+Both installed and updated tool transports, exact app/helper identities,
+same-version update, hidden startup, uninstall and user-file preservation
+pass. Independent host hashes match all three exported project files. The
+guest is stopped and its absence is verified. Engineering workflows,
+ordinary-user and interactive/model acceptance are not repeated or claimed
+for this package.
+
+Separately, the ordinary native client picker selects the installed supported
+Codex 0.159.2 executable in an owned Hazlo profile and enables its Connect
+Account button. Identification takes longer in the debug app while hashing
+the binary; selection completes successfully. Human sign-in is requested,
+with no credential reading, copying or authentication automation. This is
+client-selection readiness, not authenticated Codex conversation acceptance.
