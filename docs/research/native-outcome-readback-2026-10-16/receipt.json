@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "base_commit": "8123630",
+  "source_sha256": {
+    "apps/desktop/src/chat.ts": "36d078d79a3b0f9be26a9c6c385d070d038762b34537047c26d969350ddbcc3d",
+    "apps/desktop/src-tauri/src/claude.rs": "ec26db42a99b742c2e79bc39b10c6e46da59555bf4559723e112b7ea3c4f576a",
+    "apps/desktop/tests/chat-flow.mjs": "0bba7f76a6e57313d6bd8560cd33ea998ed820e05b6b337ee4a0ee565bef1dac"
+  },
+  "browser_suite_pass": true,
+  "new_native_terminal_cases": 72,
+  "readback_requests": 48,
+  "no_readback_cases": 24,
+  "ai_routes": 4,
+  "native_input_types": 3,
+  "frontend_build_pass": true,
+  "custom_protocol_build_pass": true,
+  "focused_rust_tests_passed": 31,
+  "existing_ignored_tests": 2,
+  "library_clippy_warnings_denied_pass": true,
+  "real_model_recovery_verified": false,
+  "in_flight_native_ui_cancellation_verified": false,
+  "installer_includes_change": false
+}

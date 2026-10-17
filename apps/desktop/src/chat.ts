@@ -109,22 +109,28 @@ function apply(next: DesktopSnapshot) {
     answeredChat = chat.id; persist();
   }
   render();
-  reviewCompletedResult();
+  reviewFinishedOperation();
 }
 async function action(work: () => Promise<void>) {
   if (commandBusy) return;
   commandBusy = true; $("error").hidden = true; render();
   try { await work(); } catch (e) { if (String(e) !== "Selección cancelada.") error(e); }
-  finally { commandBusy = false; render(); reviewCompletedResult(); }
+  finally { commandBusy = false; render(); reviewFinishedOperation(); }
 }
-function reviewCompletedResult() {
+function reviewFinishedOperation() {
   const pending = resultReview;
   if (!pending || commandBusy || state.chat?.busy || state.job?.busy) return;
   const job = state.job;
   if (!job || pending.revision !== revision || pending.project !== JSON.stringify(state.project) || pending.provider !== provider || pending.program !== program || job.snapshot.project_id !== state.project?.[0] || jobProgram(job.snapshot) !== program || job.snapshot.input.job_id !== pending.jobId) { resultReview = undefined; return; }
   if (["awaiting_approval", "running"].includes(job.snapshot.phase)) return;
   resultReview = undefined;
-  if (job.snapshot.phase !== "completed" || job.error) return;
+  if (job.snapshot.phase !== "completed" || job.error) {
+    const input = job.snapshot.input;
+    if (!(input.live_cad_version || input.live_agent_version || input.live_pcb_version) || !["failed", "cancelled", "interrupted"].includes(job.snapshot.phase)) return;
+    const inspection = input.live_cad_version ? `inspect_open_cad_documents con el nombre ${JSON.stringify(input.document_name)}` : input.live_agent_version ? "inspect_open_agent_documents para el mismo documento e instancia del trabajo" : "inspect_selected_live_pcb con la selección actual";
+    void action(() => send(`La operación nativa que aprobé quedó en estado ${job.snapshot.phase}; su resultado puede ser incierto. Consulta solo ${inspection} para leer el estado actual. No supongas que detener la espera deshizo el cambio ni que el programa lo aplicó. Si no puedes verificar el documento, dilo claramente. No uses read_verified_result para este trabajo incompleto. Explica brevemente qué estado puedes confirmar y qué sigue sin verificarse, sin atribuir cambios a esta operación solo por observarlos. No prepares ni ejecutes otro cambio ni reintentes la operación.`, false));
+    return;
+  }
   void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId}; si es una operación de FreeCAD abierto, vuelve a consultar inspect_open_cad_documents con su nombre; si es un sketch abierto de Arduino Agent, consulta inspect_open_agent_documents para leer su estado actual; si es una PCB abierta, consulta inspect_selected_live_pcb con la selección actual para leer el estado nativo. Explícame brevemente qué cambió y qué comprobó el programa, con las limitaciones reales. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`, false));
 }
 function summary(run: Snapshot): string {
@@ -407,7 +413,11 @@ $("approve").onclick = () => void action(async () => {
   catch (e) { resultReview = undefined; throw e; }
   if (token === revision && state.job?.snapshot.input.job_id === jobId) apply({ ...state, job });
 });
-for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => void action(async () => { resultReview = undefined; if (state.job) apply({ ...state, job: await invoke<Job>("cancel_job", { jobId: state.job.snapshot.input.job_id }) }); });
+for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => void action(async () => {
+  const input = state.job?.snapshot.input;
+  if (!state.job?.busy || !(input?.live_cad_version || input?.live_agent_version || input?.live_pcb_version)) resultReview = undefined;
+  if (state.job) apply({ ...state, job: await invoke<Job>("cancel_job", { jobId: state.job.snapshot.input.job_id }) });
+});
 void action(async () => apply(await invoke<DesktopSnapshot>("get_snapshot")));
 setInterval(() => {
   const token = revision;

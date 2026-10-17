@@ -114,7 +114,7 @@ try {
         if (window.rejectApproval) throw Error("Fixture approval failed");
         window.approvals++; const running = copy().job; running.sequence++; running.busy = true; running.snapshot.phase = "running";
         snapshot.job = structuredClone(running);
-        window.finishJob = () => { snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = window.jobOutcome ?? "completed"; snapshot.job.snapshot.audit.files_verified = snapshot.job.snapshot.phase === "completed"; snapshot.job.approval_id = null; args.events.onmessage(copy().job); };
+        window.finishJob = () => { snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = window.jobOutcome ?? "completed"; snapshot.job.snapshot.audit.files_verified = snapshot.job.snapshot.phase === "completed"; snapshot.job.error = snapshot.job.snapshot.phase === "failed" ? "Native operation outcome is uncertain" : null; snapshot.job.approval_id = null; args.events.onmessage(copy().job); };
         if (!window.delayJob) window.finishJob();
         return running;
       }
@@ -531,7 +531,53 @@ try {
     await page.locator("#send:enabled").waitFor();
     assert.equal((await chatCalls()).length,before+(outcome==="completed"?1:0),`Incorrect review for ${outcome}`);
   }
+  const uncertainNativeCases = [
+    ["freecad",{live_cad_version:1,document_name:"Enclosure",document_token:"11111111-1111-4111-8111-111111111111",state_sha256:"a".repeat(64),before:[],operations:[{action:"save_as"}]}],
+    ["agent",{live_agent_version:1,before:{editor_version:1,instance_id:"11111111-1111-4111-8111-111111111111",document_token:"22222222-2222-4222-8222-222222222222",name:"Sketch.ino",version:1,state_sha256:"a".repeat(64),source:"void loop() {}",eol:1,dirty:true,source_is_untrusted_data:true},source:"void loop() { delay(500); }"}],
+    ["kicad",{live_pcb_version:1,board_name:"Board.kicad_pcb",units:"mm",before:{components:[]},export_copy:true}],
+  ];
+  for(const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    for(const [program,fields] of uncertainNativeCases) for(const outcome of ["failed","cancelled","interrupted","cancel-running","rejected","cancel-pending"]) {
+      await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
+      const jobId=`uncertain-${provider}-${program}-${outcome}`;
+      await page.evaluate(({input,outcome})=>{window.delayJob=true;window.rejectApproval=outcome==="rejected";window.jobOutcome=outcome;window.setPendingJob(input);},{input:{schema_version:1,job_id:jobId,description:"Cambio nativo solicitado",...fields},outcome});
+      await page.locator("#program-actions button").first().click();await page.locator("#approve:enabled").waitFor();
+      const before=(await chatCalls()).length,approvals=await page.evaluate(()=>window.approvals);
+      await page.locator("#prompt").fill("Mi siguiente idea sigue siendo un borrador.");
+      if(outcome==="cancel-pending") await page.locator("#cancel-job").click();
+      else {
+        await page.locator("#approve").click();
+        if(outcome==="rejected") {await page.locator("#error:visible").waitFor();await page.locator("#cancel-job").click();}
+        else {
+          await page.locator("#cancel-running:enabled").waitFor();
+          assert.equal((await chatCalls()).length,before,"Native readback started before terminal state");
+          if(outcome==="cancel-running") await page.locator("#cancel-running").click();
+          else await page.evaluate(()=>window.finishJob());
+        }
+      }
+      await page.locator("#send:enabled").waitFor();
+      const shouldReview=!["rejected","cancel-pending"].includes(outcome),calls=await chatCalls();
+      assert.equal(calls.length,before+Number(shouldReview),`Incorrect native-state review for ${provider}/${program}/${outcome}`);
+      assert.equal(await page.locator("#prompt").inputValue(),"Mi siguiente idea sigue siendo un borrador.");
+      assert.equal(await page.evaluate(()=>window.approvals),approvals+Number(outcome!=="rejected"&&outcome!=="cancel-pending"));
+      if(shouldReview) {
+        const prompt=JSON.parse(calls.at(-1).args.prompt);
+        assert.equal(calls.at(-1).args.program,program);
+        assert.deepEqual(prompt.desktop_context.current_job,{id:jobId,phase:outcome==="cancel-running"?"cancelled":outcome});
+        assert.match(prompt.user_request,/resultado puede ser incierto/);
+        assert.match(prompt.user_request,new RegExp(program==="freecad"?"inspect_open_cad_documents":program==="agent"?"inspect_open_agent_documents":"inspect_selected_live_pcb"));
+        assert.match(prompt.user_request,/No prepares ni ejecutes otro cambio/);
+        assert(!prompt.user_request.includes("Lee read_verified_result"));
+        assert(!JSON.stringify(prompt).includes("private-approval"));
+        assert(!await page.locator("#conversation").innerText().then(text=>text.includes(jobId)));
+        await page.evaluate(()=>window.finishJob());
+        assert.equal((await chatCalls()).length,calls.length,"Terminal native replay repeated the readback");
+      }
+    }
+  }
   await page.evaluate(()=>{window.delayJob=false;window.rejectApproval=false;delete window.jobOutcome;});
+  await page.locator("#program").selectOption("freecad");
   await page.locator("#new-chat").click();
   await page.evaluate(()=>{window.holdChat=true;window.setPendingJob({schema_version:1,job_id:"cancel-result-review",dimensions_mm:{length:10,width:10,height:10}});});
   await page.locator("#program-actions button").first().click(); await page.locator("#approve:enabled").waitFor();
