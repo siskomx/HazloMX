@@ -4,6 +4,13 @@ October 17, 2026. The four-step objective in [the application goal](application-
 remains intact. Historical checkpoints describe the binary and scope actually
 tested; a later package does not retroactively turn them into new tests.
 
+The next implementation priority is program-owned tool discovery and native
+routing rather than more fixed operation wrappers. The [shared catalog and
+upstream checks](research/program-tool-catalog-2026-10-17.md) now report exact
+callable tools, repository/version provenance and discovery methods. Full
+upstream schema refresh/routing remains unfinished; releases do not grant
+installed capabilities. This source change is newer than the retained installer.
+
 | Program | Current evidence | Remaining live-flow gap |
 |---|---|---|
 | FreeCAD / CADPilot | [Visible native creation, edits, mixed units, follow-up and native saving](research/native-creation-ui-2026-10-16.md); earlier native STEP/export and cancellation evidence linked in the goal | Broader/current-package and other-provider acceptance retains its explicit limits. |
