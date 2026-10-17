@@ -24,3 +24,9 @@ and examples Clippy passes, frontend production build passes, image and history
 fixtures pass. The startup fixture checks automatic discovery without login or
 an engineering operation. Real native-window and installer acceptance follow
 this source change; this record does not claim them in advance.
+
+The first real release-window request exposed a new rate_limit_event notification
+from Claude 2.1.302. It ran no native edit. The decoder now accepts that
+informational event after initialization, while still requiring a terminal
+result and rejecting unknown event types. The four regular Claude decoder
+tests pass; real conversation acceptance continues separately.

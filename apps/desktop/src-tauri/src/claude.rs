@@ -203,6 +203,11 @@ impl Decoder {
                 self.view.active_tool = None;
                 self.view.complete = true;
             }
+            Some("rate_limit_event") => {
+                if !self.view.initialized {
+                    return Err("Claude informó límites antes de confirmar sus herramientas.".into());
+                }
+            }
             Some("system" | "user") => {}
             _ => return Err("Tipo de evento de Claude no compatible.".into()),
         }
@@ -483,6 +488,21 @@ mod tests {
         assert!(args.contains(&"--restricted"));
         assert!(args.contains(&"--strict-mcp-config"));
         assert!(!args.contains(&"--dangerously-skip-permissions"));
+    }
+    #[test]
+    fn rate_limit_notifications_do_not_complete_or_change_a_turn() {
+        let notice = line(json!({"type":"rate_limit_event","rate_limit_info":{"status":"allowed"}}));
+        assert!(Decoder::default().push(&notice).is_err());
+        let mut decoder = Decoder::default();
+        decoder.push(&line(init())).unwrap();
+        decoder.push(&notice).unwrap();
+        assert!(!decoder.view().complete && decoder.view().text.is_empty());
+        decoder.push(&line(json!({"type":"result","is_error":false,"result":"Listo"}))).unwrap();
+        assert_eq!(decoder.finish().unwrap().text, "Listo");
+        assert!(decoder.push(&notice).is_err());
+        let mut decoder = Decoder::default();
+        decoder.push(&line(init())).unwrap();
+        assert!(decoder.push(&line(json!({"type":"unknown_event"}))).is_err());
     }
     #[tokio::test]
     #[ignore = "Requires installed Claude Code and the release MCP helper; uses no credentials"]
