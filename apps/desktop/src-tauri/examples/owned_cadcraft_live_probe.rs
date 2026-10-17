@@ -87,17 +87,62 @@ impl Client {
     }
 }
 
+fn lisp_binding_probe(client: &mut Client, root: &Path, before: &Value) -> Value {
+    let token=uuid::Uuid::new_v4().to_string();
+    let capture=format!("(progn (setq hazlomexa-token \"{token}\" hazlomexa-before (entget (handent \"100\"))) \"captured\")");
+    let guard=|expected:&str,x:f64|format!("(if (and (equal hazlomexa-token \"{expected}\") (equal hazlomexa-before (entget (handent \"100\")))) (progn (entmod (subst (cons 10 (list {x} 0.0 0.0)) (assoc 10 hazlomexa-before) hazlomexa-before)) \"applied\") \"refused\")");
+    let eval=|client:&mut Client,code:String| {
+        let result=client.execute("lisp",json!({"code":code}));
+        assert!(result.get("error").is_none(),"Native LISP failed; retain private evidence");
+        result["value"].clone()
+    };
+    assert_eq!(eval(client,capture.clone()),json!("\"captured\""));
+    assert_eq!(client.drawing()["entities"],before["entities"],"Binding must not change geometry");
+    assert_eq!(eval(client,guard(&uuid::Uuid::new_v4().to_string(),999.)),json!("\"refused\""));
+    assert_eq!(client.drawing()["entities"],before["entities"]);
+    assert_eq!(eval(client,guard(&token,1.)),json!("\"applied\""));
+    let first=client.drawing();
+    let mut expected=before["entities"].clone();
+    expected[0]["geometry"]["center"]["x"]=json!(1.);
+    assert_eq!(first["entities"],expected);
+    assert_eq!(eval(client,guard(&token,999.)),json!("\"refused\""),"Changed target must refuse the old snapshot");
+    assert_eq!(client.drawing()["entities"],first["entities"]);
+    assert_eq!(eval(client,capture),json!("\"captured\""));
+    assert_eq!(eval(client,guard(&token,1.+0.1*25.4)),json!("\"applied\""));
+    let moved=client.drawing();
+    expected[0]["geometry"]["center"]["x"]=json!(3.54);
+    assert_eq!(moved["entities"],expected);
+    assert_eq!(moved["counts"],before["counts"]);
+    assert_eq!(moved["layers"],before["layers"]);
+    assert_eq!(moved["dirty"],true);
+    for previous in [&first,before] {
+        client.execute("undo",json!({"count":1}));
+        assert_eq!(client.drawing()["entities"],previous["entities"],"One native Undo per LISP edit");
+    }
+    client.execute("close",json!({}));
+    client.call("app.open",json!({"path":root.join("OwnedDrawing.dxf")}));
+    assert_eq!(client.drawing()["entities"],before["entities"]);
+    assert_eq!(eval(client,guard(&token,999.)),json!("\"refused\""),"Reopened identical source must not inherit the old binding");
+    assert_eq!(client.drawing()["entities"],before["entities"]);
+    json!({"passed":true,"cadcraft_version":"0.7.0","native_lisp":true,"document_scoped_binding":true,"same_call_target_guard":true,
+        "wrong_token_refused":true,"stale_target_refused":true,"reopened_document_refused":true,
+        "metric_and_inch_moves":true,"native_undo":true,"saved_bytes_preserved":true,
+        "whole_drawing_guard":false,"production_writer_enabled":false,"hazlo_approval":false,"real_provider":false})
+}
+
 fn main() {
     assert!(unlocked(), "An active unlocked desktop is required");
     let workspace = Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .nth(3)
         .unwrap();
-    let runtime = workspace
-        .join("target/cadcraft-probe/runtime/cadcraft-0.5.0-windows-x64-portable/cadcraft.exe");
+    let lisp=std::env::var("HAZLOMEXA_CADCRAFT_LISP_PROBE").as_deref()==Ok("1");
+    let runtime = workspace.join(if lisp {"target/cadcraft-lisp-probe/runtime/cadcraft-0.7.0-windows-x64-portable/cadcraft.exe"}
+        else {"target/cadcraft-probe/runtime/cadcraft-0.5.0-windows-x64-portable/cadcraft.exe"});
     assert_eq!(
         format!("{:x}", Sha256::digest(fs::read(&runtime).unwrap())),
-        "339373dde0fa465f4bb3da23a7da48096329214587b4e363558f9931369d0982"
+        if lisp {"d92dd49cfc81521480d65c30d0abbc91b12b28be1fe95e0586c63d8d6c8544f5"}
+        else {"339373dde0fa465f4bb3da23a7da48096329214587b4e363558f9931369d0982"}
     );
     let root = workspace.join(format!(
         "target/cadcraft-native-ui-{}",
@@ -116,7 +161,7 @@ fn main() {
     let address = reservation.local_addr().unwrap();
     drop(reservation);
     fs::write(
-        workspace.join("target/current-cadcraft-live-ui.json"),
+        workspace.join(if lisp {"target/current-cadcraft-lisp-ui.json"} else {"target/current-cadcraft-live-ui.json"}),
         serde_json::to_vec_pretty(&json!({
             "root":root,"port":address.port(),"owned":true,"production_writer_enabled":false
         }))
@@ -212,8 +257,13 @@ fn main() {
             assert_eq!(before["entities"][0]["handle"], "100");
             assert_eq!(before["entities"][0]["geometry"]["center"]["x"], 0.);
             assert_eq!(before["entities"][0]["geometry"]["radius"], 10.);
-            assert_eq!(ui["session"]["documents"].as_array().unwrap().len(), 1);
+            if lisp {
+                let active=ui["session"]["documents"].as_array().unwrap().iter().filter(|d|d["active"]==true).collect::<Vec<_>>();
+                assert_eq!(active.len(),1);
+                assert_eq!(active[0]["path"],json!(root.join("OwnedDrawing.dxf")));
+            } else {assert_eq!(ui["session"]["documents"].as_array().unwrap().len(), 1);}
             assert_eq!(ui["closePrompt"], Value::Null);
+            if lisp {return lisp_binding_probe(&mut client,&root,&before);}
             let mut states = Vec::new();
             for delta in [1., 0.1 * 25.4] {
                 client.execute("move", json!({"handles":["100"],"delta":[delta,0.]}));
