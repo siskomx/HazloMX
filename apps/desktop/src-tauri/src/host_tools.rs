@@ -104,6 +104,7 @@ pub struct HostTools {
     live_pcb: Mutex<Option<DiscoveredLivePcb>>,
     live_drawing: Mutex<Option<DiscoveredLiveDrawing>>,
     native_tools: Mutex<Option<NativeSelection>>,
+    upstream: Arc<crate::program_tools::Updates>,
     slice: Mutex<Option<DiscoveredSlice>>,
     check_source: Mutex<Option<SelectedKicadCheck>>,
     cad_document: Mutex<Option<DiscoveredCadDocument>>,
@@ -432,6 +433,7 @@ impl HostTools {
             live_pcb: Mutex::new(None),
             live_drawing: Mutex::new(None),
             native_tools: Mutex::new(None),
+            upstream: Arc::new(crate::program_tools::Updates::default()),
             slice: Mutex::new(None),
             check_source: Mutex::new(None),
             cad_document: Mutex::new(None),
@@ -445,6 +447,7 @@ impl HostTools {
         self.publish_selection(&cancel,|| {
             if self.workflow.view()?.project!=Some(project.clone()){return Err("El proyecto cambió. Vuelve a conectar las herramientas.".into());}
             if let Some(previous)=self.native_tools.lock().map_err(|e|e.to_string())?.replace(NativeSelection{project,program,connection}) {previous.connection.close();}
+            self.upstream.refresh(program,false);
             Ok(catalog)
         })
     }
@@ -464,7 +467,17 @@ impl HostTools {
         self.publish_selection(&cancel,|| {
             if self.workflow.view()?.project!=Some(project.clone()){return Err("El proyecto cambió. Vuelve a conectar las herramientas.".into());}
             if let Some(previous)=self.native_tools.lock().map_err(|e|e.to_string())?.replace(NativeSelection{project,program,connection}) {previous.connection.close();}
+            self.upstream.refresh(program,false);
             Ok(catalog)
+        })
+    }
+    pub fn refresh_native_tools(&self,program:Program,cancel:Arc<AtomicBool>)->Result<crate::native_tools::Catalog,String> {
+        let selected=self.native_connection()?;
+        if selected.program!=program{return Err("La conexión nativa pertenece a otro programa.".into());}
+        let catalog=selected.connection.catalog(cancel.clone())?;
+        self.publish_selection(&cancel,||{
+            if self.workflow.view()?.project!=Some(selected.project){return Err("El proyecto cambió. Conecta las herramientas de nuevo.".into());}
+            self.upstream.refresh(program,true);Ok(catalog)
         })
     }
     pub fn disconnect_native_tools(&self)->Result<(),String> {
@@ -1800,6 +1813,10 @@ impl McpTools {
     fn scope_result(&self, name: &str, result: Result<Value, String>) -> Result<Value, String> {
         let mut value = result?;
         if name == "get_design_capabilities" {
+            if let Ok(selected)=self.0.native_connection() {
+                if self.2.is_none_or(|program|program==selected.program){self.0.upstream.refresh(selected.program,false);}
+            }
+            self.0.upstream.apply(&mut value["software"]);
             value["cadcraft"]["open_document"] = json!({"inspection_tool":"inspect_open_drawing","proposal_tool":"propose_open_drawing_change",
                 "requires":"explicitly_selected_tested_patched_runtime_and_local_control_port","operations":["circle","move_circle","export_dxf"],
                 "units":["mm","in"],"human_approval_required":true,"saved_file_fallback":false,"save":false,"export":"verified_dxf_copy"});
@@ -1953,6 +1970,8 @@ mod tests {
             let project=workflow.view().unwrap().project.unwrap();let host=Arc::new(HostTools::new(workflow.clone()));
             let config=crate::native_tools::McpConfig{executable:executable.clone(),args:vec![],env:Default::default(),url:None,authorization:None};
             host.connect_native_mcp(program,config,Arc::new(AtomicBool::new(false))).unwrap();
+            let refreshed=host.refresh_native_tools(program,Arc::new(AtomicBool::new(false))).unwrap();assert_eq!(refreshed.tools.len(),5);
+            assert!(host.refresh_native_tools(program,Arc::new(AtomicBool::new(true))).is_err());
             let scoped=McpTools::for_program(host.clone(),project.clone(),program).unwrap();
             assert_eq!(scoped.catalog().len(),6);assert!(!scoped.catalog().iter().any(|t|t.name=="propose_rectangular_solid"));
             let wrong=if program==Program::Freecad {Program::Drawing}else{Program::Freecad};

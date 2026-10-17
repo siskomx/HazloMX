@@ -876,6 +876,9 @@ try {
     for(const program of ["freecad","drawing","arduino","agent","kicad","slice"]) {
       await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
       await page.getByRole("button",{name:"Conectar MCP nativo…",exact:true}).click();await page.locator("#send:enabled").waitFor();
+      assert.match(await page.locator("#program-actions").innerText(),/Catálogo del programa/);
+      await page.getByRole("button",{name:"Actualizar herramientas y versiones",exact:true}).click();await page.locator("#send:enabled").waitFor();
+      assert((await page.evaluate(()=>window.calls)).some(c=>c.command==="connect_native_tools"&&c.args.refresh===true));
       await send("Quiero cambiar esta pieza usando las herramientas de su programa.");
       const nativePrompt=JSON.parse((await chatCalls()).at(-1).args.prompt);
       assert.equal(nativePrompt.desktop_context.native_tools.program,program);
@@ -885,7 +888,7 @@ try {
       await page.evaluate(input=>window.setPendingJob(input),{schema_version:1,native_tools_version:1,job_id:jobId,connection_id:"native-connection",program,
         catalog_sha256:"d".repeat(64),description:"Cambiar con la herramienta propia <img src=x>",calls:[{tool:"program_owned_tool",arguments:{new_parameter:"0.1 in"}}],
         readback:{tool:"observe_native_state",arguments:{}},guard:{call:{tool:"observe_native_state",arguments:{}},result_sha256:"e".repeat(64)}});
-      await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Desconectar herramientas|Usar herramientas de la CLI/}).first().click();
+      await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Desconectar herramientas|Actualizar herramientas|Usar herramientas de la CLI/}).first().click();
       await page.locator("#approve:enabled").waitFor();assert.match(await page.locator("#change-facts").innerText(),/herramientas nativas[\s\S]*no son una certificación independiente/);
       assert.equal(await page.locator("#change-facts img").count(),0);
       const before=(await chatCalls()).length;await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();

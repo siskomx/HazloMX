@@ -167,11 +167,12 @@ fn disconnect_native_tools(state:State<AppState>)->Result<(),String> {
 }
 
 #[tauri::command]
-async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,program:hazlomexa::host_tools::Program,mcp:bool,events:Channel<Uuid>)->Result<hazlomexa::native_tools::Catalog,String> {
+async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,program:hazlomexa::host_tools::Program,mcp:bool,refresh:Option<bool>,events:Channel<Uuid>)->Result<hazlomexa::native_tools::Catalog,String> {
     let inspection=source_inspection(&state)?;
     let tools=state.tools.clone();
     tauri::async_runtime::spawn_blocking(move||{
         events.send(inspection.id).map_err(|_|"La conexión perdió su conversación.")?;
+        if refresh==Some(true){return tools.refresh_native_tools(program,inspection.cancelled.clone());}
         let result=if mcp {
             if let Some(catalog)=tools.connect_native_default(program,inspection.cancelled.clone())? {return Ok(catalog);}
             let path=app.dialog().file().set_title("Selecciona la configuración del MCP nativo instalado; el programa se iniciará")

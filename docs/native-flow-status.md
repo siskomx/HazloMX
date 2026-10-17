@@ -4,6 +4,12 @@ October 17, 2026. The four-step objective in [the application goal](application-
 remains intact. Historical checkpoints describe the binary and scope actually
 tested; a later package does not retroactively turn them into new tests.
 
+[Automatic catalog and repository refresh](research/automatic-native-catalog-refresh-2026-10-17.md)
+now runs on native connection, caches release checks for 24 hours and supports
+explicit refresh. Conexiones contains an optional native catalog/CLI help list;
+the main interface remains chat. It refreshes tool knowledge and checks releases
+without installing software.
+
 The [new native-route Windows checks](research/native-tool-live-windows-2026-10-17.md)
 now observe actual FreeCAD, CADCraft, KiCad PCB and Arduino Agent edits, with native
 readback and explicit Undo/saving differences. Arduino compilation and OrcaSlicer

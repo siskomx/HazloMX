@@ -12,7 +12,7 @@ provider inference or a claim of human approvals in Hazlo's UI.
 | KiCad PCB / Konnect | Loading the discovered footprint and navigation toolsets expands the catalog from 21 to 46 tools. IPC reports KiCad 10.0.7 and the exact owned board. A 2.54 mm move preserves the other eight footprints and the saved board. The basic native move does not provide Undo in this runtime; the discovered transactional placement tool does. A separate 1 mm transactional move visibly changes the board, and native UI Undo restores all footprint positions. |
 | Arduino Agent | The actual authenticated local HTTP MCP exposes four discovery/router tools. Its native sketch category supplies the nested tool schema. A saved sketch visibly changes from a 1,000 ms delay to 500 ms, then 250 ms, preserving a test note. Native readback and saved bytes agree. This native tool writes immediately; unsaved-buffer preservation and Undo are not claimed. No hardware is used. |
 | Arduino CLI | The shared native CLI route compiles that saved 250 ms sketch for Uno. Independent Intel HEX validation and the ELF header pass; 590 firmware data bytes are present. Source bytes remain unchanged. A CLI compilation is not live editor control. |
-| OrcaSlicer CLI | Native CLI slicing and output information readback pass for a 10 mm cube: 50 layers, 10 mm height, metric G-code and matching G-code checksum. Input bytes remain unchanged. The separate native output window reaches its preset-import warning; visual model acceptance is pending that confirmation. No live open-document control or printer connection is claimed. |
+| OrcaSlicer CLI | Native CLI slicing and output information readback pass for a 10 mm cube: 50 layers, 10 mm height, metric G-code and matching G-code checksum. Input bytes remain unchanged. After the user finishes the setup wizard, the generated cube is observed in the native output window. The saved 3MF remains unchanged, and the owned window is closed. No live open-document control or printer connection is claimed. |
 
 The selected KiCad endpoint explicitly reports schematic document enumeration
 as unsupported. A saved-file workflow is not used as evidence of live schematic
@@ -56,7 +56,7 @@ the ignored workspace test directory. It discovers schemas, uses the production
 SDK tool boundary and existing approval/job machinery, and stores raw replies
 privately. It is not bundled with the app and adds no product editing UI.
 
-The default 200 Rust tests, desktop Clippy with warnings denied, frontend build,
+The default 201 Rust tests, desktop Clippy with warnings denied, frontend build,
 bounded conversation check, and chat IPC cases pass. Native SDK fixtures and real
 runtime discovery/edit checks pass separately. Initial failed attempts remain in
 private evidence; no raw configuration, credentials, logs or captures are published.

@@ -42,6 +42,7 @@ let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", quest
 let renderedConversation = "", contextNotice = "";
 let historyLoading = false, durableReady = false, storageVersion = 0;
 let sourceContext: Record<string, unknown> & {native_tools?:{program:Program;connection_id:string;transport:string}} = {};
+let nativeCatalog: {program:Program;tools:{name:string}[];help?:string}|undefined;
 let sourceNames: Partial<Record<Program, string>> = {};
 let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
 let renderedLegacy = "";
@@ -328,16 +329,28 @@ async function inspectSource<T>(command: string, args: Record<string,unknown> = 
 function renderConnections(disabled: boolean) {
   $("program-actions").replaceChildren();
   if (program === "planning") return;
-  const nativeConnect=async(mcp:boolean)=>{
-    const catalog=await inspectSource<{connection_id:string;catalog_sha256:string;tools:unknown[];transport:string}>("connect_native_tools",{program,mcp});
+  const nativeConnect=async(mcp:boolean,refresh=false)=>{
+    const catalog=await inspectSource<{connection_id:string;catalog_sha256:string;tools:{name:string}[];transport:string;server?:{help?:{stdout?:string;stderr?:string}}}>("connect_native_tools",{program,mcp,refresh});
     sourceContext.native_tools={program,connection_id:catalog.connection_id,transport:catalog.transport};
+    nativeCatalog={program,tools:catalog.tools,help:catalog.server?.help ? [catalog.server.help.stdout,catalog.server.help.stderr].filter(Boolean).join("\n") : undefined};
     sourceNames[program]=`${catalog.tools.length} herramientas nativas · ${catalog.transport.toUpperCase()}`;
     selectedNewSource(program); revision++; newSession = true;
   };
   connectionButton("Conectar MCP nativo…",disabled,()=>nativeConnect(true));
-  if(sourceContext.native_tools?.program===program) connectionButton("Desconectar herramientas nativas",disabled,async()=>{
-    await invoke("disconnect_native_tools");delete sourceContext.native_tools;delete sourceNames[program];revision++;newSession=true;
-  });
+  if(sourceContext.native_tools?.program===program) {
+    connectionButton("Actualizar herramientas y versiones",disabled,()=>nativeConnect(sourceContext.native_tools?.transport==="mcp",true));
+    connectionButton("Desconectar herramientas nativas",disabled,async()=>{
+      await invoke("disconnect_native_tools");delete sourceContext.native_tools;delete sourceNames[program];nativeCatalog=undefined;revision++;newSession=true;
+    });
+    if(nativeCatalog?.program===program) {
+      const details=document.createElement("details"),summary=document.createElement("summary"),list=document.createElement("ul");
+      summary.textContent=`Catálogo del programa · ${nativeCatalog.tools.length} herramientas`;
+      for(const tool of nativeCatalog.tools){const item=document.createElement("li");item.textContent=tool.name;list.append(item);}
+      details.append(summary,list);
+      if(nativeCatalog.help){const help=document.createElement("pre");help.textContent=nativeCatalog.help;details.append(help);}
+      $("program-actions").append(details);
+    }
+  }
   if(["drawing","arduino","kicad","slice"].includes(program)) connectionButton("Usar herramientas de la CLI instalada",disabled,()=>nativeConnect(false));
   const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
   if (program === "freecad") {

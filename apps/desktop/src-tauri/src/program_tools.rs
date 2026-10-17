@@ -3,12 +3,82 @@ use crate::host_tools::Program;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
+    collections::BTreeMap,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, Mutex,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
+
+#[derive(Default)]
+pub(crate) struct Updates(Mutex<BTreeMap<&'static str, (Instant, Value)>>);
+impl Updates {
+    fn due(&self, program: Program, force: bool) -> Vec<Source> {
+        let Ok(mut cache) = self.0.lock() else {
+            return Vec::new();
+        };
+        sources()
+            .into_iter()
+            .filter(|source| source.program == program)
+            .filter(|source| {
+                if cache.get(source.id).is_some_and(|(when, value)| {
+                    value["status"] == "checking"
+                        || (!force && when.elapsed() < Duration::from_secs(86400))
+                }) {
+                    return false;
+                }
+                cache.insert(source.id, (Instant::now(), json!({"status":"checking"})));
+                true
+            })
+            .collect()
+    }
+    pub(crate) fn refresh(self: &Arc<Self>, program: Program, force: bool) {
+        let pending = self.due(program, force);
+        if pending.is_empty() {
+            return;
+        }
+        // Unit fixtures never contact upstream; the explicit release test covers HTTPS.
+        #[cfg(test)]
+        {
+            let _ = pending;
+        }
+        #[cfg(not(test))]
+        {
+            let cache = self.clone();
+            std::thread::spawn(move || {
+                for source in pending {
+                    let result = inspect(
+                        Request {
+                            check_updates_for: Some(source.id.into()),
+                        },
+                        Arc::new(AtomicBool::new(false)),
+                    )
+                    .map(|value| value[source.id]["release_check"].clone())
+                    .unwrap_or_else(
+                        |_| json!({"status":"unavailable","reason":"release_check_failed"}),
+                    );
+                    if let Ok(mut values) = cache.0.lock() {
+                        values.insert(source.id, (Instant::now(), result));
+                    }
+                }
+            });
+        }
+    }
+    pub(crate) fn apply(&self, software: &mut Value) {
+        if let (Ok(cache), Some(entries)) = (self.0.lock(), software.as_object_mut()) {
+            for (id, entry) in entries {
+                if entry["release_check"]["status"] == "not_checked" {
+                    if let Some((when, value)) = cache.get(id.as_str()) {
+                        entry["release_check"] = value.clone();
+                        entry["release_check"]["cache_age_seconds"] =
+                            json!(when.elapsed().as_secs());
+                    }
+                }
+            }
+        }
+    }
+}
 
 #[derive(Default, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -157,6 +227,45 @@ async fn check_release(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn automatic_checks_are_scoped_cached_and_explicitly_refreshable() {
+        let updates = Updates::default();
+        let pending = updates.due(Program::Freecad, false);
+        assert_eq!(pending.len(), 2);
+        assert!(updates.due(Program::Freecad, true).is_empty());
+        {
+            let mut cache = updates.0.lock().unwrap();
+            for source in pending {
+                cache.insert(
+                    source.id,
+                    (
+                        Instant::now(),
+                        json!({"status":"unavailable","reason":"offline"}),
+                    ),
+                );
+            }
+        }
+        assert!(updates.due(Program::Freecad, false).is_empty());
+        let mut software = inspect(Request::default(), Arc::new(AtomicBool::new(false))).unwrap();
+        updates.apply(&mut software);
+        assert_eq!(
+            software["cadpilot"]["release_check"]["status"],
+            "unavailable"
+        );
+        assert_eq!(
+            software["orcaslicer"]["release_check"]["status"],
+            "not_checked"
+        );
+        software["freecad"]["release_check"] =
+            json!({"status":"checked","latest_release_tag":"fixture-current"});
+        updates.apply(&mut software);
+        assert_eq!(
+            software["freecad"]["release_check"]["latest_release_tag"],
+            "fixture-current"
+        );
+        assert_eq!(updates.due(Program::Freecad, true).len(), 2);
+        assert_eq!(updates.due(Program::Arduino, false).len(), 1);
+    }
     #[test]
     fn offline_catalog_separates_provenance_from_runtime_permissions() {
         let mut catalog = inspect(Request::default(), Arc::new(AtomicBool::new(false))).unwrap();
