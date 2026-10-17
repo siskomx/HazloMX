@@ -68,7 +68,10 @@ The image browser fixture checks normalization, metadata removal, no saved image
 provider/new-chat clearing, malformed refusal and no automatic retransmission.
 These are protocol/UI fixtures, not real image inference.
 
-Acceptance still needs actual selected-image recognition, unknown-scale
-clarification, a separately approved native reconstruction/readback, real Rea
-chat and the rebuilt installed application. KiCad 10 and the deferred live
-schematic choice stay unchanged.
+[Real selected-image recognition, scale clarification, approved native CAD
+creation/readback and a Rea chat now pass](image-rea-live-2026-10-17.md).
+The follow-up source has 205 passing regular tests and a rebuilt Windows package;
+its fresh guest lifecycle, installed chat/picker and project-preservation checks
+pass. Guest inference and all engineering workflows were not repeated there;
+the real conversations remain separate host evidence. KiCad 10 and the deferred
+live schematic choice stay unchanged.

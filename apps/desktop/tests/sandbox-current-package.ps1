@@ -201,7 +201,7 @@ try {
         if (-not $startup.WaitForExit(60000)) { Stop-Process -Id $startup.Id; throw 'Installed native startup test timed out.' }
         if ($startup.ExitCode -ne 0) { throw "Installed native startup test failed ($($startup.ExitCode)); elevated driver: $($result.native_ui_driver_elevated)." }
         $reply=Get-Content C:\HazloProbe\output\startup\result.json -Raw | ConvertFrom-Json
-        if (-not $reply.pass -or -not $reply.no_engineering_forms -or -not $reply.no_implicit_proposal -or -not $reply.send_disabled_without_project -or $reply.program_groups -ne 6 -or $reply.agent_choices -ne 4 -or -not $reply.reload_preserves_initial_chat) { throw 'Installed initial chat UI did not pass.' }
+        if (-not $reply.pass -or -not $reply.no_engineering_forms -or -not $reply.no_implicit_proposal -or -not $reply.send_disabled_without_project -or $reply.program_groups -ne 7 -or $reply.agent_choices -ne 4 -or -not $reply.reload_preserves_initial_chat) { throw 'Installed initial chat UI did not pass.' }
         $result.native_release_initial_ui=$true
       } catch {
         $result.native_release_initial_ui=$false

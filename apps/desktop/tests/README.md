@@ -1,6 +1,6 @@
 # Current Windows package acceptance
 
-Image references and optional Rea: `node apps/desktop/tests/image-reference.mjs` checks browser normalization, metadata removal, in-memory handling and conditional IPC transmission. Current source passes 204 regular Rust tests, seven-program native routing fixtures and 28 native chat IPC cases. Real provider/native acceptance is tracked in [the image/Rea checkpoint](../../../docs/research/image-reference-rea-2026-10-17.md).
+Image references and optional Rea: `node apps/desktop/tests/image-reference.mjs` checks browser normalization, metadata removal, in-memory handling and conditional IPC transmission. Current source passes 205 regular Rust tests, seven-program native routing fixtures and 28 native chat IPC cases. Real provider/native acceptance is tracked in [the image/Rea checkpoint](../../../docs/research/image-reference-rea-2026-10-17.md).
 
 
 The [automatic catalog/repository checks](../../../docs/research/automatic-native-catalog-refresh-2026-10-17.md) add connection-triggered release checks, a 24-hour cache, an optional native catalog list and a refresh action. The browser fixture exercises refresh across all program/provider choices; offline cache tests and a real automatic public release check retain their separate scope.

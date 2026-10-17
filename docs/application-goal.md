@@ -8,8 +8,13 @@ established from the image; do not invent exact measurements. Use the program's
 native tools for the actual reconstruction and read back its result. Add Rea
 through native MCP/CLI discovery for its documented software/firmware analysis
 capabilities, with repository catalog refresh and release checks. Rea is not
-documented as a physical photo-to-CAD reconstruction engine. Implementation and
-real image/model acceptance remain required; existing live tests continue.
+documented as a physical photo-to-CAD reconstruction engine. The
+[real image-to-FreeCAD and Rea conversations](research/image-rea-live-2026-10-17.md)
+now pass with native UI approvals and readback. Source `753fafc` also corrects
+Rea's connection controls and allows bounded, longer tool discovery. The current
+installer passes fresh guest install/update/identity/helper/startup/uninstall,
+installed chat and picker checks, and six independently matched preserved files
+across two test projects. The wider multi-program goal is not closed.
 
 **Orca source packaged (`2f0d564`):** the [updated installer checkpoint](research/orca-live-native-mcp-2026-10-17.md#windows-package) passes fresh guest install/update/identity/helper/startup/uninstall and three independently matched preserved project files. Native Orca edits remain separately scoped host evidence. KiCad 10 and pending Claude/live schematic choices remain unchanged.
 

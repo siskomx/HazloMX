@@ -1,14 +1,23 @@
 # Current native-flow status
 
+[Image-to-FreeCAD and Rea real conversations](research/image-rea-live-2026-10-17.md)
+pass: the vision model asks for scale, the approved native CAD batch creates the
+confirmed washer and preserves the support, and Rea's 207-tool connection runs an
+approved static JavaScript analysis followed by a verified-result explanation.
+Source `753fafc` corrects Rea's program controls and extends bounded discovery to
+16 rounds. The matching Windows guest passes lifecycle, installed chat/picker and
+preservation checks; six exported files across two projects match independently.
+Signed-in/native conversations remain separate host evidence. Claude sign-in and
+KiCad 10 live-schematic deferral remain unchanged.
+
 [Real Orca chat editing](research/orca-chat-continuation-2026-10-17.md#corrected-release-real-conversation-passes)
 passes in release `76851f1`: unknown-size idea, UI-approved native inspection,
 one-inch width and a 0.1-inch follow-up move, two UI approvals and actual result
 reviews. Independent readback agrees; the source is preserved and owned apps stop.
 The earlier repeated-query failures are retained. Shared result metadata now
 supplies the exact guard/query reference; no program operation wrapper is added.
-The matching installer builds and passes helper checks; fresh guest acceptance
-and the requested [image/Rea addition](research/image-reference-rea-2026-10-17.md)
-remain unfinished.
+That earlier installer built and passed helper checks. The image/Rea follow-up
+and newer package are tracked in the current checkpoint above.
 
 **Orca source packaged (`2f0d564`):** the [updated installer checkpoint](research/orca-live-native-mcp-2026-10-17.md#windows-package) passes fresh guest install/update/identity/helper/startup/uninstall and three independently matched preserved project files. Native Orca edits remain separately scoped host evidence. KiCad 10 and pending Claude/live schematic choices remain unchanged.
 
