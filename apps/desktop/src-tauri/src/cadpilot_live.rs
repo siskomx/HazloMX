@@ -28,6 +28,28 @@ pub struct Input {
     pub receipt_sha256: Option<String>,
 }
 impl Input {
+    // New creation rules apply before effects; existing verified receipts remain readable.
+    pub(crate) fn validate_for_dispatch(&self) -> Result<(), String> {
+        self.validate()?;
+        for operation in &self.operations {
+            if operation["action"] != "create_object" { continue; }
+            let required:&[&str]=match operation["obj_type"].as_str() {
+                Some("Part::Box")=>&["Length","Width","Height"],
+                Some("Part::Cylinder")=>&["Radius","Height"],
+                Some("Part::Cone")=>&["Radius1","Radius2","Height"],
+                Some("Part::Sphere")=>&["Radius"],
+                Some("Part::Torus")=>&["Radius1","Radius2"],
+                Some("Part::Wedge")=>&["Xmin","Ymin","Zmin","X2min","Z2min","Xmax","Ymax","Zmax","X2max","Z2max"],
+                _=>&[],
+            };
+            if required.iter().any(|key| !operation["obj_properties"].get(*key).is_some_and(|value|
+                value.is_number() || value.as_str().is_some_and(|text|!text.trim().is_empty()))) {
+                return Err("Faltan medidas explícitas para crear la pieza. Confírmalas en lenguaje natural e incluye sus propiedades dimensionales; no uses las medidas predeterminadas de FreeCAD.".into());
+            }
+        }
+        Ok(())
+    }
+
     pub fn is_save_as(&self) -> bool {
         self.operations == [json!({"action":"save_as"})]
     }
@@ -558,7 +580,7 @@ pub fn run(
     directory: &std::path::Path,
     cancelled: &AtomicBool,
 ) -> Result<(), String> {
-    input.validate()?;
+    input.validate_for_dispatch()?;
     let expires = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|_| INVALID)?
@@ -638,6 +660,45 @@ pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn primitive_creation_requires_explicit_sizes_without_changing_history_validation() {
+        let mut input=Input {schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
+            document_name:"NewPart".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),
+            description:"Create the confirmed shape".into(),operations:vec![],before:json!([]),receipt_sha256:None};
+        for (kind,properties) in [
+            ("Part::Box",json!({"Length":"1 in","Width":"2 cm","Height":5})),
+            ("Part::Cylinder",json!({"Radius":"0.5 in","Height":10})),
+            ("Part::Cone",json!({"Radius1":10,"Radius2":0,"Height":"1 in"})),
+            ("Part::Sphere",json!({"Radius":"3 cm"})),
+            ("Part::Torus",json!({"Radius1":20,"Radius2":"2 mm"})),
+            ("Part::Wedge",json!({"Xmin":0,"Ymin":0,"Zmin":0,"X2min":2,"Z2min":2,
+                "Xmax":10,"Ymax":10,"Zmax":10,"X2max":8,"Z2max":8})),
+        ] {
+            let complete=json!({"action":"create_object","obj_type":kind,"obj_name":"NewShape","obj_properties":properties});
+            input.operations=vec![complete.clone()];
+            input.validate_for_dispatch().unwrap();
+            for key in properties.as_object().unwrap().keys() {
+                for invalid in [None,Some(json!(null)),Some(json!(false)),Some(json!("  ")),Some(json!([])),Some(json!({}))] {
+                    input.operations=vec![complete.clone()];
+                    if let Some(value)=invalid {input.operations[0]["obj_properties"][key]=value;}
+                    else {input.operations[0]["obj_properties"].as_object_mut().unwrap().remove(key);}
+                    assert!(input.validate_for_dispatch().is_err(),"{kind}: {key}");
+                    input.validate().unwrap();
+                    input.receipt_sha256=Some("b".repeat(64));
+                    input.validate().unwrap();
+                    assert!(input.validate_for_dispatch().is_err(),"A receipt must not bypass the effect guard");
+                    input.receipt_sha256=None;
+                }
+            }
+        }
+        for kind in ["PartDesign::Body","Sketcher::SketchObject","App::Part","Spreadsheet::Sheet"] {
+            input.operations=vec![json!({"action":"create_object","obj_type":kind,"obj_name":"Container"})];
+            input.validate_for_dispatch().unwrap();
+        }
+        input.operations=vec![json!({"action":"edit_object","obj_name":"Existing","obj_properties":{"Height":"1 in"}})];
+        input.validate_for_dispatch().unwrap();
+    }
 
     #[test]
     fn native_proposals_reject_code_paths_and_scripted_types_before_execution() {

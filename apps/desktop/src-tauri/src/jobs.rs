@@ -2112,6 +2112,7 @@ impl Workflow {
     }
 
     pub fn propose_live_cad(&self, project: (Uuid, PathBuf), input: crate::cadpilot_live::Input) -> Result<JobView, String> {
+        input.validate_for_dispatch()?;
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
         if input.receipt_sha256.is_some() { return Err("La propuesta ya contiene un resultado anterior.".into()); }
@@ -2739,6 +2740,25 @@ mod tests {
         let project=Project::open(&root).unwrap();
         assert_eq!(project.recover().unwrap()[0].phase,Phase::Cancelled);
         drop(project);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn native_primitive_creation_refuses_hidden_default_dimensions_before_approval() {
+        let (root,workflow)=setup();
+        let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::cadpilot_live::Input {schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),
+            document_name:"NewPart".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),
+            description:"Create a box; its size is not known yet".into(),
+            operations:vec![serde_json::json!({"action":"create_object","obj_type":"Part::Box","obj_name":"Box"})],
+            before:serde_json::json!([]),receipt_sha256:None};
+        assert!(workflow.propose_live_cad(project,input).is_err(),"Missing dimensions reached human approval");
+        assert!(workflow.current().unwrap().is_none());
+        drop(workflow);
+        let reopened=Project::open(&root).unwrap();
+        assert!(reopened.recover().unwrap().is_empty());
+        drop(reopened);
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
         fs::remove_dir_all(root).unwrap();
     }

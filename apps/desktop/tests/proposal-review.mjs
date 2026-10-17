@@ -45,7 +45,7 @@ assert.match(torus,/distancia del centro del aro al centro del tubo: 10 mm → 0
 assert.match(torus,/diámetro del círculo que forma el tubo: 4 mm → 0.25 in/);
 assert(!torus.includes("Radius1") && !torus.includes("Radius2"));
 for(const [unit,value] of [["mm","0.5"],["cm",".5"],["m","5e-1"],["in","0.5"],["ft","0.5"]]) {
-  const facts=review({live_cad_version:1,description:"Crea un cilindro",before:[],operations:[{action:"create_object",obj_type:"Part::Cylinder",obj_name:"Shaft",obj_properties:{Radius:`${value} ${unit}`}}]});
+  const facts=review({live_cad_version:1,description:"Crea un cilindro",before:[],operations:[{action:"create_object",obj_type:"Part::Cylinder",obj_name:"Shaft",obj_properties:{Radius:`${value} ${unit}`,Height:`2 ${unit}`}}]});
   assert(facts.includes(`diámetro del círculo de la base: 1 ${unit}.`));
 }
 const sphere=review({live_cad_version:1,description:"Cambia la esfera",before:[{name:"Sphere",label:"Bola",type:"Part::Sphere",properties:{Radius:5}}],operations:[{action:"edit_object",obj_name:"Sphere",obj_properties:{Radius:10}}]});
