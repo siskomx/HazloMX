@@ -38,8 +38,15 @@ export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
   if(input.live_drawing_version){
-    facts.push("Cambiar el dibujo abierto en CADCraft.","Dibujo: "+input.before.title,"Objetivo: "+input.description);
     const op=input.operation, unit=unitNames[input.units];
+    if(op.action==="export_dxf") {
+      facts.push("Exportar una copia del dibujo abierto de CADCraft a DXF.","Dibujo: "+input.before.title,"Objetivo: "+input.description,
+        "La copia incluye los cambios actuales sin guardar y conserva las unidades y la escala del dibujo.",
+        "Hazlo crea un archivo nuevo en este proyecto y verifica su geometría y unidades al abrirlo con CADCraft.",
+        "El dibujo abierto no se guarda, no cambia de nombre y conserva su estado. Exportar no añade un paso de deshacer.");
+      return facts;
+    }
+    facts.push("Cambiar el dibujo abierto en CADCraft.","Dibujo: "+input.before.title,"Objetivo: "+input.description);
     if(op.action==="circle") facts.push(`Crear un círculo de ${number(op.diameter)} ${unit} de diámetro (ancho completo), con centro horizontal ${number(op.center[0])}, vertical ${number(op.center[1])} ${unit}.`);
     else facts.push(`Mover el círculo ${number(op.delta[0])} ${unit} en horizontal y ${number(op.delta[1])} ${unit} en vertical.`);
     facts.push("Verás el cambio en CADCraft y puedes deshacerlo allí. No se guarda ni exporta el dibujo.","Hazlo comprobará la identidad nativa y releerá la geometría. Cancelar detiene la espera y no deshace una edición aceptada.");

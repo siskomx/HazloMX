@@ -848,6 +848,19 @@ try {
     if(!await page.locator("#history").isVisible()) await page.locator("#results > summary").click();
     assert.match(await page.locator("#history").innerText(),/Informe del cambio en CADCraft/);
     assert(!/Mostrar PNG|Mostrar HEX/.test(await page.locator("#history").innerText()));
+    await page.evaluate(()=>window.setPendingJob({schema_version:1,live_drawing_version:1,job_id:crypto.randomUUID(),
+      description:"Exporta mi dibujo a DXF",units:"mm",
+      before:{instance_id:"native-instance",binding_sha256:"e".repeat(64),document_sha256:"f".repeat(64),title:"Plano abierto.dxf",dirty:true,insunits:4,entities:[]},
+      operation:{action:"export_dxf"}}));
+    await page.getByRole("button",{name:"Elegir CADCraft CLI para copias…",exact:true}).click();
+    await page.locator("#approve:enabled").waitFor();
+    assert.match(await page.locator("#change-facts").innerText(),/copia del dibujo abierto de CADCraft a DXF[\s\S]*sin guardar[\s\S]*no cambia de nombre/);
+    const exportCount=(await chatCalls()).length;
+    await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+    assert.equal((await chatCalls()).length,exportCount+1);
+    assert.match(JSON.parse((await chatCalls()).at(-1).args.prompt).user_request,/inspect_open_drawing/);
+    assert.match(await page.locator("#job-status").innerText(),/DXF exportado y verificado/);
+    assert.match(await page.locator("#history").innerText(),/Copia DXF verificada[\s\S]*Informe de exportación de CADCraft/);
     await page.getByRole("button",{name:"Seleccionar dibujo…",exact:true}).click();
     await send("Ahora inspecciona solamente la copia que elegí.");
     const copy=JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context;
@@ -859,5 +872,5 @@ try {
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft edits, four native DXF export and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

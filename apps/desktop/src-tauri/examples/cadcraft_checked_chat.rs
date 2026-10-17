@@ -96,6 +96,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let selected =
         host.select_live_drawing(project_id, executable.clone(), port, cancel.clone())?;
     assert!(!selected.observation.dirty);
+    let document_sha256 = selected
+        .observation
+        .document_sha256
+        .clone()
+        .ok_or("Missing native document identity")?;
     assert_eq!(selected.observation.insunits, 4);
     assert_eq!(
         native.call("ui.inspect", json!({}))["session"],
@@ -134,6 +139,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ArtifactFormat::LiveDrawingReport,
         )?
         .read_text()?;
+    assert_eq!(
+        serde_json::from_str::<Value>(&first_report)?["after"]["document_sha256"],
+        document_sha256
+    );
     let first_read = native.drawing();
     assert_eq!(first_read["entities"][0]["geometry"]["center"]["x"], 1.);
     let read = inspect(selected.id)?;
@@ -147,6 +156,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(second.snapshot.phase, Phase::Completed);
     let final_read = native.drawing();
     assert_eq!(final_read["entities"][0]["geometry"]["center"]["x"], 3.54);
+    let read = inspect(selected.id)?;
+    let export_proposal = propose(selected.id, &read, "mm", json!({"action":"export_dxf"}))?;
+    assert_eq!(export_proposal["native_undo"], false);
+    assert_eq!(export_proposal["export_copy"], true);
+    let exported = approve();
+    assert_eq!(exported.snapshot.phase, Phase::Completed);
+    let exported_dxf = workflow
+        .artifact(exported.snapshot.input.job_id(), ArtifactFormat::Drawing)?
+        .read_text()?;
+    assert!(!exported_dxf.is_empty());
+    assert_eq!(
+        native.drawing(),
+        final_read,
+        "Export changed the open source or its Undo history"
+    );
     let read = inspect(selected.id)?;
     propose(
         selected.id,
@@ -196,6 +220,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(native.drawing()["entities"].as_array().unwrap().len(), 2);
     native.execute("u", json!({}));
     assert_eq!(native.drawing()["entities"], original["entities"]);
+    let before_reopen = inspect(selected.id)?;
+    native.execute("close", json!({}));
+    native.execute("open", json!({"path":root.join("OwnedDrawing.dxf")}));
+    let reopened = inspect(selected.id)?;
+    assert_eq!(
+        reopened["observation"]["entities"],
+        before_reopen["observation"]["entities"]
+    );
+    assert_eq!(
+        reopened["observation"]["title"],
+        before_reopen["observation"]["title"]
+    );
+    assert_eq!(
+        reopened["observation"]["instance_id"],
+        before_reopen["observation"]["instance_id"]
+    );
+    assert_ne!(
+        reopened["observation"]["document_sha256"],
+        before_reopen["observation"]["document_sha256"]
+    );
+    assert!(propose(
+        selected.id,
+        &before_reopen,
+        "mm",
+        json!({"action":"move_circle","handle":"100","delta":[999.,0.]})
+    )
+    .is_err());
     let report_read = host.call(
         "read_verified_result",
         json!({"job_id":first.snapshot.input.job_id()}),
@@ -211,7 +262,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let jobs = recovered.select_project(Project::open(&root.join("project"))?)?;
     assert_eq!(
         jobs.iter().filter(|j| j.phase == Phase::Completed).count(),
-        3
+        4
     );
     assert_eq!(
         recovered
@@ -222,12 +273,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .read_text()?,
         first_report
     );
+    assert_eq!(
+        recovered
+            .artifact(exported.snapshot.input.job_id(), ArtifactFormat::Drawing)?
+            .read_text()?,
+        exported_dxf
+    );
     fs::write(
         root.join("backend-result.json"),
         serde_json::to_vec_pretty(
-            &json!({"pass":true,"completed_jobs":3,"cancelled_jobs":1,"refused_jobs":1,
+            &json!({"pass":true,"completed_jobs":4,"cancelled_jobs":1,"refused_jobs":1,
         "native_mm_move":1,"native_inch_followup":0.1,"final_x_mm":3.54,"native_undo_steps":3,"stale_unprojected_change_refused":true,
-        "units_query_preserved_state":true,"approval_replay_refused":true,"recovery_pass":true,"real_provider":false,"desktop_approval":false}),
+        "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"real_provider":false,"desktop_approval":false}),
         )?,
     )?;
     println!("PASS: production checked drawing tools, approval/replay/cancel, metric/inch native readback, hidden-state refusal, Undo and report recovery");

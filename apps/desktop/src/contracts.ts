@@ -32,5 +32,5 @@ export type DesktopSnapshot = { claude_conversation_ready?:boolean; codex_conver
 export type CodexLoginView = {id:string;sequence:number;busy:boolean;cancelled:boolean;connected:boolean;auth_url:string|null;error:string|null};
 export type DiscoveredCadDocument = {id:string;project_id:string;inspection:{source_name:string;source_sha256:string;preview:CadpilotInput["preview"]}};
 
-export type DiscoveredLiveDrawing = {id:string;project_id:string;observation:{instance_id:string;binding_sha256:string;title:string;dirty:boolean;insunits:1|4;entities:Record<string,unknown>[]}};
-export type LiveDrawingInput = Omit<LiveAgentInput,"live_agent_version"|"before"|"source"|"save"> & {live_drawing_version:1;live_agent_version?:never;source?:never;before:DiscoveredLiveDrawing["observation"];units:"mm"|"in";operation:{action:"circle";center:[number,number];diameter:number}|{action:"move_circle";handle:string;delta:[number,number]}};
+export type DiscoveredLiveDrawing = {id:string;project_id:string;observation:{instance_id:string;binding_sha256:string;document_sha256?:string;title:string;dirty:boolean;insunits:1|4;entities:Record<string,unknown>[]}};
+export type LiveDrawingInput = Omit<LiveAgentInput,"live_agent_version"|"before"|"source"|"save"> & {live_drawing_version:1;live_agent_version?:never;source?:never;before:DiscoveredLiveDrawing["observation"];units:"mm"|"in";operation:{action:"circle";center:[number,number];diameter:number}|{action:"move_circle";handle:string;delta:[number,number]}|{action:"export_dxf"}};

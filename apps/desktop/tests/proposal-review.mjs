@@ -6,6 +6,14 @@ const source = await readFile(new URL("../src/proposal-review.ts",import.meta.ur
 const {code} = await transformWithOxc(source,"proposal-review.ts");
 const {proposalFacts} = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 const review = input => proposalFacts({input}).join("\n");
+for (const units of ["mm","in"]) {
+  const drawingExport=review({live_drawing_version:1,description:"Exporta mi dibujo",units,before:{title:"Plano.dxf",dirty:true},operation:{action:"export_dxf"}});
+  assert.match(drawingExport,/copia del dibujo abierto de CADCraft a DXF/);
+  assert.match(drawingExport,/cambios actuales sin guardar/);
+  assert.match(drawingExport,/conserva las unidades y la escala/);
+  assert.match(drawingExport,/no cambia de nombre/);
+  assert(!drawingExport.includes("Mover el círculo")&&!drawingExport.includes("undefined")&&!drawingExport.includes("puedes deshacerlo"));
+}
 const pcbExport=review({live_pcb_version:1,export_copy:true,board_name:"Placa.kicad_pcb",description:"Conserva una copia de la placa abierta"});
 assert.match(pcbExport,/Exportar una copia editable/);
 assert.match(pcbExport,/incluidos sus cambios sin guardar/);

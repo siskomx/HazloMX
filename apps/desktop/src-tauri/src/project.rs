@@ -602,6 +602,7 @@ impl Project {
             (OperationInput::LivePcb(input), ArtifactFormat::KicadSource) if input.export_copy => "Board.kicad_pcb".into(),
             (OperationInput::LivePcb(_), ArtifactFormat::LivePcbReport) => "result.json".into(),
             (OperationInput::LiveAgent(_), ArtifactFormat::LiveAgentReport) => "result.json".into(),
+            (OperationInput::LiveDrawing(crate::cadcraft_live::Input {operation:crate::cadcraft_live::Operation::ExportDxf {},..}), ArtifactFormat::Drawing) => "Drawing.dxf".into(),
             (OperationInput::LiveDrawing(_), ArtifactFormat::LiveDrawingReport) => "result.json".into(),
             (OperationInput::KonnectPcb(input), ArtifactFormat::KonnectOriginal) => {
                 format!("Original/{}", input.source.entry)
@@ -809,7 +810,7 @@ impl Project {
                 return Err(error("El informe de CADCraft cambió."));
             }
             let report=serde_json::from_slice(&bytes).map_err(io::Error::other)?;
-            return crate::cadcraft_live::validate_report(input,&report).map_err(io::Error::other);
+            return crate::cadcraft_live::validate_artifacts(directory,input,&report).map_err(io::Error::other);
         }
         if let OperationInput::LiveAgent(input) = input {
             let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),65536).map_err(io::Error::other)?;

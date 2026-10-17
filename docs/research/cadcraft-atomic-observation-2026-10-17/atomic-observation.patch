@@ -1,0 +1,138 @@
+diff --git a/crates/ui-egui/src/control.rs b/crates/ui-egui/src/control.rs
+--- a/crates/ui-egui/src/control.rs
++++ b/crates/ui-egui/src/control.rs
+@@ -196,4 +196,5 @@
+     ("engine.execute", "{command, params}", "Run any command with JSON parameters. Never opens a dialog."),
+     ("document.binding", "", "Current native document lifetime, revision and editing context."),
++    ("document.observe", "", "Atomically read the active document identity, units, entities and one-use binding."),
+     (
+         "engine.execute_checked",
+@@ -344,4 +345,13 @@
+ }
+
++fn document_observe(app: &mut CadApp, ctx: &egui::Context) -> Result<Value, String> {
++    binding_idle(app)?;
++    let drawing = app.session.execute("drawing.inspect", &json!({"entities":true,"limit":128})).map_err(|e| e.to_string())?;
++    let units = app.session.execute("units", &json!({})).map_err(|e| e.to_string())?;
++    let document_id = app.session.state().map_err(|e| e.to_string())?.uid.to_string();
++    let binding = document_binding(app, ctx)?;
++    Ok(json!({"binding":binding,"document_id":document_id,"drawing":drawing,"units":units}))
++}
++
+ pub fn handle(app: &mut CadApp, ctx: &egui::Context, req: &ControlRequest) -> Outcome {
+     let p = &req.params;
+@@ -350,4 +360,5 @@
+     match req.method.as_str() {
+         "document.binding" => wrap(document_binding(app, ctx)),
++        "document.observe" => wrap(document_observe(app, ctx)),
+         "engine.execute_checked" => {
+             if let Err(e) = binding_idle(app) {
+@@ -369,8 +380,9 @@
+                 return err("document binding changed");
+             }
+-            if state.undo_ctl.control == cadcraft_engine::undoctl::Control::None || state.undo_ctl.group.is_some() {
++            let Some(id) = s("command") else { return err("missing `command`") };
++            // Serialization is read-only; engineering edits still require native Undo.
++            if id != "document.bytes" && (state.undo_ctl.control == cadcraft_engine::undoctl::Control::None || state.undo_ctl.group.is_some()) {
+                 return err("native undo must be enabled without an open group");
+             }
+-            let Some(id) = s("command") else { return err("missing `command`") };
+             let Some(params) = p.get("params").filter(|v| v.is_object()) else { return err("missing object `params`") };
+             ctx.data_mut(|data| data.remove::<DocumentBinding>(binding_key()));
+diff --git a/crates/ui-egui/tests/control_binding.rs b/crates/ui-egui/tests/control_binding.rs
+--- a/crates/ui-egui/tests/control_binding.rs
++++ b/crates/ui-egui/tests/control_binding.rs
+@@ -187,2 +187,75 @@
+     assert_eq!(app.session.state().unwrap().undo.len(), 1);
+ }
++
++#[test]
++fn observation_reads_units_geometry_and_binding_without_mutation() {
++    let (mut app, ctx) = setup();
++    let before = app.session.summary();
++    let result = call(&mut app, &ctx, "document.observe", json!({}));
++    assert_eq!(result["ok"], true);
++    let result = &result["result"];
++    assert_eq!(result["drawing"]["entityCount"], 0);
++    assert!(result["units"]["insunits"].as_i64().is_some());
++    assert!(!result["document_id"].as_str().unwrap().is_empty());
++    assert_eq!(app.session.summary(), before);
++    assert_eq!(line(&mut app, &ctx, result["binding"].clone())["ok"], true);
++    let after = call(&mut app, &ctx, "document.observe", json!({}));
++    assert_eq!(after["result"]["document_id"], result["document_id"]);
++    assert_eq!(after["result"]["drawing"]["entityCount"], 1);
++    assert_eq!(after["result"]["drawing"]["entities"].as_array().unwrap().len(), 1);
++    assert_ne!(after["result"]["binding"], result["binding"]);
++}
++
++#[test]
++fn observation_distinguishes_recreated_identical_documents() {
++    let (mut app, ctx) = setup();
++    let before = call(&mut app, &ctx, "document.observe", json!({}));
++    assert_eq!(before["ok"], true);
++    let before = &before["result"];
++    let metric = before["units"]["insunits"] == 4;
++    app.session.execute("close", &json!({})).unwrap();
++    app.session.new_drawing(metric);
++    app.session.state_mut().unwrap().title = before["drawing"]["title"].as_str().unwrap().into();
++    let after = call(&mut app, &ctx, "document.observe", json!({}));
++    assert_eq!(after["ok"], true);
++    assert_eq!(after["result"]["drawing"]["title"], before["drawing"]["title"]);
++    assert_eq!(after["result"]["drawing"]["entities"], before["drawing"]["entities"]);
++    assert_ne!(after["result"]["document_id"], before["document_id"]);
++    assert_eq!(line(&mut app, &ctx, before["binding"].clone())["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.entity_count(), 0);
++}
++
++#[test]
++fn observation_refuses_active_input_without_disturbing_it() {
++    let (mut app, ctx) = setup();
++    app.session.start("line").unwrap();
++    let before = app.session.summary();
++    assert_eq!(call(&mut app, &ctx, "document.observe", json!({}))["ok"], false);
++    assert_eq!(app.session.summary(), before);
++    assert!(app.session.running.is_some());
++}
++
++#[test]
++fn checked_bytes_export_does_not_require_or_change_native_undo() {
++    cadcraft_engine::cmd::file::set_io(cadcraft_engine::cmd::file::IoHooks {
++        read: |_, _| Err("not used by this dispatch test".into()),
++        write: |_, _| Ok(b"owned dispatch test bytes".to_vec()),
++        plot: None,
++    });
++    for grouped in [false, true] {
++        let (mut app, ctx) = setup();
++        if grouped {
++            app.session.state_mut().unwrap().undo_ctl.group = Some(0);
++        } else {
++            app.session.state_mut().unwrap().undo_ctl.control = cadcraft_engine::undoctl::Control::None;
++        }
++        let before = app.session.summary();
++        let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++        let result = call(&mut app, &ctx, "engine.execute_checked", json!({"expected":binding,"command":"document.bytes","params":{"format":"dxf"}}));
++        assert_eq!(result["ok"], true, "{result}");
++        assert!(result["result"]["bytes"].as_u64().unwrap() > 0);
++        assert_eq!(app.session.summary(), before);
++        assert_eq!(app.session.state().unwrap().undo.len(), 0);
++        assert_eq!(app.session.state().unwrap().undo_ctl.group.is_some(), grouped);
++    }
++}
+diff --git a/docs/control-protocol.md b/docs/control-protocol.md
+--- a/docs/control-protocol.md
++++ b/docs/control-protocol.md
+@@ -34,4 +34,5 @@
+ | `engine.commands` | | Every command: id, label, menu path, shortcut, aliases, params doc, enabled. |
+ | `document.binding` | | Capture an opaque one-use binding to the active native drawing and editing context. A new binding replaces the previous one. |
++| `document.observe` | | Atomically read `{document_id, drawing, units, binding}` on the GUI thread. Drawing includes up to 128 entities; callers must check completeness. The document ID remains stable for its open lifetime and changes after close/reopen. Refuses an active command or LISP continuation. Replaces the previous one-use binding. |
+ | `engine.execute_checked` | `{expected, command, params}` | Compare the captured binding and execute the native command on the same GUI thread; refuse intervening changes. |
+ | `drawing.inspect` | `{entities?, limit?}` | Drawing summary (counts, extents, layers, styles, blocks, layouts, selection, undo) and entities with handles and geometry. |
+@@ -55,4 +56,8 @@
+ in the nested `params.params` object, using `engine.execute` as the top-level method. This
+ includes `open` and `document.bytes`, and the UI commands in the desktop app's catalog.
++`engine.execute_checked` requires native Undo to be enabled without an open group for edits.
++The read-only `document.bytes` command is exempt from that Undo requirement; it still
++requires a matching, idle, one-use document binding and does not save or rename the source.
++
+ `drawing.inspect` is also an engine command, but has an explicit top-level method; a dotted
+ command id alone does not make it a protocol method.

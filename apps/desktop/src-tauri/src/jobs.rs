@@ -2418,7 +2418,7 @@ impl Workflow {
                 }
                 OperationInput::LiveDrawing(input) => {
                     crate::cadcraft_live::run(input,dispatch.live_drawing.as_ref().ok_or("La conexión CADCraft venció.")?,
-                        &stage.path,&dispatch.cancelled)?;
+                        &stage.path,&profile,dispatch.cancelled.clone())?;
                 }
                 OperationInput::LiveAgent(input) => {
                     crate::agent_editor::run(input,dispatch.live_agent.as_ref().ok_or("La conexión al sketch venció.")?,

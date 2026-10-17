@@ -2,7 +2,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
+    ffi::OsString,
     fs::{File, OpenOptions},
     io::{Read, Write},
     mem::{offset_of, size_of},
@@ -11,7 +12,7 @@ use std::{
         fs::{MetadataExt, OpenOptionsExt},
         io::{AsRawHandle, FromRawHandle, OwnedHandle},
     },
-    path::Path,
+    path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -31,9 +32,11 @@ use windows_sys::Win32::{
     },
 };
 
-pub const RUNTIME_SHA256: &str = "9b3d00dfcfb466f39c3a66af1bd05c4e16d68527c3b52d2dc2e09db663438092";
+pub const RUNTIME_SHA256: &str = "bea64cc9f40935947bde7c37221b8ddf6e24e71d6bdf2a54b6156e4e04551bf5";
 const INVALID: &str = "CADCraft no confirmó el estado esperado. Relee el dibujo antes de continuar; no repitas una escritura incierta.";
 const FRAME_LIMIT: usize = 256 * 1024;
+const EXPORT_LIMIT: usize = 128 * 1024;
+const VERIFIER_SHA256: &str = "5cc67bb2265a8eae4918379ff139888e3b1b317692798982cf5d109534ba14a7";
 
 // Socket, native binding and runtime handles never enter a model response or saved job.
 #[derive(Clone)]
@@ -41,6 +44,7 @@ pub struct Connection(Arc<Mutex<Session>>);
 struct Session {
     stream: TcpStream,
     process: OwnedHandle,
+    runtime_directory: PathBuf,
     _files: Vec<File>,
     instance: Uuid,
     next: u64,
@@ -53,6 +57,8 @@ struct Session {
 pub struct Observation {
     pub instance_id: Uuid,
     pub binding_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub document_sha256: Option<String>,
     pub title: String,
     pub dirty: bool,
     pub insunits: u64,
@@ -63,6 +69,10 @@ impl Observation {
         let mut handles = BTreeSet::new();
         if self.instance_id.is_nil()
             || !crate::kicad_project::valid_hash(&self.binding_sha256)
+            || self
+                .document_sha256
+                .as_ref()
+                .is_some_and(|h| !crate::kicad_project::valid_hash(h))
             || self.title.is_empty()
             || self.title.len() > 1024
             || self.title.chars().any(char::is_control)
@@ -92,6 +102,7 @@ pub enum Operation {
     // shortcut: enable more native commands only with typed inputs and checked geometry readback.
     Circle { center: [f64; 2], diameter: f64 },
     MoveCircle { handle: String, delta: [f64; 2] },
+    ExportDxf {},
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -131,6 +142,19 @@ impl Input {
         }
         let bounded = |n: f64| n.is_finite() && self.native(n).abs() <= 10000.;
         match &self.operation {
+            Operation::ExportDxf {} => {
+                if self.before.document_sha256.is_none()
+                    || !matches!(
+                        (self.units, self.before.insunits),
+                        (crate::cadcraft::Units::Mm, 4) | (crate::cadcraft::Units::In, 1)
+                    )
+                {
+                    return Err(
+                        "Exporta con las unidades actuales del dibujo, sin cambiar su escala."
+                            .into(),
+                    );
+                }
+            }
             Operation::Circle { center, diameter } => {
                 if self.before.entities.len() >= 128
                     || !center.iter().copied().all(bounded)
@@ -165,6 +189,7 @@ impl Input {
     }
     fn command(&self) -> (&str, Value) {
         match &self.operation {
+            Operation::ExportDxf {} => ("document.bytes", json!({"format":"dxf"})),
             Operation::Circle { center, diameter } => (
                 "circle",
                 json!({"center":[self.native(center[0]),self.native(center[1])],"diameter":self.native(*diameter)}),
@@ -194,15 +219,11 @@ fn circle_geometry(e: &Value) -> Result<(), String> {
     Ok(())
 }
 
-/// Explicit user-selected executable and port; no scanning or arbitrary host addresses.
-pub fn connect(
+fn pin_runtime(
     executable: &Path,
-    port: u16,
+    expected: &str,
     cancel: &AtomicBool,
-) -> Result<(Connection, Observation), String> {
-    if port == 0 {
-        return Err("Indica el puerto local configurado en CADCraft.".into());
-    }
+) -> Result<Vec<File>, String> {
     crate::project::valid_location(executable).map_err(|_| INVALID)?;
     let mut files =
         crate::project::pin_lineage(executable.parent().ok_or(INVALID)?).map_err(|_| INVALID)?;
@@ -230,13 +251,26 @@ pub fn connect(
         }
         hasher.update(&buffer[..n]);
     }
-    if format!("{:x}", hasher.finalize()) != RUNTIME_SHA256 {
+    if format!("{:x}", hasher.finalize()) != expected {
         return Err(
             "Selecciona el runtime CADCraft parcheado y probado; el instalado no se reemplaza."
                 .into(),
         );
     }
     files.push(file);
+    Ok(files)
+}
+
+/// Explicit user-selected executable and port; no scanning or arbitrary host addresses.
+pub fn connect(
+    executable: &Path,
+    port: u16,
+    cancel: &AtomicBool,
+) -> Result<(Connection, Observation), String> {
+    if port == 0 {
+        return Err("Indica el puerto local configurado en CADCraft.".into());
+    }
+    let files = pin_runtime(executable, RUNTIME_SHA256, cancel)?;
     stop(cancel)?;
     let stream = TcpStream::connect_timeout(
         &SocketAddr::from((Ipv4Addr::LOCALHOST, port)),
@@ -253,6 +287,7 @@ pub fn connect(
     let connection = Connection(Arc::new(Mutex::new(Session {
         stream,
         process,
+        runtime_directory: executable.parent().ok_or(INVALID)?.to_owned(),
         _files: files,
         instance: Uuid::new_v4(),
         next: 0,
@@ -412,22 +447,22 @@ impl Session {
     }
     fn read(&mut self, cancel: &AtomicBool) -> Result<Observation, String> {
         self.binding = None;
-        let token = self.call("document.binding", json!({}), cancel)?;
+        let native = self.call("document.observe", json!({}), cancel)?;
+        let token = &native["binding"];
+        let document_id = native["document_id"].as_str().ok_or(INVALID)?;
+        if document_id.is_empty()
+            || document_id.len() > 32
+            || !document_id.bytes().all(|b| b.is_ascii_digit())
+        {
+            return Err(INVALID.into());
+        }
         if !token["token"].as_str().is_some_and(|s| {
             !s.is_empty() && s.len() <= 32 && s.bytes().all(|b| b.is_ascii_digit())
         }) {
             return Err(INVALID.into());
         }
-        let drawing = self.call(
-            "drawing.inspect",
-            json!({"entities":true,"limit":128}),
-            cancel,
-        )?;
-        let units = self.call(
-            "engine.execute",
-            json!({"command":"units","params":{}}),
-            cancel,
-        )?;
+        let drawing = &native["drawing"];
+        let units = &native["units"];
         let entities = drawing["entities"].as_array().ok_or(INVALID)?.clone();
         if drawing["space"] != "Model"
             || !drawing["blockEditor"].is_null()
@@ -441,6 +476,9 @@ impl Session {
             binding_sha256: crate::kicad_project::digest(
                 &serde_json::to_vec(&json!([self.instance, token])).map_err(|_| INVALID)?,
             ),
+            document_sha256: Some(crate::kicad_project::digest(
+                &serde_json::to_vec(&json!([self.instance, document_id])).map_err(|_| INVALID)?,
+            )),
             title: drawing["title"].as_str().ok_or(INVALID)?.into(),
             dirty: drawing["dirty"].as_bool().ok_or(INVALID)?,
             insunits: units["insunits"].as_u64().ok_or(INVALID)?,
@@ -479,26 +517,44 @@ pub struct Receipt {
     pub after: Observation,
     pub saved: bool,
     pub native_undo_available: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exported_document: Option<crate::kicad_project::CapturedFile>,
 }
 pub fn validate_report(input: &Input, report: &Receipt) -> Result<(), String> {
     input.validate()?;
     report.after.validate()?;
+    let export = matches!(input.operation, Operation::ExportDxf {});
+    if export {
+        let file = report.exported_document.as_ref().ok_or(INVALID)?;
+        if file.path != "Drawing.dxf"
+            || file.bytes == 0
+            || file.bytes > EXPORT_LIMIT as u64
+            || !crate::kicad_project::valid_hash(&file.sha256)
+        {
+            return Err(INVALID.into());
+        }
+    } else if report.exported_document.is_some() {
+        return Err(INVALID.into());
+    }
     if report.native_drawing_version != 1
         || report.job_id != input.job_id
         || report.before_sha256 != input.before.binding_sha256
         || report.after.instance_id != input.before.instance_id
+        || report.after.document_sha256 != input.before.document_sha256
         || report.after.title != input.before.title
         || report.after.binding_sha256 == input.before.binding_sha256
         || report.after.insunits != input.before.insunits
         || report.saved
-        || !report.native_undo_available
-        || !report.after.dirty
+        || report.native_undo_available == export
+        || (!export && !report.after.dirty)
+        || (export && report.after.dirty != input.before.dirty)
     {
         return Err(INVALID.into());
     }
     let mut expected = input.before.entities.clone();
     let mut actual = report.after.entities.clone();
     match &input.operation {
+        Operation::ExportDxf {} => (),
         Operation::MoveCircle { handle, delta } => {
             let e = expected
                 .iter_mut()
@@ -546,7 +602,8 @@ pub fn run(
     input: &Input,
     connection: &Connection,
     stage: &Path,
-    cancel: &AtomicBool,
+    profile: &Path,
+    cancel: Arc<AtomicBool>,
 ) -> Result<(), String> {
     input.validate()?;
     let mut session = connection.0.lock().map_err(|_| INVALID)?;
@@ -555,19 +612,32 @@ pub fn run(
         return Err(INVALID.into());
     }
     let (command, params) = input.command();
-    session.call(
+    let result = session.call(
         "engine.execute_checked",
         json!({"expected":binding,"command":command,"params":params}),
-        cancel,
+        &cancel,
     )?;
-    let after = session.read(cancel)?;
+    let exported_document = if matches!(input.operation, Operation::ExportDxf {}) {
+        Some(export_dxf(
+            &result,
+            &before,
+            &session.runtime_directory,
+            stage,
+            profile,
+            cancel.clone(),
+        )?)
+    } else {
+        None
+    };
+    let after = session.read(&cancel)?;
     let report = Receipt {
         native_drawing_version: 1,
         job_id: input.job_id,
         before_sha256: input.before.binding_sha256.clone(),
         after,
         saved: false,
-        native_undo_available: true,
+        native_undo_available: exported_document.is_none(),
+        exported_document,
     };
     validate_report(input, &report)?;
     let bytes = serde_json::to_vec_pretty(&report).map_err(|_| INVALID)?;
@@ -581,9 +651,237 @@ pub fn run(
         .map_err(|_| INVALID.to_string())
 }
 
+pub(crate) fn validate_artifacts(
+    directory: &Path,
+    input: &Input,
+    report: &Receipt,
+) -> Result<(), String> {
+    validate_report(input, report)?;
+    if let Some(file) = &report.exported_document {
+        let bytes =
+            crate::kicad_project::read_regular(&directory.join(&file.path), EXPORT_LIMIT as u64)?;
+        if bytes.len() as u64 != file.bytes || crate::kicad_project::digest(&bytes) != file.sha256 {
+            return Err(INVALID.into());
+        }
+    }
+    Ok(())
+}
+
+fn decode_export(result: &Value) -> Result<Vec<u8>, String> {
+    use base64::Engine;
+    let data = result["data"]
+        .as_str()
+        .filter(|s| !s.is_empty() && s.len() <= EXPORT_LIMIT * 4 / 3 + 4)
+        .ok_or(INVALID)?;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data)
+        .map_err(|_| INVALID)?;
+    if bytes.is_empty()
+        || bytes.len() > EXPORT_LIMIT
+        || result["bytes"].as_u64() != Some(bytes.len() as u64)
+        || result.get("notSaved").is_some()
+    {
+        return Err(INVALID.into());
+    }
+    Ok(bytes)
+}
+
+fn verify_export_output(stdout: &[u8], before: &Observation) -> Result<(), String> {
+    let lines: Vec<_> = stdout
+        .split(|b| *b == b'\n')
+        .filter(|l| !l.iter().all(u8::is_ascii_whitespace))
+        .collect();
+    if lines.len() != 2 {
+        return Err(INVALID.into());
+    }
+    let drawing: Value = serde_json::from_slice(lines[0]).map_err(|_| INVALID)?;
+    let units: Value = serde_json::from_slice(lines[1]).map_err(|_| INVALID)?;
+    let mut expected = before.entities.clone();
+    let mut actual = drawing["entities"].as_array().ok_or(INVALID)?.clone();
+    expected.sort_by_key(|e| e["handle"].to_string());
+    actual.sort_by_key(|e| e["handle"].to_string());
+    if drawing["entityCount"].as_u64() != Some(expected.len() as u64)
+        || drawing["skipped"]["count"] != 0
+        || drawing["space"] != "Model"
+        || !drawing["blockEditor"].is_null()
+        || units["insunits"].as_u64() != Some(before.insunits)
+        || actual != expected
+    {
+        return Err(INVALID.into());
+    }
+    Ok(())
+}
+
+fn export_dxf(
+    result: &Value,
+    before: &Observation,
+    runtime: &Path,
+    stage: &Path,
+    profile: &Path,
+    cancel: Arc<AtomicBool>,
+) -> Result<crate::kicad_project::CapturedFile, String> {
+    let bytes = decode_export(result)?;
+    stop(&cancel)?;
+    let path = stage.join("Drawing.dxf");
+    let mut output = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .map_err(|_| INVALID)?;
+    output
+        .write_all(&bytes)
+        .and_then(|_| output.sync_all())
+        .map_err(|_| INVALID)?;
+    drop(output);
+    let _drawing_pin = OpenOptions::new()
+        .read(true)
+        .share_mode(FILE_SHARE_READ)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(&path)
+        .map_err(|_| INVALID)?;
+    let metadata = _drawing_pin.metadata().map_err(|_| INVALID)?;
+    if !metadata.is_file() || metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+        return Err(INVALID.into());
+    }
+    let executable = runtime.join("cadcraft-cli.exe");
+    let _runtime_pin = pin_runtime(&executable, VERIFIER_SHA256, &cancel)?;
+    std::fs::create_dir(profile).map_err(|_| INVALID)?;
+    let mut env = BTreeMap::<OsString, OsString>::new();
+    for key in ["SystemRoot", "WINDIR", "COMSPEC"] {
+        if let Some(value) = std::env::var_os(key) {
+            env.insert(key.into(), value);
+        }
+    }
+    for key in [
+        "TEMP",
+        "TMP",
+        "USERPROFILE",
+        "HOME",
+        "APPDATA",
+        "LOCALAPPDATA",
+        "CADCRAFT_CONFIG_DIR",
+    ] {
+        env.insert(key.into(), profile.as_os_str().to_owned());
+    }
+    let args = [
+        "run".into(),
+        path.as_os_str().to_owned(),
+        "--cmd".into(),
+        "drawing.inspect {\"entities\":true,\"limit\":128}".into(),
+        "--cmd".into(),
+        "units {}".into(),
+    ];
+    let reply = crate::process::run_owned(
+        &executable,
+        &args,
+        profile,
+        &env,
+        cancel.clone(),
+        Duration::from_secs(60),
+    )
+    .map_err(|_| INVALID)?;
+    stop(&cancel)?;
+    if reply.reason != crate::process::StopReason::Completed
+        || reply.exit_code != Some(0)
+        || reply.truncated
+        || !reply.stderr.iter().all(u8::is_ascii_whitespace)
+    {
+        return Err(INVALID.into());
+    }
+    verify_export_output(&reply.stdout, before)?;
+    Ok(crate::kicad_project::CapturedFile {
+        path: "Drawing.dxf".into(),
+        sha256: crate::kicad_project::digest(&bytes),
+        bytes: bytes.len() as u64,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore = "Requires explicitly selected owned CLI export fixtures and the maintained native verifier"]
+    fn verifies_real_native_exports_with_the_owned_process_runner() {
+        let root = PathBuf::from(std::env::var_os("HAZLOMEXA_OWNED_DXF_FIXTURES").unwrap());
+        let runtime = PathBuf::from(std::env::var_os("HAZLOMEXA_OWNED_DXF_RUNTIME").unwrap());
+        let workspace = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(3)
+            .unwrap();
+        assert_eq!(
+            root.canonicalize().unwrap().parent(),
+            Some(workspace.join("target").canonicalize().unwrap().as_path())
+        );
+        assert!(root
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .starts_with("cadcraft-export-roundtrip-"));
+        for name in ["metric", "imperial"] {
+            let bytes = crate::kicad_project::read_regular(
+                &root.join(format!("{name}-initial.stdout")),
+                FRAME_LIMIT as u64,
+            )
+            .unwrap();
+            let records: Vec<Value> = serde_json::Deserializer::from_slice(&bytes)
+                .into_iter()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            assert_eq!(records.len(), 3);
+            let before = Observation {
+                instance_id: Uuid::new_v4(),
+                binding_sha256: "a".repeat(64),
+                document_sha256: Some("c".repeat(64)),
+                title: records[0]["title"].as_str().unwrap().into(),
+                dirty: records[0]["dirty"].as_bool().unwrap(),
+                insunits: records[1]["insunits"].as_u64().unwrap(),
+                entities: records[0]["entities"].as_array().unwrap().clone(),
+            };
+            before.validate().unwrap();
+            let stage = root.join(format!("production-{name}-{}", Uuid::new_v4()));
+            std::fs::create_dir(&stage).unwrap();
+            let file = export_dxf(
+                &records[2],
+                &before,
+                &runtime,
+                &stage,
+                &stage.join("profile"),
+                Arc::new(AtomicBool::new(false)),
+            )
+            .unwrap();
+            assert_eq!(
+                std::fs::read(stage.join("Drawing.dxf")).unwrap(),
+                decode_export(&records[2]).unwrap()
+            );
+            let mut after = before.clone();
+            after.binding_sha256 = "b".repeat(64);
+            let input = Input {
+                schema_version: 1,
+                live_drawing_version: 1,
+                job_id: Uuid::new_v4(),
+                description: "Owned native CLI export verification".into(),
+                units: if before.insunits == 4 {
+                    crate::cadcraft::Units::Mm
+                } else {
+                    crate::cadcraft::Units::In
+                },
+                operation: Operation::ExportDxf {},
+                before,
+                receipt_sha256: None,
+            };
+            let report = Receipt {
+                native_drawing_version: 1,
+                job_id: input.job_id,
+                before_sha256: input.before.binding_sha256.clone(),
+                after,
+                saved: false,
+                native_undo_available: false,
+                exported_document: Some(file),
+            };
+            validate_artifacts(&stage, &input, &report).unwrap();
+        }
+    }
     fn fixture_input() -> Input {
         Input {
             schema_version: 1,
@@ -599,6 +897,7 @@ mod tests {
             before: Observation {
                 instance_id: Uuid::new_v4(),
                 binding_sha256: "a".repeat(64),
+                document_sha256: Some("c".repeat(64)),
                 title: "Owned.dxf".into(),
                 dirty: true,
                 insunits: 4,
@@ -619,7 +918,116 @@ mod tests {
             after,
             saved: false,
             native_undo_available: true,
+            exported_document: None,
         }
+    }
+    #[test]
+    fn export_requires_native_scale_and_preserves_the_open_document() {
+        let mut input = fixture_input();
+        input.units = crate::cadcraft::Units::Mm;
+        input.operation = Operation::ExportDxf {};
+        assert_eq!(input.command(), ("document.bytes", json!({"format":"dxf"})));
+        assert!(serde_json::from_value::<Operation>(
+            json!({"action":"export_dxf","path":"elsewhere"})
+        )
+        .is_err());
+        for dirty in [false, true] {
+            input.before.dirty = dirty;
+            input.validate().unwrap();
+            let mut after = input.before.clone();
+            after.binding_sha256 = "b".repeat(64);
+            let mut report = Receipt {
+                native_drawing_version: 1,
+                job_id: input.job_id,
+                before_sha256: input.before.binding_sha256.clone(),
+                after,
+                saved: false,
+                native_undo_available: false,
+                exported_document: Some(crate::kicad_project::CapturedFile {
+                    path: "Drawing.dxf".into(),
+                    sha256: "e".repeat(64),
+                    bytes: 100,
+                }),
+            };
+            validate_report(&input, &report).unwrap();
+            report.after.dirty = !dirty;
+            assert!(validate_report(&input, &report).is_err());
+            report.after.dirty = dirty;
+            report.after.entities[0]["geometry"]["radius"] = json!(99.);
+            assert!(validate_report(&input, &report).is_err());
+            report.after.entities = input.before.entities.clone();
+            report.native_undo_available = true;
+            assert!(validate_report(&input, &report).is_err());
+            report.native_undo_available = false;
+            report.exported_document.as_mut().unwrap().path = "../Drawing.dxf".into();
+            assert!(validate_report(&input, &report).is_err());
+        }
+        input.units = crate::cadcraft::Units::In;
+        assert!(input.validate().is_err());
+        input.before.insunits = 1;
+        input.validate().unwrap();
+        input.before.document_sha256 = None;
+        assert!(input.validate().is_err());
+    }
+    #[test]
+    fn exported_bytes_and_reopened_geometry_must_be_complete_and_exact() {
+        assert_eq!(
+            decode_export(&json!({"data":"RFhG","bytes":3})).unwrap(),
+            b"DXF"
+        );
+        for result in [
+            json!({"data":"***","bytes":3}),
+            json!({"data":"RFhG","bytes":4}),
+            json!({"data":"RFhG","bytes":3,"notSaved":{"CIRCLE":1}}),
+            json!({"data":"A".repeat(EXPORT_LIMIT*4/3+8),"bytes":1}),
+        ] {
+            assert!(decode_export(&result).is_err());
+        }
+        let input = fixture_input();
+        let mut drawing = json!({"space":"Model","blockEditor":null,"entityCount":1,"skipped":{"count":0},"entities":input.before.entities});
+        let output =
+            |d: &Value, units: u64| format!("{d}\n{}\n", json!({"insunits":units})).into_bytes();
+        verify_export_output(&output(&drawing, 4), &input.before).unwrap();
+        assert!(verify_export_output(&output(&drawing, 1), &input.before).is_err());
+        drawing["entities"][0]["geometry"]["radius"] = json!(99.);
+        assert!(verify_export_output(&output(&drawing, 4), &input.before).is_err());
+        drawing["entities"] = json!(input.before.entities);
+        drawing["skipped"]["count"] = json!(1);
+        assert!(verify_export_output(&output(&drawing, 4), &input.before).is_err());
+        assert!(verify_export_output(b"{}\n{}\n{}\n", &input.before).is_err());
+    }
+    #[test]
+    fn exported_artifact_hash_is_checked_on_recovery() {
+        let root =
+            std::env::temp_dir().join(format!("hazlomexa-drawing-export-{}", Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let mut input = fixture_input();
+        input.units = crate::cadcraft::Units::Mm;
+        input.operation = Operation::ExportDxf {};
+        let mut after = input.before.clone();
+        after.binding_sha256 = "b".repeat(64);
+        let report = Receipt {
+            native_drawing_version: 1,
+            job_id: input.job_id,
+            before_sha256: input.before.binding_sha256.clone(),
+            after,
+            saved: false,
+            native_undo_available: false,
+            exported_document: Some(crate::kicad_project::CapturedFile {
+                path: "Drawing.dxf".into(),
+                sha256: crate::kicad_project::digest(b"DXF"),
+                bytes: 3,
+            }),
+        };
+        std::fs::write(root.join("Drawing.dxf"), b"DXF").unwrap();
+        validate_artifacts(&root, &input, &report).unwrap();
+        std::fs::write(root.join("Drawing.dxf"), b"BAD").unwrap();
+        assert!(validate_artifacts(&root, &input, &report).is_err());
+        assert_eq!(
+            root.canonicalize().unwrap().parent(),
+            Some(std::env::temp_dir().canonicalize().unwrap().as_path())
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn converts_requested_units_once_and_checks_complete_readback() {
@@ -652,6 +1060,45 @@ mod tests {
             input.command(),
             ("circle", json!({"center":[1.,0.],"diameter":2.}))
         );
+    }
+    #[test]
+    fn report_rejects_reopened_identical_document_and_reads_legacy_receipts() {
+        let mut input = fixture_input();
+        let mut report = receipt(&input);
+        report.after.document_sha256 = Some("d".repeat(64));
+        assert!(validate_report(&input, &report).is_err());
+        report.after.document_sha256 = None;
+        assert!(validate_report(&input, &report).is_err());
+        input.before.document_sha256 = None;
+        let legacy = serde_json::to_value(&report).unwrap();
+        assert!(legacy["after"].get("document_sha256").is_none());
+        let recovered: Receipt = serde_json::from_value(legacy).unwrap();
+        validate_report(&input, &recovered).unwrap();
+        report.after.document_sha256 = Some("invalid".into());
+        assert!(validate_report(&input, &report).is_err());
+    }
+    #[test]
+    fn reads_one_atomic_native_observation_without_exposing_its_identity() {
+        let reply = json!({"id":1,"ok":true,"result":{
+            "binding":{"token":"22"},"document_id":"123456789",
+            "drawing":{"title":"Owned.dxf","dirty":false,"space":"Model","blockEditor":null,
+                "entityCount":0,"skipped":{"count":0},"entities":[]},"units":{"insunits":4}
+        }});
+        let mut bytes = serde_json::to_vec(&reply).unwrap();
+        bytes.push(b'\n');
+        let (mut session, task) = mock(bytes);
+        let observation = session.read(&AtomicBool::new(false)).unwrap();
+        assert_eq!(session.next, 1);
+        assert!(observation
+            .document_sha256
+            .as_ref()
+            .is_some_and(|h| crate::kicad_project::valid_hash(h)));
+        assert!(!serde_json::to_string(&observation)
+            .unwrap()
+            .contains("123456789"));
+        assert_eq!(session.binding.as_ref().unwrap().0, json!({"token":"22"}));
+        drop(session);
+        task.join().unwrap();
     }
     #[test]
     fn refuses_unknown_commands_nonfinite_ambiguous_and_missing_targets() {
@@ -746,6 +1193,7 @@ mod tests {
             Session {
                 stream: client,
                 process,
+                runtime_directory: PathBuf::new(),
                 _files: vec![],
                 instance: Uuid::new_v4(),
                 next: 0,
@@ -770,7 +1218,8 @@ mod tests {
             assert!(!error.contains("private path"));
             assert!(session
                 .call("drawing.inspect", json!({}), &AtomicBool::new(false))
-                .unwrap_err().contains("Conexiones"));
+                .unwrap_err()
+                .contains("Conexiones"));
             assert_eq!(session.next, 1);
             task.join().unwrap();
         }
