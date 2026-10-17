@@ -4,6 +4,12 @@ October 17, 2026. The four-step objective in [the application goal](application-
 remains intact. Historical checkpoints describe the binary and scope actually
 tested; a later package does not retroactively turn them into new tests.
 
+The [new native-route Windows checks](research/native-tool-live-windows-2026-10-17.md)
+now observe actual FreeCAD, CADCraft, KiCad PCB and Arduino Agent edits, with native
+readback and explicit Undo/saving differences. Arduino compilation and OrcaSlicer
+slicing pass through the generic CLI route; they remain file workflows. The Orca
+output-window import confirmation and new installer acceptance are pending.
+
 The [shared native discovery and routing](research/native-tool-routing-2026-10-17.md)
 now reads installed MCP schemas and native CLI help across all six program groups.
 With a native connection active, the agent uses discovered tools through shared

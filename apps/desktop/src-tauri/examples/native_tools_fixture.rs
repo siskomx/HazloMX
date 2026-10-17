@@ -78,6 +78,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     match std::env::args().nth(1).as_deref() {
         Some("--help") => {
+            if std::env::var_os("NATIVE_EMPTY_HELP").is_some() {
+                println!("\x1b[?25h");
+                return Ok(());
+            }
             println!("Owned fixture CLI: show reads native state; set VALUE edits native state");
             return Ok(());
         }

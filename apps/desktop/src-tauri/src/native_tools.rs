@@ -12,7 +12,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs::{File, OpenOptions},
-    io::Read,
+    io::{Read, Seek, SeekFrom},
     os::windows::fs::OpenOptionsExt,
     path::{Path, PathBuf},
     process::Stdio,
@@ -155,12 +155,14 @@ fn validate_call(call: &Call) -> Result<(), String> {
             })
     };
     if hardware(&call.tool)
-        || ["tool", "router", "action", "command"].iter().any(|key| {
-            call.arguments
-                .get(*key)
-                .and_then(Value::as_str)
-                .is_some_and(hardware)
-        })
+        || ["tool", "tool_name", "router", "action", "command"]
+            .iter()
+            .any(|key| {
+                call.arguments
+                    .get(*key)
+                    .and_then(Value::as_str)
+                    .is_some_and(hardware)
+            })
     {
         return Err(
             "La conexión permite trabajar en el software, no controlar dispositivos.".into(),
@@ -193,6 +195,7 @@ enum Backend {
         cwd: PathBuf,
         env: BTreeMap<OsString, OsString>,
         console: AtomicBool,
+        help: std::sync::Mutex<Option<Value>>,
     },
 }
 #[derive(Clone)]
@@ -258,10 +261,31 @@ pub fn console_child() -> Result<i32, String> {
     {
         return Err("Native executable required".into());
     }
-    let result = std::process::Command::new(executable)
+    let mut child = std::process::Command::new(executable)
         .args(args)
-        .status()
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .map_err(|_| "Native console launch failed")?;
+    // Some GUI CLIs mix CONOUT$ and ordinary stdout; keep both inside the owned console.
+    fn forward(
+        mut source: impl Read + Send + 'static,
+    ) -> std::thread::JoinHandle<std::io::Result<u64>> {
+        std::thread::spawn(move || {
+            let mut console = OpenOptions::new().write(true).open("CONOUT$")?;
+            std::io::copy(&mut source, &mut console)
+        })
+    }
+    let stdout = forward(child.stdout.take().ok_or("Native stdout unavailable")?);
+    let stderr = forward(child.stderr.take().ok_or("Native stderr unavailable")?);
+    let result = child.wait().map_err(|_| "Native console wait failed")?;
+    for output in [stdout, stderr] {
+        output
+            .join()
+            .map_err(|_| "Native console reader failed")?
+            .map_err(|_| "Native console output failed")?;
+    }
     Ok(result.code().unwrap_or(1))
 }
 fn console_helper() -> Result<PathBuf, String> {
@@ -325,6 +349,39 @@ fn pin(executable: &Path) -> Result<(File, String), String> {
     file.read_to_end(&mut bytes)
         .map_err(|_| "No se pudo identificar el ejecutable.")?;
     Ok((file, crate::kicad_project::digest(&bytes)))
+}
+
+fn gui_executable(file: &mut File) -> Result<bool, String> {
+    let invalid = "El archivo no es una CLI de Windows compatible.";
+    let mut dos = [0u8; 64];
+    file.seek(SeekFrom::Start(0))
+        .and_then(|_| file.read_exact(&mut dos))
+        .map_err(|_| invalid)?;
+    let offset = u32::from_le_bytes(dos[60..64].try_into().unwrap()) as u64;
+    if &dos[..2] != b"MZ"
+        || offset < 64
+        || offset
+            .checked_add(94)
+            .is_none_or(|end| file.metadata().map_or(true, |m| end > m.len()))
+    {
+        return Err(invalid.into());
+    }
+    let mut header = [0u8; 94];
+    file.seek(SeekFrom::Start(offset))
+        .and_then(|_| file.read_exact(&mut header))
+        .map_err(|_| invalid)?;
+    let magic = u16::from_le_bytes(header[24..26].try_into().unwrap());
+    if &header[..4] != b"PE\0\0"
+        || u16::from_le_bytes(header[20..22].try_into().unwrap()) < 70
+        || !matches!(magic, 0x10b | 0x20b)
+    {
+        return Err(invalid.into());
+    }
+    match u16::from_le_bytes(header[92..94].try_into().unwrap()) {
+        2 => Ok(true),
+        3 => Ok(false),
+        _ => Err(invalid.into()),
+    }
 }
 
 fn catalog(
@@ -434,7 +491,8 @@ impl Connection {
             return Err("Elige el programa.".into());
         }
         check_launcher(&executable)?;
-        let (_, sha256) = pin(&executable)?;
+        let (mut file, sha256) = pin(&executable)?;
+        let console = gui_executable(&mut file)?;
         Ok(Self {
             id: Uuid::new_v4(),
             program,
@@ -443,7 +501,8 @@ impl Connection {
                 sha256,
                 cwd,
                 env: environment(),
-                console: AtomicBool::new(false),
+                console: AtomicBool::new(console),
+                help: std::sync::Mutex::new(None),
             }),
             secrets: Arc::new(Vec::new()),
             active: Arc::new(AtomicBool::new(true)),
@@ -611,8 +670,30 @@ impl Connection {
                 self.protect_catalog(&catalog)?;
                 Ok(catalog)
             }
-            Backend::Cli { .. } => {
-                let help = self.cli_call(&["--help".into()], cancel)?;
+            Backend::Cli {
+                executable,
+                sha256,
+                help,
+                ..
+            } => {
+                if cancel.load(Ordering::SeqCst) {
+                    return Err("Inspección cancelada.".into());
+                }
+                let (_pin, actual) = pin(executable)?;
+                if &actual != sha256 {
+                    return Err("El ejecutable cambió. Vuelve a conectarlo.".into());
+                }
+                // Console rendering can vary; the captured command help belongs to this exact binary.
+                let mut cached = help
+                    .lock()
+                    .map_err(|_| "No se pudo leer la ayuda nativa.")?;
+                let help = if let Some(value) = cached.as_ref() {
+                    value.clone()
+                } else {
+                    let value = self.cli_call(&["--help".into()], cancel)?;
+                    *cached = Some(value.clone());
+                    value
+                };
                 let tool:Tool=serde_json::from_value(json!({"name":"cli","description":"Invoke this selected native executable directly, without a shell. Use the program's actual help below; do not guess flags. Every invocation and result-read command needs human approval.",
                     "inputSchema":{"type":"object","properties":{"args":{"type":"array","items":{"type":"string"},"maxItems":64}},"required":["args"],"additionalProperties":false}})).map_err(|_|"No se pudo describir la CLI.")?;
                 catalog(
@@ -671,6 +752,7 @@ impl Connection {
             cwd,
             env,
             console,
+            ..
         } = self.backend.as_ref()
         else {
             return Err("La conexión no es CLI.".into());
@@ -724,23 +806,21 @@ impl Connection {
         }
         let stdout = String::from_utf8(output.stdout).map_err(|_| "Salida CLI no válida.")?;
         let stderr = String::from_utf8(output.stderr).map_err(|_| "Diagnóstico CLI no válido.")?;
-        if help && stdout.is_empty() && stderr.is_empty() {
-            return Err(
-                "El programa no devolvió su ayuda nativa; no se inventó un catálogo.".into(),
-            );
-        }
         let clean = |text: String| {
-            let text = if use_console {
-                console_text(&text)
-            } else {
-                text
-            };
+            let text = console_text(&text);
             text.replace(
                 executable.to_string_lossy().as_ref(),
                 executable.file_name().unwrap().to_string_lossy().as_ref(),
             )
         };
-        Ok(json!({"stdout":clean(stdout),"stderr":clean(stderr),"exit_code":output.exit_code}))
+        let stdout = clean(stdout);
+        let stderr = clean(stderr);
+        if help && stdout.trim().is_empty() && stderr.trim().is_empty() {
+            return Err(
+                "El programa no devolvió su ayuda nativa; no se inventó un catálogo.".into(),
+            );
+        }
+        Ok(json!({"stdout":stdout,"stderr":stderr,"exit_code":output.exit_code}))
     }
     fn call(&self, call: &Call, cancel: Arc<AtomicBool>) -> Result<Value, String> {
         if !self.active.load(Ordering::SeqCst) {
@@ -967,6 +1047,11 @@ mod tests {
         });
         input.validate().unwrap();
         assert!(validate_call(&call("execute_tool", json!({"tool":"upload"}))).is_err());
+        assert!(validate_call(&call(
+            "execute_tool",
+            json!({"tool_name":"arduino_upload","params":{}})
+        ))
+        .is_err());
         assert!(validate_call(&call("device_flash", json!({}))).is_err());
         assert_ne!(
             catalog.catalog_sha256,
@@ -1025,6 +1110,10 @@ mod tests {
         assert!(config.executable.as_os_str().is_empty());
         std::fs::write(&path, br#"{"mcpServers":{"a":{},"b":{}}}"#).unwrap();
         assert!(McpConfig::from_file(&path).is_err());
+        assert!(
+            !gui_executable(&mut File::open(std::env::current_exe().unwrap()).unwrap()).unwrap()
+        );
+        assert!(gui_executable(&mut File::open(&path).unwrap()).is_err());
     }
     #[test]
     #[ignore = "Explicit discovery of installed native MCP runtimes in isolated profiles"]
@@ -1286,6 +1375,11 @@ mod tests {
             std::env::var_os("HAZLOMEXA_NATIVE_TEST_ROOT").expect("Set owned fixture directory"),
         );
         assert!(root.is_absolute() && root.exists());
+        let mut empty = Connection::cli(Program::Slice, executable.clone(), root.clone()).unwrap();
+        if let Backend::Cli { env, .. } = Arc::get_mut(&mut empty.backend).unwrap() {
+            env.insert("NATIVE_EMPTY_HELP".into(), "1".into());
+        }
+        assert!(empty.catalog(Arc::new(AtomicBool::new(false))).is_err());
         let console = crate::process::run_owned_console(
             &executable,
             &["--console-output".into()],
@@ -1298,6 +1392,21 @@ mod tests {
         assert_eq!(console.reason, crate::process::StopReason::Completed);
         assert_eq!(console.exit_code, Some(0));
         assert!(String::from_utf8_lossy(&console.stdout).contains("native console output"));
+        let forwarded = crate::process::run_owned_console(
+            &console_helper().unwrap(),
+            &[
+                "--native-console".into(),
+                executable.as_os_str().to_owned(),
+                "--help".into(),
+            ],
+            &root,
+            &environment(),
+            Arc::new(AtomicBool::new(false)),
+            Duration::from_secs(5),
+        )
+        .unwrap();
+        assert_eq!(forwarded.exit_code, Some(0));
+        assert!(String::from_utf8_lossy(&forwarded.stdout).contains("Owned fixture CLI"));
         for program in [
             Program::Freecad,
             Program::Drawing,
@@ -1467,11 +1576,22 @@ mod tests {
         ] {
             let folder = root.join(Uuid::new_v4().to_string());
             std::fs::create_dir(&folder).unwrap();
-            let connection = Connection::cli(program, executable.clone(), folder.clone()).unwrap();
+            let mut connection =
+                Connection::cli(program, executable.clone(), folder.clone()).unwrap();
             let catalog = connection
                 .catalog(Arc::new(AtomicBool::new(false)))
                 .unwrap();
             assert_eq!(catalog.scope, "native_cli_not_live_editor");
+            if let Backend::Cli { env, .. } = Arc::get_mut(&mut connection.backend).unwrap() {
+                env.insert("NATIVE_EMPTY_HELP".into(), "1".into());
+            }
+            assert_eq!(
+                connection
+                    .catalog(Arc::new(AtomicBool::new(false)))
+                    .unwrap()
+                    .catalog_sha256,
+                catalog.catalog_sha256
+            );
             let query = call("cli", json!({"args":["show"]}));
             let state = connection
                 .call(&query, Arc::new(AtomicBool::new(false)))
