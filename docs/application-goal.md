@@ -1,5 +1,27 @@
 # Hazlo Mexa application goal
 
+**Finish checklist — October 17:** keep one natural-language chat: idea →
+define parameters/software together → edits through discovered native tools →
+read back, suggest and finalize. The checklist below supersedes earlier open
+checkpoint wording; historical evidence keeps its original version and scope.
+
+- Done: shared MCP/CLI discovery/routing, release/catalog refresh, image input,
+  FreeCAD image reconstruction, Rea analysis, Orca live chat edits, and the
+  current Windows installer lifecycle/picker/preservation checks.
+- Done in the native backend: [CADCraft Save As and follow-up Save](research/native-finalization-2026-10-17.md), independently checked against saved DXF geometry.
+- Remaining: current generic-route real chat acceptance for Arduino Agent,
+  KiCad PCB and CADCraft, including final save/export/readback where exposed.
+- Remaining: Orca G-code finalization/readiness and explicitly selected-runtime
+  acceptance. Its current MCP catalog does not expose project saving; saving
+  the open project remains a native-app user step, not a promised Hazlo tool.
+- Remaining: real signed-in Codex conversation; protocol fixtures already pass.
+- Remaining: consolidate final setup/support instructions and publish the final
+  checkpoint. Rebuild/retest the installer only if application code changes.
+- Deferred by request: Claude sign-in and KiCad 10 live schematic editing.
+  Model benchmarks, additional runtimes, hardware upload and printer control
+  do not expand this finishing pass.
+
+
 **Requested addition — image references and Rea:** keep the same simple chat,
 with an option to attach an image to identify a part and help recreate it in the
 chosen program. Require image support from the selected agent/model before
