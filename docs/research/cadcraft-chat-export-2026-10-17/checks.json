@@ -1,0 +1,115 @@
+{
+  "source_commit": "a54f2b8",
+  "pass": true,
+  "identity": {
+    "source_commit": "a54f2b8",
+    "installer_sha256": "ee6646f36bca20c04245160eab4f8490b5dec20c7b62e31c8b76f99078681f8b",
+    "unbundled_app_sha256": "cff27172c3e4ff9567677eb4302657236ac5574ea74919b3858934290d4627e8",
+    "expected_installed_app_sha256": "fef24bb485047796b7fcc9df05fa3889f7321cb6a643f8c7d6bbe5d16934a8b5",
+    "helper_sha256": "db9f0291d7e644e4e2d47d0e4e19f09f839b9a759f39372d04d4fe9eaabb3916",
+    "tool_count": 35
+  },
+  "backend": {
+    "completed_jobs": 4,
+    "cancelled_jobs": 1,
+    "refused_jobs": 1,
+    "atomic_document_identity": true,
+    "identical_reopen_distinguished": true,
+    "native_export_verified": true,
+    "export_includes_unsaved_state": true,
+    "export_no_native_undo": true,
+    "native_undo_steps": 3,
+    "approval_replay_refused": true,
+    "stale_unprojected_change_refused": true,
+    "units_query_preserved_state": true,
+    "recovery_pass": true,
+    "native_window_observed": true,
+    "source_preserved": true,
+    "host_settings_preserved": true,
+    "native_process_stopped": true
+  },
+  "debug_native_ui": {
+    "real_cloud_chat": true,
+    "actual_ui_approval_clicks": 3,
+    "actual_ui_cancel_clicks": 1,
+    "completed_jobs": 3,
+    "cancelled_jobs": 1,
+    "cancelled_export_artifacts": 0,
+    "millimeter_move": 1,
+    "inch_followup": 0.1,
+    "final_center_mm": 3.54,
+    "width_mm": 20,
+    "native_export_verified": true,
+    "read_only_report_opened": true,
+    "source_preserved": true,
+    "host_settings_preserved": true,
+    "owned_processes_stopped": true,
+    "installed_package_tested": false,
+    "other_providers_tested": false,
+    "dxf_os_association_invoked": false
+  },
+  "build": {
+    "tracked_inputs_unchanged": 6721,
+    "builder_profile_matches": {
+      "app": 0,
+      "helper": 0
+    },
+    "artifacts": {
+      "installer": {
+        "sha256": "ee6646f36bca20c04245160eab4f8490b5dec20c7b62e31c8b76f99078681f8b",
+        "bytes": 17210859
+      },
+      "app": {
+        "sha256": "cff27172c3e4ff9567677eb4302657236ac5574ea74919b3858934290d4627e8",
+        "bytes": 38919680
+      },
+      "helper": {
+        "sha256": "db9f0291d7e644e4e2d47d0e4e19f09f839b9a759f39372d04d4fe9eaabb3916",
+        "bytes": 776704
+      }
+    }
+  },
+  "release_recovery": {
+    "pass": true,
+    "source_commit": "a54f2b8",
+    "release_image": true,
+    "installed_registration_tested": false,
+    "native_project_picker": true,
+    "schema16_jobs_recovered": 4,
+    "prior_chat_messages_restored": 13,
+    "real_cloud_review": true,
+    "historical_and_current_native_states_distinguished": true,
+    "new_jobs": 0,
+    "preserved_project_files": 9,
+    "source_preserved": true,
+    "host_settings_preserved": true,
+    "expected_installed_app_sha256": "fef24bb485047796b7fcc9df05fa3889f7321cb6a643f8c7d6bbe5d16934a8b5",
+    "installer_sha256": "ee6646f36bca20c04245160eab4f8490b5dec20c7b62e31c8b76f99078681f8b",
+    "exact_prior_chat_match": true,
+    "report_opened": true,
+    "files_unchanged_after_normal_close": 9,
+    "owned_processes_independently_absent": true
+  },
+  "guest_lifecycle": {
+    "pass": true,
+    "current_user_install": true,
+    "binaries_match_package_build": true,
+    "same_version_update": true,
+    "previous_build_update": true,
+    "app_alive": true,
+    "uninstalled": true,
+    "user_files_preserved": true,
+    "lifecycle_pass": true,
+    "source_commit": "a54f2b8",
+    "installer_sha256": "ee6646f36bca20c04245160eab4f8490b5dec20c7b62e31c8b76f99078681f8b",
+    "installed_and_updated_helper_tools": 35,
+    "independent_exported_files_match": 3,
+    "owned_guest_stopped": true,
+    "native_ui_automation": false,
+    "engineering_workflows_retested": false,
+    "ordinary_user_retested": false,
+    "signed_in_conversation_tested": false,
+    "full_installed_acceptance_pass": false
+  },
+  "full_application_complete": false
+}

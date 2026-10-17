@@ -64,13 +64,49 @@ built or downloaded by the application.
   displacing a user constraint; shorter CADCraft guidance restores the
   existing history-retention behavior without increasing its limit.
 
-The [checkpoint](cadcraft-atomic-observation-2026-10-17/checks.json)
-records exact counts and scope. Windows reports a locked desktop, so the
-updated actual native-window edit/export/reopen sequence and real approval
-buttons remain pending. The extended owned acceptance example is ready;
-the CLI test and IPC fixtures do not substitute for that acceptance. A new
-real-provider conversation and installer are also pending. The previous
-[installer's acceptance](cadcraft-chat-package-2026-10-16.md) predates these
-changes. Native source Save/Save As, more editing commands and the other
-program gaps remain unfinished. Full upstream CI and upstream publication
-were not performed. The full application goal remains active.
+The [initial checkpoint](cadcraft-atomic-observation-2026-10-17/checks.json)
+retains the earlier locked-desktop scope. After unlocking, the
+[native/UI/package checkpoint](cadcraft-chat-export-2026-10-17/checks.json)
+passes the extended backend sequence: four completed jobs, cancellation,
+hidden-state refusal, three native Undo steps and identical-document reopen
+detection. The owned CADCraft window was observed and stopped.
+
+The actual debug Hazlo window then uses the native picker and the existing
+cloud route. It asks for the missing distance, moves the circle 1 mm and
+another 0.1 inch through two separate UI approvals, cancels an export with
+no DXF artifact, and exports a fresh proposal through a third approval.
+Native readback and independent CLI reopening agree on the final 3.54 mm
+position and 20 mm width. The unsaved marker remains visible; the source
+and host settings stay unchanged. The read-only export report opens in
+Hazlo. The DXF association button is visible but was not invoked. The
+native circle is partly clipped at the right edge of the viewport; numeric
+readback establishes its geometry. The final automatic export explanation
+still uses coordinate/radius terms, so perfect plain-language acceptance
+is not claimed.
+
+The rebuilt installer from `a54f2b8` has SHA256
+`ee6646f36bca20c04245160eab4f8490b5dec20c7b62e31c8b76f99078681f8b`.
+All 6,721 tracked build inputs remain unchanged and both shipped binaries
+pass builder-profile scans. The release helper transports 35 tools. Its
+actual release image restores all 13 earlier messages exactly and four
+schema-16 jobs through the native project picker. The recovered report
+opens. A real cloud read-only review correctly distinguishes the exported
+3.54 mm position from the freshly reopened source at zero, with no unsaved
+changes. No new jobs are created; all nine project files remain unchanged
+after normal close, and both owned processes are independently absent.
+This is release-image host evidence, separate from installed registration.
+
+A fresh Windows guest passes per-user install, same-version update from
+the previous candidate, exact binary identities, helper transport before
+and after update, startup and uninstall. Three preserved files match an
+independent post-uninstall export; the driver is terminal and the owned
+guest is stopped. Both helpers transport the current fixture host's
+35-tool catalog; that count does not add new capabilities to the older
+app. This guest run does not repeat engineering workflows, native UI,
+ordinary-user or signed-in conversation acceptance.
+
+Native source Save/Save As, more editing commands and the other program
+gaps remain unfinished. The maintained patched runtime stays separate
+from the installer and leaves installed CADCraft unchanged. Full upstream
+CI and upstream publication were not performed. The full application goal
+remains unfinished.

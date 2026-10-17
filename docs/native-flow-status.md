@@ -1,6 +1,6 @@
 # Current native-flow status
 
-October 16, 2026. The four-step objective in [the application goal](application-goal.md)
+October 17, 2026. The four-step objective in [the application goal](application-goal.md)
 remains intact. Historical checkpoints describe the binary and scope actually
 tested; a later package does not retroactively turn them into new tests.
 
@@ -10,7 +10,7 @@ tested; a later package does not retroactively turn them into new tests.
 | Arduino Agent | [Actual open-sketch edits, follow-up and separate save](research/packaged-arduino-chat-2026-10-16.md), preserving an unsaved note; [current release report/chat recovery](research/durable-chat-package-2026-10-16.md) | Current release recovery is read-only; it does not repeat the earlier fresh native editing sequence or all providers. |
 | Arduino CLI | Existing real Uno compilation, reports and recovery; the Agent supplies the separately verified live editor flow | Compilation is a file workflow and is not labelled as live editor control. |
 | KiCad PCB / Konnect | [Actual natural target identification, metric/inch native moves, export cancellation and approved export](research/kicad-live-chat-ui-2026-10-16.md) | The newest package's full PCB conversation and other-provider acceptance have not been repeated. |
-| CADCraft | Saved-copy native tool workflows; [isolated checked-binding patch and actual native window trial](research/cadcraft-native-binding-2026-10-16.md) | [Patched-runtime native chat](research/cadcraft-live-chat-2026-10-16.md) passes backend, real-cloud and actual owned Hazlo UI edit/readback/follow-up checks for circles. [Atomic identity and DXF chat export](research/cadcraft-chat-export-2026-10-17.md) are implemented with real CLI roundtrip and IPC checks; their updated native-window acceptance is pending a locked desktop. Other geometry commands and native source saving remain unfinished. The [updated release recovery and fresh guest lifecycle](research/cadcraft-chat-package-2026-10-16.md) pass; fresh native editing in that release and full installed acceptance retain their limits. The explicitly selected maintained runtime leaves installed CADCraft unchanged. |
+| CADCraft | [Patched-runtime native circle chat](research/cadcraft-live-chat-2026-10-16.md); [atomic identity and DXF export](research/cadcraft-chat-export-2026-10-17.md) pass native-window backend checks, real cloud chat with three UI approvals and export cancellation, independent DXF readback, current release recovery and fresh guest lifecycle | Other geometry commands and native source saving remain unfinished. Fresh native editing in the release image and full installed acceptance retain their limits. The explicitly selected maintained runtime leaves installed CADCraft unchanged. |
 | KiCad schematic / Konnect | Saved-file checks, exports and reviewed copy editing | No live schematic interface is verified for the selected runtime. Copy editing does not close this gate. |
 | OrcaSlicer | Real file slicing, reviewed profile changes and output readback | No safe live open-document interface is verified for the selected integration. File slicing does not close this gate. |
 
@@ -24,7 +24,7 @@ still needed for that integration's real conversation acceptance.
 
 The latest installer includes the new CADCraft chat tools and schema-16 records
 as well as the ordinary-language and committed-history changes. Its [fresh guest
-lifecycle and separate release-image recovery](research/cadcraft-chat-package-2026-10-16.md) pass.
+lifecycle and separate release-image recovery](research/cadcraft-chat-export-2026-10-17.md) pass.
 These results preserve the distinction between source/debug, packaged host,
 installed guest, backend fixtures and real live conversations. The full goal
 remains unfinished. A new editor, a file fallback presented as live control,
