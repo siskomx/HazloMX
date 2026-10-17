@@ -1,0 +1,33 @@
+{
+  "pass": true,
+  "existing_ollama_cloud": true,
+  "real_cloud_turns": 2,
+  "fresh_status_and_verified_report_reads_each_turn": true,
+  "read_only_tools_only": true,
+  "default_answer_plain_language": true,
+  "default_sentence_count": 4,
+  "default_word_count": 71,
+  "explicit_technical_details_preserved": true,
+  "new_jobs_created": 0,
+  "original_and_copied_project_files_unchanged": 7,
+  "builder_home_paths_excluded": true,
+  "raw_model_trace_retained_privately": true,
+  "native_ui_tested": false,
+  "other_providers_tested": false,
+  "installed_candidate_rebuilt": false,
+  "example_sha256": "37639868d0a7d7ae4e5bc389fbb41ea8e98ea3f7d250676c37a2ec91d4eeb66f",
+  "shared_instruction_source_sha256": "22e5e0d391f310979ef53802ead2e10800d4e8d8f330496d100dab7ec4043f05",
+  "initial_attempt": {
+    "plain_answer_internal_fields": 0,
+    "plain_answer_words": 139,
+    "plain_answer_sentences": 6,
+    "brevity_gate_pass": false
+  },
+  "transport": "existing_loopback_body_recording_forwarder",
+  "check_scope": "real_backend_read_only_conversation_on_owned_project_copy",
+  "shared_ollama_chat_tests_passed": 10,
+  "shared_ollama_chat_tests_ignored": 1,
+  "example_clippy_pass": true,
+  "frontend_build_and_bounded_context_check_pass": true,
+  "full_application_acceptance": false
+}
