@@ -81,6 +81,39 @@ try {
     assert.equal(await page.locator("#approval").isVisible(),false);
     await page.locator("#past-chats > summary").click();
   }
+  await page.locator("#provider").selectOption("codex");
+  await page.locator("#send:enabled").waitFor();
+  await page.evaluate(()=>{
+    const original=IDBDatabase.prototype.transaction;
+    window.holdChatCommit=true;
+    IDBDatabase.prototype.transaction=function(...args){
+      const tx=original.apply(this,args);
+      if(args[1]==="readwrite"&&window.holdChatCommit){
+        window.holdChatCommit=false;
+        Object.defineProperty(tx,"oncomplete",{set(handler){tx.addEventListener("complete",event=>{window.releaseChatCommit=()=>handler.call(tx,event);});}});
+      }
+      return tx;
+    };
+  });
+  await page.locator("#prompt").fill("Conserva también este último mensaje confirmado.");
+  await page.locator("#send").click();await page.locator("#send:enabled").waitFor();
+  await page.waitForFunction(()=>typeof window.releaseChatCommit==="function");
+  assert.match(await page.locator("#storage-status").innerText(),/Guardando conversación/);
+  await page.evaluate(()=>window.releaseChatCommit());
+  await page.waitForFunction(()=>document.getElementById("storage-status").textContent.startsWith("Conversación guardada"));
+  await page.evaluate(()=>{
+    const key=Object.keys(localStorage).find(key=>{
+      if(!key.startsWith("hazlomexa.chat.v2:"))return false;
+      const scope=JSON.parse(key.slice("hazlomexa.chat.v2:".length));
+      return scope[0]==="history-project"&&scope[1].endsWith("history-project")&&scope[2]==="codex";
+    });
+    if(!key)throw Error("Missing scoped legacy cache");
+    localStorage.setItem(key,JSON.stringify({version:1,turns:[{role:"assistant",content:"STALE-CACHE-MUST-NOT-REPLACE-COMMIT"}]}));
+  });
+  await page.reload();await page.locator("#send:enabled").waitFor();
+  assert.match(await page.locator("#conversation").innerText(),/Conserva también este último mensaje confirmado/);
+  assert(!await page.locator("#conversation").innerText().then(text=>text.includes("STALE-CACHE-MUST-NOT-REPLACE-COMMIT")));
+  await page.locator("#setup").click();
   const legacyUnchanged=()=>page.evaluate(()=>Object.entries(window.originalLegacy).every(([key,value])=>localStorage.getItem(key)===value));
   assert(await legacyUnchanged());
   await page.evaluate(()=>{window.breakLegacyStorage=true;});
@@ -93,5 +126,5 @@ try {
   assert.equal(await page.locator("#past-chats").isVisible(),false);
   assert(await legacyUnchanged());
   assert.deepEqual(errors,[]);
-  console.log("PASS: eleven legacy scopes, explicit history copy across four provider choices, no automatic replay/backend action/approval, escaped messages, fresh session, reload, provider/folder isolation, storage failure and byte-identical legacy preservation; browser IPC fixtures only");
+  console.log("PASS: eleven legacy scopes, explicit history copy across four provider choices, no automatic replay/backend action/approval, escaped messages, fresh session, reload, provider/folder isolation, storage failure, commit-only save acknowledgement, stale-cache recovery and byte-identical legacy preservation; browser IPC fixtures only");
 } finally {await browser?.close();await server.close();}

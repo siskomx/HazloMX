@@ -1,0 +1,30 @@
+{
+  "base_commit": "98469bc",
+  "app_sha256": "9acd73321daafea3a6325f1e3f7d32e580087dff553c14392ca231d4af811633",
+  "source_sha256": {
+    "apps\\desktop\\src\\chat.ts": "780fe326bcc28a09958df70ee8e5de756da9a0580b5628f1b8a809b1f0aa607e",
+    "apps\\desktop\\src\\chat-storage.ts": "5e2224896deda417437994d907abfc0d10373da9271959e0f8c2ddbc4cece1bd",
+    "apps\\desktop\\src-tauri\\src\\claude.rs": "22e5e0d391f310979ef53802ead2e10800d4e8d8f330496d100dab7ec4043f05"
+  },
+  "scope": "owned_debug_webview2_with_debug_project_preselection",
+  "existing_ollama_cloud": true,
+  "legacy_cached_conversation_migrated": true,
+  "native_save_acknowledgement_observed": true,
+  "owned_app_tree_force_stopped": true,
+  "ordered_messages_identical_after_restart": 14,
+  "latest_question_and_reply_preserved": true,
+  "native_reply_sentence_count": 2,
+  "native_reply_word_count": 45,
+  "native_reply_internal_result_fields_absent": true,
+  "new_jobs_created": 0,
+  "completed_jobs_preserved": 3,
+  "project_files_unchanged": 7,
+  "owned_test_processes_stopped": true,
+  "separate_browser_crash_test_pass": true,
+  "browser_test_has_no_localstorage_cache": true,
+  "native_test_localstorage_cache_removed": false,
+  "initial_browser_harness_wait_failures_retained": 2,
+  "power_loss_tested": false,
+  "installed_package_rebuilt": false,
+  "full_application_acceptance": false
+}

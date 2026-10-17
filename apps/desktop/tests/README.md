@@ -1,5 +1,7 @@
 # Current Windows package acceptance
 
+For [chat commit and crash recovery](../../../docs/research/durable-chat-2026-10-16.md), run `rtk proxy node apps/desktop/tests/chat-storage.mjs` and `rtk proxy node apps/desktop/tests/chat-history.mjs`. They use owned headless browser profiles and IPC fixtures to check commit-only acknowledgement, failed-write preservation, cache migration, scope isolation and exact recovery after a browser-process crash. The separate actual debug WebView2 checkpoint is documented in the linked evidence; these commands do not certify power-loss or installed-app acceptance.
+
 For the [real OrcaSlicer file conversation](../../../docs/research/orca-real-chat-2026-10-14.md), build `ollama_slice_chat` and explicitly run `rtk proxy python apps/desktop/tests/ollama-native-chat.py --run-real-cloud --program slice`. It uses the selected inch STL/Prusa profiles and identified file-only slicer with backend fixture approvals. Geometry/settings/artifact checks do not establish native UI, live editing or print quality; no printer is controlled.
 
 For the [real Arduino compile conversation](../../../docs/research/arduino-real-chat-2026-10-14.md), build `ollama_arduino_chat` and explicitly run `rtk proxy python apps/desktop/tests/ollama-native-chat.py --run-real-cloud --program arduino`. It uses the existing cloud route and provisioned Uno CLI/core with backend fixture approvals. Source/compiler report/HEX/ELF checks do not establish physical behavior, and no firmware is uploaded.

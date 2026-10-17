@@ -1,6 +1,7 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { agentPrompt, CHAT_HISTORY_BYTES, savedConversation, type Turn } from "./design";
 import { legacyConversations } from "./chat-history";
+import { readConversation, writeConversation } from "./chat-storage";
 import { proposalFacts } from "./proposal-review";
 import type { ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import "./chat.css";
@@ -39,6 +40,7 @@ let program: Program = "planning", provider: Provider = "codex";
 let commandBusy = false, revision = 0, newSession = true;
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
+let historyLoading = false, durableReady = false, storageVersion = 0;
 let sourceContext: Record<string, unknown> = {};
 let sourceNames: Partial<Record<Program, string>> = {};
 let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
@@ -49,23 +51,51 @@ let inspectionNotice = "";
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
-  if (!storageKey) return;
+  if (!storageKey || historyLoading) return;
   const saved = JSON.stringify({ version: 1, turns, answeredChat });
+  const scope = storageKey, version = ++storageVersion;
+  const current = () => scope === storageKey && version === storageVersion;
   try {
     if (!savedConversation(saved, CHAT_HISTORY_BYTES)) throw Error("La conversación supera el límite de guardado.");
-    localStorage.setItem(storageKey, saved); $("storage-status").textContent = "Conversación guardada localmente en este proyecto y para esta IA.";
+    try { localStorage.setItem(scope, saved); } catch { /* The committed database remains authoritative. */ }
+    if (!durableReady) throw Error("No se pudo leer el historial guardado.");
+    $("storage-status").textContent = "Guardando conversación…";
+    void writeConversation(scope, saved).then(() => {
+      if (current()) $("storage-status").textContent = "Conversación guardada localmente en este proyecto y para esta IA.";
+    }, () => {
+      if (current()) $("storage-status").textContent = "No se confirmó el guardado de esta conversación. Conserva lo importante antes de cerrar.";
+    });
   } catch { $("storage-status").textContent = "No se pudo guardar esta conversación. Conserva lo importante antes de cerrar."; }
 }
 function restore() {
   const key = state.project ? `hazlomexa.chat.v2:${JSON.stringify([...state.project, provider])}` : "";
   if (key === storageKey) return;
   persist(); storageKey = key; turns = []; answeredChat = undefined; newSession = true; contextNotice = "";
-  try { const saved = savedConversation(key ? localStorage.getItem(key) : null, CHAT_HISTORY_BYTES); if (saved) { turns = saved.turns; answeredChat = saved.answeredChat; } } catch { /* Storage failure must not prevent using the chat. */ }
+  const version = ++storageVersion;
+  historyLoading = !!key; durableReady = false; $("storage-status").textContent = key ? "Leyendo conversación guardada…" : "";
+  if (!key) return;
+  let cached: ReturnType<typeof savedConversation> = null;
+  try { cached = savedConversation(localStorage.getItem(key), CHAT_HISTORY_BYTES); } catch { /* The database can recover without the cache. */ }
+  const seen = state.chat && !state.chat.busy ? state.chat.id : undefined;
+  void readConversation(key).then(raw => {
+    if (key !== storageKey || version !== storageVersion) return;
+    const saved = raw === null ? cached : savedConversation(raw, CHAT_HISTORY_BYTES);
+    turns = saved?.turns ?? []; answeredChat = seen ?? saved?.answeredChat;
+    historyLoading = false; durableReady = true; $("storage-status").textContent = "";
+    if (raw === null && cached) persist();
+    apply(state);
+  }, () => {
+    if (key !== storageKey || version !== storageVersion) return;
+    turns = cached?.turns ?? []; answeredChat = seen ?? cached?.answeredChat;
+    historyLoading = false;
+    $("storage-status").textContent = "No se pudo leer el historial guardado. Conserva lo importante antes de cerrar.";
+    apply(state);
+  });
 }
 function renderLegacy() {
   try {
     const records = legacyConversations(key => localStorage.getItem(key), state.project);
-    const disabled = commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy || state.job?.snapshot.phase === "awaiting_approval" || turns.length > 0;
+    const disabled = historyLoading || commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy || state.job?.snapshot.phase === "awaiting_approval" || turns.length > 0;
     const signature = JSON.stringify([storageKey, provider, disabled, records]);
     if (signature === renderedLegacy) return;
     renderedLegacy = signature;
@@ -80,7 +110,7 @@ function renderLegacy() {
       const button = document.createElement("button"); button.className = "secondary";
       button.textContent = `Continuar con ${providerNames[provider]}`; button.disabled = disabled;
       button.onclick = () => {
-        if (scope !== storageKey || commandBusy || state.chat?.busy || state.job?.busy || state.codex_login?.busy || state.job?.snapshot.phase === "awaiting_approval" || turns.length) return;
+        if (scope !== storageKey || historyLoading || commandBusy || state.chat?.busy || state.job?.busy || state.codex_login?.busy || state.job?.snapshot.phase === "awaiting_approval" || turns.length) return;
         try {
           const saved = savedConversation(localStorage.getItem(record.key));
           if (!saved?.turns.length) return;
@@ -102,7 +132,7 @@ function apply(next: DesktopSnapshot) {
   const chat = state.chat;
   // A chat view carries a project UUID, not its folder; copied projects can share that UUID.
   if (projectChanged && chat) answeredChat = chat.id;
-  if (chat && chat.provider === provider && !chat.busy && chat.id !== answeredChat && chat.project_id === state.project?.[0]) {
+  if (!historyLoading && chat && chat.provider === provider && !chat.busy && chat.id !== answeredChat && chat.project_id === state.project?.[0]) {
     if (chat.text) turns.push({ role: "assistant", content: chat.text });
     else if (chat.cancelled) turns.push({ role: "assistant", content: "Conversación detenida." });
     if (chat.error) error(chat.error);
@@ -119,7 +149,7 @@ async function action(work: () => Promise<void>) {
 }
 function reviewFinishedOperation() {
   const pending = resultReview;
-  if (!pending || commandBusy || state.chat?.busy || state.job?.busy) return;
+  if (!pending || historyLoading || commandBusy || state.chat?.busy || state.job?.busy) return;
   const job = state.job;
   if (!job || pending.revision !== revision || pending.project !== JSON.stringify(state.project) || pending.provider !== provider || pending.program !== program || job.snapshot.project_id !== state.project?.[0] || jobProgram(job.snapshot) !== program || job.snapshot.input.job_id !== pending.jobId) { resultReview = undefined; return; }
   if (["awaiting_approval", "running"].includes(job.snapshot.phase)) return;
@@ -213,7 +243,7 @@ function renderQuestion() {
   }
 }
 function render() {
-  const busy = commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
+  const busy = historyLoading || commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
   $("context-status").textContent = contextNotice;
   const ollama = provider.startsWith("ollama_");
   const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
@@ -348,6 +378,7 @@ function context() {
   return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: job && (!native || !!job.input.live_pcb_version) ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: native ? "open_native_pcb" : program === "agent" ? "open_agent_and_explicit_saved_copies" : program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies", live_document_connection: program === "freecad" || program === "agent" ? null : native, live_mutations_allowed: native || program === "freecad" || program === "agent", native_connection_check: native ? "inspect_selected_live_pcb" : program === "freecad" ? "inspect_open_cad_documents" : program === "agent" ? "inspect_open_agent_documents" : null };
 }
 async function send(content: string, userInitiated = true) {
+  if (historyLoading) return;
   inspectionNotice = "";
   const token = ++revision;
   const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
