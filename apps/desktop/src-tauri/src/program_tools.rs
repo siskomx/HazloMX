@@ -94,7 +94,7 @@ struct Source {
     discovery: &'static str,
 }
 
-fn sources() -> [Source; 8] {
+fn sources() -> [Source; 10] {
     [
         Source { id:"freecad",program:Program::Freecad,repository:"https://github.com/FreeCAD/FreeCAD",tested_version:crate::freecad::SUPPORTED_VERSION,discovery:"FreeCAD Python API; CADPilot MCP tools/list" },
         Source { id:"cadpilot",program:Program::Freecad,repository:"https://github.com/LBurny/cadpilot",tested_version:crate::cadpilot::VERSION,discovery:"MCP tools/list, including pagination; refresh when tools/list changes" },
@@ -104,6 +104,8 @@ fn sources() -> [Source; 8] {
         Source { id:"kicad",program:Program::Kicad,repository:"https://gitlab.com/kicad/code/kicad",tested_version:crate::kicad::VERSION,discovery:"kicad-cli --help and subcommand --help; native IPC capabilities depend on the open editor" },
         Source { id:"konnect",program:Program::Kicad,repository:"https://github.com/mixelpixx/Konnect",tested_version:crate::konnect_run::VERSION,discovery:"MCP tools/list, including pagination; catalog depends on the connected runtime's capabilities" },
         Source { id:"orcaslicer",program:Program::Slice,repository:"https://github.com/OrcaSlicer/OrcaSlicer",tested_version:crate::orca::VERSION,discovery:"CLI --help from the identified runtime; current Hazlo connector is file slicing, not live editor control" },
+        Source { id:"orcaslicer_mcp",program:Program::Slice,repository:"https://github.com/MaxEllis/orcaslicer-mcp",tested_version:"0.1.17",discovery:"Installed MCP server tools/list supplies live settings, object and plate tools when connected to the separately selected MCP-enabled OrcaSlicer fork. Read actual schemas; stock OrcaSlicer has no live control API." },
+        Source { id:"orcaslicer_live_runtime",program:Program::Slice,repository:"https://github.com/MaxEllis/OrcaSlicer",tested_version:"2.4.2-mcp.13",discovery:"Explicitly selected maintained fork, not stock OrcaSlicer. Requires its token-authenticated localhost Remote API and the installed orcaslicer-mcp server. Live scale, movement and unsaved settings pass native readback. Transform calls do not create Undo steps in this tested build; restoration requires a separately reviewed inverse edit. No automatic installation or printer control." },
     ]
 }
 
@@ -269,7 +271,7 @@ mod tests {
     #[test]
     fn offline_catalog_separates_provenance_from_runtime_permissions() {
         let mut catalog = inspect(Request::default(), Arc::new(AtomicBool::new(false))).unwrap();
-        assert_eq!(catalog.as_object().unwrap().len(), 8);
+        assert_eq!(catalog.as_object().unwrap().len(), 10);
         let tool = crate::host_tools::catalog()
             .into_iter()
             .find(|t| t.name == "get_design_capabilities")
@@ -304,6 +306,13 @@ mod tests {
         );
         assert!(!allowed("https://untrusted.invalid", None));
         assert!(!allowed("cadcraft", Some(Program::Freecad)));
+        for id in ["orcaslicer", "orcaslicer_mcp", "orcaslicer_live_runtime"] {
+            assert!(allowed(id, Some(Program::Slice)));
+            assert!(!allowed(id, Some(Program::Kicad)));
+        }
+        let mut slicer = inspect(Request::default(), Arc::new(AtomicBool::new(false))).unwrap();
+        retain_scope(&mut slicer, Some(Program::Slice));
+        assert_eq!(slicer.as_object().unwrap().len(), 3);
         assert!(
             serde_json::from_value::<Request>(json!({"url":"https://untrusted.invalid"})).is_err()
         );

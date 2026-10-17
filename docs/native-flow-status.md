@@ -1,5 +1,7 @@
 # Current native-flow status
 
+[Orca live MCP checks](research/orca-live-native-mcp-2026-10-17.md) now pass on the explicitly selected maintained fork and native MCP server. Its 53 discovered tools drive visible geometry/settings edits and native readback; transform Undo is unavailable in the tested build, so restoration is a separately reviewed inverse edit. Installed stock OrcaSlicer remains unchanged. The person explicitly keeps KiCad 10 and leaves live schematics plus Claude sign-in pending.
+
 October 17, 2026. Hazlo follows the four-step [application goal](application-goal.md):
 idea, define together, edit in the selected program, then review and finalize.
 The interface remains simple chat with optional connection settings.
@@ -17,7 +19,7 @@ installs programs or grants new execution capabilities.
 [Actual program checks](research/native-tool-live-windows-2026-10-17.md) observe
 FreeCAD, CADCraft, KiCad PCB and Arduino Agent edits through discovered tools,
 with native readback and explicit Undo/saving differences. Arduino compilation
-and Orca slicing remain file workflows. The Orca cube is visible after user setup;
+and stock Orca CLI slicing remain file workflows. The Orca cube is visible after user setup;
 its saved 3MF remains unchanged.
 
 The [current `4173250` installer](research/native-tools-package-2026-10-17.md)
@@ -33,8 +35,8 @@ repeat fresh installed editing or every real AI provider conversation.
 | Arduino CLI | Existing real Uno compilation, reports and recovery; the Agent supplies the separately verified live editor flow | Compilation is a file workflow and is not labelled as live editor control. |
 | KiCad PCB / Konnect | [Actual natural target identification, metric/inch native moves, export cancellation and approved export](research/kicad-live-chat-ui-2026-10-16.md) | The newest package's full PCB conversation and other-provider acceptance have not been repeated. |
 | CADCraft | [Patched-runtime native circle chat](research/cadcraft-live-chat-2026-10-16.md); [atomic identity and DXF export](research/cadcraft-chat-export-2026-10-17.md) pass native-window backend checks, real cloud chat with three UI approvals and export cancellation, independent DXF readback, current release recovery and fresh guest lifecycle | Discovered native commands supply editing breadth; native source saving and fresh release editing acceptance remain unverified. The explicitly selected maintained runtime leaves installed CADCraft unchanged. |
-| KiCad schematic / Konnect | Saved-file checks, exports and reviewed copy editing | No live schematic interface is verified for the selected runtime. Copy editing does not close this gate. |
-| OrcaSlicer | Real file slicing, reviewed profile changes and output readback | No safe live open-document interface is verified for the selected integration. File slicing does not close this gate. |
+| KiCad schematic / Konnect | Saved-file checks, exports and reviewed copy editing; KiPilot/KiCad 11 native route identified | The person chose to retain KiCad 10 and leave live schematics pending. No nightly or schematic writes are introduced. |
+| OrcaSlicer | [53-tool native MCP runtime](research/orca-live-native-mcp-2026-10-17.md): visible scale, follow-up move, unsaved settings, readback and reviewed restore | Requires the explicitly selected maintained fork. Transform calls lack native Undo in this build. Fresh AI conversation/UI approval and installed-runtime acceptance are not repeated. |
 
 The existing cloud Ollama route has real conversation evidence. Claude Code
 and Codex use the same shared instructions and scoped tool boundary, with
