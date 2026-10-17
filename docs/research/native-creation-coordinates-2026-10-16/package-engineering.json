@@ -1,0 +1,37 @@
+{
+  "pass": true,
+  "source_commit": "6b669f8",
+  "installer_sha256": "6553960436cfbf314967546a149fb901502272bf3ba4ddf576bb6ca6e56486a7",
+  "installed_native_completed_jobs": 21,
+  "installed_groups": {
+    "agent": 2,
+    "arduino": 2,
+    "engineering": 2,
+    "konnect": 4,
+    "drawing": 4,
+    "cadpilot": 3,
+    "orca": 4
+  },
+  "initial_chat_ui_pass": true,
+  "ordinary_nonadministrator": true,
+  "administrator_group_absent": true,
+  "ordinary_native_kicad_jobs": 2,
+  "ordinary_install_update_uninstall_pass": true,
+  "independent_files_matched": 857,
+  "files_by_group": {
+    "agent": 24,
+    "arduino": 172,
+    "kicad": 65,
+    "konnect": 187,
+    "drawing": 38,
+    "cadpilot": 141,
+    "orca": 160,
+    "preserved-project": 3,
+    "nonadmin-preserved": 2,
+    "nonadmin-kicad": 65
+  },
+  "signed_in_conversation_tested": false,
+  "live_document_chat_retested": false,
+  "native_approval_driver": "shared_backend_test",
+  "owned_guest_stopped": true
+}
