@@ -1,0 +1,246 @@
+diff --git a/crates/ui-egui/src/control.rs b/crates/ui-egui/src/control.rs
+index 03a3521..34401d5 100644
+--- a/crates/ui-egui/src/control.rs
++++ b/crates/ui-egui/src/control.rs
+@@ -194,6 +194,12 @@ const METHODS: &[(&str, &str, &str)] = &[
+     ("cmdline.key", "{key: \"enter\"|\"escape\"}", "Press Enter or Escape at the command line."),
+     ("cmdline.state", "", "Current prompt, keywords, accepted input kinds and history tail."),
+     ("engine.execute", "{command, params}", "Run any command with JSON parameters. Never opens a dialog."),
++    ("document.binding", "", "Current native document lifetime, revision and editing context."),
++    (
++        "engine.execute_checked",
++        "{expected, command, params}",
++        "Compare the exact native binding and execute on the same GUI thread; refuse a changed binding.",
++    ),
+     ("engine.commands", "", "Every command: id, label, menu path, shortcut, aliases, params doc, enabled."),
+     ("drawing.inspect", "{entities?, limit?}", "Drawing summary and entities with handles and geometry."),
+     ("ui.inspect", "", "UI state, canvas rect, view, cursor and snap, performance, keyboard focus."),
+@@ -283,11 +289,93 @@ fn key_from(name: &str) -> Option<egui::Key> {
+     })
+ }
+
++// Keep the native immutable drawing alive: every engineering write must copy it.
++#[derive(Clone)]
++struct DocumentBinding {
++    token: String,
++    uid: u64,
++    revision: u64,
++    drawing: Arc<cadcraft_engine::doc::Drawing>,
++    path: Option<String>,
++    dirty: bool,
++    context: String,
++}
++fn binding_key() -> egui::Id {
++    egui::Id::new("cadcraft-native-document-binding")
++}
++// shortcut: bind other session settings before enabling commands that depend on them.
++fn binding_context(state: &cadcraft_engine::DocState) -> String {
++    format!(
++        "{:?}",
++        (
++            &state.space,
++            state.mspace,
++            state.block_editor(),
++            &state.selection,
++            &state.previous_selection,
++            &state.undo_ctl,
++            state.undo.len(),
++            state.redo.len()
++        )
++    )
++}
++fn binding_idle(app: &CadApp) -> Result<(), String> {
++    if app.session.running.is_some() || app.session.suspended.is_some() || app.session.lisp_running() {
++        return Err("finish the active native command first".into());
++    }
++    Ok(())
++}
++fn document_binding(app: &CadApp, ctx: &egui::Context) -> Result<Value, String> {
++    binding_idle(app)?;
++    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
++    let state = app.session.state().map_err(|e| e.to_string())?;
++    let token = NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).map_err(|_| "binding limit reached")?.to_string();
++    let binding = DocumentBinding {
++        token: token.clone(),
++        uid: state.uid,
++        revision: state.revision,
++        drawing: state.doc.clone(),
++        path: state.path.clone(),
++        dirty: state.is_dirty(),
++        context: binding_context(state),
++    };
++    ctx.data_mut(|data| data.insert_temp(binding_key(), binding));
++    Ok(json!({"token": token}))
++}
++
+ pub fn handle(app: &mut CadApp, ctx: &egui::Context, req: &ControlRequest) -> Outcome {
+     let p = &req.params;
+     let s = |k: &str| p.get(k).and_then(Value::as_str);
+     let f = |k: &str| p.get(k).and_then(Value::as_f64);
+     match req.method.as_str() {
++        "document.binding" => wrap(document_binding(app, ctx)),
++        "engine.execute_checked" => {
++            if let Err(e) = binding_idle(app) {
++                return err(e);
++            }
++            let Some(binding) = ctx.data_mut(|data| data.get_temp::<DocumentBinding>(binding_key())) else { return err("no native binding") };
++            let state = match app.session.state() {
++                Ok(v) => v,
++                Err(e) => return err(e),
++            };
++            if p.get("expected") != Some(&json!({"token":binding.token}))
++                || state.uid != binding.uid
++                || state.revision != binding.revision
++                || !Arc::ptr_eq(&state.doc, &binding.drawing)
++                || state.path != binding.path
++                || state.is_dirty() != binding.dirty
++                || binding_context(state) != binding.context
++            {
++                return err("document binding changed");
++            }
++            if state.undo_ctl.control == cadcraft_engine::undoctl::Control::None || state.undo_ctl.group.is_some() {
++                return err("native undo must be enabled without an open group");
++            }
++            let Some(id) = s("command") else { return err("missing `command`") };
++            let Some(params) = p.get("params").filter(|v| v.is_object()) else { return err("missing object `params`") };
++            ctx.data_mut(|data| data.remove::<DocumentBinding>(binding_key()));
++            wrap(app.session.execute(id, params).map_err(|e| e.to_string()))
++        }
+         "engine.execute" | "command" => {
+             let Some(id) = s("command").or(s("id")) else { return err("missing `command`") };
+             let params = p.get("params").cloned().unwrap_or(json!({}));
+diff --git a/docs/control-protocol.md b/docs/control-protocol.md
+index e07d758..f716b35 100644
+--- a/docs/control-protocol.md
++++ b/docs/control-protocol.md
+@@ -32,6 +32,8 @@ field. `engine.commands` returns a separate command catalog, not a list of addit
+ | `cmdline.state` | | Current prompt, keywords, accepted input kinds, history tail. |
+ | `engine.execute` | `{command, params}` | Run any command with JSON parameters. Never opens a dialog. `command` is an alias of this method, with the same parameters and result. |
+ | `engine.commands` | | Every command: id, label, menu path, shortcut, aliases, params doc, enabled. |
++| `document.binding` | | Capture an opaque one-use binding to the active native drawing and editing context. A new binding replaces the previous one. |
++| `engine.execute_checked` | `{expected, command, params}` | Compare the captured binding and execute the native command on the same GUI thread; refuse intervening changes. |
+ | `drawing.inspect` | `{entities?, limit?}` | Drawing summary (counts, extents, layers, styles, blocks, layouts, selection, undo) and entities with handles and geometry. |
+ | `ui.inspect` | | UI state, canvas rect, view, cursor and snap, performance counters; `closePrompt`: the drawing a "Save changes?" prompt is asking about (null when none); and actual egui keyboard focus (`focus.id`, `focus.label`, `focus.role`). |
+ | `ui.elements` | `{label?, role?, focused?}` | Observed toolbar, tab, drafting and layer-palette controls from the latest UI frame. Filters match exactly. Each entry has its real egui `id`, label, role, rectangle `[x,y,width,height]`, enabled/visible/selected state and current focus. |
+diff --git a/crates/ui-egui/tests/control_binding.rs b/crates/ui-egui/tests/control_binding.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/ui-egui/tests/control_binding.rs
+@@ -0,0 +1,117 @@
++use cadcraft_engine::Session;
++use cadcraft_ui_egui::control::{ControlRequest, Outcome, handle};
++use cadcraft_ui_egui::{CadApp, Services};
++use serde_json::{Value, json};
++
++fn call(app: &mut CadApp, ctx: &egui::Context, method: &str, params: Value) -> Value {
++    let (request, _) = ControlRequest::new(method, params);
++    match handle(app, ctx, &request) {
++        Outcome::Done(value) => value,
++        Outcome::Screenshot { .. } => panic!("Unexpected screenshot"),
++    }
++}
++fn line(app: &mut CadApp, ctx: &egui::Context, binding: Value) -> Value {
++    call(app, ctx, "engine.execute_checked", json!({"expected":binding,"command":"line","params":{"points":[[0,0],[10,0]]}}))
++}
++fn setup() -> (CadApp, egui::Context) {
++    (CadApp::new(Session::new(), Services::default()), egui::Context::default())
++}
++
++#[test]
++fn matching_binding_executes_once_and_records_native_undo() {
++    let (mut app, ctx) = setup();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    assert_eq!(line(&mut app, &ctx, binding.clone())["ok"], true);
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 1);
++    assert_eq!(app.session.state().unwrap().undo.len(), 1);
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 1);
++}
++
++#[test]
++fn unprojected_layer_lineweight_invalidates_binding_without_an_edit() {
++    let (mut app, ctx) = setup();
++    let before = call(&mut app, &ctx, "drawing.inspect", json!({}));
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"layer.set","params":{"name":"0","lineweight":0.5}}))["ok"], true);
++    let after = call(&mut app, &ctx, "drawing.inspect", json!({}));
++    assert_eq!(before["result"]["layers"], after["result"]["layers"]);
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++}
++
++#[test]
++fn another_native_read_invalidates_the_previous_token() {
++    let (mut app, ctx) = setup();
++    let old = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    let current = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    assert_ne!(old, current);
++    assert_eq!(line(&mut app, &ctx, old)["ok"], false);
++    assert_eq!(line(&mut app, &ctx, current)["ok"], true);
++}
++
++#[test]
++fn changed_native_selection_refuses_dispatch() {
++    let (mut app, ctx) = setup();
++    assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"line","params":{"points":[[0,0],[1,0]]}}))["ok"], true);
++    let handle = app.session.state().unwrap().doc.model.iter().next().unwrap().handle;
++    app.session.state_mut().unwrap().selection.clear();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    app.session.state_mut().unwrap().selection.push(handle);
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 1);
++}
++
++#[test]
++fn an_interactive_command_refuses_dispatch_without_cancelling_it() {
++    let (mut app, ctx) = setup();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    app.session.start("line").unwrap();
++    assert!(app.session.running.is_some());
++    assert_eq!(call(&mut app, &ctx, "document.binding", json!({}))["ok"], false);
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert!(app.session.running.is_some());
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++}
++
++#[test]
++fn changed_previous_selection_refuses_dispatch() {
++    let (mut app, ctx) = setup();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    app.session.state_mut().unwrap().previous_selection.push(cadcraft_engine::doc::Handle(1));
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++}
++
++#[test]
++fn changed_undo_settings_refuse_dispatch() {
++    let (mut app, ctx) = setup();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    app.session.state_mut().unwrap().undo_ctl.auto = false;
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++}
++
++#[test]
++fn unavailable_independent_undo_refuses_dispatch() {
++    for grouped in [false, true] {
++        let (mut app, ctx) = setup();
++        if grouped {
++            app.session.state_mut().unwrap().undo_ctl.group = Some(0);
++        } else {
++            app.session.state_mut().unwrap().undo_ctl.control = cadcraft_engine::undoctl::Control::None;
++        }
++        let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++        assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++        assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++    }
++}
++
++#[test]
++fn another_document_with_identical_geometry_refuses_dispatch() {
++    let (mut app, ctx) = setup();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    app.session.new_drawing(true);
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
++}

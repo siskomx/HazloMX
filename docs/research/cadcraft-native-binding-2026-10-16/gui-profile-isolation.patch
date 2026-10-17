@@ -1,0 +1,14 @@
+diff --git a/apps/cadcraft/src/main.rs b/apps/cadcraft/src/main.rs
+index 157294a..80178ce 100644
+--- a/apps/cadcraft/src/main.rs
++++ b/apps/cadcraft/src/main.rs
+@@ -273,6 +273,9 @@ fn main() -> eframe::Result {
+             .with_title_shown(false)
+             .with_app_id(APP_ID),
+         persist_window: false,
++        persistence_path: std::env::var_os("CADCRAFT_CONFIG_DIR")
++            .filter(|dir| !dir.is_empty())
++            .map(|dir| std::path::PathBuf::from(dir).join("app.ron")),
+         // A stencil buffer clips the contents of clipped layout viewports on the GPU.
+         stencil_buffer: STENCIL_BITS,
+         ..Default::default()

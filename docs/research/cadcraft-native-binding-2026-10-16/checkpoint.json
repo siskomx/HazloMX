@@ -1,0 +1,30 @@
+{
+  "source_commit": "fc4e98315a8d771b5ab832f0ade0b5e7b106df7f",
+  "source_version": "0.7.0",
+  "isolated_compiler": "1.95.0",
+  "host_default_compiler": "1.91.1",
+  "native_binding_tests_passed": 9,
+  "existing_protocol_tests_passed": 4,
+  "initial_binding_tests_passed": 3,
+  "initial_binding_tests_failed": 2,
+  "desktop_build_pass": true,
+  "native_cli_version_pass": true,
+  "gui_profile_override_built": true,
+  "focused_format_and_whitespace_pass": true,
+  "fresh_patch_apply_pass": true,
+  "reproduced_source_files": 4,
+  "patched_app_sha256": "b2db8be954f31e16581b14247675fc660a90a3cb49157ce71e060f3b3656d800",
+  "patch_sha256": {
+    "native-binding.patch": "4a160a7d0f34357706d6a019a55c3dcf06c361039e8935fe561447637214a4bc",
+    "gui-profile-isolation.patch": "eb4ee258cc85714292157cf39a32aded5d09189f67fdc60becebc9f9fdc6e7c1"
+  },
+  "native_gui_probe_pass": false,
+  "native_gui_status": "pending_desktop_unlock",
+  "gui_probe_stopped_before_launch": true,
+  "framework_settings_runtime_check_pass": false,
+  "installed_runtime_replaced": false,
+  "production_writer_enabled": false,
+  "hazlo_approval": false,
+  "real_provider": false,
+  "full_upstream_ci_run": false
+}
