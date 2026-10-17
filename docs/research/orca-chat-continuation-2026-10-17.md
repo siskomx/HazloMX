@@ -38,6 +38,32 @@ metadata, without predefined program operations or automatic writes. The six
 program routing fixture now consumes the returned guard directly and retains
 its stale-state refusal check. Real conversation acceptance remains required.
 
+## Corrected release: real conversation passes
+
+Release `76851f1` now passes the actual Hazlo window flow with the existing cloud
+profile and the selected 53-tool Orca runtime. The conversation starts with a
+sample idea and unknown dimensions. One UI-approved native diagnostic reads the actual
+10 mm cube. The next request produces a guarded native scale proposal directly,
+without another query approval. Actual UI approval changes its width to
+25.4 mm, preserving 10 mm depth/height and its position. A natural-language
+follow-up produces another separately approved native proposal, moving it
+2.54 mm right while preserving size and the other position axes.
+
+Three native result reports contain no native/tool errors. Independent read-only
+API observations match each state within 0.000001 mm. The resized rectangle and
+Orca's resize notification are observed in the owned native window. Hazlo reviews
+both actual results and distinguishes open-state edits from saving; its final
+reply suggests saving the project or exporting the scaled model. The saved 3MF
+hash remains unchanged. Both owned apps stop after the test.
+
+The source passes 201 regular Rust tests, Clippy, the six-program native routing
+fixture using returned guards, prompt-context checks and the frontend build.
+The matching installer builds with unchanged tracked inputs, zero builder-path
+matches and the 38-tool release helper check. Its fresh guest lifecycle, other
+program conversations and the subsequently requested image/Rea feature remain
+separate unfinished checks. Native transform Undo remains unavailable in the
+selected Orca build; this test does not claim saving, slicing or print readiness.
+
 KiCad 10 remains selected; live schematic editing and Claude sign-in acceptance
 stay pending by explicit user choice. Existing program-specific evidence retains
 its original scope in the [status matrix](../native-flow-status.md).

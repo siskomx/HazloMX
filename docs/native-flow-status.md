@@ -1,13 +1,14 @@
 # Current native-flow status
 
-[Real Orca chat inspection](research/orca-chat-continuation-2026-10-17.md) confirms
-the open cube through UI approval and existing cloud inference. Repeated query
-proposals blocked the first width-edit conversation; shared instructions now
-retrieve completed native results before requesting duplicate reads. An
-instruction-only retry still repeated the query; the result response now also
-supplies the original guard query and state hash instead of omitting them. Connection
-labels distinguish MCP tools and CLI files. Fresh editing and package acceptance
-remain required for this correction.
+[Real Orca chat editing](research/orca-chat-continuation-2026-10-17.md#corrected-release-real-conversation-passes)
+passes in release `76851f1`: unknown-size idea, UI-approved native inspection,
+one-inch width and a 0.1-inch follow-up move, two UI approvals and actual result
+reviews. Independent readback agrees; the source is preserved and owned apps stop.
+The earlier repeated-query failures are retained. Shared result metadata now
+supplies the exact guard/query reference; no program operation wrapper is added.
+The matching installer builds and passes helper checks; fresh guest acceptance
+and the requested [image/Rea addition](research/image-reference-rea-2026-10-17.md)
+remain unfinished.
 
 **Orca source packaged (`2f0d564`):** the [updated installer checkpoint](research/orca-live-native-mcp-2026-10-17.md#windows-package) passes fresh guest install/update/identity/helper/startup/uninstall and three independently matched preserved project files. Native Orca edits remain separately scoped host evidence. KiCad 10 and pending Claude/live schematic choices remain unchanged.
 
@@ -47,7 +48,7 @@ repeat fresh installed editing or every real AI provider conversation.
 | KiCad PCB / Konnect | [Actual natural target identification, metric/inch native moves, export cancellation and approved export](research/kicad-live-chat-ui-2026-10-16.md) | The newest package's full PCB conversation and other-provider acceptance have not been repeated. |
 | CADCraft | [Patched-runtime native circle chat](research/cadcraft-live-chat-2026-10-16.md); [atomic identity and DXF export](research/cadcraft-chat-export-2026-10-17.md) pass native-window backend checks, real cloud chat with three UI approvals and export cancellation, independent DXF readback, current release recovery and fresh guest lifecycle | Discovered native commands supply editing breadth; native source saving and fresh release editing acceptance remain unverified. The explicitly selected maintained runtime leaves installed CADCraft unchanged. |
 | KiCad schematic / Konnect | Saved-file checks, exports and reviewed copy editing; KiPilot/KiCad 11 native route identified | The person chose to retain KiCad 10 and leave live schematics pending. No nightly or schematic writes are introduced. |
-| OrcaSlicer | [53-tool native MCP runtime](research/orca-live-native-mcp-2026-10-17.md): visible scale, follow-up move, unsaved settings, readback and reviewed restore | Requires the explicitly selected maintained fork. Transform calls lack native Undo in this build. Fresh AI conversation/UI approval and installed-runtime acceptance are not repeated. |
+| OrcaSlicer | [53-tool native MCP runtime](research/orca-live-native-mcp-2026-10-17.md) plus [real cloud conversation and two UI-approved edits](research/orca-chat-continuation-2026-10-17.md#corrected-release-real-conversation-passes), independent readback and source preservation | Requires the explicitly selected maintained fork. Transform calls lack native Undo. Native saving, print readiness and installed-runtime acceptance remain unverified. |
 
 The existing cloud Ollama route has real conversation evidence. Claude Code
 and Codex use the same shared instructions and scoped tool boundary, with

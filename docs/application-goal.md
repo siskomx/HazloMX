@@ -1,5 +1,16 @@
 # Hazlo Mexa application goal
 
+**Requested addition — image references and Rea:** keep the same simple chat,
+with an option to attach an image to identify a part and help recreate it in the
+chosen program. Require image support from the selected agent/model before
+sending it. Ask for a known size or reference when physical dimensions cannot be
+established from the image; do not invent exact measurements. Use the program's
+native tools for the actual reconstruction and read back its result. Add Rea
+through native MCP/CLI discovery for its documented software/firmware analysis
+capabilities, with repository catalog refresh and release checks. Rea is not
+documented as a physical photo-to-CAD reconstruction engine. Implementation and
+real image/model acceptance remain required; existing live tests continue.
+
 **Orca source packaged (`2f0d564`):** the [updated installer checkpoint](research/orca-live-native-mcp-2026-10-17.md#windows-package) passes fresh guest install/update/identity/helper/startup/uninstall and three independently matched preserved project files. Native Orca edits remain separately scoped host evidence. KiCad 10 and pending Claude/live schematic choices remain unchanged.
 
 **October 17 - Orca live native tools pass:** [the selected maintained MCP runtime](research/orca-live-native-mcp-2026-10-17.md) exposes 53 tools through the shared route. Live scale, imperial follow-up movement, unsaved layer-height changes, visible native state and reviewed restoration pass with preserved 3MF bytes. Its transforms do not create native Undo steps; that limit is explicit. No operation wrappers or editing UI are added. The person keeps KiCad 10, live schematics pending, and Claude sign-in pending.
