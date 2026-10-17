@@ -94,8 +94,9 @@ struct Source {
     discovery: &'static str,
 }
 
-fn sources() -> [Source; 10] {
+fn sources() -> [Source; 11] {
     [
+        Source { id:"rea",program:Program::Rea,repository:"https://github.com/morluto/rea",tested_version:"6.5.0",discovery:"Installed Rea native MCP tools/list and input schemas. Software, binaries and firmware analysis; not a physical photo-to-CAD engine. Connect a selected local installation without changing personal agent registrations. Repository checks never install updates or enable tools." },
         Source { id:"freecad",program:Program::Freecad,repository:"https://github.com/FreeCAD/FreeCAD",tested_version:crate::freecad::SUPPORTED_VERSION,discovery:"FreeCAD Python API; CADPilot MCP tools/list" },
         Source { id:"cadpilot",program:Program::Freecad,repository:"https://github.com/LBurny/cadpilot",tested_version:crate::cadpilot::VERSION,discovery:"MCP tools/list, including pagination; refresh when tools/list changes" },
         Source { id:"cadcraft",program:Program::Drawing,repository:"https://github.com/storytold/cadcraft",tested_version:crate::cadcraft::VERSION,discovery:"CLI commands returns native command parameters; inspect_drawing_native_tools reads the selected saved drawing's reviewed catalog. The separately selected live runtime is patched 0.7.0, not this saved-copy CLI." },
@@ -271,7 +272,7 @@ mod tests {
     #[test]
     fn offline_catalog_separates_provenance_from_runtime_permissions() {
         let mut catalog = inspect(Request::default(), Arc::new(AtomicBool::new(false))).unwrap();
-        assert_eq!(catalog.as_object().unwrap().len(), 10);
+        assert_eq!(catalog.as_object().unwrap().len(), 11);
         let tool = crate::host_tools::catalog()
             .into_iter()
             .find(|t| t.name == "get_design_capabilities")

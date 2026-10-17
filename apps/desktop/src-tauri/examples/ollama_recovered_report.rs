@@ -42,6 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             workflow.clone(),
             tools,
             prompt,
+            None,
             Arc::new(AtomicBool::new(false)),
             |_| {},
         )

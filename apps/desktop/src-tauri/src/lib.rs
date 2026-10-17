@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod image_input;
+
 #[cfg(windows)]
 pub mod process;
 

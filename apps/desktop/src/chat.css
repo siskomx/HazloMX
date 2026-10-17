@@ -35,3 +35,5 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 45vh; overflow
 dialog { border: 1px solid #dce3d8; border-radius: 14px; width: min(850px, 90vw); }
 dialog::backdrop { background: #183d2e88; }
 @media (max-width: 600px) { main { padding: 14px; } .panel { padding: 16px; } .message.user { margin-left: 18px; } }
+
+#reference-preview { max-width: 100%; max-height: 160px; object-fit: contain; margin-top: 8px; }

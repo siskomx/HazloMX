@@ -96,13 +96,14 @@ pub async fn run(
     if tools.project() != Some(project) {
         return Err("El proyecto cambió o la conversación se detuvo.".into());
     }
-    run_scoped(client, workflow, tools, prompt, cancelled, emit).await
+    run_scoped(client, workflow, tools, prompt, None, cancelled, emit).await
 }
 pub async fn run_scoped(
     client: OllamaClient,
     workflow: Arc<Workflow>,
     tools: McpTools,
     prompt: String,
+    image: Option<crate::image_input::ImageInput>,
     cancelled: Arc<AtomicBool>,
     mut emit: impl FnMut(String),
 ) -> Result<String, String> {
@@ -116,7 +117,8 @@ pub async fn run_scoped(
         Ok(())
     };
     check()?;
-    client.check_capabilities(&cancelled, true).await?;
+    if let Some(image) = &image { image.validate()?; }
+    client.check_capabilities(&cancelled, true, image.is_some()).await?;
     let catalog = tools.catalog();
     let allowed: BTreeSet<_> = catalog.iter().map(|tool| tool.name.to_string()).collect();
     let read_only: BTreeSet<_> = catalog
@@ -137,9 +139,11 @@ pub async fn run_scoped(
             }})
         })
         .collect();
+    let mut user = json!({"role":"user","content":prompt});
+    if let Some(image) = image { user["images"] = json!([image.data]); }
     let mut messages = vec![
         json!({"role":"system","content":crate::claude::INSTRUCTIONS}),
-        json!({"role":"user","content":prompt}),
+        user,
     ];
     let mut text = String::new();
     let mut seen = BTreeSet::new();
@@ -285,9 +289,40 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn image_is_sent_only_after_the_model_advertises_vision() {
+        use base64::Engine;
+        for vision in [false,true] {
+            let (root,workflow,host,project)=setup();
+            let tools=McpTools::for_program(host,project,crate::host_tools::Program::Planning).unwrap();
+            let image=crate::image_input::ImageInput{media_type:"image/jpeg".into(),data:base64::engine::general_purpose::STANDARD.encode([255,216,255,192,0,8,8,0,1,0,1,0,255,217])};
+            let data=image.data.clone();
+            let mut replies=metadata();
+            if vision {
+                replies[2]=reply(r#"{"capabilities":["completion","tools","vision"]}"#,"application/json");
+                replies.push(reply(&record("Referencia recibida; falta una medida conocida.",vec![]).to_string(),"application/json"));
+            }
+            let (port,fixture,_)=server(replies);
+            let result=run_scoped(OllamaClient::new(port,"fixture",DIGEST).unwrap(),workflow.clone(),tools,"Identifica esta pieza.".into(),Some(image),Arc::new(AtomicBool::new(false)),|_|{}).await;
+            let requests=fixture.join().unwrap();
+            assert!(requests.iter().take(3).all(|request|!request.contains(&data)));
+            if vision {
+                assert!(result.unwrap().contains("medida conocida"));
+                assert_eq!(body(requests.last().unwrap())["messages"][1]["images"],json!([data]));
+            } else {
+                assert!(result.unwrap_err().contains("soporte de imágenes"));
+                assert_eq!(requests.len(),3);
+            }
+            assert!(workflow.view().unwrap().history.is_empty());
+            drop(workflow);
+            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[tokio::test]
     async fn scoped_chat_refuses_a_cross_program_batch_before_any_proposal() {
         use crate::host_tools::Program;
-        for program in [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice] {
+        for program in [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice, Program::Rea] {
             let (root, workflow, host, project) = setup();
             let tools = McpTools::for_program(host, project.clone(), program).unwrap();
             let wrong = if program == Program::Freecad {
@@ -296,7 +331,7 @@ mod tests {
             let mut replies = metadata();
             replies.push(reply(&record("", vec![call("get_workflow_status", json!({})), wrong]).to_string(), "application/json"));
             let (port, fixture, _) = server(replies);
-            let error = run_scoped(OllamaClient::new(port, "fixture", DIGEST).unwrap(), workflow.clone(), tools, "Inspecciona el programa seleccionado.".into(), Arc::new(AtomicBool::new(false)), |_| {}).await.unwrap_err();
+            let error = run_scoped(OllamaClient::new(port, "fixture", DIGEST).unwrap(), workflow.clone(), tools, "Inspecciona el programa seleccionado.".into(), None, Arc::new(AtomicBool::new(false)), |_| {}).await.unwrap_err();
             assert!(error.contains("no autorizada o repetida"));
             assert!(workflow.view().unwrap().job.is_none());
             assert!(workflow.view().unwrap().history.is_empty());

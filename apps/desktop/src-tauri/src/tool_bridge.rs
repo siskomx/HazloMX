@@ -17,6 +17,7 @@ pub struct BridgeConfig {
 }
 pub struct ToolBridge {
     config: BridgeConfig,
+    tool_names: Vec<String>,
     stop: watch::Sender<bool>,
     task: tokio::task::JoinHandle<()>,
 }
@@ -39,6 +40,7 @@ impl ToolBridge {
         if !helper.is_absolute() || !helper.is_file() {
             return Err("Falta hazlomexa-tools.exe junto a la aplicación. Compila o reinstala el paquete completo.".into());
         }
+        let tool_names=handler.catalog().iter().map(|tool|tool.name.to_string()).collect();
         let pipe = format!(r"\\.\pipe\hazlomexa-{}", Uuid::new_v4());
         let secret = Uuid::new_v4().simple().to_string();
         let listener = ServerOptions::new()
@@ -97,7 +99,7 @@ impl ToolBridge {
             // Each session sees revocation and closes its protocol service.
             while sessions.join_next().await.is_some() {}
         });
-        Ok(Self { config, stop, task })
+        Ok(Self { config, tool_names, stop, task })
     }
     pub async fn close(mut self) -> Result<(), String> {
         let _ = self.stop.send(true);
@@ -105,6 +107,7 @@ impl ToolBridge {
             .await
             .map_err(|_| "La conexión no pudo cerrarse correctamente.".to_string())
     }
+    pub fn tool_names(&self) -> &[String] { &self.tool_names }
     pub fn config(&self) -> Result<BridgeConfig, String> {
         if self.task.is_finished() {
             return Err("La conexión se cerró. Actívala de nuevo.".into());
@@ -195,10 +198,10 @@ mod tests {
     }
     #[tokio::test]
     async fn program_scopes_advertise_and_enforce_the_selected_engineering_tools() {
-        let programs = [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice];
+        let programs = [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice, Program::Rea];
         for tool in crate::host_tools::catalog() {
             let count = programs.iter().filter(|program| program.allows(&tool.name)).count();
-            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result" | "inspect_native_tools" | "read_native_tool" | "propose_native_tool_calls") { if tool.name == "get_design_capabilities" { 7 } else { 6 } } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
+            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result" | "inspect_native_tools" | "read_native_tool" | "propose_native_tool_calls") { if tool.name == "get_design_capabilities" { 8 } else { 7 } } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
         }
         assert!(serde_json::from_str::<Program>("\"unknown\"").is_err());
         for program in programs {

@@ -181,7 +181,7 @@ try {
     assert.equal(prompt.desktop_context.document_scope, "choose_program");
     assert.equal(prompt.desktop_context.current_job, null);
     assert.equal(prompt.desktop_context.cad_document_source, undefined);
-    assert.deepEqual(Object.keys(prompt.desktop_context.available_programs), ["freecad", "drawing", "arduino", "agent", "kicad", "slice"]);
+    assert.deepEqual(Object.keys(prompt.desktop_context.available_programs), ["freecad", "drawing", "arduino", "agent", "kicad", "slice", "rea"]);
     assert.match(prompt.instruction, /no afirmes haber cambiado la selección/);
     await page.locator("#choose-program").click();
     assert.equal(await page.locator("#connections").getAttribute("open"), "");
@@ -873,7 +873,7 @@ try {
   // The same chat UI handles arbitrary native schemas for every program and provider.
   for(const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);
-    for(const program of ["freecad","drawing","arduino","agent","kicad","slice"]) {
+    for(const program of ["freecad","drawing","arduino","agent","kicad","slice","rea"]) {
       await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
       await page.getByRole("button",{name:"Conectar MCP nativo…",exact:true}).click();await page.locator("#send:enabled").waitFor();
       assert.match(await page.locator("#program-actions").innerText(),/Catálogo del programa/);
@@ -885,12 +885,13 @@ try {
       const nativePrompt=JSON.parse((await chatCalls()).at(-1).args.prompt);
       assert.equal(nativePrompt.desktop_context.native_tools.program,program);
       assert.equal(nativePrompt.desktop_context.document_scope,"selected_native_mcp_server");
+      assert.equal(nativePrompt.desktop_context.current_job,null,"A new program connection inherited another program result");
       assert.match(nativePrompt.instruction,/inputSchema[\s\S]*propose_native_tool_calls/);
       const jobId=`native-router-${provider}-${program}`;
       await page.evaluate(input=>window.setPendingJob(input),{schema_version:1,native_tools_version:1,job_id:jobId,connection_id:"native-connection",program,
         catalog_sha256:"d".repeat(64),description:"Cambiar con la herramienta propia <img src=x>",calls:[{tool:"program_owned_tool",arguments:{new_parameter:"0.1 in"}}],
         readback:{tool:"observe_native_state",arguments:{}},guard:{call:{tool:"observe_native_state",arguments:{}},result_sha256:"e".repeat(64)}});
-      await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Desconectar herramientas|Actualizar herramientas|Usar herramientas de la CLI/}).first().click();
+      if(program==="rea") await send("Muestra la propuesta pendiente."); else await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Desconectar herramientas|Actualizar herramientas|Usar herramientas de la CLI/}).first().click();
       await page.locator("#approve:enabled").waitFor();assert.match(await page.locator("#change-facts").innerText(),/herramientas nativas[\s\S]*no son una certificación independiente/);
       assert.equal(await page.locator("#change-facts img").count(),0);
       const before=(await chatCalls()).length;await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
@@ -916,5 +917,5 @@ try {
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: 24 native catalog routing approval/review cases; production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft edits, four native DXF export and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: 28 native catalog routing approval/review cases; production chat entry; all four AI choices and seven program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft edits, four native DXF export and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

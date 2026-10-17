@@ -25,8 +25,50 @@ supports project-specific connection. Hazlo should use its own selected native
 connection rather than running setup against personal agent configurations.
 Repository refresh checks releases/catalog metadata; it does not install updates.
 
-Implementation is pending. Acceptance needs actual selected-image recognition,
-unknown-scale clarification, a separately approved native reconstruction/readback,
-unsupported-model refusal, preserved text-only conversations, and Rea discovery
-plus an owned-input analysis check. Claude sign-in stays pending; KiCad 10 and
-the deferred live-schematic choice stay unchanged.
+Implemented in the existing chat: one PNG/JPEG reference, preview and removal.
+The browser re-encodes it as JPEG, removes original metadata/name, bounds the
+source to 8 MiB/20 megapixels and the prepared reference to 1536 pixels/512 KiB.
+Hazlo keeps image bytes in memory, outside saved conversation history, and clears
+them on provider/project/new-conversation changes. Automatic result review does
+not resend them. The selected provider or its client may retain transmitted input.
+
+Ollama must advertise vision as well as tools. Codex must confirm image input for
+the thread's active model through its native model catalog; missing metadata
+refuses transmission. The current Claude connection explicitly refuses images;
+its text flow remains available and its sign-in test remains pending.
+
+Rea 6.5.0 passes actual Windows MCP discovery with **207 tools**, and an explicitly
+approved backend harness runs its own `analyze_javascript_application` against a
+disposable three-file JavaScript fixture. Native analysis/readback completes and
+the input files remain byte-for-byte unchanged. This is neither a Hazlo UI
+conversation nor coverage of every Rea tool or external analysis dependency.
+The isolated npm install verifies the registry integrity, disables lifecycle
+scripts and does not run Rea setup or modify personal agent registrations.
+
+Rea's default verbose catalog exceeds Hazlo's 1 MiB catalog boundary. Use Rea's
+own compact input-schema presentation and omit output schemas in the selected
+MCP configuration; all tool names and input constraints remain discoverable,
+and Rea still validates output against its canonical contracts:
+
+```json
+{
+  "command": "C:/path/to/node.exe",
+  "args": ["C:/path/to/rea-agents/scripts/rea.mjs", "mcp"],
+  "env": {
+    "REA_MCP_INPUT_SCHEMA_PROFILE": "compact",
+    "REA_MCP_OUTPUT_SCHEMA_PROFILE": "off"
+  }
+}
+```
+
+Source checks pass: 204 regular Rust tests (62 external/native tests ignored),
+Clippy with warnings denied, production frontend build, seven-program native
+routing fixtures and 28 native IPC approval/review cases across four AI choices.
+The image browser fixture checks normalization, metadata removal, no saved image,
+provider/new-chat clearing, malformed refusal and no automatic retransmission.
+These are protocol/UI fixtures, not real image inference.
+
+Acceptance still needs actual selected-image recognition, unknown-scale
+clarification, a separately approved native reconstruction/readback, real Rea
+chat and the rebuilt installed application. KiCad 10 and the deferred live
+schematic choice stay unchanged.

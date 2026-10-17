@@ -256,6 +256,7 @@ pub(crate) async fn start_codex_chat(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     prompt: String,
+    image: Option<hazlomexa::image_input::ImageInput>,
     program: hazlomexa::host_tools::Program,
     new_session: bool,
     events: Channel<ChatView>,
@@ -263,6 +264,7 @@ pub(crate) async fn start_codex_chat(
     if prompt.trim().is_empty() || prompt.len() > 8192 {
         return Err("Escribe una solicitud de hasta 8 KiB.".into());
     }
+    if let Some(image) = &image { image.validate()?; }
     let view = state.workflow.view()?;
     if view.inference.is_some_and(|i| i.busy) {
         return Err("Detén la solicitud a Ollama antes de cambiar de asistente.".into());
@@ -338,12 +340,13 @@ pub(crate) async fn start_codex_chat(
                     .map_err(|e| e.to_string())?;
                 codex::run_with_questions(
                     codex::TurnRequest {
-                        program: Some(program),
+                        expected_tools: bridge.tool_names().to_vec(),
                         runtime,
                         home: home.clone(),
                         directory: home.join("workspace"),
                         resume,
                         prompt,
+                        image,
                         cancelled: cancelled.clone(),
                     },
                     |update| {

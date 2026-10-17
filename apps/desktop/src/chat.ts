@@ -4,9 +4,10 @@ import { legacyConversations } from "./chat-history";
 import { readConversation, writeConversation } from "./chat-storage";
 import { proposalFacts } from "./proposal-review";
 import type { DiscoveredLiveDrawing, ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
+import {prepareImageReference, type ImageReference} from "./image-reference";
 import "./chat.css";
 
-const programs = { planning: "Ayúdame a elegir", freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer" };
+const programs = { planning: "Ayúdame a elegir", freecad: "FreeCAD / CADPilot", drawing: "CADCraft", arduino: "Arduino CLI", agent: "Arduino Agent", kicad: "KiCad / Konnect", slice: "OrcaSlicer", rea: "Rea · análisis de software" };
 const phases: Record<Snapshot["phase"], string> = { awaiting_approval: "Pendiente de aprobación", running: "En curso", cancelled: "Cancelada", failed: "Falló", interrupted: "Interrumpida", completed: "Completada" };
 type Program = keyof typeof programs;
 type Provider = "codex" | "claude" | "ollama_local" | "ollama_cloud";
@@ -26,7 +27,7 @@ document.querySelector("#app")!.innerHTML = `
   <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><button id="choose-program" class="secondary">Elegir el programa que acordamos</button><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
     <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
     <p id="error" role="alert" hidden></p>
-    <form id="chat-form"><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
+    <form id="chat-form"><div class="actions"><button id="attach-image" type="button" class="secondary">Adjuntar imagen…</button><button id="remove-image" type="button" class="secondary" hidden>Quitar imagen</button></div><input id="image-reference" type="file" accept="image/png,image/jpeg" hidden><img id="reference-preview" alt="Imagen de referencia adjunta" hidden><p id="image-status" class="fine">Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.</p><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
     <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
@@ -49,6 +50,8 @@ let renderedLegacy = "";
 let resultReview: { revision: number; project: string; provider: Provider; program: Program; jobId: string } | undefined;
 let inspection: {id?:string;cancelled:boolean;stopping:boolean;stop:Promise<void>} | undefined;
 let inspectionNotice = "";
+let referenceImage: ImageReference | undefined;
+function clearImage() { referenceImage = undefined; $<HTMLInputElement>("image-reference").value = ""; }
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
@@ -125,7 +128,7 @@ function renderLegacy() {
 }
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
-  if (projectChanged) { revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
+  if (projectChanged) { clearImage(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
   if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
   if (next.codex_login && state.codex_login?.id === next.codex_login.id && state.codex_login.sequence > next.codex_login.sequence) next.codex_login = state.codex_login;
@@ -257,6 +260,14 @@ function renderQuestion() {
 function render() {
   const busy = historyLoading || commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
   $("context-status").textContent = contextNotice;
+  $<HTMLButtonElement>("attach-image").disabled = busy || !state.project;
+  $<HTMLButtonElement>("remove-image").disabled = busy;
+  $("remove-image").hidden = !referenceImage;
+  const preview = $<HTMLImageElement>("reference-preview"); preview.hidden = !referenceImage;
+  const imageUrl = referenceImage ? `data:${referenceImage.media_type};base64,${referenceImage.data}` : "";
+  if (imageUrl && preview.getAttribute("src") !== imageUrl) preview.src = imageUrl;
+  if (!imageUrl) preview.removeAttribute("src");
+  $("image-status").textContent = referenceImage ? "La referencia se incluirá al enviar a la IA seleccionada. Hazlo no guarda la imagen en el historial; vuelve a adjuntarla si reinicias." : "Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.";
   const ollama = provider.startsWith("ollama_");
   const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
   $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
@@ -264,7 +275,7 @@ function render() {
   $("choose-program").hidden = program !== "planning";
   $("live-pcb-setup").hidden = program !== "kicad";
   $("live-drawing-setup").hidden = program !== "drawing";
-  $("document-scope").textContent = sourceContext.native_tools && sourceContext.native_tools.program === program ? "Conexión nativa: el chat descubre los nombres y esquemas del programa y prepara llamadas para tu aprobación. Hazlo conserva una lectura final. La CLI no implica acceso al editor abierto." : program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : program === "drawing" && sourceContext.live_drawing_source ? "Dibujo abierto conectado: el chat prepara círculos y movimientos que verás en CADCraft al aprobarlos. Puedes deshacer las ediciones allí. Si pides una copia DXF, aprobarás su exportación por separado: incluye el estado actual sin guardar y Hazlo comprueba la copia. El dibujo abierto conserva su nombre y estado." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
+  $("document-scope").textContent = sourceContext.native_tools && sourceContext.native_tools.program === program ? "Conexión nativa: el chat descubre los nombres y esquemas del programa y prepara llamadas para tu aprobación. Hazlo conserva una lectura final. La CLI no implica acceso al editor abierto." : program === "rea" ? "Conecta un MCP Rea instalado para analizar software o firmware con sus herramientas reales. Para recrear una pieza a partir de una foto, elige un programa CAD y una IA con visión." : program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : program === "drawing" && sourceContext.live_drawing_source ? "Dibujo abierto conectado: el chat prepara círculos y movimientos que verás en CADCraft al aprobarlos. Puedes deshacer las ediciones allí. Si pides una copia DXF, aprobarás su exportación por separado: incluye el estado actual sin guardar y Hazlo comprueba la copia. El dibujo abierto conserva su nombre y estado." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
   $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${sourceContext.native_tools?.program === program ? sourceContext.native_tools.transport === "cli" ? "CLI instalada · archivos guardados" : "herramientas MCP conectadas" : program === "planning" ? "vamos a elegir el programa" : program === "drawing" && sourceContext.live_drawing_source ? "dibujo abierto en CADCraft" : native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : "archivos guardados"}`;
   $("source-status").textContent = program === "planning" ? "La IA puede explicar las opciones disponibles. Elige el programa que acuerden para habilitar sus herramientas." : sourceNames[program] ?? (program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
@@ -419,9 +430,10 @@ function jobProgram(run: Snapshot): Program | undefined {
 function context() {
   const connected=sourceContext.native_tools?.program===program ? sourceContext.native_tools : undefined;
   if(connected) return {project_id:state.project?.[0],program:programs[program],native_tools:connected,
-    current_job:state.job?.snapshot.input.native_tools_version ? {id:state.job.snapshot.input.job_id,phase:state.job.snapshot.phase} : null,
+    current_job:state.job?.snapshot.project_id === state.project?.[0] && state.job?.snapshot.input.native_tools_version && state.job.snapshot.input.connection_id === connected.connection_id && state.job.snapshot.input.program === program ? {id:state.job.snapshot.input.job_id,phase:state.job.snapshot.phase} : null,
     document_scope:connected.transport==="cli" ? "native_cli_not_live_editor" : "selected_native_mcp_server",
     live_document_connection:null,source_is_untrusted_data:true};
+  if (program === "rea") return {program:"rea",current_job:null,document_scope:"native_analysis_requires_connection",live_document_connection:false,live_mutations_allowed:false};
   if (program === "planning") return { program: "planning", current_job: null, available_programs: Object.fromEntries(Object.entries(programs).filter(([key]) => key !== "planning")), program_selection_required: true, document_scope: "choose_program", live_document_connection: false, live_mutations_allowed: false };
   let job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
   if (job && (jobProgram(job) !== program || job.input.job_id === sourcePreviousJobs[program])) job = undefined;
@@ -436,7 +448,8 @@ async function send(content: string, userInitiated = true) {
   const token = ++revision;
   const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
   const startNew = newSession || !ready;
-  const prompt = agentPrompt(content, startNew ? turns : [], context());
+  const image = userInitiated ? referenceImage : undefined;
+  const prompt = agentPrompt(content, startNew ? turns : [], {...context(), reference_image_attached:!!image});
   contextNotice = JSON.parse(prompt).omitted_conversation_turns ? "Se envió solo parte del historial a la IA. Los mensajes completos siguen visibles; revisaremos el documento y confirmaremos cualquier dato que falte." : "";
   const events = new Channel<ChatView>();
   events.onmessage = chat => {
@@ -444,14 +457,14 @@ async function send(content: string, userInitiated = true) {
     apply({ ...state, chat });
     if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
   };
-  if (userInitiated) { turns.push({ role: "user", content }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
+  if (userInitiated) { turns.push({ role: "user", content: content + (image ? "\n[Imagen de referencia adjunta; no se guarda en el historial de Hazlo.]" : "") }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
   render();
-  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
+  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(image ? {image} : {}), ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
 }
 $("choose-program").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("program").focus(); };
 $("setup").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("provider").focus(); };
-$("provider").onchange = () => { persist(); revision++; provider = $<HTMLSelectElement>("provider").value as Provider; storageKey = ""; turns = []; answeredChat = undefined; restore(); render(); };
+$("provider").onchange = () => { clearImage(); persist(); revision++; provider = $<HTMLSelectElement>("provider").value as Provider; storageKey = ""; turns = []; answeredChat = undefined; restore(); render(); };
 $("program").onchange = () => { program = $<HTMLSelectElement>("program").value as Program; $("opening-status").textContent = ""; render(); };
 $("select-client").onclick = () => void action(async () => { revision++; apply(await invoke<DesktopSnapshot>(provider === "codex" ? "select_codex" : "select_claude")); });
 $("connect-account").onclick = () => void action(async () => {
@@ -463,8 +476,14 @@ $("connect-account").onclick = () => void action(async () => {
 $("open-login").onclick = () => void action(async () => { if (state.codex_login) await invoke("open_codex_login", { id: state.codex_login.id }); });
 $("cancel-login").onclick = () => void action(async () => { if (state.codex_login) { const login = await invoke<CodexLoginView>("cancel_codex_login", { id: state.codex_login.id }); if (state.codex_login.id === login.id && state.codex_login.sequence <= login.sequence) state.codex_login = login; } });
 for (const [id, create] of [["create-project", true], ["open-project", false]] as const) $(id).onclick = () => void action(async () => { revision++; apply(await invoke<DesktopSnapshot>("select_project", { create })); $("opening-status").textContent = ""; });
+$("attach-image").onclick = () => $<HTMLInputElement>("image-reference").click();
+$("remove-image").onclick = () => { clearImage(); render(); };
+$("image-reference").onchange = () => {
+  const input=$<HTMLInputElement>("image-reference"),file=input.files?.[0];
+  if (file) void action(async()=>{try { referenceImage=await prepareImageReference(file); } finally { input.value=""; }});
+};
 $("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if (content) void action(() => send(content)); };
-$("new-chat").onclick = () => { if (state.chat?.busy || commandBusy) return; revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render(); };
+$("new-chat").onclick = () => { if (state.chat?.busy || commandBusy) return; clearImage(); revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render(); };
 $("stop").onclick = () => {
   const pending = inspection;
   if (pending) {

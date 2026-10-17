@@ -69,6 +69,7 @@ impl Conversation {
             self.workflow.clone(),
             tools,
             prompt,
+            None,
             Arc::new(AtomicBool::new(false)),
             |_| {},
         )

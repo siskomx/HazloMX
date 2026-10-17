@@ -291,6 +291,7 @@ async fn start_claude_chat(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     prompt: String,
+    image: Option<hazlomexa::image_input::ImageInput>,
     program: hazlomexa::host_tools::Program,
     new_session: bool,
     events: Channel<ChatView>,
@@ -302,6 +303,7 @@ async fn start_claude_chat(
     if view.inference.is_some_and(|i| i.busy) {
         return Err("Detén la solicitud a Ollama antes de cambiar de asistente.".into());
     }
+    if image.is_some() { return Err("Esta conexión a Claude Code no admite imágenes. Elige un proveedor con visión.".into()); }
     let selected_project = view.project.ok_or("Selecciona un proyecto.")?;
     let project = selected_project.0;
     let runtime = state

@@ -116,13 +116,22 @@ pub fn identify(executable: std::path::PathBuf) -> Result<Runtime, String> {
 }
 
 pub struct TurnRequest {
-    pub program: Option<crate::host_tools::Program>,
+    pub expected_tools: Vec<String>,
     pub runtime: Runtime,
     pub home: std::path::PathBuf,
     pub directory: std::path::PathBuf,
     pub resume: Option<String>,
     pub prompt: String,
+    pub image: Option<crate::image_input::ImageInput>,
     pub cancelled: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+fn server_tools_match(status: &serde_json::Value, expected: &[String]) -> bool {
+    !expected.is_empty() && status["data"].as_array().is_some_and(|servers|servers.len()==1
+        && servers[0]["name"]=="hazlomexa" && servers[0]["runtimeStatus"]=="connected"
+        && servers[0]["tools"].as_object().is_some_and(|tools|tools.len()==expected.len() && expected.iter().all(|name|tools.contains_key(name))))
+}
+fn model_accepts_image(entry: &serde_json::Value) -> bool {
+    entry["inputModalities"].as_array().is_some_and(|values|values.iter().any(|value|value=="image"))
 }
 pub struct TurnResult {
     pub thread_id: String,
@@ -322,21 +331,30 @@ pub async fn run_with_questions<
             &mut notifications,
         )
         .await?;
-        let expected = request.program.map_or_else(crate::host_tools::catalog, crate::host_tools::Program::catalog);
-        if status["data"].as_array().is_none_or(|servers| {
-            servers.len() != 1
-                || servers[0]["name"] != "hazlomexa"
-                || servers[0]["runtimeStatus"] != "connected"
-                || servers[0]["tools"].as_object().is_none_or(|tools| {
-                    tools.len() != expected.len()
-                        || expected
-                            .iter()
-                            .any(|tool| !tools.contains_key(tool.name.as_ref()))
-                })
-        }) {
+        if !server_tools_match(&status,&request.expected_tools) {
             return Err("Codex no conectó exclusivamente el catálogo de Hazlo.".into());
         }
-        let turn=rpc(&mut *input,&mut *output,5,"turn/start",serde_json::json!({"threadId":thread_id,"input":[{"type":"text","text":request.prompt,"text_elements":[]}]}),&mut notifications).await?;
+        let mut turn_input=vec![serde_json::json!({"type":"text","text":request.prompt,"text_elements":[]})];
+        let mut turn_params=serde_json::json!({"threadId":thread_id});
+        if let Some(image)=&request.image {
+            image.validate()?;
+            let model=thread["model"].as_str().ok_or("Codex no confirmó el modelo para la imagen.")?;
+            let mut cursor=None::<String>;
+            let mut supported=false;
+            for page in 0..8 {
+                let catalog=rpc(&mut *input,&mut *output,6+page,"model/list",serde_json::json!({"limit":100,"includeHidden":true,"cursor":cursor}),&mut notifications).await?;
+                if let Some(entry)=catalog["data"].as_array().and_then(|entries|entries.iter().find(|entry|entry["model"]==model)) {
+                    supported=model_accepts_image(entry);break;
+                }
+                cursor=catalog["nextCursor"].as_str().filter(|v|!v.is_empty()).map(str::to_owned);
+                if cursor.is_none(){break;}
+            }
+            if !supported {return Err("El modelo activo de Codex no confirma soporte de imágenes. Elige uno con visión o quita la referencia.".into());}
+            turn_input.push(serde_json::json!({"type":"image","url":image.data_url()}));
+            turn_params["model"]=serde_json::json!(model);
+        }
+        turn_params["input"]=serde_json::json!(turn_input);
+        let turn=rpc(&mut *input,&mut *output,5,"turn/start",turn_params,&mut notifications).await?;
         let turn_id = turn["turn"]["id"]
             .as_str()
             .ok_or("Falta el turno de Codex.")?;
@@ -974,6 +992,21 @@ impl TurnDecoder {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn selected_model_and_actual_bridge_catalog_are_required() {
+        use serde_json::json;
+        assert!(super::model_accepts_image(&json!({"inputModalities":["text","image"]})));
+        assert!(!super::model_accepts_image(&json!({"inputModalities":["text"]})));
+        assert!(!super::model_accepts_image(&json!({})));
+        let expected=vec!["inspect_native_tools".into(),"read_native_tool".into(),"propose_native_tool_calls".into()];
+        let mut status=json!({"data":[{"name":"hazlomexa","runtimeStatus":"connected","tools":{"inspect_native_tools":{},"read_native_tool":{},"propose_native_tool_calls":{}}}]});
+        assert!(super::server_tools_match(&status,&expected));
+        status["data"][0]["tools"]["unexpected_shell"]=json!({});
+        assert!(!super::server_tools_match(&status,&expected));
+        status["data"][0]["tools"].as_object_mut().unwrap().remove("unexpected_shell");
+        status["data"][0]["runtimeStatus"]=json!("disconnected");
+        assert!(!super::server_tools_match(&status,&expected));
+    }
+    #[test]
     fn questions_bind_the_turn_and_validate_each_human_answer() {
         let event = serde_json::json!({"id":7,"method":"item/tool/requestUserInput","params":{"threadId":"thread","turnId":"turn","itemId":"item","isBlocking":true,"questions":[{"id":"units","header":"Units","question":"Which units?","options":[{"label":"mm","description":"Metric"},{"label":"in","description":"Inches"}]}]}});
         let request = super::parse_questions(&event, "thread", "turn").unwrap();
@@ -1126,7 +1159,7 @@ mod tests {
     async fn pre_cancelled_runner_never_reads_or_launches_runtime() {
         let result = run(
             TurnRequest {
-                program: None,
+                expected_tools: Vec::new(),
                 runtime: Runtime {
                     executable: "C:/missing/codex.exe".into(),
                     sha256: "0".repeat(64),
@@ -1136,6 +1169,7 @@ mod tests {
                 directory: "C:/missing".into(),
                 resume: None,
                 prompt: "x".into(),
+                image: None,
                 cancelled: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true)),
             },
             |_| panic!("Cancelled turn emitted a reply"),

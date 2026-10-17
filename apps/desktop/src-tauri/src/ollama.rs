@@ -372,10 +372,10 @@ impl OllamaClient {
     }
 
     pub async fn check(&self, cancel: &AtomicBool) -> Result<(), String> {
-        self.check_capabilities(cancel, false).await
+        self.check_capabilities(cancel, false, false).await
     }
 
-    async fn check_capabilities(&self, cancel: &AtomicBool, tools: bool) -> Result<(), String> {
+    async fn check_capabilities(&self, cancel: &AtomicBool, tools: bool, vision: bool) -> Result<(), String> {
         let version = self.metadata("/api/version", None, cancel).await?;
         let runtime = version
             .get("version")
@@ -439,6 +439,9 @@ impl OllamaClient {
                 .is_some_and(|values| values.iter().any(|value| value == "tools"))
         {
             return Err("El modelo seleccionado no admite herramientas de conversación.".into());
+        }
+        if vision && !show["capabilities"].as_array().is_some_and(|values| values.iter().any(|value| value == "vision")) {
+            return Err("La IA seleccionada no anuncia soporte de imágenes. Elige un modelo con visión o quita la referencia.".into());
         }
         Ok(())
     }

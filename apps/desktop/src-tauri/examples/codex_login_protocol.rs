@@ -83,7 +83,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let denied = codex::run(
         codex::TurnRequest {
-                program: None,
+            image: None,
+                expected_tools: hazlomexa::host_tools::catalog().iter().map(|tool|tool.name.to_string()).collect(),
             runtime: runtime.clone(),
             home: home.clone(),
             directory,

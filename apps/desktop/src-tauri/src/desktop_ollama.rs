@@ -13,11 +13,13 @@ pub(crate) async fn start_ollama_chat(
     profile: ModelProfile,
     program: hazlomexa::host_tools::Program,
     prompt: String,
+    image: Option<hazlomexa::image_input::ImageInput>,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
     if prompt.trim().is_empty() || prompt.len() > 8192 {
         return Err("Escribe una solicitud de hasta 8 KiB.".into());
     }
+    if let Some(image) = &image { image.validate()?; }
     let view = state.workflow.view()?;
     let project = view.project.ok_or("Selecciona un proyecto.")?;
     if view.inference.is_some_and(|inference| inference.busy) {
@@ -68,6 +70,7 @@ pub(crate) async fn start_ollama_chat(
             workflow.clone(),
             tools,
             prompt,
+            image,
             cancelled.clone(),
             |text| {
                 if let Ok(mut current) = chat.lock() {

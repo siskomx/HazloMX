@@ -208,7 +208,8 @@ stream_max_retries = 0
     let answer_cancelled = cancelled.clone();
     let mut result = codex::run_with_questions(
         codex::TurnRequest {
-                program,
+            image: None,
+                expected_tools: bridge.tool_names().to_vec(),
             runtime: runtime.clone(),
             home: base.join("home"),
             directory: base.join("project"),
@@ -264,7 +265,8 @@ stream_max_retries = 0
         fs::write(base.join("home/config.toml"), fixture_settings(&config)?)?;
         result = codex::run(
             codex::TurnRequest {
-                program,
+            image: None,
+                expected_tools: bridge.tool_names().to_vec(),
                 runtime,
                 home: base.join("home"),
                 directory: base.join("project"),
