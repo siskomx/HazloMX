@@ -51,3 +51,8 @@ prove a real model obeys the recovery request or establish a real in-flight
 native UI cancellation. Those acceptance checks and packaging these source
 changes remain open. Claude's real conversation test remains pending at the
 person's request. The full multi-program goal stays active.
+
+Follow-up: [actual FreeCAD Save As cancellation and Hazlo Stop recovery](native-recovery-ui-2026-10-16.md)
+now pass through a real model and both native windows. That later evidence
+is scoped to pending native dialogs; post-write/commit interruption and the
+other integrations remain separate acceptance requirements.
