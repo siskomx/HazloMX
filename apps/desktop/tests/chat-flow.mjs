@@ -506,6 +506,9 @@ try {
       assert.equal(calls.at(-1).args.program,program,"Automatic result review changed its tool scope");
       assert.deepEqual(prompt.desktop_context.current_job,{id:jobId,phase:"completed"});
       assert.match(prompt.user_request,/Lee read_verified_result/); assert(prompt.user_request.includes(jobId));
+      assert.match(prompt.user_request,/2 a 4 frases de lenguaje cotidiano/);
+      assert.match(prompt.user_request,/guardado, exportado o sin guardar/);
+      assert.match(prompt.user_request,/omite UUID, hashes, nombres de herramientas y claves internas/);
       assert.match(prompt.user_request,/No prepares ni ejecutes otro cambio/);
       assert(!JSON.stringify(prompt).includes("private-approval"));
       const approvals = await page.evaluate(()=>window.approvals);
