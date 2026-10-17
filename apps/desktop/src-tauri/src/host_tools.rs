@@ -1619,9 +1619,9 @@ impl McpTools {
                     });
                 }
                 value["program"] = serde_json::to_value(program).map_err(|e| e.to_string())?;
-                if matches!(program, Program::Agent | Program::Planning) {
-                    value["agent"] = json!({"source":"human_selected_sketch","operation":"edit_copy_only","inspection_tool":"inspect_selected_sketch","proposal_tool":"propose_selected_sketch_edit","open_document_inspection":{"tool":"inspect_open_agent_documents","scope":"live_agent_read_only","requires":"running_Arduino_Agent_with_Hazlo_native_editor_companion","proposal_tool":"propose_open_agent_change","save_tool":"propose_open_agent_save","human_approval_required":true,"saved_file_fallback":false},"compilation":false,"hardware_control":false});
-                }
+            }
+            if self.2.is_none_or(|program| matches!(program, Program::Agent | Program::Planning)) {
+                value["agent"] = json!({"source":"human_selected_sketch","operation":"edit_copy_only","inspection_tool":"inspect_selected_sketch","proposal_tool":"propose_selected_sketch_edit","open_document_inspection":{"tool":"inspect_open_agent_documents","scope":"live_agent_read_only","requires":"running_Arduino_Agent_with_Hazlo_native_editor_companion","proposal_tool":"propose_open_agent_change","save_tool":"propose_open_agent_save","human_approval_required":true,"saved_file_fallback":false},"compilation":false,"hardware_control":false});
             }
         }
         Ok(value)
@@ -4107,6 +4107,28 @@ mod tests {
         assert!(scoped.call_in_project("propose_selected_live_pcb_move".into(),args,Arc::new(AtomicBool::new(true))).await.is_err());
         assert!(workflow.view().unwrap().job.is_none());
         assert!(workflow.view().unwrap().history.is_empty());
+    }
+    #[tokio::test]
+    async fn external_capabilities_include_native_agent_without_expanding_program_scopes() {
+        let (root,workflow,host,selection)=setup();
+        let project=workflow.view().unwrap().project.unwrap();
+        let all=McpTools::for_project(host.clone(),selection.project_id).unwrap();
+        let capabilities=all.call_in_project("get_design_capabilities".into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
+        assert_eq!(capabilities["agent"]["open_document_inspection"]["tool"],"inspect_open_agent_documents");
+        assert_eq!(capabilities["agent"]["open_document_inspection"]["save_tool"],"propose_open_agent_save");
+        assert_eq!(capabilities["agent"]["open_document_inspection"]["human_approval_required"],true);
+        assert_eq!(capabilities["agent"]["open_document_inspection"]["saved_file_fallback"],false);
+        assert_eq!(capabilities["agent"]["hardware_control"],false);
+        assert!(all.catalog().iter().any(|t|t.name=="propose_open_agent_save"));
+        for program in [Program::Planning,Program::Freecad,Program::Drawing,Program::Arduino,Program::Agent,Program::Kicad,Program::Slice] {
+            let scoped=McpTools::for_program(host.clone(),project.clone(),program).unwrap();
+            let capabilities=scoped.call_in_project("get_design_capabilities".into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
+            assert_eq!(capabilities.get("agent").is_some(),matches!(program,Program::Planning|Program::Agent));
+            assert_eq!(scoped.catalog().iter().any(|t|t.name=="propose_open_agent_save"),program==Program::Agent);
+        }
+        assert!(workflow.view().unwrap().job.is_none());
+        assert!(workflow.view().unwrap().history.is_empty());
+        drop(all);drop(host);drop(workflow);fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn native_agent_read_scope_and_invalid_requests_do_not_reach_discovery() {
