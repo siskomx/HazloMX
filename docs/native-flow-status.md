@@ -1,5 +1,7 @@
 # Current native-flow status
 
+**Orca source packaged (`2f0d564`):** the [updated installer checkpoint](research/orca-live-native-mcp-2026-10-17.md#windows-package) passes fresh guest install/update/identity/helper/startup/uninstall and three independently matched preserved project files. Native Orca edits remain separately scoped host evidence. KiCad 10 and pending Claude/live schematic choices remain unchanged.
+
 [Orca live MCP checks](research/orca-live-native-mcp-2026-10-17.md) now pass on the explicitly selected maintained fork and native MCP server. Its 53 discovered tools drive visible geometry/settings edits and native readback; transform Undo is unavailable in the tested build, so restoration is a separately reviewed inverse edit. Installed stock OrcaSlicer remains unchanged. The person explicitly keeps KiCad 10 and leaves live schematics plus Claude sign-in pending.
 
 October 17, 2026. Hazlo follows the four-step [application goal](application-goal.md):

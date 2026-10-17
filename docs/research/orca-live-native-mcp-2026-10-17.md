@@ -83,3 +83,24 @@ also implements schematic item mutation handlers. The existing
 requires a compatible KiCad 11 nightly. The person chose to keep KiCad 10 and
 leave this live gate pending. No nightly is installed, no existing schematic is
 reloaded or rewritten, and saved-file editing is not counted as live support.
+
+## Windows package
+
+The installer built from `2f0d564` includes the ten-source upstream catalog and
+the tested Orca runtime's Undo limitation. Tracked build inputs remain unchanged;
+app/helper scans find zero builder-profile paths. The selected external Orca
+runtime and Python MCP server are not bundled with Hazlo.
+
+A fresh owned guest passes per-user install of the previous `4173250` package,
+update to this candidate, exact binary identity checks, both 38-tool helper
+transports, application startup, uninstall and registration removal. Project
+and user-data sentinels remain unchanged. Independent hashes match all three
+exported project files, and the guest is stopped. These are lifecycle/transport
+checks; the native Orca edit evidence above remains a separate host check.
+
+Installer SHA-256: `2816b003289925700814e7cda660cfc5fdbfdb4dc697edb9628519a2cfd08700`.
+
+The 201 default Rust tests and warning-denied Clippy pass. The package build also
+passes TypeScript/Vite. Claude sign-in and KiCad 11/live schematic tests remain
+pending by the person's choice; no fresh signed-in AI conversation, installed
+Orca engineering sequence or ordinary-user retest is claimed.

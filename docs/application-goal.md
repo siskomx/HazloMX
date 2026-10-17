@@ -1,5 +1,7 @@
 # Hazlo Mexa application goal
 
+**Orca source packaged (`2f0d564`):** the [updated installer checkpoint](research/orca-live-native-mcp-2026-10-17.md#windows-package) passes fresh guest install/update/identity/helper/startup/uninstall and three independently matched preserved project files. Native Orca edits remain separately scoped host evidence. KiCad 10 and pending Claude/live schematic choices remain unchanged.
+
 **October 17 - Orca live native tools pass:** [the selected maintained MCP runtime](research/orca-live-native-mcp-2026-10-17.md) exposes 53 tools through the shared route. Live scale, imperial follow-up movement, unsaved layer-height changes, visible native state and reviewed restoration pass with preserved 3MF bytes. Its transforms do not create native Undo steps; that limit is explicit. No operation wrappers or editing UI are added. The person keeps KiCad 10, live schematics pending, and Claude sign-in pending.
 
 **October 17 - native discovery installer verified:** [source `4173250` Windows package](research/native-tools-package-2026-10-17.md) passes build/privacy gates, release helper protocol and fresh guest install/update/startup/uninstall with preserved project files. The matching release image retains simple-chat startup. Orca's generated cube is now observed after the person completes setup; its saved 3MF is unchanged. Native discovery/catalog refresh and official release checks are included. Other-provider, fresh installed engineering and unsupported live schematic/slicer capabilities remain explicitly unfinished.
