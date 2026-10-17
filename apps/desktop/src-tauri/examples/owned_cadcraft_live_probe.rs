@@ -89,8 +89,10 @@ impl Client {
 
 fn lisp_binding_probe(client: &mut Client, root: &Path, before: &Value) -> Value {
     let token=uuid::Uuid::new_v4().to_string();
-    let capture=format!("(progn (setq hazlomexa-token \"{token}\" hazlomexa-before (entget (handent \"100\"))) \"captured\")");
-    let guard=|expected:&str,x:f64|format!("(if (and (equal hazlomexa-token \"{expected}\") (equal hazlomexa-before (entget (handent \"100\")))) (progn (entmod (subst (cons 10 (list {x} 0.0 0.0)) (assoc 10 hazlomexa-before) hazlomexa-before)) \"applied\") \"refused\")");
+    // Native entity/table projections omit some drawing data; this remains a contract probe.
+    let snapshot="(defun hazlomexa-snapshot (/ h entities row layers) (setq h (entnext)) (while h (setq entities (cons (entget h) entities) h (entnext h))) (setq row (tblnext \"LAYER\" T)) (while row (setq layers (cons row layers) row (tblnext \"LAYER\"))) (list (getvar \"INSUNITS\") (getvar \"CTAB\") entities layers))";
+    let capture=format!("(progn {snapshot} (setq hazlomexa-token \"{token}\" hazlomexa-before (entget (handent \"100\")) hazlomexa-state (hazlomexa-snapshot)) \"captured\")");
+    let guard=|expected:&str,x:f64|format!("(if (and (equal hazlomexa-token \"{expected}\") (equal hazlomexa-state (hazlomexa-snapshot))) (progn (entmod (subst (cons 10 (list {x} 0.0 0.0)) (assoc 10 hazlomexa-before) hazlomexa-before)) \"applied\") \"refused\")");
     let eval=|client:&mut Client,code:String| {
         let result=client.execute("lisp",json!({"code":code}));
         assert!(result.get("error").is_none(),"Native LISP failed; retain private evidence");
@@ -100,6 +102,43 @@ fn lisp_binding_probe(client: &mut Client, root: &Path, before: &Value) -> Value
     assert_eq!(client.drawing()["entities"],before["entities"],"Binding must not change geometry");
     assert_eq!(eval(client,guard(&uuid::Uuid::new_v4().to_string(),999.)),json!("\"refused\""));
     assert_eq!(client.drawing()["entities"],before["entities"]);
+    let documents=client.call("ui.inspect",json!({}))["session"]["documents"].as_array().unwrap().clone();
+    let active=documents.iter().find(|d|d["active"]==true).unwrap()["index"].clone();
+    let other=documents.iter().find(|d|d["active"]==false).unwrap()["index"].clone();
+    client.execute("document.switch",json!({"index":other}));
+    let other_before=client.drawing();
+    assert_eq!(eval(client,guard(&token,999.)),json!("\"refused\""));
+    assert_eq!(client.drawing()["entities"],other_before["entities"]);
+    client.execute("document.switch",json!({"index":active}));
+    client.execute("circle",json!({"center":[20.,20.],"radius":2.}));
+    let intervening=client.drawing();
+    assert_eq!(intervening["entities"].as_array().unwrap().len(),2);
+    assert_eq!(eval(client,guard(&token,999.)),json!("\"refused\""),"An unrelated new entity must invalidate the captured state");
+    assert_eq!(client.drawing()["entities"],intervening["entities"]);
+    client.execute("undo",json!({"count":1}));
+    assert_eq!(client.drawing()["entities"],before["entities"]);
+    assert_eq!(eval(client,"(setvar \"INSUNITS\" 1)".into()),json!("1"));
+    assert_eq!(eval(client,guard(&token,999.)),json!("\"refused\""),"Changed source units must invalidate the captured state");
+    assert_eq!(client.drawing()["entities"],before["entities"]);
+    assert_eq!(eval(client,"(setvar \"INSUNITS\" 4)".into()),json!("4"));
+    client.execute("layer.set",json!({"name":"0","locked":true}));
+    let locked=client.drawing();
+    assert_ne!(locked["layers"],before["layers"]);
+    assert_eq!(eval(client,guard(&token,999.)),json!("\"refused\""),"Projected layer changes must invalidate the captured state");
+    assert_eq!(client.drawing()["entities"],before["entities"]);
+    client.execute("undo",json!({"count":1}));
+    assert_eq!(client.drawing()["layers"],before["layers"]);
+    let full_layers_before=client.execute("layer",json!({}));
+    client.execute("layer.set",json!({"name":"0","lineweight":0.5}));
+    let lineweight=client.drawing();
+    assert_eq!(lineweight["layers"],before["layers"],"drawing.inspect also omits layer lineweight");
+    assert_ne!(client.execute("layer",json!({})),full_layers_before);
+    // Read-only counterexample: tblnext omits lineweight, so this is not a whole-state guard.
+    assert_eq!(eval(client,"(equal hazlomexa-state (hazlomexa-snapshot))".into()),json!("T"));
+    assert_eq!(client.drawing()["entities"],before["entities"]);
+    client.execute("undo",json!({"count":1}));
+    assert_eq!(client.drawing()["layers"],before["layers"]);
+    assert_eq!(client.execute("layer",json!({})),full_layers_before);
     assert_eq!(eval(client,guard(&token,1.)),json!("\"applied\""));
     let first=client.drawing();
     let mut expected=before["entities"].clone();
@@ -126,6 +165,8 @@ fn lisp_binding_probe(client: &mut Client, root: &Path, before: &Value) -> Value
     assert_eq!(client.drawing()["entities"],before["entities"]);
     json!({"passed":true,"cadcraft_version":"0.7.0","native_lisp":true,"document_scoped_binding":true,"same_call_target_guard":true,
         "wrong_token_refused":true,"stale_target_refused":true,"reopened_document_refused":true,
+        "switched_document_refused":true,"non_target_change_refused":true,"source_unit_change_refused":true,
+        "layer_lock_change_refused":true,"unobserved_lineweight_counterexample":true,
         "metric_and_inch_moves":true,"native_undo":true,"saved_bytes_preserved":true,
         "whole_drawing_guard":false,"production_writer_enabled":false,"hazlo_approval":false,"real_provider":false})
 }
