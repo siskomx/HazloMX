@@ -198,7 +198,7 @@ mod tests {
         let programs = [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice];
         for tool in crate::host_tools::catalog() {
             let count = programs.iter().filter(|program| program.allows(&tool.name)).count();
-            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result") { if tool.name == "get_design_capabilities" { 7 } else { 6 } } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
+            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result" | "inspect_native_tools" | "read_native_tool" | "propose_native_tool_calls") { if tool.name == "get_design_capabilities" { 7 } else { 6 } } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
         }
         assert!(serde_json::from_str::<Program>("\"unknown\"").is_err());
         for program in programs {

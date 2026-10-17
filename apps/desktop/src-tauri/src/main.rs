@@ -161,6 +161,34 @@ fn source_inspection(state: &AppState) -> Result<hazlomexa::host_tools::SourceIn
 }
 
 #[tauri::command]
+fn disconnect_native_tools(state:State<AppState>)->Result<(),String> {
+    if desktop_codex::agent_busy(&state)? {return Err("Detén la conversación antes de desconectar las herramientas.".into());}
+    state.tools.disconnect_native_tools()
+}
+
+#[tauri::command]
+async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,program:hazlomexa::host_tools::Program,mcp:bool,events:Channel<Uuid>)->Result<hazlomexa::native_tools::Catalog,String> {
+    let inspection=source_inspection(&state)?;
+    let tools=state.tools.clone();
+    tauri::async_runtime::spawn_blocking(move||{
+        events.send(inspection.id).map_err(|_|"La conexión perdió su conversación.")?;
+        let result=if mcp {
+            if let Some(catalog)=tools.connect_native_default(program,inspection.cancelled.clone())? {return Ok(catalog);}
+            let path=app.dialog().file().set_title("Selecciona la configuración del MCP nativo instalado; el programa se iniciará")
+                .add_filter("Configuración MCP",&["json"]).blocking_pick_file().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
+            let config=hazlomexa::native_tools::McpConfig::from_file(&path)?;
+            tools.connect_native_mcp(program,config,inspection.cancelled.clone())
+        }else{
+            let executable=app.dialog().file().set_title("Selecciona la CLI nativa instalada del programa")
+                .add_filter("Programa",&["exe"]).blocking_pick_file().ok_or("Selección cancelada.")?
+                .into_path().map_err(|e|e.to_string())?;
+            tools.connect_native_cli(program,executable,inspection.cancelled.clone())
+        };
+        drop(inspection);result
+    }).await.map_err(|_|"No se pudo completar la conexión nativa.")?
+}
+
+#[tauri::command]
 async fn discover_live_drawing(
     app:tauri::AppHandle, state:State<'_,AppState>, port:u16, events:Channel<Uuid>,
 ) -> Result<hazlomexa::host_tools::DiscoveredLiveDrawing,String> {
@@ -971,6 +999,7 @@ async fn select_project(
     }
     .map_err(|e| e.to_string())?;
     state.workflow.select_project(project)?;
+    state.tools.disconnect_native_tools()?;
     *state.chat_session.lock().map_err(|e| e.to_string())? = None;
     *state.codex_session.lock().map_err(|e| e.to_string())? = None;
     *state.chat.lock().map_err(|e| e.to_string())? = None;
@@ -1208,6 +1237,7 @@ fn open_artifact(
             | ArtifactFormat::KicadReport
             | ArtifactFormat::SliceReport
             | ArtifactFormat::CadpilotReport
+            | ArtifactFormat::NativeToolsReport
             | ArtifactFormat::LiveDrawingReport
             | ArtifactFormat::LivePcbReport
             | ArtifactFormat::KonnectReport
@@ -1312,7 +1342,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, connect_native_tools, disconnect_native_tools, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 

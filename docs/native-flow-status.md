@@ -4,12 +4,15 @@ October 17, 2026. The four-step objective in [the application goal](application-
 remains intact. Historical checkpoints describe the binary and scope actually
 tested; a later package does not retroactively turn them into new tests.
 
-The next implementation priority is program-owned tool discovery and native
-routing rather than more fixed operation wrappers. The [shared catalog and
-upstream checks](research/program-tool-catalog-2026-10-17.md) now report exact
-callable tools, repository/version provenance and discovery methods. Full
-upstream schema refresh/routing remains unfinished; releases do not grant
-installed capabilities. This source change is newer than the retained installer.
+The [shared native discovery and routing](research/native-tool-routing-2026-10-17.md)
+now reads installed MCP schemas and native CLI help across all six program groups.
+With a native connection active, the agent uses discovered tools through shared
+read/proposal/result routes; preset editing wrappers are excluded from that scope.
+Real CADPilot/CADCraft/Konnect catalogs, four CLI help routes, headless CADCraft
+editing and separate stdio/HTTP/workflow/chat fixtures pass. Full visible editing
+and packaged acceptance of these new routes remain unfinished. The [upstream
+checks](research/program-tool-catalog-2026-10-17.md) identify releases, which do not
+grant installed capabilities. This source change is newer than the installer.
 
 | Program | Current evidence | Remaining live-flow gap |
 |---|---|---|

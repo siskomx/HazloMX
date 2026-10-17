@@ -37,6 +37,13 @@ function doubledLength(value: unknown): string | undefined {
 export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
+  if(input.native_tools_version){
+    facts.push("Usar las herramientas nativas de " + input.program + ".", "Objetivo: " + input.description,
+      "El programa ejecutará las llamadas del catálogo conectado; puedes revisar sus argumentos en los detalles.",
+      "Hazlo pedirá una lectura nativa al terminar. Las respuestas no son una certificación independiente de geometría.",
+      "Cancelar detiene la espera; no revierte cambios ya aceptados. Revisa el programa antes de repetir una llamada.");
+    return facts;
+  }
   if(input.live_drawing_version){
     const op=input.operation, unit=unitNames[input.units];
     if(op.action==="export_dxf") {

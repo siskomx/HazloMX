@@ -8,6 +8,7 @@
     "allow-select-claude", "allow-start-claude-chat", "allow-cancel-chat",
     "allow-start-ollama-chat",
     "allow-set-agent-tools",
+    "allow-connect-native-tools", "allow-disconnect-native-tools",
     "allow-get-snapshot", "allow-select-project", "allow-select-freecad", "allow-select-arduino",
     "allow-cancel-source-inspection",
     "allow-start-compile", "allow-edit-compile",

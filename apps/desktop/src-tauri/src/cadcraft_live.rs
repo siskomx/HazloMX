@@ -490,6 +490,13 @@ impl Session {
     }
 }
 impl Connection {
+    pub(crate) fn native_mcp_config(&self)->Result<crate::native_tools::McpConfig,String> {
+        let session=self.0.lock().map_err(|_|INVALID)?;
+        if session.failed || unsafe {WaitForSingleObject(session.process.as_raw_handle() as _,0)}!=WAIT_TIMEOUT {return Err(INVALID.into());}
+        let address=session.stream.peer_addr().map_err(|_|INVALID)?;
+        if !address.ip().is_loopback(){return Err(INVALID.into());}
+        Ok(crate::native_tools::McpConfig{executable:session.runtime_directory.join("cadcraft-cli.exe"),args:vec!["mcp".into(),"--connect".into(),address.to_string()],env:BTreeMap::new(),url:None,authorization:None})
+    }
     pub fn inspect(&self, cancel: &AtomicBool) -> Result<Observation, String> {
         self.0.lock().map_err(|_| INVALID)?.read(cancel)
     }

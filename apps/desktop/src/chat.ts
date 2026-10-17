@@ -41,7 +41,7 @@ let commandBusy = false, revision = 0, newSession = true;
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
 let historyLoading = false, durableReady = false, storageVersion = 0;
-let sourceContext: Record<string, unknown> = {};
+let sourceContext: Record<string, unknown> & {native_tools?:{program:Program;connection_id:string;transport:string}} = {};
 let sourceNames: Partial<Record<Program, string>> = {};
 let sourcePreviousJobs: Partial<Record<Program, string | null>> = {};
 let renderedLegacy = "";
@@ -156,15 +156,21 @@ function reviewFinishedOperation() {
   resultReview = undefined;
   if (job.snapshot.phase !== "completed" || job.error) {
     const input = job.snapshot.input;
+    if (input.native_tools_version) { inspectionNotice = "La llamada nativa quedó interrumpida. Revisa el programa y pide una lectura nueva; no repitas la edición."; return; }
     if (!(input.live_drawing_version || input.live_cad_version || input.live_agent_version || input.live_pcb_version) || !["failed", "cancelled", "interrupted"].includes(job.snapshot.phase)) return;
     const inspection = input.live_drawing_version ? "inspect_open_drawing con la selección actual" : input.live_cad_version ? `inspect_open_cad_documents con el nombre ${JSON.stringify(input.document_name)}` : input.live_agent_version ? "inspect_open_agent_documents para el mismo documento e instancia del trabajo" : "inspect_selected_live_pcb con la selección actual";
     void action(() => send(`La operación nativa que aprobé quedó en estado ${job.snapshot.phase}; su resultado puede ser incierto. Consulta solo ${inspection} para leer el estado actual. No supongas que detener la espera deshizo el cambio ni que el programa lo aplicó. Si no puedes verificar el documento, dilo claramente. No uses read_verified_result para este trabajo incompleto. Explica brevemente qué estado puedes confirmar y qué sigue sin verificarse, sin atribuir cambios a esta operación solo por observarlos. No prepares ni ejecutes otro cambio ni reintentes la operación.`, false));
+    return;
+  }
+  if (job.snapshot.input.native_tools_version) {
+    void action(() => send(`Lee read_verified_result para job_id ${pending.jobId}. Explica en 2 a 4 frases sencillas lo que respondió el programa y su lectura final. Describe solo lo observado, sin afirmar verificación independiente de geometría ni guardado si el programa no lo confirmó. No prepares otra llamada ni repitas la operación.`,false));
     return;
   }
   void action(() => send(`El cambio que acabo de aprobar terminó. Lee read_verified_result para job_id ${pending.jobId}; si es una operación de FreeCAD abierto, vuelve a consultar inspect_open_cad_documents con su nombre; si es un sketch abierto de Arduino Agent, consulta inspect_open_agent_documents para leer su estado actual; si es un dibujo abierto en CADCraft, consulta inspect_open_drawing con la selección actual; si es una PCB abierta, consulta inspect_selected_live_pcb con la selección actual para leer el estado nativo. Responde en 2 a 4 frases de lenguaje cotidiano: qué cambió, las medidas relevantes y si quedó guardado, exportado o sin guardar. Menciona solo límites que afecten el siguiente paso; omite UUID, hashes, nombres de herramientas y claves internas salvo que los pidan. No prepares ni ejecutes otro cambio. No afirmes haber editado el documento abierto si solo se guardó una copia.`, false));
 }
 function summary(run: Snapshot): string {
   const input = run.input;
+  if (input.native_tools_version) return "Herramientas nativas · " + input.description;
   if (input.live_agent_version) return (input.save ? "Guardar sketch · " : "Sketch abierto · ") + input.description;
   if (input.live_drawing_version) return "CADCraft abierto · " + input.description;
   if (input.live_pcb_version) return "PCB abierta · " + input.description;
@@ -180,6 +186,7 @@ function summary(run: Snapshot): string {
 }
 function changeDetails(run: Snapshot): string {
   const input = run.input;
+  if (input.native_tools_version) return JSON.stringify({guard:input.guard,calls:input.calls,readback:input.readback},null,2);
   if (input.live_agent_version && input.save) return "Código actual que guardará Arduino Agent:\n" + input.before.source;
   if (input.live_agent_version) return "Código actual en Arduino Agent:\n" + input.before.source + "\nCódigo propuesto:\n" + input.source;
   if (input.live_drawing_version) return JSON.stringify({document:input.before.title,native_units:input.before.insunits,current_entities:input.before.entities,operation:input.operation,requested_units:input.units},null,2);
@@ -196,6 +203,7 @@ function changeDetails(run: Snapshot): string {
 }
 function artifactActions(run: Snapshot): [string, string][] {
   const input = run.input;
+  if (input.native_tools_version) return [["Informe y lectura nativa","native_tools_report"]];
   if (input.live_agent_version) return [[input.save ? "Informe del guardado en Arduino Agent" : "Informe del cambio en Arduino Agent","live_agent_report"]];
   if (input.live_drawing_version) return input.operation.action === "export_dxf" ? [["Copia DXF verificada","drawing"],["Informe de exportación de CADCraft","live_drawing_report"]] : [["Informe del cambio en CADCraft","live_drawing_report"]];
   if (input.live_pcb_version) return input.export_copy ? [["PCB exportada","kicad_source"],["Informe de la exportación PCB","live_pcb_report"]] : [["Informe del cambio PCB","live_pcb_report"]];
@@ -255,7 +263,7 @@ function render() {
   $("choose-program").hidden = program !== "planning";
   $("live-pcb-setup").hidden = program !== "kicad";
   $("live-drawing-setup").hidden = program !== "drawing";
-  $("document-scope").textContent = program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : program === "drawing" && sourceContext.live_drawing_source ? "Dibujo abierto conectado: el chat prepara círculos y movimientos que verás en CADCraft al aprobarlos. Puedes deshacer las ediciones allí. Si pides una copia DXF, aprobarás su exportación por separado: incluye el estado actual sin guardar y Hazlo comprueba la copia. El dibujo abierto conserva su nombre y estado." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
+  $("document-scope").textContent = sourceContext.native_tools && sourceContext.native_tools.program === program ? "Conexión nativa: el chat descubre los nombres y esquemas del programa y prepara llamadas para tu aprobación. Hazlo conserva una lectura final. La CLI no implica acceso al editor abierto." : program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : program === "drawing" && sourceContext.live_drawing_source ? "Dibujo abierto conectado: el chat prepara círculos y movimientos que verás en CADCraft al aprobarlos. Puedes deshacer las ediciones allí. Si pides una copia DXF, aprobarás su exportación por separado: incluye el estado actual sin guardar y Hazlo comprueba la copia. El dibujo abierto conserva su nombre y estado." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
   $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${program === "planning" ? "vamos a elegir el programa" : program === "drawing" && sourceContext.live_drawing_source ? "dibujo abierto en CADCraft" : native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : "archivos guardados"}`;
   $("source-status").textContent = program === "planning" ? "La IA puede explicar las opciones disponibles. Elige el programa que acuerden para habilitar sus herramientas." : sourceNames[program] ?? (program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
@@ -290,7 +298,7 @@ function render() {
   $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;
   $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = commandBusy;
   const job = state.job;
-  $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? job.snapshot.input.live_drawing_version ? job.snapshot.input.operation.action === "export_dxf" ? "DXF exportado y verificado. El dibujo abierto conserva su estado y sus cambios sin guardar." : "Cambio leído en el dibujo abierto de CADCraft. Puedes deshacerlo allí; todavía no se guardó ni exportó." : job.snapshot.input.live_agent_version ? job.snapshot.input.save ? "Arduino Agent confirmó el guardado del código aprobado y su estado sin cambios pendientes." : "Cambio leído en el sketch abierto de Arduino Agent. El guardado lo gestiona el IDE." : job.snapshot.input.live_pcb_version ? job.snapshot.input.export_copy ? "PCB exportada y verificada. El documento abierto conserva sus cambios sin guardar." : "Cambio leído en la PCB abierta de KiCad. El archivo todavía no se guardó." : job.snapshot.input.live_cad_version ? job.snapshot.input.operations[0]?.action === "save_as" ? "FreeCAD confirmó el guardado. El informe conserva el nombre y la huella del archivo en ese momento." : job.snapshot.input.operations[0]?.action === "export_step" ? "STEP exportado y verificado. El documento abierto sigue sin cambios; exportar no guarda el modelo nativo." : "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
+  $("job-status").textContent = !job ? "" : job.error ?? (job.snapshot.phase === "completed" ? job.snapshot.input.native_tools_version ? "El programa respondió y Hazlo conservó su lectura final. Revisa el resultado nativo." : job.snapshot.input.live_drawing_version ? job.snapshot.input.operation.action === "export_dxf" ? "DXF exportado y verificado. El dibujo abierto conserva su estado y sus cambios sin guardar." : "Cambio leído en el dibujo abierto de CADCraft. Puedes deshacerlo allí; todavía no se guardó ni exportó." : job.snapshot.input.live_agent_version ? job.snapshot.input.save ? "Arduino Agent confirmó el guardado del código aprobado y su estado sin cambios pendientes." : "Cambio leído en el sketch abierto de Arduino Agent. El guardado lo gestiona el IDE." : job.snapshot.input.live_pcb_version ? job.snapshot.input.export_copy ? "PCB exportada y verificada. El documento abierto conserva sus cambios sin guardar." : "Cambio leído en la PCB abierta de KiCad. El archivo todavía no se guardó." : job.snapshot.input.live_cad_version ? job.snapshot.input.operations[0]?.action === "save_as" ? "FreeCAD confirmó el guardado. El informe conserva el nombre y la huella del archivo en ese momento." : job.snapshot.input.operations[0]?.action === "export_step" ? "STEP exportado y verificado. El documento abierto sigue sin cambios; exportar no guarda el modelo nativo." : "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
   renderConnections(busy || !!active); renderQuestion(); renderHistory(); renderLegacy();
 }
 function connectionButton(label: string, disabled: boolean, work: () => Promise<void>) {
@@ -320,6 +328,17 @@ async function inspectSource<T>(command: string, args: Record<string,unknown> = 
 function renderConnections(disabled: boolean) {
   $("program-actions").replaceChildren();
   if (program === "planning") return;
+  const nativeConnect=async(mcp:boolean)=>{
+    const catalog=await inspectSource<{connection_id:string;catalog_sha256:string;tools:unknown[];transport:string}>("connect_native_tools",{program,mcp});
+    sourceContext.native_tools={program,connection_id:catalog.connection_id,transport:catalog.transport};
+    sourceNames[program]=`${catalog.tools.length} herramientas nativas · ${catalog.transport.toUpperCase()}`;
+    selectedNewSource(program); revision++; newSession = true;
+  };
+  connectionButton("Conectar MCP nativo…",disabled,()=>nativeConnect(true));
+  if(sourceContext.native_tools?.program===program) connectionButton("Desconectar herramientas nativas",disabled,async()=>{
+    await invoke("disconnect_native_tools");delete sourceContext.native_tools;delete sourceNames[program];revision++;newSession=true;
+  });
+  if(["drawing","arduino","kicad","slice"].includes(program)) connectionButton("Usar herramientas de la CLI instalada",disabled,()=>nativeConnect(false));
   const connect = (label: string, command: string) => connectionButton(label, disabled, async () => apply(await invoke<DesktopSnapshot>(command)));
   if (program === "freecad") {
     connect("Elegir FreeCAD…", "select_freecad");
@@ -373,6 +392,7 @@ function renderConnections(disabled: boolean) {
 function jobProgram(run: Snapshot): Program | undefined {
   const input = run.input;
   if (input.konnect_version || input.kicad_version) return "kicad";
+  if (input.native_tools_version) return input.program as Program;
   if (input.live_agent_version) return "agent";
   if (input.live_drawing_version) return "drawing";
   if (input.live_pcb_version) return "kicad";
@@ -383,13 +403,18 @@ function jobProgram(run: Snapshot): Program | undefined {
   if (input.fqbn) return "arduino";
 }
 function context() {
+  const connected=sourceContext.native_tools?.program===program ? sourceContext.native_tools : undefined;
+  if(connected) return {project_id:state.project?.[0],program:programs[program],native_tools:connected,
+    current_job:state.job?.snapshot.input.native_tools_version ? {id:state.job.snapshot.input.job_id,phase:state.job.snapshot.phase} : null,
+    document_scope:connected.transport==="cli" ? "native_cli_not_live_editor" : "selected_native_mcp_server",
+    live_document_connection:null,source_is_untrusted_data:true};
   if (program === "planning") return { program: "planning", current_job: null, available_programs: Object.fromEntries(Object.entries(programs).filter(([key]) => key !== "planning")), program_selection_required: true, document_scope: "choose_program", live_document_connection: false, live_mutations_allowed: false };
   let job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
   if (job && (jobProgram(job) !== program || job.input.job_id === sourcePreviousJobs[program])) job = undefined;
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
   const drawingNative = program === "drawing" && !!sourceContext.live_drawing_source;
   const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? drawingNative ? {live_drawing_source:sourceContext.live_drawing_source} : { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : program === "slice" ? {slice_source:sourceContext.slice_source} : program === "freecad" ? {cad_document_source:sourceContext.cad_document_source} : {};
-  return { project_id: state.project?.[0], program: programs[program], ...selected, current_job: job && (!native || !!job.input.live_pcb_version) && (!drawingNative || !!job.input.live_drawing_version) ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: drawingNative ? "open_native_drawing" : native ? "open_native_pcb" : program === "agent" ? "open_agent_and_explicit_saved_copies" : program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies", live_document_connection: program === "freecad" || program === "agent" ? null : native || drawingNative, live_mutations_allowed: native || drawingNative || program === "freecad" || program === "agent", native_connection_check: drawingNative ? "inspect_open_drawing" : native ? "inspect_selected_live_pcb" : program === "freecad" ? "inspect_open_cad_documents" : program === "agent" ? "inspect_open_agent_documents" : null };
+  return { project_id: state.project?.[0], native_tools:sourceContext.native_tools?.program === program ? sourceContext.native_tools : undefined, program: programs[program], ...selected, current_job: job && (!native || !!job.input.live_pcb_version) && (!drawingNative || !!job.input.live_drawing_version) ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: drawingNative ? "open_native_drawing" : native ? "open_native_pcb" : program === "agent" ? "open_agent_and_explicit_saved_copies" : program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies", live_document_connection: program === "freecad" || program === "agent" ? null : native || drawingNative, live_mutations_allowed: native || drawingNative || program === "freecad" || program === "agent", native_connection_check: drawingNative ? "inspect_open_drawing" : native ? "inspect_selected_live_pcb" : program === "freecad" ? "inspect_open_cad_documents" : program === "agent" ? "inspect_open_agent_documents" : null };
 }
 async function send(content: string, userInitiated = true) {
   if (historyLoading) return;

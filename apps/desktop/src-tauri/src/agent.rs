@@ -157,6 +157,10 @@ fn token() -> Result<String, String> {
 }
 
 impl Connection {
+    pub(crate) fn native_mcp_config(&self)->Result<crate::native_tools::McpConfig,String> {
+        self.verify_token()?;
+        Ok(crate::native_tools::McpConfig{executable:PathBuf::new(),args:vec![],env:Default::default(),url:Some("http://127.0.0.1:3847/mcp".into()),authorization:Some(self.token.clone())})
+    }
     pub fn verify_token(&self) -> Result<(), String> {
         if token()? != self.token {
             return Err(

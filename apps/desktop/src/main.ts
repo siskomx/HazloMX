@@ -322,14 +322,15 @@ function konnectDescription(input:KonnectInput|KonnectPcbInput):string {
 function artifactButtons(job: Snapshot, parent: HTMLElement) {
   const row = document.createElement("div"); row.className = "artifact-row";
   const label = document.createElement("span"); const d = job.input.dimensions_mm;
-  const description = job.input.konnect_version ? konnectDescription(job.input) : job.input.cadpilot_version ? pilotDescription(job.input) : job.input.orca_version ? sliceDescription(job.input) : job.input.kicad_version ? kicadDescription(job.input) : job.input.cadcraft_version ? drawingDescription(job.input) : d ? `${dimensionText(d, selectedUnit)}${selectedUnit === "mm" ? "" : ` (${dimensionText(d, "mm")})`}` : job.input.agent_version ? `Copia · ${job.input.source_name} · Agent ${job.input.agent_version}` : `Sketch · ${job.input.fqbn}`;
+  const description = job.input.native_tools_version ? job.input.description : job.input.konnect_version ? konnectDescription(job.input) : job.input.cadpilot_version ? pilotDescription(job.input) : job.input.orca_version ? sliceDescription(job.input) : job.input.kicad_version ? kicadDescription(job.input) : job.input.cadcraft_version ? drawingDescription(job.input) : d ? `${dimensionText(d, selectedUnit)}${selectedUnit === "mm" ? "" : ` (${dimensionText(d, "mm")})`}` : job.input.agent_version ? `Copia · ${job.input.source_name} · Agent ${job.input.agent_version}` : `Sketch · ${job.input.fqbn}`;
   label.textContent = `${description}${historyText(job)}`; row.append(label);
   let formats = job.input.orca_version ? [["original_mesh","Mostrar STL original"],["sliced","Mostrar 3MF laminado"],["gcode","Mostrar G-code"],["slice_report","Ver informe de laminado"]] : job.input.kicad_version ? [["kicad_source", "Mostrar copia revisada"], ["kicad_outputs", "Mostrar exportaciones"], ["kicad_report", "Ver informe ERC/DRC"]] : job.input.cadcraft_version ? [["original_drawing", "Mostrar original"], ["drawing", "Mostrar resultado"], ["drawing_preview", "Mostrar PNG"], ["drawing_report", "Ver informe de conversión"]] : d ? [["fcstd", "Abrir FCStd"], ["step", "Abrir STEP"]] : job.input.agent_version ? [["original_sketch", "Ver original importado"], ["sketch", "Ver copia verificada"]] : [["sketch", "Ver sketch verificado"], ["hex", "Mostrar HEX"], ["elf", "Mostrar ELF"]];
   if (job.input.cadpilot_version) {
     formats=[["original_cad","Mostrar FCStd original"],["cadpilot_report","Ver mediciones y operación"]];
     if(job.input.request.operation!=="inspect") formats.push(["fcstd","Abrir FCStd editado"],["step","Abrir STEP editado"]);
   }
-  if (job.input.live_agent_version) formats=[["live_agent_report",job.input.save ? "Ver informe del guardado en Arduino Agent" : "Ver informe del cambio en Arduino Agent"]];
+  if (job.input.native_tools_version) formats=[["native_tools_report","Ver informe de herramientas nativas"]];
+  else if (job.input.live_agent_version) formats=[["live_agent_report",job.input.save ? "Ver informe del guardado en Arduino Agent" : "Ver informe del cambio en Arduino Agent"]];
   else if (job.input.live_pcb_version) formats=[["live_pcb_report","Ver informe del cambio PCB"]];
   if (job.input.konnect_version) {
     formats=[["konnect_original","Mostrar esquema original"],["konnect_edited","Mostrar copia editada"]];

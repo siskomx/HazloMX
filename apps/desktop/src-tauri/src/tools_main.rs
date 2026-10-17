@@ -1,6 +1,9 @@
 #[cfg(windows)]
 #[tokio::main]
 async fn main() {
+    if std::env::args().nth(1).as_deref()==Some("--native-console") {
+        std::process::exit(hazlomexa::native_tools::console_child().unwrap_or(1));
+    }
     use std::io::{Read, Write};
     use tokio::io::AsyncWriteExt;
     if let Some(code) = hazlomexa::konnect::movement_validator_cli() {

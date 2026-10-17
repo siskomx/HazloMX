@@ -44,13 +44,15 @@ try {
     const snapshot = { project: ["project-one", "C:\\owned\\project"], job: null, inference: null, recovered: [], freecad: "owned-freecad", freecad_available: true, codex: { version: "fixture" }, codex_login: { id: "login", sequence: 1, busy: false, cancelled: false, connected: true, auth_url: null, error: null }, claude: { version: "fixture" } };
     const copy = () => structuredClone(snapshot);
     window.setCompletedJob = input => {
-      snapshot.job = { snapshot: { schema_version: input.live_drawing_version ? 16 : input.live_agent_version ? 15 : input.live_pcb_version ? 14 : input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
+      snapshot.job = { snapshot: { schema_version: input.native_tools_version ? 17 : input.live_drawing_version ? 16 : input.live_agent_version ? 15 : input.live_pcb_version ? 14 : input.live_cad_version ? 13 : 12, project_id: snapshot.project[0], input, phase: "completed", audit: { created_unix_ms: 3000, files_verified: true, source: { provider: "mcp" } } }, approval_id: null, sequence: 1, busy: false, error: null };
     };
     window.setPendingJob = input => { window.setCompletedJob(input); snapshot.job.snapshot.phase = "awaiting_approval"; snapshot.job.approval_id = "private-approval"; };
     window.calls = []; window.approvals = 0;
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
       if (command === "get_snapshot") return copy();
+      if (command === "connect_native_tools") {args.events.onmessage(crypto.randomUUID());return {connection_id:"native-connection",catalog_sha256:"d".repeat(64),transport:args.mcp ? "mcp" : "cli",tools:[{name:"program_owned_tool"},{name:"observe_native_state"}]};}
+      if (command === "disconnect_native_tools") return;
       if (command === "install_agent_companion") {
         if (window.refuseCompanionInstall) throw "No se reemplazó el complemento existente.";
         return "Complemento instalado. Guarda tu trabajo y reinicia Arduino Agent para activarlo.";
@@ -494,7 +496,7 @@ try {
       await page.locator("#new-chat").click(); await page.locator("#program").selectOption(program);
       const jobId = `review-${provider}-${index}`;
       await page.evaluate(input => window.setPendingJob(input),{schema_version:1,job_id:jobId,...fields});
-      await page.locator("#program-actions button").first().click();
+      await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
       await page.locator("#approve:enabled").waitFor();
       assert.match(await page.locator("#change-facts").innerText(),/El resultado se guarda en el proyecto/);
       assert(!/undefined|NaN/.test(await page.locator("#change-facts").innerText()));
@@ -525,7 +527,7 @@ try {
   for (const outcome of ["completed","failed","cancelled","rejected","cancel-running"]) {
     await page.locator("#new-chat").click();
     await page.evaluate(outcome=>{window.delayJob=true;window.rejectApproval=outcome==="rejected";window.jobOutcome=outcome;window.setPendingJob({schema_version:1,job_id:`late-${outcome}`,dimensions_mm:{length:10,width:10,height:10}});},outcome);
-    await page.locator("#program-actions button").first().click(); await page.locator("#approve:enabled").waitFor();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click(); await page.locator("#approve:enabled").waitFor();
     const before = (await chatCalls()).length;
     await page.locator("#approve").click();
     if(outcome==="rejected") { await page.locator("#error:visible").waitFor(); await page.locator("#cancel-job").click(); }
@@ -549,7 +551,7 @@ try {
       await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
       const jobId=`uncertain-${provider}-${program}-${outcome}`;
       await page.evaluate(({input,outcome})=>{window.delayJob=true;window.rejectApproval=outcome==="rejected";window.jobOutcome=outcome;window.setPendingJob(input);},{input:{schema_version:1,job_id:jobId,description:"Cambio nativo solicitado",...fields},outcome});
-      await page.locator("#program-actions button").first().click();await page.locator("#approve:enabled").waitFor();
+      await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();await page.locator("#approve:enabled").waitFor();
       const before=(await chatCalls()).length,approvals=await page.evaluate(()=>window.approvals);
       await page.locator("#prompt").fill("Mi siguiente idea sigue siendo un borrador.");
       if(outcome==="cancel-pending") await page.locator("#cancel-job").click();
@@ -587,7 +589,7 @@ try {
   await page.locator("#program").selectOption("freecad");
   await page.locator("#new-chat").click();
   await page.evaluate(()=>{window.holdChat=true;window.setPendingJob({schema_version:1,job_id:"cancel-result-review",dimensions_mm:{length:10,width:10,height:10}});});
-  await page.locator("#program-actions button").first().click(); await page.locator("#approve:enabled").waitFor();
+  await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click(); await page.locator("#approve:enabled").waitFor();
   const beforeReviewCancel = (await chatCalls()).length;
   await page.locator("#approve").click(); await page.locator("#stop:enabled").waitFor();
   await page.locator("#stop").click(); await page.locator("#send:enabled").waitFor();
@@ -596,7 +598,7 @@ try {
   assert.match(await page.locator("#conversation").innerText(),/Conversación detenida/);
   await page.evaluate(()=>{window.holdChat=false;});
   const beforeRecovered = (await chatCalls()).length;
-  await page.locator("#program-actions button").first().click(); await page.locator("#send:enabled").waitFor();
+  await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click(); await page.locator("#send:enabled").waitFor();
   assert.equal((await chatCalls()).length,beforeRecovered,"An existing completed result started a new review");
   await page.locator("#provider").selectOption("ollama_cloud");
   await page.locator("#new-chat").click();
@@ -605,7 +607,7 @@ try {
   await send("Segunda intención, con datos confirmados del documento.");
   const longBefore=await page.locator("#conversation .message").allTextContents();
   await page.evaluate(()=>window.setPendingJob({schema_version:1,job_id:"long-history-review",dimensions_mm:{length:25.4,width:10,height:5}}));
-  await page.locator("#program-actions button").first().click(); await page.locator("#approve:enabled").waitFor();
+  await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click(); await page.locator("#approve:enabled").waitFor();
   const beforeLongReview=(await chatCalls()).length;
   await page.locator("#approve").click(); await page.locator("#send:enabled").waitFor();
   const longCalls=await chatCalls(); assert.equal(longCalls.length,beforeLongReview+1);
@@ -635,7 +637,7 @@ try {
     await page.locator("#program").selectOption("freecad");
     await page.locator("#new-chat").click();
     await page.evaluate(()=>window.setPendingJob({schema_version:1,live_cad_version:1,job_id:crypto.randomUUID(),document_name:"Enclosure",document_token:"11111111-1111-4111-8111-111111111111",state_sha256:"a".repeat(64),description:"Haz la carcasa más larga",before:[{name:"InternalBox",label:"Carcasa",type:"Part::Box",properties:{Length:"25.4 mm"}}],operations:[{action:"edit_object",obj_name:"InternalBox",obj_properties:{Length:30.4}}]}));
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await page.locator("#approve:enabled").waitFor();
     const facts=await page.locator("#change-facts").innerText();
     assert.match(facts,/Carcasa[\s\S]*25.4 mm → 30.4 mm/);
@@ -656,7 +658,7 @@ try {
     await page.locator("#provider").selectOption(provider);
     await page.locator("#new-chat").click();
     await page.evaluate(()=>window.setPendingJob({schema_version:1,live_cad_version:1,job_id:crypto.randomUUID(),document_name:"Enclosure",document_token:"11111111-1111-4111-8111-111111111111",state_sha256:"a".repeat(64),description:"Guarda la carcasa terminada",before:[],operations:[{action:"save_as"}]}));
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await page.locator("#approve:enabled").waitFor();
     const facts=await page.locator("#change-facts").innerText();
     assert.match(facts,/FreeCAD abrirá Guardar como/);
@@ -673,7 +675,7 @@ try {
     await page.locator("#provider").selectOption(provider);
     await page.locator("#new-chat").click();
     await page.evaluate(()=>window.setPendingJob({schema_version:1,live_cad_version:1,job_id:crypto.randomUUID(),document_name:"Enclosure",document_token:"11111111-1111-4111-8111-111111111111",state_sha256:"a".repeat(64),description:"Exporta la carcasa a STEP",before:[{name:"InternalBox",label:"Carcasa",properties:{}}],operations:[{action:"export_step",obj_name:"InternalBox"}]}));
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await page.locator("#approve:enabled").waitFor();
     const facts=await page.locator("#change-facts").innerText();
     assert.match(facts,/Exportar la pieza abierta a STEP/);
@@ -699,7 +701,7 @@ try {
         state_sha256:"c".repeat(64),source_is_untrusted_data:true,
         components:[{uuid:"1390739f-0b91-4d50-b8ae-92acd725ec51",reference:"R1",value:"10k",x_mm:25.4,y_mm:0,locked:false}]},
       movement:{uuid:"1390739f-0b91-4d50-b8ae-92acd725ec51",reference:"R1",expected_x_mm:25.4,expected_y_mm:0,x_mm:50.8,y_mm:0}}));
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await page.locator("#approve:enabled").waitFor();
     const facts=await page.locator("#change-facts").innerText();
     assert.match(facts,/10k \(R1\)[\s\S]*horizontal 1, vertical 0 pulgadas → horizontal 2, vertical 0 pulgadas/);
@@ -724,7 +726,7 @@ try {
     assert.equal(reconnected.live_pcb_source.selection,"live-board");
     assert.equal(reconnected.current_job,null,`${provider}: reconnected native PCB retained the previous document's result`);
     await page.evaluate(async()=>{const previous=(await window.__TAURI_INTERNALS__.invoke("get_snapshot")).job.snapshot.input;window.setCompletedJob({...previous,job_id:"reconnected-board-result"});});
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await send("Lee el resultado nuevo de esta PCB.");
     assert.deepEqual(JSON.parse((await chatCalls()).at(-1).args.prompt).desktop_context.current_job,{id:"reconnected-board-result",phase:"completed"});
   }
@@ -737,7 +739,7 @@ try {
       before:{editor_version:1,instance_id:crypto.randomUUID(),document_token:crypto.randomUUID(),name:"Sketch.ino",version:3,
         state_sha256:"a".repeat(64),source:"// unsaved note\nvoid loop() { delay(1000); }\n",eol:1,dirty:true,source_is_untrusted_data:true},
       source:"// unsaved note\nvoid loop() { delay(500); }\n"}));
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await page.locator("#approve:enabled").waitFor();
     const facts=await page.locator("#change-facts").innerText();
     assert.match(facts,/sketch abierto de Arduino Agent/);
@@ -758,7 +760,7 @@ try {
         before:{editor_version:1,instance_id:crypto.randomUUID(),document_token:crypto.randomUUID(),name:"Sketch.ino",version:4,
           state_sha256:"b".repeat(64),source,eol:1,dirty:true,source_is_untrusted_data:true},source});
     });
-    await page.locator("#program-actions button").first().click();await page.locator("#approve:enabled").waitFor();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();await page.locator("#approve:enabled").waitFor();
     const savingFacts=await page.locator("#change-facts").innerText();
     assert.match(savingFacts,/Guardar el sketch abierto/);assert.match(savingFacts,/Guardar no se deshace/);
     assert.match(await page.locator("#change-details").textContent(),/Código actual que guardará Arduino Agent/);
@@ -775,7 +777,7 @@ try {
     await page.evaluate(()=>window.setPendingJob({schema_version:1,live_cad_version:1,job_id:crypto.randomUUID(),document_name:"Embudo",document_token:crypto.randomUUID(),state_sha256:"a".repeat(64),
       description:"Ensanchamos los dos extremos del embudo",before:[{name:"InternalCone",label:"Embudo",type:"Part::Cone",properties:{Radius1:"10 mm",Radius2:5}}],
       operations:[{action:"edit_object",obj_name:"InternalCone",obj_properties:{Radius1:"0.5 in",Radius2:"0.25 in"}}]}));
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await page.locator("#approve:enabled").waitFor();
     const facts=await page.locator("#change-facts").innerText();
     assert.match(facts,/diámetro del círculo de la base: 20 mm → 1 in/);
@@ -796,7 +798,7 @@ try {
       board_name:"Placa.kicad_pcb",description:"Exporta una copia de la placa actual",units:"mm",
       before:{job_id:crypto.randomUUID(),native_pcb_version:1,instance_sha256:"a".repeat(64),document_sha256:"b".repeat(64),
         state_sha256:"c".repeat(64),source_is_untrusted_data:true,components:[]}}));
-    await page.locator("#program-actions button").first().click();
+    await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Usar herramientas de la CLI/}).first().click();
     await page.locator("#approve:enabled").waitFor();
     const facts=await page.locator("#change-facts").innerText();
     assert.match(facts,/Exportar una copia editable/);
@@ -868,9 +870,45 @@ try {
     assert.equal(copy.live_document_connection,false);
     assert.equal(copy.drawing_source.selection,"selected-drawing");
   }
+  // The same chat UI handles arbitrary native schemas for every program and provider.
+  for(const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
+    await page.locator("#provider").selectOption(provider);
+    for(const program of ["freecad","drawing","arduino","agent","kicad","slice"]) {
+      await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
+      await page.getByRole("button",{name:"Conectar MCP nativo…",exact:true}).click();await page.locator("#send:enabled").waitFor();
+      await send("Quiero cambiar esta pieza usando las herramientas de su programa.");
+      const nativePrompt=JSON.parse((await chatCalls()).at(-1).args.prompt);
+      assert.equal(nativePrompt.desktop_context.native_tools.program,program);
+      assert.equal(nativePrompt.desktop_context.document_scope,"selected_native_mcp_server");
+      assert.match(nativePrompt.instruction,/inputSchema[\s\S]*propose_native_tool_calls/);
+      const jobId=`native-router-${provider}-${program}`;
+      await page.evaluate(input=>window.setPendingJob(input),{schema_version:1,native_tools_version:1,job_id:jobId,connection_id:"native-connection",program,
+        catalog_sha256:"d".repeat(64),description:"Cambiar con la herramienta propia <img src=x>",calls:[{tool:"program_owned_tool",arguments:{new_parameter:"0.1 in"}}],
+        readback:{tool:"observe_native_state",arguments:{}},guard:{call:{tool:"observe_native_state",arguments:{}},result_sha256:"e".repeat(64)}});
+      await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Desconectar herramientas|Usar herramientas de la CLI/}).first().click();
+      await page.locator("#approve:enabled").waitFor();assert.match(await page.locator("#change-facts").innerText(),/herramientas nativas[\s\S]*no son una certificación independiente/);
+      assert.equal(await page.locator("#change-facts img").count(),0);
+      const before=(await chatCalls()).length;await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+      assert.equal((await chatCalls()).length,before+1);
+      assert.match(JSON.parse((await chatCalls()).at(-1).args.prompt).user_request,/sin afirmar verificación independiente/);
+      assert.match(await page.locator("#job-status").innerText(),/lectura final/);
+      assert.match(await page.locator("#history").innerText(),/Informe y lectura nativa/);
+      await page.getByRole("button",{name:"Desconectar herramientas nativas",exact:true}).click();await page.locator("#send:enabled").waitFor();
+      if(["drawing","arduino","kicad","slice"].includes(program)) {
+        await page.getByRole("button",{name:"Usar herramientas de la CLI instalada",exact:true}).click();await page.locator("#send:enabled").waitFor();
+        await send("Primero consulta la ayuda de esta CLI.");
+        const cliPrompt=JSON.parse((await chatCalls()).at(-1).args.prompt);
+        assert.equal(cliPrompt.desktop_context.native_tools.transport,"cli");
+        assert.equal(cliPrompt.desktop_context.document_scope,"native_cli_not_live_editor");
+        assert.equal(cliPrompt.desktop_context.live_document_connection,null);
+        assert.equal(cliPrompt.desktop_context.native_tools.catalog_sha256,undefined,"An initial catalog digest must not override refreshed discovery");
+        await page.getByRole("button",{name:"Desconectar herramientas nativas",exact:true}).click();await page.locator("#send:enabled").waitFor();
+      }
+    }
+  }
   const evidence = path.resolve(root, "../../target/chat-first"); await mkdir(evidence, { recursive: true });
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft edits, four native DXF export and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: 24 native catalog routing approval/review cases; production chat entry; all four AI choices and six program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft edits, four native DXF export and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

@@ -143,7 +143,7 @@ impl Attributes {
     fn pointer(&mut self) -> *mut std::ffi::c_void {
         self.buffer.as_mut_ptr().cast()
     }
-    fn new(handles: &[HANDLE]) -> io::Result<Self> {
+    fn new(handles: &[HANDLE], console:Option<isize>) -> io::Result<Self> {
         let mut bytes = 0;
         unsafe {
             InitializeProcThreadAttributeList(null_mut(), 1, 0, &mut bytes);
@@ -160,9 +160,9 @@ impl Attributes {
             UpdateProcThreadAttribute(
                 result.pointer().cast(),
                 0,
-                PROC_THREAD_ATTRIBUTE_HANDLE_LIST as usize,
-                handles.as_ptr().cast_mut().cast(),
-                std::mem::size_of_val(handles),
+                if console.is_some(){windows_sys::Win32::System::Threading::PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE as usize}else{PROC_THREAD_ATTRIBUTE_HANDLE_LIST as usize},
+                console.map_or(handles.as_ptr().cast_mut().cast(),|handle|handle as *mut _),
+                if console.is_some(){size_of::<isize>()}else{std::mem::size_of_val(handles)},
                 null_mut(),
                 null(),
             )
@@ -182,6 +182,10 @@ impl Drop for Attributes {
 }
 
 struct Job(OwnedHandle);
+struct Console(isize);
+impl Drop for Console {
+    fn drop(&mut self){unsafe {windows_sys::Win32::System::Console::ClosePseudoConsole(self.0);}}
+}
 impl Job {
     fn new() -> io::Result<Self> {
         let job = Self(handle(unsafe { CreateJobObjectW(null(), null()) })?);
@@ -248,6 +252,16 @@ pub fn run_owned_input(
     timeout: Duration,
     input: &[u8],
 ) -> io::Result<ProcessOutput> {
+    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(input,false))
+}
+
+/// A hidden native console also captures programs that reopen CONOUT$ instead of using their pipes.
+pub fn run_owned_console(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration)->io::Result<ProcessOutput> {
+    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(&[],true))
+}
+
+fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration,mode:(&[u8],bool))->io::Result<ProcessOutput> {
+    let (input,console_mode)=mode;
     if input.len() > LOG_LIMIT {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "Stdin exceeds limit"));
     }
@@ -295,13 +309,21 @@ pub fn run_owned_input(
         stdout_write.as_raw_handle(),
         stderr_write.as_raw_handle(),
     ];
-    let mut attributes = Attributes::new(&inherited)?;
+    let console=if console_mode {
+        let mut handle=0;
+        let result=unsafe {windows_sys::Win32::System::Console::CreatePseudoConsole(windows_sys::Win32::System::Console::COORD{X:240,Y:80},stdin_read.as_raw_handle(),stdout_write.as_raw_handle(),0,&mut handle)};
+        if result<0 {return Err(io::Error::other(format!("Native console creation failed: {result:#x}")));}
+        Some(Console(handle))
+    }else{None};
+    let mut attributes = Attributes::new(&inherited,console.as_ref().map(|c|c.0))?;
     let mut startup: STARTUPINFOEXW = unsafe { zeroed() };
     startup.StartupInfo.cb = size_of::<STARTUPINFOEXW>() as u32;
-    startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
-    startup.StartupInfo.hStdInput = inherited[0];
-    startup.StartupInfo.hStdOutput = inherited[1];
-    startup.StartupInfo.hStdError = inherited[2];
+    if !console_mode {
+        startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+        startup.StartupInfo.hStdInput = inherited[0];
+        startup.StartupInfo.hStdOutput = inherited[1];
+        startup.StartupInfo.hStdError = inherited[2];
+    }
     startup.lpAttributeList = attributes.pointer().cast();
     let mut information: PROCESS_INFORMATION = unsafe { zeroed() };
     if unsafe {
@@ -310,9 +332,9 @@ pub fn run_owned_input(
             command.as_mut_ptr(),
             null(),
             null(),
-            1,
+            if console_mode{0}else{1},
             CREATE_SUSPENDED
-                | CREATE_NO_WINDOW
+                | (if console_mode{0}else{CREATE_NO_WINDOW})
                 | CREATE_UNICODE_ENVIRONMENT
                 | EXTENDED_STARTUPINFO_PRESENT,
             variables.as_mut_ptr().cast(),
@@ -340,11 +362,11 @@ pub fn run_owned_input(
     let stdout = thread::Builder::new().spawn(move || drain(stdout_read))?;
     let stderr = thread::Builder::new().spawn(move || drain(stderr_read))?;
     let input = input.to_vec();
-    let stdin = thread::Builder::new().spawn(move || {
+    let (stdin,console_input)=if console_mode {(None,Some(stdin_write))}else{(Some(thread::Builder::new().spawn(move || {
         // SAFETY: the writer owns the transferred handle; closing it sends EOF.
         let mut file = unsafe { File::from_raw_handle(stdin_write.into_raw_handle()) };
         file.write_all(&input)
-    })?;
+    })?),None)};
     if !cancelled.load(Ordering::SeqCst)
         && unsafe { ResumeThread(primary_thread.as_raw_handle()) } == u32::MAX
     {
@@ -376,9 +398,12 @@ pub fn run_owned_input(
     if unsafe { GetExitCodeProcess(process.as_raw_handle(), &mut exit_code) } == 0 {
         return Err(io::Error::last_os_error());
     }
-    let written = stdin.join().map_err(|_| io::Error::other("Stdin writer panicked"))?;
-    if reason == StopReason::Completed {
-        written?;
+    // Output drains on its own thread while the virtual console flushes and closes.
+    drop(console_input);
+    drop(console);
+    if let Some(stdin)=stdin {
+        let written = stdin.join().map_err(|_| io::Error::other("Stdin writer panicked"))?;
+        if reason == StopReason::Completed {written?;}
     }
     let (stdout, stdout_truncated) = stdout
         .join()

@@ -35,6 +35,9 @@ pub mod konnect;
 pub mod host_tools;
 
 #[cfg(windows)]
+pub mod native_tools;
+
+#[cfg(windows)]
 mod program_tools;
 
 #[cfg(windows)]
