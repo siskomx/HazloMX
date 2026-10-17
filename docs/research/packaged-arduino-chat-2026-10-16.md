@@ -49,3 +49,5 @@ The [sanitized checkpoint](packaged-arduino-chat-2026-10-16.json) records the
 tested image identities. Raw conversations, native registrations, profiles,
 sketches and captures stay in ignored local test storage. All owned Hazlo
 and Arduino test processes are stopped. No hardware or compilation was used.
+
+The subsequent [corrected package checkpoint](recovered-result-package-2026-10-16.md) verifies the latest-save answer in an actual recovered conversation and passes a fresh guest lifecycle. It retains the response-style and forced-shutdown limits above.

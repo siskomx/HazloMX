@@ -1,0 +1,13 @@
+{
+  "source_commit": "07a8f2d",
+  "installer_sha256": "0734c4dfa7510721669f199c9223162d66ffed91b1633b18810121afd6897af0",
+  "unbundled_app_sha256": "25fc69bbdf636eff6bfd12ddc9ce33dadce7676ffe6c3e74ab9aac083f71f0a0",
+  "expected_installed_app_sha256": "c8c9eb9e043324454de6b65e30b94c89e17dea9e2604801b360e47d6641bff05",
+  "helper_sha256": "6ed06e338400328767dff077fe381f8bf4c9b5e617307650c26936dc274ddcbf",
+  "tool_count": 33,
+  "build_pass": true,
+  "tracked_inputs_unchanged": 6687,
+  "builder_profile_scan_pass": true,
+  "release_helper_protocol_pass": true,
+  "full_installed_acceptance": false
+}
