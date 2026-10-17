@@ -1,0 +1,23 @@
+{
+  "source_commit": "6b669f8",
+  "application_sha256": "afe5df44ef9d944dc10c4c35c2ec383a3554af5838ff204f24fb7244bb8864de",
+  "helper_sha256": "9d20c6d6ac9dbb734b41a9f4bf4e89d52ee84ff6f86418a1e24c88765b565126",
+  "scope": "guest_installed_image_in_owned_host_profile",
+  "provider": "existing_ollama_cloud",
+  "completed_native_chat_jobs": 3,
+  "separate_ui_approvals": 3,
+  "independent_native_observations": 7,
+  "verified_receipt_digests": 3,
+  "same_document_and_user_note_preserved": true,
+  "saved_buffer_matches_disk": true,
+  "completed_jobs_recovered": 3,
+  "normal_close_preserved_project_files": 7,
+  "normal_close_preserved_new_exchange": true,
+  "forced_shutdown_lost_final_chat_confirmation": true,
+  "old_package_latest_result_answer_incorrect": true,
+  "exact_model_tool_trace_retained": false,
+  "corrected_tool_packaged_conversation_retested": false,
+  "owned_test_processes_stopped": true,
+  "hardware_or_compilation_tested": false,
+  "full_application_acceptance": false
+}
