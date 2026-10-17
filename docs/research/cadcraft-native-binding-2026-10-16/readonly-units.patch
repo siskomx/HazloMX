@@ -1,0 +1,78 @@
+diff --git a/crates/engine/src/cmd/props.rs b/crates/engine/src/cmd/props.rs
+--- a/crates/engine/src/cmd/props.rs
++++ b/crates/engine/src/cmd/props.rs
+@@ -472,13 +472,12 @@
+ }
+
+ fn run_units(s: &mut Session, p: &Value) -> Result<Value> {
+-    let d = s.doc_mut()?;
+     for (k, lo, hi) in [("lunits", 1, 5), ("luprec", 0, 8), ("aunits", 0, 4), ("auprec", 0, 8), ("insunits", 0, 24)] {
+         if let Some(v) = p.get(k).and_then(Value::as_i64) {
+-            d.header.set_i64(&k.to_ascii_uppercase(), v.clamp(lo, hi));
+-        }
+-    }
+-    let h = &d.header;
++            s.doc_mut()?.header.set_i64(&k.to_ascii_uppercase(), v.clamp(lo, hi));
++        }
++    }
++    let h = &s.doc()?.header;
+     Ok(
+         json!({ "lunits": h.i64("LUNITS", 2), "luprec": h.i64("LUPREC", 4), "aunits": h.i64("AUNITS", 0), "auprec": h.i64("AUPREC", 0), "insunits": h.i64("INSUNITS", 1) }),
+     )
+diff --git a/crates/ui-egui/tests/control_binding.rs b/crates/ui-egui/tests/control_binding.rs
+--- a/crates/ui-egui/tests/control_binding.rs
++++ b/crates/ui-egui/tests/control_binding.rs
+@@ -136,3 +136,53 @@
+     assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
+     assert_eq!(app.session.state().unwrap().doc.model.iter().count(), 0);
+ }
++
++#[test]
++fn unit_queries_preserve_drawing_undo_and_checked_binding() {
++    let (mut app, ctx) = setup();
++    let before = call(&mut app, &ctx, "ui.inspect", json!({}))["result"]["session"].clone();
++    let undo = app.session.state().unwrap().undo.len();
++    let redo = app.session.state().unwrap().redo.len();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    let units = call(&mut app, &ctx, "engine.execute", json!({"command":"units","params":{}}));
++    assert_eq!(units["ok"], true);
++    assert!(units["result"]["insunits"].is_number());
++    assert_eq!(call(&mut app, &ctx, "ui.inspect", json!({}))["result"]["session"], before);
++    assert_eq!(app.session.state().unwrap().undo.len(), undo);
++    assert_eq!(app.session.state().unwrap().redo.len(), redo);
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], true);
++}
++
++#[test]
++fn setting_units_still_invalidates_binding_and_has_one_undo_step() {
++    let (mut app, ctx) = setup();
++    let original = call(&mut app, &ctx, "engine.execute", json!({"command":"units","params":{}}))["result"]["insunits"].clone();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    let changed = if original == 4 { 1 } else { 4 };
++    assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"units","params":{"insunits":changed}}))["ok"], true);
++    assert_eq!(app.session.state().unwrap().undo.len(), 1);
++    assert!(app.session.state().unwrap().is_dirty());
++    assert_eq!(line(&mut app, &ctx, binding)["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.entity_count(), 0);
++    assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"units","params":{}}))["result"]["insunits"], changed);
++    assert_eq!(app.session.state().unwrap().undo.len(), 1);
++    app.session.undo().unwrap();
++    assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"units","params":{}}))["result"]["insunits"], original);
++    assert!(!app.session.state().unwrap().is_dirty());
++}
++
++#[test]
++fn unit_query_preserves_a_waiting_lisp_routine_and_its_drawing() {
++    let (mut app, ctx) = setup();
++    assert_eq!(call(&mut app, &ctx, "cmdline.input", json!({"text":"(progn (setq p (getpoint)) (command \"_.CIRCLE\" p 1))"}))["ok"], true);
++    let before = call(&mut app, &ctx, "ui.inspect", json!({}))["result"]["session"].clone();
++    assert!(app.session.lisp_running());
++    assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"units","params":{}}))["ok"], true);
++    assert_eq!(call(&mut app, &ctx, "ui.inspect", json!({}))["result"]["session"], before);
++    assert!(app.session.lisp_running());
++    assert_eq!(app.session.state().unwrap().undo.len(), 0);
++    assert_eq!(call(&mut app, &ctx, "cmdline.input", json!({"text":"4,5"}))["ok"], true);
++    assert!(!app.session.lisp_running());
++    assert_eq!(app.session.state().unwrap().doc.entity_count(), 1);
++    assert_eq!(app.session.state().unwrap().undo.len(), 1);
++}

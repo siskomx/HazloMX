@@ -45,3 +45,7 @@ This is a fixed native TCP/control test plus observation of its actual GUI. It d
 This test does not enable a model-facing generic command executor or arbitrary LISP. Production adoption still needs an explicit supported runtime choice, owned endpoint/process checks, typed and bounded operations, approval binding, independent result checks, uncertain-outcome handling and actual chat acceptance. The retained drawing protects drawing data; this narrow experiment is not a guarantee covering every mutable session setting or every native command. The ordinary native command API remains available to other actors.
 
 No upstream changes are published. Full upstream CI, WASM and cross-platform builds are outside this Windows patch trial. A production patched runtime would need maintenance until upstream provides the contract.
+
+## Subsequent units-query correction
+
+The [read-only units trial](cadcraft-readonly-units-2026-10-16.md) adds an incremental patch after the binding patch: an empty units query no longer dirties the drawing or invalidates its checked binding. The combined source passes thirteen binding and four protocol tests. This does not relabel the earlier native-window binary as a test of the new supplement; production adoption remains pending.
