@@ -29,7 +29,7 @@ try {
     const snapshot={project,job:null,inference:null,recovered:[],freecad:"",freecad_available:false,codex:{version:"fixture"},codex_login:{id:"fixture-login",sequence:1,connected:true,busy:false},claude:{version:"fixture"}};
     window.__TAURI_INTERNALS__={transformCallback:()=>1,unregisterCallback:()=>{},invoke:async(command,args)=>{
       window.historyCalls.push({command,args});
-      if(command==="get_snapshot")return structuredClone(snapshot);
+      if((command==="get_snapshot" || command==="detect_clients"))return structuredClone(snapshot);
       if(command==="start_codex_chat" || command==="start_claude_chat" || command==="start_ollama_chat") {
         snapshot.chat={provider:command==="start_codex_chat"?"codex":command==="start_claude_chat"?"claude":args.profile==="cloud"?"ollama_cloud":"ollama_local",id:crypto.randomUUID(),project_id:snapshot.project[0],sequence:1,busy:false,cancelled:false,text:"Inspeccionemos de nuevo la selección actual.",error:null};
         return structuredClone(snapshot);

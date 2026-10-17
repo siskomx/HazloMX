@@ -298,7 +298,7 @@ function render() {
   $<HTMLButtonElement>("connect-account").disabled = busy || !state.codex;
   $("open-login").hidden = !state.codex_login?.busy || !state.codex_login.auth_url || !!state.codex_login.cancelled;
   $("cancel-login").hidden = !state.codex_login?.busy || !!state.codex_login.cancelled;
-  $("login-status").textContent = ollama ? `Usa el cliente Ollama instalado en este equipo y el perfil ${provider === "ollama_local" ? "qwen3:4b" : "kimi-k2.7-code:cloud"} ya instalado y conectado. Comprobamos su identidad y soporte de herramientas antes de enviar. No se descargan modelos. ${provider === "ollama_cloud" ? "Este perfil envía el contexto al servicio cloud de Ollama." : "La calidad de este perfil local sigue siendo experimental."}` : provider === "claude" ? state.claude ? `Claude Code ${state.claude.version}. Usa su inicio de sesión existente.` : "Elige el cliente Claude Code instalado." : state.codex_login?.error ?? (state.codex_login?.connected ? "Cuenta Codex conectada." : state.codex_login?.busy ? "Completa personalmente la conexión con Codex." : "Elige Codex y conecta tu cuenta.");
+  $("login-status").textContent = ollama ? `Usa el cliente Ollama instalado en este equipo y el perfil ${provider === "ollama_local" ? "qwen3:4b" : "kimi-k2.7-code:cloud"} ya instalado y conectado. Comprobamos su identidad y soporte de herramientas antes de enviar. No se descargan modelos. ${provider === "ollama_cloud" ? "Este perfil envía el contexto al servicio cloud de Ollama." : "La calidad de este perfil local sigue siendo experimental."}` : provider === "claude" ? state.claude ? `Claude Code ${state.claude.version}. Usa su inicio de sesión existente.` : "No encontramos un Claude Code compatible. Puedes elegirlo manualmente (2.1.285 o 2.1.302)." : state.codex_login?.error ?? (state.codex_login?.connected ? "Cuenta Codex conectada." : state.codex_login?.busy ? "Completa personalmente la conexión con Codex." : "Conecta tu cuenta Codex. Si falta el cliente, elige manualmente Codex 0.159.2.");
   const active = state.job?.snapshot.phase === "awaiting_approval";
   $("approval").hidden = !active;
   if (state.job) {
@@ -522,7 +522,7 @@ for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => void ac
   if (!state.job?.busy || !(input?.live_drawing_version || input?.live_cad_version || input?.live_agent_version || input?.live_pcb_version)) resultReview = undefined;
   if (state.job) apply({ ...state, job: await invoke<Job>("cancel_job", { jobId: state.job.snapshot.input.job_id }) });
 });
-void action(async () => apply(await invoke<DesktopSnapshot>("get_snapshot")));
+void action(async () => { apply(await invoke<DesktopSnapshot>("get_snapshot")); apply(await invoke<DesktopSnapshot>("detect_clients")); });
 setInterval(() => {
   const token = revision;
   if (!commandBusy && (state.chat?.busy || state.job?.busy || state.codex_login?.busy)) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);

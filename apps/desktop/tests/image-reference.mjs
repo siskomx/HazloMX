@@ -14,7 +14,7 @@ try {
     window.calls=[];
     window.makePending=()=>state.job={snapshot:{schema_version:17,project_id:state.project[0],phase:"awaiting_approval",input:{job_id:"native-image-job",native_tools_version:1,program:"freecad",description:"Cambio acordado",calls:[],readback:{tool:"inspect",arguments:{}}}},approval_id:"fixture-approval",busy:false,sequence:1,error:null};
     window.__TAURI_INTERNALS__={transformCallback:()=>1,unregisterCallback:()=>{},invoke:async(command,args)=>{
-      if(command==="get_snapshot")return structuredClone(state);
+      if((command==="get_snapshot" || command==="detect_clients"))return structuredClone(state);
       if(command.startsWith("start_")) {
         window.calls.push({command,args});
         state.chat={provider:command==="start_codex_chat"?"codex":command==="start_claude_chat"?"claude":args.profile==="cloud"?"ollama_cloud":"ollama_local",id:crypto.randomUUID(),project_id:state.project[0],sequence:1,busy:false,cancelled:false,error:null,text:"Veo una pieza; falta una medida conocida para recrearla."};

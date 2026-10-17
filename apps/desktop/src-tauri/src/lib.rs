@@ -52,6 +52,9 @@ pub mod claude;
 pub mod codex;
 
 #[cfg(windows)]
+pub mod client_discovery;
+
+#[cfg(windows)]
 pub mod konnect_run;
 
 #[cfg(windows)]

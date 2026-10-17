@@ -26,7 +26,8 @@ try {
     const snapshot = {project:null,job:null,inference:null,recovered:[],freecad:"",freecad_available:false};
     window.__TAURI_INTERNALS__ = {transformCallback:()=>1,unregisterCallback:()=>{},invoke:async command=>{
       window.initialCalls.push(command);
-      if(command!=="get_snapshot") throw Error("Initial chat dispatched an unexpected command");
+      if(command==="detect_clients") { snapshot.codex={version:"0.159.2"}; snapshot.claude={version:"2.1.302"}; }
+      if(!["get_snapshot","detect_clients"].includes(command)) throw Error("Initial chat dispatched an unexpected command");
       return structuredClone(snapshot);
     }};
   });
@@ -34,7 +35,8 @@ try {
     if (reload) await initialPage.reload(); else await initialPage.goto(server.resolvedUrls.local[0]);
     await initialPage.locator("#open-project:enabled").waitFor({state:"attached"});
     await checkInitialChat(initialPage,await initialPage.evaluate(()=>window.__TAURI_INTERNALS__.invoke("get_snapshot")));
-    assert((await initialPage.evaluate(()=>window.initialCalls)).every(command=>command==="get_snapshot"));
+    assert.equal((await initialPage.evaluate(()=>window.initialCalls)).filter(command=>command==="detect_clients").length,1,"Discover clients once on startup without authentication");
+    assert((await initialPage.evaluate(()=>window.initialCalls)).every(command=>(command==="get_snapshot" || command==="detect_clients")));
   }
   await initialPage.close();
   const page = await browser.newPage({ viewport: { width: 1200, height: 1000 } });
@@ -50,7 +52,7 @@ try {
     window.calls = []; window.approvals = 0;
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
-      if (command === "get_snapshot") return copy();
+      if ((command === "get_snapshot" || command === "detect_clients")) return copy();
       if (command === "connect_native_tools") {args.events.onmessage(crypto.randomUUID());return {connection_id:"native-connection",catalog_sha256:"d".repeat(64),transport:args.mcp ? "mcp" : "cli",tools:[{name:"program_owned_tool"},{name:"observe_native_state"}]};}
       if (command === "disconnect_native_tools") return;
       if (command === "install_agent_companion") {

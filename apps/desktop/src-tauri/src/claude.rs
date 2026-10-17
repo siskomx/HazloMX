@@ -284,15 +284,15 @@ pub fn identify(executable: std::path::PathBuf) -> Result<Runtime, String> {
     )
     .map_err(|e| e.to_string())?;
     if result.exit_code != Some(0)
-        || String::from_utf8_lossy(&result.stdout).trim() != "2.1.285 (Claude Code)"
+        || !matches!(String::from_utf8_lossy(&result.stdout).trim(), "2.1.285 (Claude Code)" | "2.1.302 (Claude Code)")
         || fingerprint(&executable)? != hash
     {
-        return Err("Esta conexión requiere Claude Code 2.1.285, la versión verificada.".into());
+        return Err("Esta conexión requiere Claude Code 2.1.285 o 2.1.302.".into());
     }
     Ok(Runtime {
         executable,
         sha256: hash,
-        version: "2.1.285".into(),
+        version: String::from_utf8_lossy(&result.stdout).trim().trim_end_matches(" (Claude Code)").into(),
     })
 }
 pub async fn run(
