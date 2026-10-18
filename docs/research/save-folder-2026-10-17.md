@@ -25,14 +25,34 @@ wrapper or editor is added.
 - The installer was rebuilt from frozen source inputs; package identity,
   binary privacy and the 38-tool release helper check pass.
 
-## Awaiting live acceptance
+## Real native save acceptance
 
 The owned native test launched both apps but stopped when its desktop/memory
 prerequisite failed. A diagnostic retry confirmed both processes were alive
 while the prerequisite failed. No chat edit or save was submitted. The real
 Codex native Save As regression and fresh Windows guest UI/lifecycle check are
-still pending memory headroom. The previous alpha's acceptance retains its
-original source scope and is not evidence for this rebuilt package.
+initially waited for memory headroom.
+
+After unused apps were closed, the matching release image passes the real
+signed-in Codex 0.159.2 conversation. The request names a new DXF "inside the
+Hazlo project" without supplying a path. Two actual UI approvals cover a native
+read-only inspection and one guarded native Save As. The agent chooses the
+selected project subfolder without a human path/folder correction. The new
+approval folder label is visible, and long paths wrap in Conexiones.
+
+CADCraft visibly shows the new document tab without an unsaved marker. Native
+readback confirms the selected destination and clean state. Independent DXF
+parsing confirms the preserved circle, 20 mm diameter, origin center and
+millimetre units. The original bytes are unchanged, and no copy appears in the
+source folder. Both real Codex result reviews finish and the conversation is
+saved. Both jobs complete; the only native write is the program's save tool.
+All owned test processes stop.
+
+## Windows acceptance pending
+
+The fresh guest has not started because available RAM remains below its 3 GB
+prerequisite. The previous alpha's acceptance retains its original source scope
+and is not evidence for this rebuilt package.
 
 Candidate installer SHA-256:
 `f939609b0abb6e2aeaddf892652d79868cf2d7e95d9cd244f1631ad3676bacd0`.

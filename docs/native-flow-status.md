@@ -3,8 +3,10 @@
 [Save-folder clarity for `4307b36`](research/save-folder-2026-10-17.md) is
 implemented and rebuilt: the selected directory is visible in Conexiones and
 native review, and supplied to every agent. Automated checks and package/helper
-checks pass. Live save and fresh guest acceptance await memory headroom; the
-published alpha below remains the previous package.
+checks pass. A real signed-in Codex native save now passes without a folder
+correction, with independent DXF and original-preservation checks. Fresh guest
+acceptance awaits memory headroom; the published alpha below remains the
+previous package.
 
 [Real Codex account/chat acceptance for `10f0880`](research/codex-real-chat-2026-10-17.md)
 now passes: automatic client discovery, personal sign-in, restored conversation,
