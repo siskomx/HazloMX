@@ -804,7 +804,7 @@ function chatContext(): Record<string,unknown> {
   const board=selectedWorkflow==="pcb" && pcb && pcb.project_id===project ? {selection:pcb.id,sha256:pcb.sha256} : undefined;
   const sketch=selectedWorkflow==="agent" && state.agent_source && state.agent_source.project_id===project ? {name:state.agent_source.source_name} : undefined;
   const job=state.job?.snapshot;
-  return {project_id:project ?? null,workflow:selectedWorkflow,draft_fields:draft,drawing_source:selectedWorkflow==="drawing" && drawingSource && drawingSource.project_id===project ? {selection:drawingSource.id,sha256:drawingSource.inspection.source_sha256} : undefined,cadpilot_source:cad,schematic_source:sheet,pcb_source:board,sketch_source:sketch,
+  return {project_id:project ?? null,project_directory:state.project?.[1],workflow:selectedWorkflow,draft_fields:draft,drawing_source:selectedWorkflow==="drawing" && drawingSource && drawingSource.project_id===project ? {selection:drawingSource.id,sha256:drawingSource.inspection.source_sha256} : undefined,cadpilot_source:cad,schematic_source:sheet,pcb_source:board,sketch_source:sketch,
     current_job:job && job.project_id===project ? {id:job.input.job_id,phase:job.phase} : null,source_is_untrusted_data:true};
 }
 element("assistant-provider").addEventListener("change",()=>{pilotQuestion=undefined;pcbQuestion=undefined;drawingQuestion=undefined;assistantProvider=element<HTMLSelectElement>("assistant-provider").value;turns=[];answeredChat=state.chat?.id;newChatSession=false;renderedConversation="";render();});

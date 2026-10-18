@@ -21,6 +21,7 @@ label > input, label > select { display: block; margin-top: 7px; }
 .panel { border: 1px solid #dce3d8; background: white; border-radius: 14px; padding: 22px; margin: 16px 0; }
 .muted, .fine { color: #63746e; font-size: 13px; }
 .fine { font-size: 12px; }
+#project-name { overflow-wrap: anywhere; }
 details > summary { cursor: pointer; font-weight: 600; }
 #conversation { min-height: 240px; max-height: 55vh; overflow-y: auto; padding: 4px 0; }
 .message { white-space: pre-wrap; overflow-wrap: anywhere; padding: 13px 16px; border-radius: 12px; background: #edf2e9; }

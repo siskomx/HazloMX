@@ -1665,7 +1665,7 @@ impl HostTools {
                 let live_pcb=self.live_pcb.lock().map_err(|e|e.to_string())?.as_ref().filter(|pcb|view.project.as_ref().is_some_and(|p|p.0==pcb.project_id && p.1==pcb.project_root)).map(|pcb|pcb.id);
                 let slice=self.slice.lock().map_err(|e|e.to_string())?.as_ref().filter(|s|view.project.as_ref().is_some_and(|p|p.0==s.project_id && p.1==s.project_root)).map(|s|s.id);
                 let cad_document=self.cad_document.lock().map_err(|e|e.to_string())?.as_ref().filter(|s|view.project.as_ref().is_some_and(|p|p.0==s.project_id && p.1==s.project_root)).map(|s|s.id);
-                Ok(json!({"project_id":view.project.map(|p|p.0),"schematic_selection":selection,"pcb_selection":pcb,"live_pcb_selection":live_pcb,"slice_selection":slice,"drawing_selection":drawing,"cad_document_selection":cad_document,"job":view.job.map(|j|json!({"id":j.snapshot.input.job_id(),"integration":j.snapshot.input.integration(),"phase":j.snapshot.phase,"busy":j.busy,"error":j.error})),"history_order":"updated_newest_first_unknown_last","history":view.history.iter().map(|s|json!({"id":s.input.job_id(),"integration":s.input.integration(),"phase":s.phase,"created_unix_ms":s.audit.as_ref().map(|a|a.created_unix_ms),"updated_unix_ms":s.audit.as_ref().map(|a|a.updated_unix_ms)})).collect::<Vec<_>>() }))
+                Ok(json!({"project_id":view.project.as_ref().map(|p|p.0),"project_directory":view.project.as_ref().map(|p|&p.1),"schematic_selection":selection,"pcb_selection":pcb,"live_pcb_selection":live_pcb,"slice_selection":slice,"drawing_selection":drawing,"cad_document_selection":cad_document,"job":view.job.map(|j|json!({"id":j.snapshot.input.job_id(),"integration":j.snapshot.input.integration(),"phase":j.snapshot.phase,"busy":j.busy,"error":j.error})),"history_order":"updated_newest_first_unknown_last","history":view.history.iter().map(|s|json!({"id":s.input.job_id(),"integration":s.input.integration(),"phase":s.phase,"created_unix_ms":s.audit.as_ref().map(|a|a.created_unix_ms),"updated_unix_ms":s.audit.as_ref().map(|a|a.updated_unix_ms)})).collect::<Vec<_>>() }))
             }
             "inspect_selected_pcb"=>{
                 let request:PcbInspection=serde_json::from_value(arguments).map_err(decode_error)?;
@@ -3772,6 +3772,20 @@ mod tests {
             .select_schematic(id, root.join("source"), entry)
             .unwrap();
         (root, workflow, host, selection)
+    }
+    #[tokio::test]
+    async fn workflow_status_exposes_only_the_current_project_directory() {
+        let (root, workflow, host, _) = setup();
+        let project = workflow.view().unwrap().project.unwrap();
+        let scoped = McpTools::for_program(host.clone(), project.clone(), Program::Drawing).unwrap();
+        let status = scoped.call_in_project("get_workflow_status".into(), json!({}), Arc::new(AtomicBool::new(false))).await.unwrap();
+        assert_eq!(status["project_directory"], json!(project.1));
+        assert!(!status.to_string().contains(&root.join("source").to_string_lossy().replace('\\', "\\\\")));
+        fs::create_dir(root.join("other-project")).unwrap();
+        workflow.select_project(Project::create(&root.join("other-project")).unwrap()).unwrap();
+        assert!(scoped.call_in_project("get_workflow_status".into(), json!({}), Arc::new(AtomicBool::new(false))).await.is_err());
+        let current = host.call("get_workflow_status", json!({})).unwrap();
+        assert_eq!(current["project_directory"], json!(root.join("other-project")));
     }
     #[test]
     fn pcb_discovery_is_literal_project_bound_and_hides_paths() {

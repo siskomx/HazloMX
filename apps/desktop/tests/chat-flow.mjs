@@ -887,6 +887,8 @@ try {
       await send("Quiero cambiar esta pieza usando las herramientas de su programa.");
       const nativePrompt=JSON.parse((await chatCalls()).at(-1).args.prompt);
       assert.equal(nativePrompt.desktop_context.native_tools.program,program);
+      assert.equal(nativePrompt.desktop_context.project_directory,"C:\\owned\\other-folder","The save folder must follow the current selection, not the previous folder with the same project ID");
+      assert.match(await page.locator("#project-name").innerText(),/Carpeta del proyecto: C:\\owned\\other-folder/);
       assert.equal(nativePrompt.desktop_context.document_scope,"selected_native_mcp_server");
       assert.equal(nativePrompt.desktop_context.current_job,null,"A new program connection inherited another program result");
       assert.match(nativePrompt.instruction,/inputSchema[\s\S]*propose_native_tool_calls/);
@@ -897,6 +899,7 @@ try {
       if(program==="rea") await send("Muestra la propuesta pendiente."); else await page.locator("#program-actions button").filter({hasNotText:/Conectar MCP nativo|Desconectar herramientas|Actualizar herramientas|Usar herramientas de la CLI/}).first().click();
       await page.locator("#approve:enabled").waitFor();assert.match(await page.locator("#change-facts").innerText(),/herramientas nativas[\s\S]*no son una certificación independiente/);
       assert.equal(await page.locator("#change-facts img").count(),0);
+      assert((await page.locator("#change-facts").innerText()).includes("Carpeta del proyecto de Hazlo: C:\\owned\\other-folder"));
       const before=(await chatCalls()).length;await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
       assert.equal((await chatCalls()).length,before+1);
       assert.match(JSON.parse((await chatCalls()).at(-1).args.prompt).user_request,/sin afirmar verificación independiente/);

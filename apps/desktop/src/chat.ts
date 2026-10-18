@@ -270,7 +270,7 @@ function render() {
   $("image-status").textContent = referenceImage ? "La referencia se incluirá al enviar a la IA seleccionada. Hazlo no guarda la imagen en el historial; vuelve a adjuntarla si reinicias." : "Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.";
   const ollama = provider.startsWith("ollama_");
   const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
-  $("project-name").textContent = state.project ? "Proyecto local seleccionado. Sus archivos e historial se conservan aquí." : "Elige dónde guardar el proyecto y su historial.";
+  $("project-name").textContent = state.project ? `Carpeta del proyecto: ${state.project[1]}. Sus archivos e historial se conservan aquí.` : "Elige dónde guardar el proyecto y su historial.";
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
   $("choose-program").hidden = program !== "planning";
   $("live-pcb-setup").hidden = program !== "kicad";
@@ -303,7 +303,9 @@ function render() {
   $("approval").hidden = !active;
   if (state.job) {
     $("change-summary").textContent = summary(state.job.snapshot); $("change-details").textContent = changeDetails(state.job.snapshot);
-    $("change-facts").replaceChildren(...(active ? proposalFacts(state.job.snapshot) : []).map(text => { const item = document.createElement("li"); item.textContent = text; return item; }));
+    const facts = active ? proposalFacts(state.job.snapshot) : [];
+    if (active && state.job.snapshot.input.native_tools_version && state.project?.[0] === state.job.snapshot.project_id) facts.unshift(`Carpeta del proyecto de Hazlo: ${state.project[1]}. Revisa que el destino propuesto sea el que pediste.`);
+    $("change-facts").replaceChildren(...facts.map(text => { const item = document.createElement("li"); item.textContent = text; return item; }));
   }
   $<HTMLButtonElement>("approve").disabled = busy || !active || !state.job?.approval_id;
   $("approve").textContent = `Aprobar y pedir revisión a ${providerNames[provider]}`;
@@ -450,7 +452,7 @@ async function send(content: string, userInitiated = true) {
   const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
   const startNew = newSession || !ready;
   const image = userInitiated ? referenceImage : undefined;
-  const prompt = agentPrompt(content, startNew ? turns : [], {...context(), reference_image_attached:!!image});
+  const prompt = agentPrompt(content, startNew ? turns : [], {...context(), project_directory:state.project?.[1], reference_image_attached:!!image});
   contextNotice = JSON.parse(prompt).omitted_conversation_turns ? "Se envió solo parte del historial a la IA. Los mensajes completos siguen visibles; revisaremos el documento y confirmaremos cualquier dato que falte." : "";
   const events = new Channel<ChatView>();
   events.onmessage = chat => {
