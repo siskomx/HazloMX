@@ -401,7 +401,8 @@ stream_max_retries = 0
         "request_user_input",
         "mcp__hazlomexa",
     ];
-    let exact_outer = tools.len() == allowed.len()
+    let exact_outer = tools.len() == allowed.len() + 1
+        && tools.iter().filter(|tool| tool["type"] == "web_search").count() == 1
         && allowed
             .iter()
             .all(|name| tools.iter().filter(|tool| tool["name"] == *name).count() == 1);

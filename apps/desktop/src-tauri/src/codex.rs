@@ -10,7 +10,7 @@ const TEXT_LIMIT: usize = 256 * 1024;
 pub const BASE_CONFIG: &str = r#"cli_auth_credentials_store = "file"
 approval_policy = "never"
 sandbox_mode = "read-only"
-web_search = "disabled"
+web_search = "live"
 project_doc_max_bytes = 0
 [analytics]
 enabled = false
@@ -922,6 +922,11 @@ impl TurnDecoder {
                     return Err("Codex anunció una herramienta ajena a Hazlo.".into());
                 }
             }
+            "webSearch" => {
+                item["query"]
+                    .as_str()
+                    .ok_or("Falta la consulta pública de Codex.")?;
+            }
             "userMessage" | "reasoning" | "plan" | "contextCompaction" => {}
             _ => return Err("Codex anunció una acción no admitida por el chat de Hazlo.".into()),
         }
@@ -1280,6 +1285,17 @@ mod tests {
     }
 
     #[test]
+    fn public_research_is_nonterminal_and_requires_a_query() {
+        assert!(BASE_CONFIG.contains("web_search = \"live\""));
+        let mut d = decoder();
+        for method in ["item/started", "item/completed"] {
+            d.observe(&notification(method, json!({"item":{"id":"search","type":"webSearch","query":"official vacuum manual","action":{"type":"search","query":"official vacuum manual"}}}))).unwrap();
+            assert!(d.finish().is_err());
+        }
+        assert!(decoder().observe(&notification("item/started", json!({"item":{"id":"search","type":"webSearch"}}))).is_err());
+    }
+
+    #[test]
     fn identity_actions_failures_and_limits_remain_separate() {
         let mut wrong = notification("item/agentMessage/delta", json!({"itemId":"m","delta":"x"}));
         wrong["params"]["threadId"] = json!("foreign");
@@ -1288,7 +1304,6 @@ mod tests {
             "commandExecution",
             "fileChange",
             "dynamicToolCall",
-            "webSearch",
         ] {
             assert!(decoder()
                 .observe(&notification(

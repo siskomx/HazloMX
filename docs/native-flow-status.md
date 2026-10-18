@@ -1,5 +1,10 @@
 # Current native-flow status
 
+[The vacuum repair scenario](research/vacuum-hard-chat-2026-10-18.md) exposed a
+public-documentation research gap. Native Claude/Codex web research now works in
+real debug-desktop conversations with automatically connected Rea. This does not
+establish a compatible cloud-free Q7 M5+ controller or update the alpha.5 installer.
+
 [Existing portable program connections for `320ede2`](research/automatic-installed-programs-2026-10-18.md)
 pass actual backend discovery/config/catalog checks for all seven selections.
 Their registered locations are private; the simple chat and native execution
