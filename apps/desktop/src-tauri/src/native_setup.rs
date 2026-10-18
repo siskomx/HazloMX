@@ -249,6 +249,21 @@ fn mcp(executable: PathBuf, args: Vec<String>) -> McpConfig {
         authorization: None,
     }
 }
+fn node_path(path: &Path) -> PathBuf {
+    use std::{
+        ffi::OsString,
+        os::windows::ffi::{OsStrExt, OsStringExt},
+        path::{Component, Prefix},
+    };
+    // Node's main-module resolver rejects Tauri's verbatim drive prefix on Windows.
+    if matches!(path.components().next(),Some(Component::Prefix(prefix)) if matches!(prefix.kind(),Prefix::VerbatimDisk(_)))
+    {
+        let wide = path.as_os_str().encode_wide().skip(4).collect::<Vec<_>>();
+        OsString::from_wide(&wide).into()
+    } else {
+        path.to_owned()
+    }
+}
 fn orca(roots: &[PathBuf]) -> Result<Option<McpConfig>, String> {
     let Some(server) = find_in(roots, &["orcaslicer-mcp.exe"]) else {
         return Ok(None);
@@ -316,7 +331,7 @@ pub fn discover(
     let roots = folders();
     let config = match program {
         Program::Rea => {
-            let rea = resources.join("rea");
+            let rea = node_path(&resources.join("rea"));
             let node = rea.join("node.exe");
             let entry = rea.join("node_modules/rea-agents/scripts/rea.mjs");
             if !node.is_file() || !entry.is_file() {
@@ -423,6 +438,21 @@ fn write_new(path: &Path, value: &serde_json::Value) -> Result<(), String> {
 mod tests {
     use super::*;
     #[test]
+    fn node_arguments_accept_tauri_verbatim_paths_without_changing_the_target() {
+        assert_eq!(
+            node_path(Path::new(r"\\?\C:\Apps\Hazlo Mexa\rea")),
+            PathBuf::from(r"C:\Apps\Hazlo Mexa\rea")
+        );
+        assert_eq!(
+            node_path(Path::new(r"C:\Apps\Hazlo Mexa\rea")),
+            PathBuf::from(r"C:\Apps\Hazlo Mexa\rea")
+        );
+        assert_eq!(
+            node_path(Path::new(r"\\server\share\rea")),
+            PathBuf::from(r"\\server\share\rea")
+        );
+    }
+    #[test]
     fn remembers_portable_locations_without_copying_connection_secrets() {
         let root =
             std::env::temp_dir().join(format!("hazlo-native-location-{}", uuid::Uuid::new_v4()));
@@ -468,7 +498,9 @@ mod tests {
         let resources = PathBuf::from(
             std::env::var_os("HAZLOMEXA_BUNDLED_RESOURCES_TEST")
                 .expect("Select the isolated packaged resource fixture"),
-        );
+        )
+        .canonicalize()
+        .unwrap();
         let root = std::env::temp_dir().join(format!("hazlo-bundled-rea-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir(&root).unwrap();
         let Setup::Mcp(config) = discover(Program::Rea, &resources, &root, &root.join("profile"))
@@ -477,7 +509,10 @@ mod tests {
         else {
             panic!("Bundled Rea missing");
         };
-        assert_eq!(config.executable, resources.join("rea/node.exe"));
+        assert_eq!(
+            config.executable,
+            node_path(&resources.join("rea/node.exe"))
+        );
         assert!(config.env.contains_key("REA_MCP_INPUT_SCHEMA_PROFILE"));
         let file = McpConfig::from_file(&root.join("profile/connection.json")).unwrap();
         assert_eq!(file.args, config.args);

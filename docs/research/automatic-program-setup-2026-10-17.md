@@ -41,3 +41,12 @@ hit a test-cleanup race while the closing process released its profile; bounded
 cleanup fixes the fixture. The final real bundled catalog check passes.
 
 Installer and native-window acceptance for this change are still pending.
+
+The first fresh guest (`997d529`) passes installation/update/helper/lifecycle
+checks but fails automatic Rea startup. Tauri returns a verbatim Windows resource
+path; Node's main-module resolver reports `EISDIR` for its drive prefix. A private
+diagnostic in that same guest completes the Rea handshake with the equivalent
+normal path. The launcher now normalizes that drive prefix without changing the
+target. A focused path test and the real bundled MCP test use the canonical
+Windows resource path. The failed candidate is not published; its guest is
+stopped and six project files are independently preserved.
