@@ -1,5 +1,14 @@
 # Current native-flow status
 
+[The uncoached Roborock skill observation](research/roborock-skill-observation-2026-10-18.md)
+records real Codex research and two failed native Rea queries without changing
+application behavior. The a843549 local installer passes fresh Windows lifecycle
+checks and is installed locally. Host visual checks confirm Codex connection,
+automatic Rea discovery and restored chat in an isolated handoff profile. The
+original question about control app/phone platform remains unanswered; report-size,
+missing-target and history-transfer gaps remain notes. No physical vacuum or
+cloud-free scheduling result is established. The public alpha.5 is unchanged.
+
 [The investigation skill](research/investigation-skill-2026-10-18.md) is embedded
 in the shared source instructions for creative, evidence-led repair and adaptation.
 It preserves native tool discovery and approval/readback; alpha.5 is unchanged.
