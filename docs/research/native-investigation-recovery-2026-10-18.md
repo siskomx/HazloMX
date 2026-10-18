@@ -6,9 +6,9 @@ device-specific tools, compatibility decisions or conversation branches.
 
 ## Behavior
 
-- Native replies keep their existing 256 KiB per-call bound. A reviewed batch can
-  retain a compact report up to 5 MiB, covering its sixteen possible change calls
-  and final readback. Publication, receipt hashing and later validation use the
+- MCP replies keep their existing 256 KiB per-call bound. A reviewed batch can
+  retain a compact report up to 5 MiB; its limit remains sixteen change calls
+  and a final readback. Publication, receipt hashing and later validation use the
   same bound. Existing reports retain their original byte identities.
 - The verified-result tool returns UTF-8 pages of at most 64 KiB, with a next
   offset, total size and whole-report hashes. Guard information still refers to
@@ -69,7 +69,32 @@ readback. These changes add neither hardware control nor a compatibility claim.
 
 ## Release scope
 
-Installer acceptance is recorded after building this source. Physical device
-behavior, cloud-free scheduling and compatibility with an unspecified firmware
+The local Windows 0.1.0 installer is built from 697b162. Installer SHA-256:
+
+`4ed3f0a13c67ee1f73a917caeb269366783e4a7e6b00fe87d735b977975fdb29`.
+
+All 6,757 tracked inputs stayed unchanged during packaging. Builder-profile path
+checks report zero matches in both release binaries, and the release helper
+passes its 38-tool protocol check.
+
+A fresh disposable Windows guest installs the previous a843549 build for the
+current user, then updates to 697b162 at the same application version. New binary
+identity, connector checks, process startup and uninstall pass. The project
+conversation file survives update/uninstall unchanged. Four exported project
+files independently match their hashes. The guest
+was stopped. Networking was enabled for installer prerequisites; no accounts or
+engineering workflows were exercised there, and no guest visual check is claimed.
+
+Local update verifies the installed app/helper and bundled Rea against this
+package, preserves five existing project/catalog files, and starts the updated app.
+The actual production window reopens the original ten-turn conversation in its
+normal installed profile using the project history, without a database copy.
+The existing Codex account connects, Rea automatically exposes 207 native tools,
+and the empty message box is enabled. No new answer was invented or submitted.
+The simple chat is left open at its original next question.
+
+This is a local installer candidate and installation; the public alpha.5 release
+is unchanged. Physical device behavior, cloud-free scheduling and compatibility
+with an unspecified firmware
 are not established by these tests. KiCad 10 live schematic editing remains
 deferred.

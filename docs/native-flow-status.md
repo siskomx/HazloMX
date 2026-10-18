@@ -4,7 +4,10 @@
 addresses the report-size, failure-explanation, target-grounding and cross-profile
 history gaps. Real bundled Rea now retains its 127,185-byte session report;
 native paging, all program/provider chat routes and project-history migration
-pass their scoped checks. No device-specific application branch was added.
+pass their scoped checks. The 697b162 installer passes a fresh Windows lifecycle
+and conversation-file preservation test, is installed locally, and reopens the
+original chat through normal project storage. No device-specific application
+branch was added; the public alpha.5 release is unchanged.
 
 [The uncoached Roborock skill observation](research/roborock-skill-observation-2026-10-18.md)
 records real Codex research and two failed native Rea queries without changing
