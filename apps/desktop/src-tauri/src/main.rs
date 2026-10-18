@@ -194,7 +194,7 @@ async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,prog
             let data=app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local de Hazlo.")?;
             let profile=data.join("native-connections").join(Uuid::new_v4().to_string());
             let remembered=if program==hazlomexa::host_tools::Program::Rea{None}else{hazlomexa::native_setup::remembered(&data.join("program-locations"),program,&project)?};
-            let detected=if remembered.is_some(){remembered}else{hazlomexa::native_setup::discover(program,&resources,&project,&profile)?};
+            let detected=if remembered.is_some(){remembered}else{hazlomexa::native_setup::discover(program,&resources,&project,&profile,&data.join("program-locations"))?};
             return match detected {
                 Some(hazlomexa::native_setup::Setup::Mcp(config))=>tools.connect_native_mcp(program,config,inspection.cancelled.clone()),
                 Some(hazlomexa::native_setup::Setup::Cli(executable))=>tools.connect_native_cli(program,executable,inspection.cancelled.clone()),

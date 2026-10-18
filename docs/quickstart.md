@@ -16,6 +16,10 @@ Hazlo is a chat. The connected programs own their editors and documents.
    files. It checks PATH, standard installation folders and Windows installation
    records. Rea and its Node runtime are included with Hazlo. A manually selected
    portable CLI or MCP configuration is remembered for future connections.
+   Registered portable runtime folders also work without a Windows installer
+   entry; Hazlo creates a separate connection profile for each project. The
+   registered copies must remain in their recorded locations. Arduino Agent
+   must be running before its authenticated local connection can succeed.
    If a bridge is missing or an API is disabled, follow the connection message;
    manual selection remains available. Orca Remote API must be enabled by you
    with LAN access off. CLI fallback is a file workflow, not live editing.

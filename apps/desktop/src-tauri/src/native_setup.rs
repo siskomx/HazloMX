@@ -230,7 +230,7 @@ fn find_in(roots: &[PathBuf], names: &[&str]) -> Option<PathBuf> {
         .find(|p| p.is_file())
         .and_then(|p| p.canonicalize().ok())
 }
-pub fn cli(program: Program) -> Option<PathBuf> {
+fn cli(program: Program, roots: &[PathBuf]) -> Option<PathBuf> {
     let names: &[&str] = match program {
         Program::Drawing => &["cadcraft-cli.exe"],
         Program::Arduino => &["arduino-cli.exe"],
@@ -238,7 +238,25 @@ pub fn cli(program: Program) -> Option<PathBuf> {
         Program::Slice => &["orca-slicer.exe", "OrcaSlicer.exe"],
         _ => return None,
     };
-    find_in(&folders(), names)
+    find_in(roots, names)
+}
+fn portable_folders(locations: &Path, program: Program) -> Result<Vec<PathBuf>, String> {
+    let path = locations.join("portable-folders.json");
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let bytes = crate::kicad_project::read_regular(&path, 65536)?;
+    let catalog: BTreeMap<String, Vec<PathBuf>> = serde_json::from_slice(&bytes)
+        .map_err(|_| "El catálogo local de programas portátiles no es válido.")?;
+    let name = serde_json::to_value(program).map_err(|_| "Programa no válido.")?;
+    Ok(catalog
+        .get(name.as_str().unwrap())
+        .into_iter()
+        .flatten()
+        .filter(|path| path.is_absolute() && path.is_dir())
+        .take(32)
+        .cloned()
+        .collect())
 }
 fn mcp(executable: PathBuf, args: Vec<String>) -> McpConfig {
     McpConfig {
@@ -268,10 +286,13 @@ fn orca(roots: &[PathBuf]) -> Result<Option<McpConfig>, String> {
     let Some(server) = find_in(roots, &["orcaslicer-mcp.exe"]) else {
         return Ok(None);
     };
-    let path = std::env::var_os("APPDATA")
-        .map(PathBuf::from)
-        .ok_or("No se encontró la configuración de OrcaSlicer.")?
-        .join("OrcaSlicer/OrcaSlicer.conf");
+    let path = find_in(roots, &["OrcaSlicer.conf"])
+        .or_else(|| {
+            std::env::var_os("APPDATA")
+                .map(PathBuf::from)
+                .map(|path| path.join("OrcaSlicer/OrcaSlicer.conf"))
+        })
+        .ok_or("No se encontró la configuración de OrcaSlicer.")?;
     if !path.is_file() {
         return Err("OrcaSlicer MCP está instalado. Abre su edición MCP y activa Remote API en Preferencias, solo para localhost.".into());
     }
@@ -285,7 +306,16 @@ fn orca(roots: &[PathBuf]) -> Result<Option<McpConfig>, String> {
     Ok(Some(config))
 }
 fn orca_settings(text: &str) -> Result<(String, String), String> {
-    let json: serde_json::Value = serde_json::from_str(text).unwrap_or_default();
+    // Orca appends its checksum outside the JSON document when saving preferences.
+    let json_text = text
+        .rsplit_once("\n# MD5 checksum ")
+        .filter(|(_, checksum)| {
+            checksum.trim().len() == 32
+                && checksum.trim().bytes().all(|byte| byte.is_ascii_hexdigit())
+        })
+        .map(|(json, _)| json)
+        .unwrap_or(text);
+    let json: serde_json::Value = serde_json::from_str(json_text).unwrap_or_default();
     let get = |name: &str| -> Option<String> {
         let value = json
             .get(name)
@@ -325,10 +355,12 @@ pub fn discover(
     resources: &Path,
     project: &Path,
     profile: &Path,
+    locations: &Path,
 ) -> Result<Option<Setup>, String> {
     std::fs::create_dir_all(profile)
         .map_err(|_| "No se pudo crear la configuración local de herramientas.")?;
-    let roots = folders();
+    let mut roots = portable_folders(locations, program)?;
+    roots.extend(folders());
     let config = match program {
         Program::Rea => {
             let rea = node_path(&resources.join("rea"));
@@ -411,7 +443,7 @@ pub fn discover(
         )?;
         Ok(Some(Setup::Mcp(config)))
     } else {
-        let executable = cli(program);
+        let executable = cli(program, &roots);
         if let Some(executable) = &executable {
             write_new(
                 &profile.join("connection.json"),
@@ -437,6 +469,87 @@ fn write_new(path: &Path, value: &serde_json::Value) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn portable_catalog_is_program_scoped_and_generates_fresh_project_configs() {
+        let root = std::env::temp_dir().join(format!("hazlo-portable-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let executable = root.join("arduino-cli.exe");
+        std::fs::write(&executable, b"fixture").unwrap();
+        write_new(
+            &root.join("portable-folders.json"),
+            &json!({"arduino":[root,"relative",root.join("missing")]}),
+        )
+        .unwrap();
+        assert_eq!(
+            portable_folders(&root, Program::Arduino).unwrap(),
+            vec![root.clone()]
+        );
+        assert!(portable_folders(&root, Program::Drawing)
+            .unwrap()
+            .is_empty());
+        for name in ["first", "second"] {
+            let profile = root.join(name);
+            let Setup::Cli(path) =
+                discover(Program::Arduino, &root, &root.join(name), &profile, &root)
+                    .unwrap()
+                    .unwrap()
+            else {
+                panic!("Portable CLI missing")
+            };
+            assert_eq!(path, executable.canonicalize().unwrap());
+            let value: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(profile.join("connection.json")).unwrap())
+                    .unwrap();
+            assert_eq!(value["transport"], "cli");
+        }
+        std::fs::write(root.join("portable-folders.json"), b"invalid").unwrap();
+        assert!(portable_folders(&root, Program::Arduino).is_err());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    #[ignore = "Connects the explicitly selected installed/registered tools without file selection"]
+    fn actual_automatic_program_connection() {
+        use std::sync::{atomic::AtomicBool, Arc};
+        let root =
+            PathBuf::from(std::env::var_os("HAZLOMEXA_AUTO_TEST_ROOT").expect("Owned test root"));
+        let program: Program =
+            serde_json::from_str(&std::env::var("HAZLOMEXA_AUTO_TEST_PROGRAM").unwrap()).unwrap();
+        let resources =
+            PathBuf::from(std::env::var_os("HAZLOMEXA_BUNDLED_RESOURCES_TEST").unwrap());
+        let locations = PathBuf::from(std::env::var_os("HAZLOMEXA_AUTO_TEST_LOCATIONS").unwrap());
+        let setup = discover(
+            program,
+            &resources,
+            &root,
+            &root.join("connection"),
+            &locations,
+        )
+        .unwrap()
+        .expect("Installed native tool not detected");
+        assert!(root.join("connection/connection.json").is_file());
+        let cancel = Arc::new(AtomicBool::new(false));
+        let (connection, catalog) = match setup {
+            Setup::Mcp(config) => {
+                crate::native_tools::Connection::mcp(program, config, root.clone(), cancel)
+            }
+            Setup::Cli(executable) => {
+                crate::native_tools::Connection::cli(program, executable, root.clone()).and_then(
+                    |connection| {
+                        connection
+                            .catalog(cancel)
+                            .map(|catalog| (connection, catalog))
+                    },
+                )
+            }
+        }
+        .unwrap();
+        assert!(!catalog.tools.is_empty());
+        println!(
+            "{}",
+            json!({"program":program,"transport":catalog.transport,"tools":catalog.tools.len(),"generated_config":true})
+        );
+        connection.close();
+    }
     #[test]
     fn node_arguments_accept_tauri_verbatim_paths_without_changing_the_target() {
         assert_eq!(
@@ -503,10 +616,15 @@ mod tests {
         .unwrap();
         let root = std::env::temp_dir().join(format!("hazlo-bundled-rea-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir(&root).unwrap();
-        let Setup::Mcp(config) = discover(Program::Rea, &resources, &root, &root.join("profile"))
-            .unwrap()
-            .unwrap()
-        else {
+        let Setup::Mcp(config) = discover(
+            Program::Rea,
+            &resources,
+            &root,
+            &root.join("profile"),
+            &root.join("locations"),
+        )
+        .unwrap()
+        .unwrap() else {
             panic!("Bundled Rea missing");
         };
         assert_eq!(
@@ -559,6 +677,11 @@ mod tests {
             assert!(orca_settings(&invalid).is_err());
         }
         assert!(orca_settings(r#"{"remote_api_enabled":true,"remote_api_bind_lan":false,"remote_api_token":"test","remote_api_port":13130}"#).is_ok());
+        let saved="{\"app\":{\"remote_api_enabled\":true,\"remote_api_bind_lan\":false,\"remote_api_token\":\"test\"}}\n# MD5 checksum 0123456789ABCDEF0123456789ABCDEF\n";
+        assert!(orca_settings(saved).is_ok());
+        assert!(
+            orca_settings(&saved.replace("0123456789ABCDEF0123456789ABCDEF", "invalid")).is_err()
+        );
     }
     #[test]
     fn discovery_ignores_relative_folders_and_generated_configs_never_overwrite() {
