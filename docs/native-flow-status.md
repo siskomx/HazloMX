@@ -1,5 +1,13 @@
 # Current native-flow status
 
+[Existing portable program connections for `320ede2`](research/automatic-installed-programs-2026-10-18.md)
+pass actual backend discovery/config/catalog checks for all seven selections.
+Their registered locations are private; the simple chat and native execution
+routes remain unchanged. The rebuilt candidate passes helper/identity checks
+and local installation/startup, preserving its portable catalog. Visible
+dropdown checks await user handling of an mdns-discovery security prompt.
+This candidate is not yet published; alpha 4 remains the latest release below.
+
 [Bundled Rea and automatic program setup for `f44d50b`](research/automatic-program-setup-2026-10-17.md)
 pass focused backend/chat checks and a fresh installed Windows guest. Opening
 the project automatically connects Rea's 207 tools using the bundled Node,

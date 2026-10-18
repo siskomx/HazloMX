@@ -42,6 +42,20 @@ Five focused setup tests pass, including program-scoped portable folders,
 separate configurations for two projects, invalid/missing paths and saved Orca
 preferences. Clippy with warnings denied and the desktop build pass.
 
-Native-window acceptance and the updated installer are pending. KiCad 10 live
-schematics remain deferred. This pass does not repeat model conversations,
-engineering geometry checks, hardware uploads or physical printer validation.
+The installer from source `320ede2` builds with 6,752 tracked inputs unchanged
+and no builder-profile matches in either executable. Its 38-tool release
+helper check passes. The updated candidate is installed locally; application,
+helper and bundled Rea files match the retained package, startup succeeds and
+the registered portable catalog survives the update. Installer SHA-256:
+`a04754170d90b05fcf18762e042f49b30b7a72476febef649fbb964796127135`.
+
+Native-window dropdown acceptance is pending a Windows Security prompt for
+Arduino's mdns-discovery, which requires user handling. The extra owned debug
+app and its development server were stopped to release memory. The installed
+candidate and Agent remain running. This candidate is not yet a published
+alpha release, and no new clean-guest lifecycle check is claimed. Alpha 4's
+separate guest evidence retains its original source scope.
+
+KiCad 10 live schematics remain deferred. This pass does not repeat model
+conversations, engineering geometry checks, hardware uploads or physical
+printer validation. The installer remains unsigned.
