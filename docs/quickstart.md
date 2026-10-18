@@ -61,6 +61,10 @@ native web tools and cite sources before proposing native edits. Queries and URL
 go to the selected provider; do not include private data. This research change
 is not yet in the alpha.5 installer. Model-specific compatibility still needs
 checking; a manual or search result does not verify a physical repair.
+Source builds include [hazlo-investigate](../apps/desktop/src-tauri/resources/skills/hazlo-investigate/SKILL.md)
+in the shared agent instructions. It guides unfamiliar repairs and adaptations
+through evidence, alternative routes and small tests, using Rea or the connected
+program's actual tools. Ordinary edits remain direct; no manual skill setup is needed.
 Firmware upload, printer control and physical manufacturing readiness are not
 established by an editing or slicing test. See [current acceptance](native-flow-status.md)
 for the exact tested scope and outstanding account/runtime checks.

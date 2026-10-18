@@ -1,5 +1,9 @@
 # Current native-flow status
 
+[The investigation skill](research/investigation-skill-2026-10-18.md) is embedded
+in the shared source instructions for creative, evidence-led repair and adaptation.
+It preserves native tool discovery and approval/readback; alpha.5 is unchanged.
+
 [The vacuum repair scenario](research/vacuum-hard-chat-2026-10-18.md) exposed a
 public-documentation research gap. Native Claude/Codex web research now works in
 real debug-desktop conversations with automatically connected Rea. This does not
