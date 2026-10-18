@@ -11,9 +11,14 @@ Hazlo is a chat. The connected programs own their editors and documents.
    without measurements, component references or property names. The chat helps
    choose the program and asks for missing information. Use metric or imperial
    units naturally.
-4. Open your document in that program. Choose the program in **Conexiones** and
-   connect its installed native MCP server or CLI. Select the MCP configuration
-   supplied for that runtime; Hazlo can also find supported default connections.
+4. Open your document in that program and choose it in **Conexiones**. Hazlo
+   detects supported installed MCP/CLI tools and creates its local connection
+   files. It checks PATH, standard installation folders and Windows installation
+   records. Rea and its Node runtime are included with Hazlo. A manually selected
+   portable CLI or MCP configuration is remembered for future connections.
+   If a bridge is missing or an API is disabled, follow the connection message;
+   manual selection remains available. Orca Remote API must be enabled by you
+   with LAN access off. CLI fallback is a file workflow, not live editing.
 5. Review the proposed operation and save destination, then approve it. Hazlo
    supplies the selected project folder to the AI, and shows it during native
    operation review. Asking to save "in the Hazlo project" refers to that folder,

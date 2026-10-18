@@ -587,6 +587,8 @@ impl Connection {
             active: Arc::new(AtomicBool::new(true)),
         };
         let active = connection.active.clone();
+        // First-load imports of bundled Rea can exceed 20 seconds on a cold Windows install.
+        let startup_timeout=Duration::from_secs(if program==Program::Rea{45}else{20});
         std::thread::spawn(move || {
             let _pin = pinned;
             let runtime = match tokio::runtime::Builder::new_current_thread()
@@ -619,7 +621,7 @@ impl Connection {
                         ().serve(transport).await.map_err(|_|"El programa no confirmó su conexión MCP.".to_string())
                     }
                 };
-                let service=tokio::select! {result=tokio::time::timeout(Duration::from_secs(20),startup)=>result.map_err(|_|"El MCP no respondió a tiempo.".to_string()).and_then(|r|r),
+                let service=tokio::select! {result=tokio::time::timeout(startup_timeout,startup)=>result.map_err(|_|"El MCP no respondió a tiempo.".to_string()).and_then(|r|r),
                     _=stop_requested(&cancel)=>Err("Conexión cancelada.".into())};
                 let service=match service{Ok(s)=>s,Err(e)=>{let _=ready.send(Err(e));return;}};
                 if ready.send(mcp_catalog(&service,id,program,&cancel).await).is_err(){let _=service.cancel().await;return;}
@@ -635,7 +637,7 @@ impl Connection {
             });
         });
         let catalog = receiver
-            .recv_timeout(Duration::from_secs(55))
+            .recv_timeout(startup_timeout+Duration::from_secs(35))
             .map_err(|_| "El MCP no respondió a tiempo.")??;
         connection.protect_catalog(&catalog)?;
         Ok((connection, catalog))

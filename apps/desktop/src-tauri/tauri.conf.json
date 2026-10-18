@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "python ../../tests/kicad/build_worker.py && npm run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "python ../../tests/kicad/build_worker.py && npm run build && cargo build -p hazlomexa --release --bin hazlomexa-tools",
+    "beforeBuildCommand": "python ../../tests/build_rea_runtime.py && python ../../tests/kicad/build_worker.py && npm run build && cargo build -p hazlomexa --release --bin hazlomexa-tools",
     "frontendDist": "../dist",
     "features": ["desktop"]
   },
@@ -19,7 +19,7 @@
   },
   "bundle": {
     "active": true,
-    "resources": { "../../../target/release/hazlomexa-tools.exe": "hazlomexa-tools.exe" },
+    "resources": { "../../../target/release/hazlomexa-tools.exe": "hazlomexa-tools.exe", "../../../target/bundled-rea/node.exe": "rea/node.exe", "../../../target/bundled-rea/LICENSE": "rea/LICENSE", "../../../target/bundled-rea/node_modules/": "rea/node_modules/", "../../../target/bundled-rea/runtime-identity.json": "rea/runtime-identity.json" },
     "targets": ["nsis"],
     "copyright": "Copyright © 2026 siskomx",
     "shortDescription": "Propuestas verificadas y archivos CAD con aprobación explícita",

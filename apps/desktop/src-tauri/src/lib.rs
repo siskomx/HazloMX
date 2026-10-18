@@ -40,6 +40,9 @@ pub mod host_tools;
 pub mod native_tools;
 
 #[cfg(windows)]
+pub mod native_setup;
+
+#[cfg(windows)]
 mod program_tools;
 
 #[cfg(windows)]

@@ -181,23 +181,41 @@ fn disconnect_native_tools(state:State<AppState>)->Result<(),String> {
 }
 
 #[tauri::command]
-async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,program:hazlomexa::host_tools::Program,mcp:bool,refresh:Option<bool>,events:Channel<Uuid>)->Result<hazlomexa::native_tools::Catalog,String> {
+async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,program:hazlomexa::host_tools::Program,mcp:bool,refresh:Option<bool>,automatic:Option<bool>,events:Channel<Uuid>)->Result<hazlomexa::native_tools::Catalog,String> {
     let inspection=source_inspection(&state)?;
+    let project=state.workflow.view()?.project.ok_or("Abre o crea un proyecto para conectar el programa.")?.1;
     let tools=state.tools.clone();
     tauri::async_runtime::spawn_blocking(move||{
         events.send(inspection.id).map_err(|_|"La conexión perdió su conversación.")?;
         if refresh==Some(true){return tools.refresh_native_tools(program,inspection.cancelled.clone());}
+        if automatic==Some(true) {
+            if let Some(catalog)=tools.connect_native_default(program,inspection.cancelled.clone())? {return Ok(catalog);}
+            let resources=app.path().resource_dir().map_err(|_|"No se encontraron los componentes de Hazlo.")?;
+            let data=app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local de Hazlo.")?;
+            let profile=data.join("native-connections").join(Uuid::new_v4().to_string());
+            let remembered=if program==hazlomexa::host_tools::Program::Rea{None}else{hazlomexa::native_setup::remembered(&data.join("program-locations"),program)?};
+            let detected=if remembered.is_some(){remembered}else{hazlomexa::native_setup::discover(program,&resources,&project,&profile)?};
+            return match detected {
+                Some(hazlomexa::native_setup::Setup::Mcp(config))=>tools.connect_native_mcp(program,config,inspection.cancelled.clone()),
+                Some(hazlomexa::native_setup::Setup::Cli(executable))=>tools.connect_native_cli(program,executable,inspection.cancelled.clone()),
+                None=>Err("No se encontraron herramientas compatibles instaladas. Puedes elegir su configuración MCP o la CLI manualmente. La edición en vivo puede requerir el complemento/API del programa.".into()),
+            };
+        }
         let result=if mcp {
             if let Some(catalog)=tools.connect_native_default(program,inspection.cancelled.clone())? {return Ok(catalog);}
             let path=app.dialog().file().set_title("Selecciona la configuración del MCP nativo instalado; el programa se iniciará")
                 .add_filter("Configuración MCP",&["json"]).blocking_pick_file().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
             let config=hazlomexa::native_tools::McpConfig::from_file(&path)?;
-            tools.connect_native_mcp(program,config,inspection.cancelled.clone())
+            let catalog=tools.connect_native_mcp(program,config,inspection.cancelled.clone())?;
+            hazlomexa::native_setup::remember(&app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local.")?.join("program-locations"),program,"mcp_config",&path)?;
+            Ok(catalog)
         }else{
             let executable=app.dialog().file().set_title("Selecciona la CLI nativa instalada del programa")
                 .add_filter("Programa",&["exe"]).blocking_pick_file().ok_or("Selección cancelada.")?
                 .into_path().map_err(|e|e.to_string())?;
-            tools.connect_native_cli(program,executable,inspection.cancelled.clone())
+            let catalog=tools.connect_native_cli(program,executable.clone(),inspection.cancelled.clone())?;
+            hazlomexa::native_setup::remember(&app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local.")?.join("program-locations"),program,"cli",&executable)?;
+            Ok(catalog)
         };
         drop(inspection);result
     }).await.map_err(|_|"No se pudo completar la conexión nativa.")?
