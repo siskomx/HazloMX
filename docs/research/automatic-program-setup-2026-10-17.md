@@ -6,6 +6,8 @@ Discovery checks absolute PATH entries, standard installation folders and
 Windows uninstall records. Relative/current-directory lookup is excluded.
 Successful manual portable CLI/MCP selections are remembered as local paths;
 their configuration secrets are not copied into that location record.
+MCP configuration references are bound to the exact selected project folder;
+portable executable locations can be reused across projects.
 
 Hazlo generates its own local connection files without replacing existing
 files. Actual installed MCP schemas and CLI help still govern capabilities.

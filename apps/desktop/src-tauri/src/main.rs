@@ -193,7 +193,7 @@ async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,prog
             let resources=app.path().resource_dir().map_err(|_|"No se encontraron los componentes de Hazlo.")?;
             let data=app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local de Hazlo.")?;
             let profile=data.join("native-connections").join(Uuid::new_v4().to_string());
-            let remembered=if program==hazlomexa::host_tools::Program::Rea{None}else{hazlomexa::native_setup::remembered(&data.join("program-locations"),program)?};
+            let remembered=if program==hazlomexa::host_tools::Program::Rea{None}else{hazlomexa::native_setup::remembered(&data.join("program-locations"),program,&project)?};
             let detected=if remembered.is_some(){remembered}else{hazlomexa::native_setup::discover(program,&resources,&project,&profile)?};
             return match detected {
                 Some(hazlomexa::native_setup::Setup::Mcp(config))=>tools.connect_native_mcp(program,config,inspection.cancelled.clone()),
@@ -207,14 +207,14 @@ async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,prog
                 .add_filter("Configuración MCP",&["json"]).blocking_pick_file().ok_or("Selección cancelada.")?.into_path().map_err(|e|e.to_string())?;
             let config=hazlomexa::native_tools::McpConfig::from_file(&path)?;
             let catalog=tools.connect_native_mcp(program,config,inspection.cancelled.clone())?;
-            hazlomexa::native_setup::remember(&app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local.")?.join("program-locations"),program,"mcp_config",&path)?;
+            hazlomexa::native_setup::remember(&app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local.")?.join("program-locations"),program,"mcp_config",&path,&project)?;
             Ok(catalog)
         }else{
             let executable=app.dialog().file().set_title("Selecciona la CLI nativa instalada del programa")
                 .add_filter("Programa",&["exe"]).blocking_pick_file().ok_or("Selección cancelada.")?
                 .into_path().map_err(|e|e.to_string())?;
             let catalog=tools.connect_native_cli(program,executable.clone(),inspection.cancelled.clone())?;
-            hazlomexa::native_setup::remember(&app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local.")?.join("program-locations"),program,"cli",&executable)?;
+            hazlomexa::native_setup::remember(&app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local.")?.join("program-locations"),program,"cli",&executable,&project)?;
             Ok(catalog)
         };
         drop(inspection);result

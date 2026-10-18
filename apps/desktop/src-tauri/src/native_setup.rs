@@ -97,7 +97,13 @@ fn registry_folders() -> Vec<PathBuf> {
     folders
 }
 
-pub fn remember(profile: &Path, program: Program, kind: &str, path: &Path) -> Result<(), String> {
+pub fn remember(
+    profile: &Path,
+    program: Program,
+    kind: &str,
+    path: &Path,
+    project: &Path,
+) -> Result<(), String> {
     if !path.is_absolute() || !path.is_file() || !["mcp_config", "cli"].contains(&kind) {
         return Err("La ubicación seleccionada no es válida.".into());
     }
@@ -109,11 +115,18 @@ pub fn remember(profile: &Path, program: Program, kind: &str, path: &Path) -> Re
         .unwrap()
         .to_owned();
     let temp = profile.join(format!("{}.json", uuid::Uuid::new_v4()));
-    write_new(&temp, &json!({"kind":kind,"path":path}))?;
+    write_new(
+        &temp,
+        &json!({"kind":kind,"path":path,"project_directory":(kind=="mcp_config").then_some(project)}),
+    )?;
     std::fs::rename(temp, profile.join(format!("{name}.json")))
         .map_err(|_| "No se pudo conservar la ubicación del programa.".into())
 }
-pub fn remembered(profile: &Path, program: Program) -> Result<Option<Setup>, String> {
+pub fn remembered(
+    profile: &Path,
+    program: Program,
+    project: &Path,
+) -> Result<Option<Setup>, String> {
     let name = serde_json::to_value(program)
         .map_err(|_| "Programa no válido.")?
         .as_str()
@@ -126,6 +139,9 @@ pub fn remembered(profile: &Path, program: Program) -> Result<Option<Setup>, Str
     let bytes = crate::kicad_project::read_regular(&path, 65536)?;
     let value: serde_json::Value =
         serde_json::from_slice(&bytes).map_err(|_| "La ubicación guardada no es válida.")?;
+    if value["kind"] == "mcp_config" && value["project_directory"].as_str() != project.to_str() {
+        return Ok(None);
+    }
     let path = PathBuf::from(
         value["path"]
             .as_str()
@@ -418,21 +434,31 @@ mod tests {
         )
         .unwrap();
         let profile = root.join("locations");
-        remember(&profile, Program::Agent, "mcp_config", &config).unwrap();
+        remember(&profile, Program::Agent, "mcp_config", &config, &root).unwrap();
         let bytes = std::fs::read_to_string(profile.join("agent.json")).unwrap();
         assert!(!bytes.contains("private-fixture-token"));
         assert!(
-            matches!(remembered(&profile,Program::Agent).unwrap(),Some(Setup::Mcp(c)) if c.authorization.as_deref()==Some("private-fixture-token"))
+            remembered(&profile, Program::Agent, &root.join("other-project"))
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            matches!(remembered(&profile,Program::Agent,&root).unwrap(),Some(Setup::Mcp(c)) if c.authorization.as_deref()==Some("private-fixture-token"))
         );
         let cli = root.join("portable.exe");
         std::fs::write(&cli, b"fixture").unwrap();
-        remember(&profile, Program::Drawing, "cli", &cli).unwrap();
-        remember(&profile, Program::Drawing, "cli", &cli).unwrap();
+        remember(&profile, Program::Drawing, "cli", &cli, &root).unwrap();
+        remember(&profile, Program::Drawing, "cli", &cli, &root).unwrap();
         assert!(
-            matches!(remembered(&profile,Program::Drawing).unwrap(),Some(Setup::Cli(p)) if p==cli)
+            matches!(remembered(&profile,Program::Drawing,&root.join("other-project")).unwrap(),Some(Setup::Cli(p)) if p==cli)
+        );
+        assert!(
+            matches!(remembered(&profile,Program::Drawing,&root).unwrap(),Some(Setup::Cli(p)) if p==cli)
         );
         std::fs::remove_file(cli).unwrap();
-        assert!(remembered(&profile, Program::Drawing).unwrap().is_none());
+        assert!(remembered(&profile, Program::Drawing, &root)
+            .unwrap()
+            .is_none());
         std::fs::remove_dir_all(root).unwrap();
     }
     #[test]
