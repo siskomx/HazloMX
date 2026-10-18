@@ -1,4 +1,5 @@
 import { CHAT_HISTORY_BYTES, savedConversation } from "./design";
+import { invoke } from "@tauri-apps/api/core";
 
 let writes: Promise<void> = Promise.resolve();
 
@@ -30,12 +31,31 @@ async function transaction(key: string, value?: string): Promise<string | null> 
 
 export async function readConversation(key: string): Promise<string | null> {
   await writes.catch(() => {});
+  if ("__TAURI_INTERNALS__" in window) {
+    const stored = await invoke<string | null>("conversation_history", scope(key));
+    if (stored !== null) {
+      if (!savedConversation(stored, CHAT_HISTORY_BYTES)) throw Error("La conversación guardada no es válida. Sus datos se conservan.");
+      return stored;
+    }
+    const legacy = await transaction(key);
+    if (legacy !== null) await invoke("conversation_history", {...scope(key), value:legacy});
+    return legacy;
+  }
   return transaction(key);
 }
 
 export function writeConversation(key: string, value: string): Promise<void> {
   if (!savedConversation(value, CHAT_HISTORY_BYTES)) return Promise.reject(Error("La conversación supera el límite de guardado o no es válida."));
-  const saved = writes.catch(() => {}).then(async () => { await transaction(key, value); });
+  const saved = writes.catch(() => {}).then(async () => {
+    if ("__TAURI_INTERNALS__" in window) await invoke("conversation_history", {...scope(key), value});
+    else await transaction(key, value);
+  });
   writes = saved;
   return saved;
+}
+
+function scope(key: string) {
+  if (!key.startsWith("hazlomexa.chat.v2:")) throw Error("Historial sin proyecto.");
+  const [projectId,projectDirectory,provider] = JSON.parse(key.slice("hazlomexa.chat.v2:".length));
+  return {projectId,projectDirectory,provider,value:null};
 }

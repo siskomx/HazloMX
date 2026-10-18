@@ -5,6 +5,7 @@ fn main() {
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
             "get_snapshot",
+            "conversation_history",
             "detect_clients",
             "connect_native_tools",
             "disconnect_native_tools",

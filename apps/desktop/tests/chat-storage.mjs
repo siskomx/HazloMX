@@ -95,5 +95,29 @@ try {
   },keys);
   assert.deepEqual(restored,[value("Final acknowledged reply á 🛠️"),value("Other folder and provider"),value("Other provider")]);
   assert.equal(await page.evaluate(()=>localStorage.length),0);
+  const projectFiles = new Map();
+  const installNativeMock = async page => {
+    await page.exposeFunction("projectHistory", args => {
+      const key=JSON.stringify([args.projectId,args.projectDirectory,args.provider]);
+      if(args.value!==null) {projectFiles.set(key,args.value);return null;}
+      return projectFiles.get(key)??null;
+    });
+    await page.addInitScript(()=>{window.__TAURI_INTERNALS__={invoke:(command,args)=>{
+      if(command!=="conversation_history")throw Error(command);
+      return window.projectHistory(args);
+    }};});
+  };
+  const migrationPage=await context.newPage();await installNativeMock(migrationPage);await migrationPage.goto(url);
+  const migrated=await migrationPage.evaluate(async key=>(await import("/src/chat-storage.ts")).readConversation(key),keys[0]);
+  assert.equal(migrated,value("Final acknowledged reply á 🛠️"));
+  assert.equal(projectFiles.size,1,"Existing database history was not migrated to the selected project");
+  const fresh=await context.browser().newContext();
+  try {
+    const next=await fresh.newPage();await installNativeMock(next);await next.goto(url.replace("127.0.0.1","localhost"));
+    const recovered=await next.evaluate(async keys=>{
+      const store=await import("/src/chat-storage.ts");return Promise.all(keys.map(k=>store.readConversation(k)));
+    },keys);
+    assert.deepEqual(recovered,[migrated,null,null],"Project history did not survive an empty browser profile and different origin");
+  } finally {await fresh.close();}
   console.log("PASS: strict commit acknowledgement, aborted-write preservation, ordered writes after failure, invalid/oversized refusal, provider/folder isolation and exact Unicode recovery after crashing the owned browser process; no localStorage fallback");
 } finally {await context?.close();await server.close();}

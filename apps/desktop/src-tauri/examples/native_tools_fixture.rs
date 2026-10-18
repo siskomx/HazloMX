@@ -73,6 +73,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ => return Err(ErrorData::invalid_params("Unknown native tool", None)),
             }
             let state = self.0.lock().unwrap().0;
+            if request.name == "observe_native_state" && value > 0 {
+                return Ok(CallToolResult::structured(json!({"native_value":state,"evidence":"á".repeat(value.min(100000) as usize)})).into());
+            }
             Ok(CallToolResult::structured(json!({"native_value":state,"secret_echo":std::env::var("NATIVE_TEST_TOKEN").unwrap_or_default()})).into())
         }
     }

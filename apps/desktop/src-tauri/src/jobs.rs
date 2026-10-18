@@ -199,6 +199,12 @@ impl Workflow {
         })
     }
 
+    pub fn conversation_history(&self, expected: (Uuid, PathBuf), provider: &str, value: Option<&str>) -> Result<Option<String>, String> {
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        let project = state.project.as_ref().filter(|p| p.id == expected.0 && p.root == expected.1).ok_or("El proyecto cambió. No se modificó el historial.")?;
+        project.conversation_history(provider, value).map_err(|e| e.to_string())
+    }
+
     pub fn view(&self) -> Result<WorkflowView, String> {
         let state = self.state.lock().map_err(|e| e.to_string())?;
         Ok(WorkflowView {
@@ -2572,7 +2578,7 @@ impl Workflow {
                 input.receipt_sha256 = Some(crate::kicad_project::digest(&bytes));
             }
             if let OperationInput::NativeTools(input)=&mut dispatch.snapshot.input {
-                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),256*1024)?;
+                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),crate::native_tools::REPORT_LIMIT)?;
                 input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
             }
             if let OperationInput::LiveDrawing(input)=&mut dispatch.snapshot.input {
@@ -2671,6 +2677,16 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn conversation_history_is_bound_to_current_project_and_folder() {
+        let (root, workflow)=setup();
+        let project=workflow.view().unwrap().project.unwrap();
+        let raw=r#"{"version":1,"turns":[{"role":"user","content":"Keep my constraints"}]}"#;
+        workflow.conversation_history(project.clone(),"codex",Some(raw)).unwrap();
+        assert!(workflow.conversation_history((Uuid::new_v4(),root.clone()),"codex",Some(raw)).is_err());
+        assert!(workflow.conversation_history((project.0,root.join("other")),"codex",Some(raw)).is_err());
+        assert_eq!(workflow.conversation_history(project,"codex",None).unwrap().as_deref(),Some(raw));
+    }
     #[test]
     fn native_agent_jobs_keep_credentials_private_and_bind_approval_report_and_recovery() {
         let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();

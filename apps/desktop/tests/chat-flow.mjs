@@ -122,11 +122,16 @@ try {
         if (window.rejectApproval) throw Error("Fixture approval failed");
         window.approvals++; const running = copy().job; running.sequence++; running.busy = true; running.snapshot.phase = "running";
         snapshot.job = structuredClone(running);
-        window.finishJob = () => { snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = window.jobOutcome ?? "completed"; snapshot.job.snapshot.audit.files_verified = snapshot.job.snapshot.phase === "completed"; snapshot.job.error = snapshot.job.snapshot.phase === "failed" ? "Native operation outcome is uncertain" : null; snapshot.job.approval_id = null; args.events.onmessage(copy().job); };
+        window.finishJob = () => { snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = window.jobOutcome ?? "completed"; snapshot.job.snapshot.audit.files_verified = snapshot.job.snapshot.phase === "completed"; snapshot.job.error = snapshot.job.snapshot.phase === "failed" ? window.jobError ?? "Native operation outcome is uncertain" : null; snapshot.job.approval_id = null; args.events.onmessage(copy().job); };
         if (!window.delayJob) window.finishJob();
         return running;
       }
       if (command === "cancel_job") { snapshot.job.sequence++; snapshot.job.busy = false; snapshot.job.snapshot.phase = "cancelled"; snapshot.job.approval_id = null; return copy().job; }
+      if (command === "conversation_history") {
+        const key = `project-history:${JSON.stringify([args.projectId,args.projectDirectory,args.provider])}`;
+        if(args.value!==null) {localStorage.setItem(key,args.value);return null;}
+        return localStorage.getItem(key);
+      }
       if (command === "open_artifact") return "Resultado <img src=x onerror=window.reportInjection=true>";
       throw Error(`Unexpected IPC: ${command}`);
     } };
@@ -905,6 +910,21 @@ try {
       assert.match(JSON.parse((await chatCalls()).at(-1).args.prompt).user_request,/sin afirmar verificación independiente/);
       assert.match(await page.locator("#job-status").innerText(),/lectura final/);
       assert.match(await page.locator("#history").innerText(),/Informe y lectura nativa/);
+      await page.evaluate(()=>{window.jobOutcome="failed";window.jobError='Native target_unavailable {"message":"No analysis target"}';});
+      await page.evaluate(input=>window.setPendingJob(input),{schema_version:1,native_tools_version:1,job_id:`failure-${provider}-${program}`,connection_id:"native-connection",program,catalog_sha256:"d".repeat(64),description:"Inspect current target",calls:[],readback:{tool:"observe_native_state",arguments:{}}});
+      await send("Consulta el estado actual.");await page.locator("#approve:enabled").waitFor();
+      const beforeFailure=(await chatCalls()).length;
+      await page.locator("#prompt").fill("Borrador conservado");
+      await page.locator("#approve").click();await page.locator("#send:enabled").waitFor();
+      const failures=await chatCalls();assert.equal(failures.length,beforeFailure+1,"Failed native query needed another user message");
+      const failurePrompt=JSON.parse(failures.at(-1).args.prompt);
+      assert.match(failurePrompt.user_request,/target_unavailable/);
+      assert.match(failurePrompt.user_request,/No reintentes llamadas/);
+      assert.match(failurePrompt.user_request,/no prepares otra propuesta/);
+      assert.equal(await page.locator("#prompt").inputValue(),"Borrador conservado");
+      assert(!(await page.locator("#job-status").innerText()).includes("target_unavailable"),"Raw JSON leaked into main chat status");
+      await page.evaluate(()=>window.finishJob());assert.equal((await chatCalls()).length,failures.length,"Duplicate failure repeated explanation");
+      await page.evaluate(()=>{delete window.jobOutcome;delete window.jobError;});
       await page.getByRole("button",{name:"Desconectar herramientas nativas",exact:true}).click();await page.locator("#send:enabled").waitFor();
       if(["drawing","arduino","kicad","slice"].includes(program)) {
         await page.getByRole("button",{name:"Usar herramientas de la CLI instalada",exact:true}).click();await page.locator("#send:enabled").waitFor();

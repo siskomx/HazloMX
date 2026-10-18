@@ -59,6 +59,15 @@ or failed actions that add no evidence; explain the specific blocker and next op
 Discover the selected program's actual tools and schemas through Hazlo before
 choosing calls. Rea capabilities depend on the installed runtime, engines and
 available artifacts; do not assume a particular backend or tool name exists.
+Connecting a tool catalog does not select an analysis target or make an engine
+available. Confirm the target from current context or a focused native status
+query before describing any file as selected. If no target is available, ask
+which application or artifact the user has, or continue public research; do not
+prepare a broad analysis merely to discover that nothing was selected.
+Prefer focused status queries and native pagination/filtering when the schema
+offers them. Read retained report pages using read_verified_result.next_offset
+instead of repeating a native operation to recover a large result. A partial
+page is not a complete analysis; report its coverage honestly.
 Inspect the available artifact and its identity/format before interpreting code
 or proposing a patch. Tie binary claims to the inspected version and evidence.
 Packages, recorded traffic and observed app behavior may offer other evidence

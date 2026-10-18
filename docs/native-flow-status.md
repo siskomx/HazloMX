@@ -1,5 +1,11 @@
 # Current native-flow status
 
+[Generic native investigation recovery](research/native-investigation-recovery-2026-10-18.md)
+addresses the report-size, failure-explanation, target-grounding and cross-profile
+history gaps. Real bundled Rea now retains its 127,185-byte session report;
+native paging, all program/provider chat routes and project-history migration
+pass their scoped checks. No device-specific application branch was added.
+
 [The uncoached Roborock skill observation](research/roborock-skill-observation-2026-10-18.md)
 records real Codex research and two failed native Rea queries without changing
 application behavior. The a843549 local installer passes fresh Windows lifecycle

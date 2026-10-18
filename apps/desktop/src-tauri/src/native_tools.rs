@@ -25,6 +25,7 @@ use std::{
 use uuid::Uuid;
 
 const LIMIT: usize = 256 * 1024;
+pub(crate) const REPORT_LIMIT: u64 = 5 * 1024 * 1024;
 const UNCERTAIN:&str="La llamada nativa se interrumpió. No la repitas: relee el programa y revisa sus cambios y su historial de deshacer.";
 
 #[derive(Deserialize)]
@@ -953,8 +954,8 @@ pub fn run(
     let report = json!({"native_tools_version":1,"job_id":input.job_id,"connection_id":input.connection_id,"program":input.program,
         "catalog_sha256":input.catalog_sha256,"results":results,"readback":readback,"readback_sha256":readback_sha256,
         "scope":catalog.scope,"geometry_independently_verified":false,"source_is_untrusted_data":true});
-    let bytes = serde_json::to_vec_pretty(&report).map_err(|_| "Informe nativo no válido.")?;
-    if bytes.len() > 65536 {
+    let bytes = serde_json::to_vec(&report).map_err(|_| "Informe nativo no válido.")?;
+    if bytes.len() as u64 > REPORT_LIMIT {
         return Err(
             "El informe nativo supera el límite. Relee el programa; no repitas las ediciones."
                 .into(),
@@ -974,7 +975,7 @@ pub fn run(
         .map_err(|_| "No se pudo conservar el informe nativo.".into())
 }
 pub fn validate_artifacts(directory: &Path, input: &Input) -> Result<(), String> {
-    let bytes = crate::kicad_project::read_regular(&directory.join("result.json"), 65536)?;
+    let bytes = crate::kicad_project::read_regular(&directory.join("result.json"), REPORT_LIMIT)?;
     if input.receipt_sha256.as_deref() != Some(&crate::kicad_project::digest(&bytes)) {
         return Err("El informe nativo cambió.".into());
     }

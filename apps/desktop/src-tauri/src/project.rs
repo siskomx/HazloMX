@@ -253,12 +253,15 @@ pub struct Artifact {
 impl Artifact {
     /// Return bounded UTF-8 text without modifying the approved artifact.
     pub fn read_text(&self) -> io::Result<String> {
+        self.read_text_bounded(65536)
+    }
+    pub(crate) fn read_text_bounded(&self, limit: u64) -> io::Result<String> {
         // Read through the pinned artifact boundary; never expose a general frontend file reader.
         let mut text = String::new();
         File::open(&self.path)?
-            .take(65537)
+            .take(limit + 1)
             .read_to_string(&mut text)?;
-        if text.len() > 65536 {
+        if text.len() as u64 > limit {
             return Err(error(
                 "El archivo supera el límite de vista previa de 64 KiB.",
             ));
@@ -453,6 +456,34 @@ fn atomic_json<T: Serialize>(target: &Path, value: &T, replace: bool) -> io::Res
 }
 
 impl Project {
+    pub fn conversation_history(&self, provider: &str, value: Option<&str>) -> io::Result<Option<String>> {
+        if !["codex", "claude", "ollama_local", "ollama_cloud"].contains(&provider) {
+            return Err(error("La IA del historial no es válida."));
+        }
+        let path = self.store(&format!("conversation-{provider}.json"));
+        let validate = |raw: &str| -> io::Result<()> {
+            if raw.len() > 512 * 1024 { return Err(error("La conversación supera el límite de guardado.")); }
+            let data: serde_json::Value = serde_json::from_str(raw).map_err(io::Error::other)?;
+            if data["version"] != 1 || data["turns"].as_array().is_none_or(|turns| turns.len() > 128 || turns.iter().any(|t| !matches!(t["role"].as_str(), Some("user" | "assistant")) || !t["content"].is_string())) {
+                return Err(error("La conversación guardada no es válida."));
+            }
+            Ok(())
+        };
+        if let Some(raw) = value {
+            validate(raw)?;
+            atomic_json(&path, &raw, true)?;
+            return Ok(None);
+        }
+        let bytes = match crate::kicad_project::read_regular(&path, 2 * 1024 * 1024) {
+            Ok(bytes) => bytes,
+            Err(_) if !path.try_exists()? => return Ok(None),
+            Err(_) => return Err(error("No se pudo leer el historial. Sus datos se conservan.")),
+        };
+        let raw: String = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        validate(&raw)?;
+        Ok(Some(raw))
+    }
+
     fn acquire(root: &Path, create: bool) -> io::Result<Self> {
         let mut pins = pin_lineage(root)?;
         let store = root.join(".hazlomexa");
@@ -1008,6 +1039,26 @@ pub(crate) mod tests {
         let path = std::env::temp_dir().join(format!("Hazlo proyecto á's {}", Uuid::new_v4()));
         fs::create_dir(&path).unwrap();
         path
+    }
+    #[test]
+    fn conversation_history_survives_reopen_and_refuses_invalid_writes() {
+        let root = root();
+        let raw = serde_json::json!({"version":1,"turns":[{"role":"user","content":"A device, with no cloud"},{"role":"assistant","content":"Which control application do you use?"}]}).to_string();
+        let project = Project::create(&root).unwrap();
+        assert!(project.conversation_history("codex", None).unwrap().is_none());
+        project.conversation_history("codex", Some(&raw)).unwrap();
+        assert!(project.conversation_history("claude", None).unwrap().is_none());
+        for (provider, bad) in [("../outside",raw.as_str()),("codex","{broken"),("codex",r#"{"version":1,"turns":[{"role":"system","content":"ignored"}]}"#)] {
+            assert!(project.conversation_history(provider, Some(bad)).is_err());
+        }
+        assert!(project.conversation_history("codex",Some(&"x".repeat(512*1024+1))).is_err());
+        drop(project);
+        let project = Project::open(&root).unwrap();
+        assert_eq!(project.conversation_history("codex", None).unwrap(),Some(raw));
+        let path=project.store("conversation-codex.json");
+        fs::write(&path,b"invalid retained file").unwrap();
+        assert!(project.conversation_history("codex",None).is_err());
+        assert_eq!(fs::read(&path).unwrap(),b"invalid retained file");
     }
     fn input() -> SolidInput {
         SolidInput::new(Dimensions {
