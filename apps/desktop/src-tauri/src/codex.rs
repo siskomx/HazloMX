@@ -29,7 +29,8 @@ view_image = false
 goals = false
 image_generation = false
 code_mode = false
-code_mode_host = false
+# Codex's code-mode-only models need this host to call the scoped MCP tools.
+code_mode_host = true
 skill_search = false
 skill_mcp_dependency_install = false
 browser_use = false
@@ -1188,6 +1189,8 @@ mod tests {
             ]),
         };
         let config = configuration(&bridge).unwrap();
+        assert!(config.contains("code_mode_host = true"));
+        assert!(!config.contains("code_mode_host = false"));
         for feature in [
             "shell_tool",
             "unified_exec",
