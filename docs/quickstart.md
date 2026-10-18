@@ -2,7 +2,8 @@
 
 Hazlo is a chat. The connected programs own their editors and documents.
 
-1. Open or create a local project in **Conexiones**.
+1. Open or create a local project in **Conexiones**. **Carpeta del proyecto**
+   shows its full folder; project files and chat history are kept there.
 2. Choose your AI. Hazlo automatically checks installed Codex and Claude Code
    clients. Claude uses its existing sign-in. Codex requires **Conectar cuenta**
    for Hazlo's scoped connection. Manual client selection is available if needed.
@@ -13,8 +14,11 @@ Hazlo is a chat. The connected programs own their editors and documents.
 4. Open your document in that program. Choose the program in **Conexiones** and
    connect its installed native MCP server or CLI. Select the MCP configuration
    supplied for that runtime; Hazlo can also find supported default connections.
-5. Review the proposed operation and save destination, then approve it. Clarify
-   the folder if the proposed destination differs from the one you want.
+5. Review the proposed operation and save destination, then approve it. Hazlo
+   supplies the selected project folder to the AI, and shows it during native
+   operation review. Asking to save "in the Hazlo project" refers to that folder,
+   which can differ from the original document's folder. The AI should ask when
+   the destination is missing or ambiguous. Check the proposed filename and path.
    Changes appear in the
    connected editor when its tools support live editing. Hazlo reads the native
    result and explains what changed, what was saved and what remains to do.

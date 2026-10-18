@@ -1,5 +1,11 @@
 # Current native-flow status
 
+[Save-folder clarity for `4307b36`](research/save-folder-2026-10-17.md) is
+implemented and rebuilt: the selected directory is visible in Conexiones and
+native review, and supplied to every agent. Automated checks and package/helper
+checks pass. Live save and fresh guest acceptance await memory headroom; the
+published alpha below remains the previous package.
+
 [Real Codex account/chat acceptance for `10f0880`](research/codex-real-chat-2026-10-17.md)
 now passes: automatic client discovery, personal sign-in, restored conversation,
 release-image guarded native edits from 20 to 25.4 to 27.4 mm, actual result

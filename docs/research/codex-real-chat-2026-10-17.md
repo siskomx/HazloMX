@@ -68,3 +68,7 @@ Installer SHA-256:
 The Windows alpha remains unsigned. No hardware operation or manufacturing
 readiness is certified. Other integrations retain their separately recorded
 runtime/provider scopes.
+
+Follow-up: [selected save-folder clarity](save-folder-2026-10-17.md) addresses
+the missing project-directory context observed in this test. Its acceptance is
+tracked separately from the historical cancelled/corrected Save As above.

@@ -1,5 +1,11 @@
 # Hazlo Mexa application goal
 
+**Current follow-up:** [save-folder clarity](research/save-folder-2026-10-17.md)
+is implemented in `4307b36` and the installer is rebuilt. Automated checks pass;
+the real native save regression and fresh Windows guest acceptance are pending
+memory headroom before publishing the updated installer. KiCad 10 live
+schematics remain deferred.
+
 **Finish checklist — October 17:** keep one natural-language chat: idea →
 define parameters/software together → edits through discovered native tools →
 read back, suggest and finalize. The checklist below supersedes earlier open
