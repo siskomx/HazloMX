@@ -1,5 +1,9 @@
 # App finishing acceptance
 
+Follow-up: [source `10f0880` closes the real Codex account/chat check](codex-real-chat-2026-10-17.md)
+and packages its execution-host correction. The checkpoint below preserves
+the preceding source's evidence scope.
+
 Application source: `dd145ae`. Hazlo remains a simple chat using discovered
 native MCP/CLI tools. No editing operation wrapper was added in this pass.
 

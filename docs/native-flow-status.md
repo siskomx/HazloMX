@@ -1,11 +1,18 @@
 # Current native-flow status
 
+[Real Codex account/chat acceptance for `10f0880`](research/codex-real-chat-2026-10-17.md)
+now passes: automatic client discovery, personal sign-in, restored conversation,
+release-image guarded native edits from 20 to 25.4 to 27.4 mm, actual result
+reviews, cancelled/corrected Save As and independently checked saved DXF.
+The new installer passes lifecycle/helper/preservation checks. KiCad 10 live
+schematics remain deferred. The older provider-pending notes below are historical.
+
 [Finishing acceptance for source `dd145ae`](research/app-finish-2026-10-17.md)
 passes real signed-in Claude chat in Arduino Agent and KiCad PCB release windows,
 CADCraft debug edit/Save As, and separate Orca native offline finalization.
 Installed Codex/Claude clients are detected automatically. Claude sign-in is no
-longer pending. Codex's scoped account conversation and the requested KiCad 10
-live-schematic deferral remain explicit. Use the [current quickstart](quickstart.md).
+longer pending. The later Codex result is linked above; the requested KiCad 10
+live-schematic deferral remains explicit. Use the [current quickstart](quickstart.md).
 
 See the [current finish checklist](application-goal.md) for outstanding work;
 older checkpoints below retain their original source scope. [CADCraft native
@@ -77,7 +84,7 @@ repeat fresh installed editing or every real AI provider conversation.
 The cloud Ollama route and signed-in Claude Code now have real conversation
 evidence. Claude and Codex share the instructions and scoped tool boundary;
 protocol fixtures retain their original scope. Codex's real scoped-account
-conversation remains pending. Client detection does not copy authentication
+conversation now passes on `10f0880`. Client detection does not copy authentication
 or replace Hazlo's separate account connection. The final `dd145ae` installer
 passes lifecycle and installed simple-chat/picker checks with six independently
 matched preserved files; signed-in engineering conversations remain host evidence.

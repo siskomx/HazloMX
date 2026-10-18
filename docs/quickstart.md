@@ -13,7 +13,9 @@ Hazlo is a chat. The connected programs own their editors and documents.
 4. Open your document in that program. Choose the program in **Conexiones** and
    connect its installed native MCP server or CLI. Select the MCP configuration
    supplied for that runtime; Hazlo can also find supported default connections.
-5. Review and approve the proposed native operation. Changes appear in the
+5. Review the proposed operation and save destination, then approve it. Clarify
+   the folder if the proposed destination differs from the one you want.
+   Changes appear in the
    connected editor when its tools support live editing. Hazlo reads the native
    result and explains what changed, what was saved and what remains to do.
 
@@ -38,6 +40,8 @@ service can retain transmitted context. The current Claude connection is text
 only. Rea supplies native software/firmware analysis, not photo-to-CAD conversion.
 
 Verified client versions are Codex 0.159.2 and Claude Code 2.1.285/2.1.302.
+Both have real signed-in chat evidence; Codex's [native edit/Save As test](research/codex-real-chat-2026-10-17.md)
+uses its separate Hazlo account connection.
 The existing Ollama choices remain available; local model quality is experimental.
 Firmware upload, printer control and physical manufacturing readiness are not
 established by an editing or slicing test. See [current acceptance](native-flow-status.md)

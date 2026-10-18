@@ -9,12 +9,12 @@ define the missing parameters/software together, approve edits through the
 selected program's native tools, then read back and finalize the result.
 The programs own their editors and documents.
 
-[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.1).
+[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.2).
 
 Start with the [quickstart](docs/quickstart.md). Installed Codex and Claude Code
 clients are detected automatically; manual selection remains available. Real
-signed-in Claude conversations now pass. Codex's scoped account connection
-still needs its real conversation test. Image references support identification
+signed-in Claude conversations and the [Codex native chat test](docs/research/codex-real-chat-2026-10-17.md)
+now pass. Image references support identification
 and reconstruction with a vision-capable connection; Rea supplies native
 software/firmware analysis.
 
