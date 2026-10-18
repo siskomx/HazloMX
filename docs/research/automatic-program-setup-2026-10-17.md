@@ -40,7 +40,29 @@ Rea now has a bounded 45-second startup allowance. A later successful discovery
 hit a test-cleanup race while the closing process released its profile; bounded
 cleanup fixes the fixture. The final real bundled catalog check passes.
 
-Installer and native-window acceptance for this change are still pending.
+The corrected installer from `f44d50b` passes a fresh Windows 11 guest check.
+Selecting bundled Rea before opening the project, then opening that project,
+automatically connects its 207 native tools without a manual MCP file. Native
+window checks verify the visible project folder, picker cancellation preserving
+the folder and catalog, and the simple chat. Switching to software absent from
+the guest clears the catalog, stops the bundled Rea process and displays its
+missing-tool prerequisite without opening a configuration picker.
+
+Independent guest checks verify the installed bundled runtime/license files,
+running bundled Node, generated connection configuration and absence of a
+system Node installation. Installation, update from alpha 3, same-version
+update, 38-tool helper checks before and after update, startup and uninstall
+pass. Six files across two projects match independently after uninstall; the
+guest is stopped. No credentials or personal agent registrations were copied.
+The installer SHA-256 is
+`5a7cf8fa8a2fb172e12f96d00549c7bfebde222dd9836fb14858445ac1b29e07`.
+
+Four focused setup tests, the separate actual bundled MCP test, Clippy with
+warnings denied, production frontend build and shared chat fixtures pass.
+These checks do not repeat every program/provider conversation or establish
+that every optional Rea analysis engine is installed. Earlier engineering
+evidence retains its original source and runtime scope. The installer remains
+unsigned; KiCad 10 live schematics remain deferred.
 
 The first fresh guest (`997d529`) passes installation/update/helper/lifecycle
 checks but fails automatic Rea startup. Tauri returns a verbatim Windows resource

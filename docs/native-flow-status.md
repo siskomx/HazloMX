@@ -1,5 +1,16 @@
 # Current native-flow status
 
+[Bundled Rea and automatic program setup for `f44d50b`](research/automatic-program-setup-2026-10-17.md)
+pass focused backend/chat checks and a fresh installed Windows guest. Opening
+the project automatically connects Rea's 207 tools using the bundled Node,
+without system Node or a manual MCP file. Folder cancellation preserves the
+connection; switching programs stops Rea and shows missing prerequisites.
+Installation/update/helper/startup/uninstall pass, six project files survive
+unchanged, and the guest is stopped.
+[Windows alpha 4](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.4)
+includes this change. Other programs require compatible installed bridges/CLIs
+and any personally enabled APIs. KiCad 10 live schematics stay deferred.
+
 [Save-folder clarity for `4307b36`](research/save-folder-2026-10-17.md) is
 implemented and rebuilt: the selected directory is visible in Conexiones and
 native review, and supplied to every agent. Automated checks and package/helper

@@ -1,5 +1,15 @@
 # Hazlo Mexa application goal
 
+**Current follow-up:** [bundled Rea and automatic program setup](research/automatic-program-setup-2026-10-17.md)
+are complete in `f44d50b`. Hazlo remains a simple chat, detects compatible
+installed native tools and creates its connection files. The clean installed
+guest automatically connects 207 Rea tools without system Node; folder,
+cancellation, process cleanup and Windows package lifecycle checks pass.
+Six project files survive uninstall unchanged and the guest is stopped.
+[Windows alpha 4](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.4)
+includes this change. Optional Rea engines and missing native bridges retain
+their prerequisites. KiCad 10 live schematics remain deferred.
+
 **Current follow-up:** [save-folder clarity](research/save-folder-2026-10-17.md)
 is complete in `4307b36`: automated checks, real Codex native saving without a
 folder correction, fresh installed UI/picker checks and Windows lifecycle pass.

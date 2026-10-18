@@ -9,7 +9,12 @@ define the missing parameters/software together, approve edits through the
 selected program's native tools, then read back and finalize the result.
 The programs own their editors and documents.
 
-[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.3).
+[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.4).
+
+Rea and its Node runtime are included. Choosing software or opening its project
+detects compatible installed MCP/CLI tools and creates Hazlo's local connection
+configuration. Missing bridges or disabled APIs still need their prerequisites.
+See [automatic setup acceptance](docs/research/automatic-program-setup-2026-10-17.md).
 
 The selected project folder is visible in connection settings and native-operation
 review, and supplied to the AI. [Save-folder acceptance](docs/research/save-folder-2026-10-17.md)
@@ -30,7 +35,7 @@ software/firmware analysis.
 | Arduino CLI | Verified Uno compilation and saved artifacts; no firmware upload or live-editor claim |
 | KiCad / Konnect | Current release PCB chat, natural component identification and inch/mm native moves; KiCad 10 live schematics stay deferred |
 | OrcaSlicer | Selected MCP runtime live chat edits plus offline profile/slice/G-code finalization; project saving stays in Orca and transforms lack native Undo |
-| Rea | Discovered native analysis tools and real approved JavaScript analysis/result review; not a physical photo-to-CAD engine |
+| Rea | Bundled runtime with automatic 207-tool connection; earlier real approved JavaScript analysis/result review; optional engines may need installation; not a physical photo-to-CAD engine |
 
 See [finishing evidence](docs/research/app-finish-2026-10-17.md),
 [current acceptance and Windows package status](docs/native-flow-status.md) and
