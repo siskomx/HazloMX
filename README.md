@@ -9,12 +9,16 @@ define the missing parameters/software together, approve edits through the
 selected program's native tools, then read back and finalize the result.
 The programs own their editors and documents.
 
-[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.4).
+[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.5).
 
 Rea and its Node runtime are included. Choosing software or opening its project
 detects compatible installed MCP/CLI tools and creates Hazlo's local connection
 configuration. Missing bridges or disabled APIs still need their prerequisites.
 See [automatic setup acceptance](docs/research/automatic-program-setup-2026-10-17.md).
+The [existing portable runtime checks](docs/research/automatic-installed-programs-2026-10-18.md)
+also pass all seven installed program selections with generated configs and no
+manual MCP/CLI file picker. Portable locations are registered locally and must
+remain available; Arduino Agent's local service must be running.
 
 The selected project folder is visible in connection settings and native-operation
 review, and supplied to the AI. [Save-folder acceptance](docs/research/save-folder-2026-10-17.md)

@@ -3,9 +3,11 @@
 **Current check:** [automatic connection to the existing portable programs](research/automatic-installed-programs-2026-10-18.md)
 passes real backend connection and generated-config checks for all seven
 selections in `320ede2`. The updated candidate is installed and starts with
-matching binaries and its private portable catalog intact. Visible dropdown
-acceptance awaits user handling of an mdns-discovery Windows Security prompt;
-the candidate is not published yet. KiCad 10 live schematics stay deferred.
+matching binaries and its private portable catalog intact. Installed dropdown
+acceptance now passes for all seven programs, with seven fresh configs and no
+manual MCP/CLI file picker. The app remains a simple chat using native tools.
+[Windows alpha 5](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.5)
+includes this source. KiCad 10 live schematics stay deferred.
 
 **Current follow-up:** [bundled Rea and automatic program setup](research/automatic-program-setup-2026-10-17.md)
 are complete in `f44d50b`. Hazlo remains a simple chat, detects compatible

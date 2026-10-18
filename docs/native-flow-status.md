@@ -4,9 +4,12 @@
 pass actual backend discovery/config/catalog checks for all seven selections.
 Their registered locations are private; the simple chat and native execution
 routes remain unchanged. The rebuilt candidate passes helper/identity checks
-and local installation/startup, preserving its portable catalog. Visible
-dropdown checks await user handling of an mdns-discovery security prompt.
-This candidate is not yet published; alpha 4 remains the latest release below.
+and local installation/startup, preserving its portable catalog. Installed
+dropdown checks now pass for all seven selections: no manual configuration or
+executable picker, seven fresh credential-free configs and the simple chat
+restored. [Windows alpha 5](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.5)
+includes this source. This is connection acceptance, not a new live-edit or
+clean-guest lifecycle pass. Earlier evidence below keeps its original scope.
 
 [Bundled Rea and automatic program setup for `f44d50b`](research/automatic-program-setup-2026-10-17.md)
 pass focused backend/chat checks and a fresh installed Windows guest. Opening

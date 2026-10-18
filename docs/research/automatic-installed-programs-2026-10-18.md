@@ -49,11 +49,19 @@ helper and bundled Rea files match the retained package, startup succeeds and
 the registered portable catalog survives the update. Installer SHA-256:
 `a04754170d90b05fcf18762e042f49b30b7a72476febef649fbb964796127135`.
 
-Native-window dropdown acceptance is pending a Windows Security prompt for
-Arduino's mdns-discovery, which requires user handling. The extra owned debug
-app and its development server were stopped to release memory. The installed
-candidate and Agent remain running. This candidate is not yet a published
-alpha release, and no new clean-guest lifecycle check is claimed. Alpha 4's
+Installed native-window acceptance now passes for all seven selections in the
+table. After opening the disposable project through its normal folder picker,
+selecting each program connects its catalog automatically. No MCP configuration
+or CLI executable picker is used. Seven fresh generated connection files match
+the selected programs; Konnect's project directory matches the opened project.
+Independent checks find no Agent or Orca token in those files. The connection
+settings collapse back to the simple chat, leaving Rea connected.
+
+The user handled the mdns-discovery security prompt and allowed an idle input
+period for these checks. The extra owned debug app and its development server
+were stopped to release memory; the installed app and Agent remain running.
+[Windows alpha 5](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.5)
+includes this source. No new clean-guest lifecycle check is claimed. Alpha 4's
 separate guest evidence retains its original source scope.
 
 KiCad 10 live schematics remain deferred. This pass does not repeat model
