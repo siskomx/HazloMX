@@ -1,10 +1,11 @@
 # Hazlo Mexa application goal
 
 **Current follow-up:** [save-folder clarity](research/save-folder-2026-10-17.md)
-is implemented in `4307b36` and the installer is rebuilt. Automated checks pass;
-the real Codex native save regression now passes without a folder correction.
-Fresh Windows guest acceptance awaits memory headroom before publishing the
-updated installer. KiCad 10 live schematics remain deferred.
+is complete in `4307b36`: automated checks, real Codex native saving without a
+folder correction, fresh installed UI/picker checks and Windows lifecycle pass.
+Six files across two projects survive uninstall unchanged. The guest is stopped.
+[Windows alpha 3](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.3)
+includes this fix. KiCad 10 live schematics remain deferred.
 
 **Finish checklist — October 17:** keep one natural-language chat: idea →
 define parameters/software together → edits through discovered native tools →

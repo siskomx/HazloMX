@@ -48,13 +48,25 @@ source folder. Both real Codex result reviews finish and the conversation is
 saved. Both jobs complete; the only native write is the program's save tool.
 All owned test processes stop.
 
-## Windows acceptance pending
+## Windows package acceptance
 
-The fresh guest has not started because available RAM remains below its 3 GB
-prerequisite. The previous alpha's acceptance retains its original source scope
-and is not evidence for this rebuilt package.
+The fresh Windows guest starts after memory headroom is available. Per-user
+installation, exact installed binary identities, same-version and previous-build
+updates, the installed/updated 38-tool helper, startup and uninstall pass.
+The actual installed UI opens the disposable project through the native picker,
+shows its full selected folder, preserves that folder after picker cancellation,
+and returns to the simple chat layout. Six independently exported files across
+two projects match their original hashes after uninstall. The owned guest stops;
+the final Sandbox inventory is empty.
 
-Candidate installer SHA-256:
+This package check does not repeat every engineering program/provider or
+signed-in inference inside the guest. The real Codex save conversation above is
+separate host evidence using the matching release image. Earlier integrations
+retain their separately recorded runtime and source scopes.
+
+Installer SHA-256:
 `f939609b0abb6e2aeaddf892652d79868cf2d7e95d9cd244f1631ad3676bacd0`.
 
-KiCad 10 live schematics remain deferred. The Windows alpha remains unsigned.
+[Windows alpha 3](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.3)
+ships this source with installer and checksum assets only. KiCad 10 live
+schematics remain deferred. The Windows alpha remains unsigned.

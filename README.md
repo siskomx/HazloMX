@@ -9,7 +9,11 @@ define the missing parameters/software together, approve edits through the
 selected program's native tools, then read back and finalize the result.
 The programs own their editors and documents.
 
-[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.2).
+[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.3).
+
+The selected project folder is visible in connection settings and native-operation
+review, and supplied to the AI. [Save-folder acceptance](docs/research/save-folder-2026-10-17.md)
+covers real native saving without a folder correction and the updated installer.
 
 Start with the [quickstart](docs/quickstart.md). Installed Codex and Claude Code
 clients are detected automatically; manual selection remains available. Real

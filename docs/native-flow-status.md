@@ -5,8 +5,10 @@ implemented and rebuilt: the selected directory is visible in Conexiones and
 native review, and supplied to every agent. Automated checks and package/helper
 checks pass. A real signed-in Codex native save now passes without a folder
 correction, with independent DXF and original-preservation checks. Fresh guest
-acceptance awaits memory headroom; the published alpha below remains the
-previous package.
+installed UI/picker/cancellation, updates, helper protocol and lifecycle pass;
+six files across two projects survive uninstall unchanged. The guest is stopped.
+[Windows alpha 3](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.3)
+includes this fix. Older package results below keep their original scope.
 
 [Real Codex account/chat acceptance for `10f0880`](research/codex-real-chat-2026-10-17.md)
 now passes: automatic client discovery, personal sign-in, restored conversation,
