@@ -4,27 +4,42 @@ A Windows-first, open-source desktop interface for AI-assisted DIY and engineeri
 
 ## Status
 
-A Windows 11 x64 desktop alpha is implemented in [apps/desktop](apps/desktop/README.md). Its primary screen is one Spanish natural-language chat: describe the intended change, inspect the selected document, clarify missing information, review a proposal, approve the program's operation and request a verified-result explanation. Native programs own editing and documents. FreeCAD, Arduino Agent and KiCad PCB have scoped live-editing evidence. CADCraft now has [patched-runtime circle edit/readback/follow-up acceptance](docs/research/cadcraft-live-chat-2026-10-16.md), including actual owned Hazlo approvals. Other capabilities and native/installed/provider limits remain explicit in [current status](docs/native-flow-status.md).
+Windows 11 x64 alpha. Hazlo is one natural-language chat: describe an idea,
+define the missing parameters/software together, approve edits through the
+selected program's native tools, then read back and finalize the result.
+The programs own their editors and documents.
 
-The desktop source includes all nine planned engineering workflows, with Spanish chat, metric/imperial inputs, explicit approvals, native result readback and project recovery. Claude Code and Codex share Hazlo’s tools alongside the existing Ollama option. Completion still requires the remaining Windows, native GUI and signed-in acceptance gates:
+[Download the Windows alpha](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.1).
 
-| Integration | Planned first workflow | Current implementation |
-|---|---|---|
-| Arduino CLI / Arduino Agent | Create a valid sketch and compile with an explicitly selected board/core; interactive agent tools follow | Native and installed Uno compilation and Agent copy-editing backend checks pass; wider boards/libraries and signed-in/native GUI acceptance remain unfinished |
-| KiCad / Konnect | Schematic/PCB checks and exports on project copies; editing tools follow | KiCad checks/exports and Konnect schematic/PCB copy edits support inspection, approval, saved-state verification and recovery; broader native GUI acceptance remains unfinished |
-| CADCraft | Inspect and convert drawing copies | Copy inspection/conversion remains available; the explicitly selected patched runtime adds native circle creation and movement through chat, approval, readback and follow-up. Discovered commands supply native breadth; approved chat export and native Save As/Save pass scoped checks. Current generic-route chat acceptance remains unfinished |
-| CADPilot | Measure and edit a selected FreeCAD document with explicit approval and recovery | [Inspect before proposing](docs/research/freecad-source-chat-2026-10-13.md), metric/inch box changes and result-derived follow-ups pass native MCP checks; broader operations and native GUI/live-document acceptance remain unfinished |
-| OrcaSlicer | Verify profiles and slice to a project file | The explicitly selected MCP runtime passes live chat edits/readback; stock CLI slicing remains a file workflow. Project saving is not exposed by that MCP runtime; finalization/selected-runtime acceptance remains unfinished |
+Start with the [quickstart](docs/quickstart.md). Installed Codex and Claude Code
+clients are detected automatically; manual selection remains available. Real
+signed-in Claude conversations now pass. Codex's scoped account connection
+still needs its real conversation test. Image references support identification
+and reconstruction with a vision-capable connection; Rea supplies native
+software/firmware analysis.
 
-These tracks reuse project selection, explicit approvals, owned-process cancellation, artifact verification and recovery. They share native tool discovery and routing, with Windows acceptance evidence scoped to each selected runtime. The initial FreeCAD goal and its unresolved local-model benchmark do not represent completion of this broader application.
+| Program | Verified scope and relevant limit |
+|---|---|
+| FreeCAD / CADPilot | Native creation/edit/readback, mixed units, image reconstruction, native saving and STEP export; exact source scopes are recorded |
+| CADCraft | Selected patched native MCP runtime; real chat edit/Save As and independently checked DXF; installed stock runtime stays separate |
+| Arduino Agent | Current release chat, visible native 250/125 ms edits and readback; its MCP writer saves immediately |
+| Arduino CLI | Verified Uno compilation and saved artifacts; no firmware upload or live-editor claim |
+| KiCad / Konnect | Current release PCB chat, natural component identification and inch/mm native moves; KiCad 10 live schematics stay deferred |
+| OrcaSlicer | Selected MCP runtime live chat edits plus offline profile/slice/G-code finalization; project saving stays in Orca and transforms lack native Undo |
+| Rea | Discovered native analysis tools and real approved JavaScript analysis/result review; not a physical photo-to-CAD engine |
 
-Current priority is application integration, with further AI-model evaluation deferred at the user's request. Further providers, a universal MCP gateway and automatic source builds remain separate later work. Compilation and slicing do not authorize firmware upload or printer control.
+See [finishing evidence](docs/research/app-finish-2026-10-17.md),
+[current acceptance and Windows package status](docs/native-flow-status.md) and
+the [application goal](docs/application-goal.md). Host conversations, debug
+checks and guest installation tests retain their distinct scope. Editing and
+slicing do not establish physical manufacturing readiness.
 
-The [current application goal](docs/application-goal.md) requires completing all of these integrations, their native workflows and their Windows verification.
-
-The [implementation readiness research](docs/research/2026-10-10-implementation-readiness.md) records source-level findings, provider contracts, integration choices, and the recommended architecture. The [implementation gates](docs/implementation-gates.md) define the Windows proofs required before building the full application. The [source evidence](docs/research/source-evidence.json) pins inspected releases and source fingerprints.
-
-The [verified combinations](docs/supported-combinations.md) and [acceptance audit](docs/acceptance-audit-2026-10-11.md) identify the exact scope of passing FreeCAD evidence, including second-Windows-environment, WebView2 bootstrap/offline failure, disk-exhaustion and visible-artifact checks. Local-model accuracy remains experimental. The [later integration gates](docs/implementation-gates.md#later-gates-that-protect-the-first-architecture) define the additional proofs needed for the rest of the application.
+Native MCP schemas and CLI help govern execution. Repository checks refresh
+catalog/release metadata and never install programs automatically. Further
+model benchmarking remains deferred; application integration is the priority.
+Developer build instructions and historical tests are in
+[apps/desktop](apps/desktop/README.md). Earlier research and exact initial
+combinations remain available in [supported combinations](docs/supported-combinations.md).
 
 ## License
 

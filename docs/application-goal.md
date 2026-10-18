@@ -9,15 +9,14 @@ checkpoint wording; historical evidence keeps its original version and scope.
   FreeCAD image reconstruction, Rea analysis, Orca live chat edits, and the
   current Windows installer lifecycle/picker/preservation checks.
 - Done in the native backend: [CADCraft Save As and follow-up Save](research/native-finalization-2026-10-17.md), independently checked against saved DXF geometry.
-- Remaining: current generic-route real chat acceptance for Arduino Agent,
-  KiCad PCB and CADCraft, including final save/export/readback where exposed.
-- Remaining: Orca G-code finalization/readiness and explicitly selected-runtime
-  acceptance. Its current MCP catalog does not expose project saving; saving
-  the open project remains a native-app user step, not a promised Hazlo tool.
+- Done: [generic-route real chat checks](research/app-finish-2026-10-17.md) for Arduino Agent and KiCad PCB in the release image, plus CADCraft edit/Save As in the corrected debug desktop. Their distinct save semantics and exact evidence scope remain explicit.
+- Done: Orca native offline profile checks, slicing, saved G-code validation and native preview. Physical printer readiness is outside this proof. Its MCP has no project-save tool; saving the project remains a native-app user step.
 - Remaining: real signed-in Codex conversation; protocol fixtures already pass.
-- Remaining: consolidate final setup/support instructions and publish the final
-  checkpoint. Rebuild/retest the installer only if application code changes.
-- Deferred by request: Claude sign-in and KiCad 10 live schematic editing.
+- Done: [current quickstart](quickstart.md), final source `dd145ae` installer
+  lifecycle, installed simple-chat/picker checks and six preserved files.
+  [Windows alpha release](https://github.com/siskomx/HazloMX/releases/tag/v0.1.0-alpha.1)
+  uses that verified binary; later documentation changes require no rebuild.
+- Done: automatic installed AI client discovery and real signed-in Claude 2.1.302 conversations. Deferred by request: KiCad 10 live schematic editing.
   Model benchmarks, additional runtimes, hardware upload and printer control
   do not expand this finishing pass.
 

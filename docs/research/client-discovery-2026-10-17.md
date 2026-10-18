@@ -16,7 +16,7 @@ PowerShell's command inventory on the development host finds both clients. The
 verified Codex 0.159.2 is installed inside the npm package, alongside a newer
 desktop-bundled client. Native Claude Code 2.1.302 is installed and reports signed
 in; its restricted/MCP CLI flags are present. The bridge accepts 2.1.285 and
-2.1.302; a real 2.1.302 conversation is a separate remaining acceptance check.
+2.1.302; [real signed-in conversations now pass](app-finish-2026-10-17.md).
 Other client versions remain explicitly unsupported pending protocol validation.
 
 Checks: 206 regular Rust tests pass (62 external/native checks ignored), desktop
@@ -29,4 +29,7 @@ The first real release-window request exposed a new rate_limit_event notificatio
 from Claude 2.1.302. It ran no native edit. The decoder now accepts that
 informational event after initialization, while still requiring a terminal
 result and rejecting unknown event types. The four regular Claude decoder
-tests pass; real conversation acceptance continues separately.
+tests pass. Subsequent actual Claude conversations pass Arduino Agent and
+KiCad PCB in matching release windows, plus CADCraft in the corrected debug
+desktop. The final Windows package passes installed UI and lifecycle checks;
+their separate scopes are recorded in the finishing acceptance above.
