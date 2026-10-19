@@ -1566,7 +1566,7 @@ impl HostTools {
                 let selected=self.selected_live_drawing(request.selection)?;
                 if selected.observation.binding_sha256!=request.binding_sha256 { return Err("La lectura venció. Relee CADCraft.".into()); }
                 let exporting=matches!(&request.operation,crate::cadcraft_live::Operation::ExportDxf {});
-                let input=crate::cadcraft_live::Input {native_completion_version:Some(1),agreement:Some(request.agreement),schema_version:1,live_drawing_version:1,job_id:Uuid::new_v4(),
+                let input=crate::cadcraft_live::Input {native_export_check_version:exporting.then_some(1),native_completion_version:Some(1),agreement:Some(request.agreement),schema_version:1,live_drawing_version:1,job_id:Uuid::new_v4(),
                     description:request.description,units:request.units,operation:request.operation,before:selected.observation,receipt_sha256:None};
                 let job=self.workflow.propose_live_drawing((selected.project_id,selected.project_root),input,selected.connection)?;
                 Ok(json!({"job_id":job.snapshot.input.job_id(),"phase":job.snapshot.phase,"human_approval_required":true,

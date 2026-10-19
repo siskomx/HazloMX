@@ -24,6 +24,7 @@ for (const units of ["mm","in"]) {
   assert.match(drawingExport,/conserva las unidades y la escala/);
   assert.match(drawingExport,/no cambia de nombre/);
   assert(!drawingExport.includes("Mover el círculo")&&!drawingExport.includes("undefined")&&!drawingExport.includes("puedes deshacerlo"));
+const checkedExport=review({live_drawing_version:1,native_export_check_version:1,description:"Conserva el dibujo",units,before:{title:"Plano.dxf",dirty:true},operation:{action:"export_dxf"}});assert.match(checkedExport,/mismos datos DXF/);assert.match(checkedExport,/referencias externas/);assert.match(checkedExport,/función física no se comprueban/);
 }
 const pcbExport=review({live_pcb_version:1,export_copy:true,board_name:"Placa.kicad_pcb",description:"Conserva una copia de la placa abierta"});
 assert.match(pcbExport,/Exportar una copia editable/);

@@ -67,6 +67,7 @@ export function proposalFacts(run: Snapshot): string[] {
         "La copia incluye los cambios actuales sin guardar y conserva las unidades y la escala del dibujo.",
         "Hazlo crea un archivo nuevo en este proyecto y verifica su geometría y unidades al abrirlo con CADCraft.",
         "El dibujo abierto no se guarda, no cambia de nombre y conserva su estado. Exportar no añade un paso de deshacer.");
+      if(input.native_export_check_version===1)facts.push("La copia debe conservar los mismos datos DXF al reabrirla y serializarla con CADCraft. Si necesita referencias externas, se conserva pendiente de revisión.","La vista, los recursos de representación y la función física no se comprueban.");
       return facts;
     }
     facts.push("Cambiar el dibujo abierto en CADCraft.","Dibujo: "+input.before.title,"Objetivo: "+input.description);

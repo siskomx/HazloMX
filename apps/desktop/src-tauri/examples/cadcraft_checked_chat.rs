@@ -166,6 +166,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .artifact(exported.snapshot.input.job_id(), ArtifactFormat::Drawing)?
         .read_text()?;
     assert!(!exported_dxf.is_empty());
+    let export_report:Value=serde_json::from_str(&workflow.artifact(exported.snapshot.input.job_id(),ArtifactFormat::LiveDrawingReport)?.read_text()?)?;
+    let check=&export_report["native_copy_check"];assert_eq!(check["version"],1);assert_eq!(check["native_reopen_checked"],true);assert_eq!(check["native_bytes_roundtrip_equal"],true);assert_eq!(check["model_geometry_checked"],true);assert_eq!(check["native_units"],4);assert_eq!(check["native_open_dependencies"],json!([]));for key in ["rendering_resources_checked","gui_state_checked","physical_function_checked"]{assert_eq!(check[key],false);}
     assert_eq!(
         native.drawing(),
         final_read,
@@ -308,7 +310,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         serde_json::to_vec_pretty(
             &json!({"pass":true,"completed_jobs":4,"cancelled_jobs":1,"refused_jobs":1,
         "native_mm_move":1,"native_inch_followup":0.1,"final_x_mm":3.54,"native_undo_steps":3,"stale_unprojected_change_refused":true,
-        "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"retained_completion_recovery":recorded,"native_completion_anchored":anchored,"real_provider":false,"desktop_approval":false}),
+        "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"native_dxf_roundtrip":true,"native_copy_check_manifest":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"retained_completion_recovery":recorded,"native_completion_anchored":anchored,"real_provider":false,"desktop_approval":false}),
         )?,
     )?;
     println!("PASS: production checked drawing tools, approval/replay/cancel, metric/inch native readback, hidden-state refusal, Undo and report recovery");
