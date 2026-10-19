@@ -33,7 +33,8 @@ try {
      if(r.action==="history"){if(r.value==null)return t.history;t.history=r.value;}
      if(r.action==="message"){t.revision++;t.history=r.history;if(!t.goal){t.goal=r.text;t.title=r.text.slice(0,60);}}
      if(r.action==="provider"){t.revision++;t.provider=r.provider;}
-     if(r.action==="add_reference"){t.revision++;t.references.push({id:crypto.randomUUID(),name:r.name,bytes:atob(r.data).length,sha256:"f".repeat(64),image:!!r.preview,shared_with:[],preview:r.preview});}
+     if(r.action==="add_reference"){t.revision++;t.references.push({id:crypto.randomUUID(),name:r.name,bytes:atob(r.data).length,sha256:"f".repeat(64),image:!!r.preview,shared_with:[],preview:r.preview,data:r.data});}
+     if(r.action==="preview_reference"){const ref=t.references.find(x=>x.id===r.reference);if(!ref)throw Error("missing local reference");const text=atob(ref.data),offset=r.offset??0,next=offset+4096;return {kind:"text",content:text.slice(offset,next),next_offset:next<text.length?next:null};}
      if(r.action==="share"){const ref=t.references.find(x=>x.id===r.reference);ref.shared_with=ref.shared_with.filter(p=>p!==t.provider);if(r.allow)ref.shared_with.push(t.provider);t.revision++;}
      if(r.action==="remove"){t.references=t.references.filter(x=>x.id!==r.reference);t.revision++;}
      if(r.action==="image"){const ref=t.references.find(x=>x.id===r.reference);if(!ref?.shared_with.includes(t.provider))throw Error("sharing required");return structuredClone(ref.preview);}
@@ -59,14 +60,23 @@ try {
  const second=await page.evaluate(()=>JSON.parse(localStorage.getItem("owned-task-fixture")).active);assert.notEqual(first,second);
  await page.locator("#task-history > summary").click();await page.locator("#saved-task").selectOption(first);await page.locator("#open-task").click();await page.locator("#send:enabled").waitFor();
  assert.match(await page.locator("#conversation").innerText(),/preserve my original/);
- await page.locator("#file-reference").setInputFiles({name:"capture.bin",mimeType:"application/octet-stream",buffer:Buffer.from("RAW_PRIVATE_SENTINEL")});
+ await page.locator("#file-reference").setInputFiles({name:"capture.bin",mimeType:"application/octet-stream",buffer:Buffer.from("RAW_PRIVATE_SENTINEL <img src=x onerror=alert(1)>")});
  await page.getByRole("button",{name:"Compartir con esta IA…",exact:true}).waitFor();
+ const revisionBeforePreview=await page.evaluate(()=>JSON.parse(localStorage.getItem("owned-task-fixture")).records[JSON.parse(localStorage.getItem("owned-task-fixture")).active].revision);
+ const providerCallsBeforePreview=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);
+ await page.getByRole("button",{name:"Ver localmente",exact:true}).click();
+ await page.locator("#report[open]").waitFor();assert.match(await page.locator("#report-text").innerText(),/RAW_PRIVATE_SENTINEL/);
+ assert.equal(await page.locator("#report-text img").count(),0);
+ await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("owned-task-fixture")).records[JSON.parse(localStorage.getItem("owned-task-fixture")).active].revision),revisionBeforePreview);
+ assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),providerCallsBeforePreview);
  await page.locator("#prompt").fill("Continue with public research only");await page.locator("#send").click();await page.locator("#send:enabled").waitFor();
  const sent=await page.evaluate(()=>window.calls.filter(c=>c.command==="start_codex_chat").at(-1));assert(!JSON.stringify(sent).includes("RAW_PRIVATE_SENTINEL"));assert.equal(sent.args.image,undefined);
  await page.locator("#connections").evaluate(el=>el.open=true);
  await page.locator("#provider").selectOption("claude");
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("owned-task-fixture")).records[JSON.parse(localStorage.getItem("owned-task-fixture")).active].provider),"codex");
  await page.locator("#approve-provider").click();await page.locator("#send:enabled").waitFor();
+ assert.equal(await page.locator("#report-text").textContent(),"");
  assert.match(await page.locator("#conversation").innerText(),/preserve my original/);
  assert.match(await page.locator("#task-references").innerText(),/solo local/);
  await page.reload();await page.locator("#send:enabled").waitFor();
@@ -84,5 +94,11 @@ try {
  await page.reload();await page.locator("#send:enabled").waitFor();
  assert.match(await page.locator("#conversation").innerText(),/non-content native status/);
  assert.match(await page.locator("#task-references").innerText(),/Observación nativa.json/);
+ const retained=page.locator("#task-references > p").filter({hasText:"capture.bin"});
+ await retained.getByRole("button",{name:"Ver localmente",exact:true}).click();await page.locator("#report[open]").waitFor();
+ assert.match(await page.locator("#report-text").innerText(),/RAW_PRIVATE_SENTINEL/);
+ await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
+ await retained.getByRole("button",{name:"Quitar referencia",exact:true}).click();await page.locator("#send:enabled").waitFor();
+ assert.equal(await page.locator("#report-text").textContent(),"");assert(!await page.locator("#task-references").innerText().then(t=>t.includes("capture.bin")));
  console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch and withheld raw input. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}

@@ -350,8 +350,9 @@ try {
   await page.locator("#results > summary").click();
   await page.getByRole("button", { name: "Informe", exact: true }).click();
   assert.match(await page.locator("#report-text").innerText(), /<img/);
-  assert.equal(await page.locator("#report img").count(), 0);
-  await page.locator("#report button").click();
+  assert.equal(await page.locator("#report-text img").count(), 0);
+  assert(await page.locator("#report-image").isHidden());assert.equal(await page.locator("#report-image").getAttribute("src"),null);
+  await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
   await page.evaluate(() => { window.askQuestion = true; });
   await page.locator("#prompt").fill("Tengo una respuesta para la aclaración."); await page.locator("#send").click();
   await page.locator("#question-form:visible").waitFor();
@@ -455,11 +456,11 @@ try {
         await page.getByRole("button",{name:"Informe de compilación",exact:true}).click();
         await page.locator("#report:visible").waitFor();
         assert.match(await page.locator("#report-text").innerText(),/Resultado <img/);
-        assert.equal(await page.locator("#report img").count(),0);
+        assert.equal(await page.locator("#report-text img").count(),0);assert(await page.locator("#report-image").isHidden());assert.equal(await page.locator("#report-image").getAttribute("src"),null);
         const call = await page.evaluate(()=>window.calls.filter(call=>call.command==="open_artifact").at(-1));
         assert.deepEqual(call.args,{jobId:job.job_id,format:"compile_report"});
         assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command.startsWith("start_")).length),before);
-        await page.locator("#report button").click();
+        await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
       }
       await page.locator("#program").selectOption(program === "freecad" ? "drawing" : "freecad");
       await send("Consulta este otro programa.");
@@ -850,7 +851,7 @@ try {
     if (!await page.locator("#history").isVisible()) await page.locator("#results > summary").click();
     await page.getByRole("button",{name:"PCB exportada",exact:true}).last().click();
     assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="open_artifact").at(-1).args.format),"kicad_source");
-    if (await page.locator("#report").isVisible()) await page.locator("#report button").click();
+    if (await page.locator("#report").isVisible()) await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
   }
   for(const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);

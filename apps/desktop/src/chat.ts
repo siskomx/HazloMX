@@ -37,7 +37,7 @@ document.querySelector("#app")!.innerHTML = `
   </section>
   <details id="past-chats" class="panel" hidden><summary>Conversaciones de la versión anterior</summary><p class="fine">Puedes leerlas sin enviarlas a una IA. Para continuar con sus mensajes, empieza una conversación vacía y elige la IA con la que seguirás. Solo se enviarán cuando pulses Enviar. No se restauran documentos, medidas ni aprobaciones; inspeccionaremos de nuevo la selección actual.</p><div id="past-chat-list"></div></details>
   <details id="results" class="panel"><summary>Resultados e historial verificados</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
-  <dialog id="report"><h2>Resultado guardado · solo lectura</h2><pre id="report-text"></pre><form method="dialog"><button>Cerrar</button></form></dialog>`;
+  <dialog id="report"><h2 id="report-heading">Resultado guardado · solo lectura</h2><p id="report-note" class="fine"></p><img id="report-image" alt="Referencia local" hidden><pre id="report-text"></pre><div class="actions"><button id="report-first" hidden>Volver al inicio</button><button id="report-next" hidden>Página siguiente</button></div><form method="dialog"><button>Cerrar</button></form></dialog>`;
 for (const [value, label] of Object.entries(programs)) $("program").append(new Option(label, value));
 
 let state: DesktopSnapshot = { project: null, job: null, inference: null, recovered: [], freecad: "", freecad_available: false };
@@ -79,7 +79,7 @@ function restoreTask() {
   if(key===storageKey)return;
   storageKey=key;turns=[];answeredChat=state.chat?.id;provider=task.provider;
   $<HTMLSelectElement>("provider").value=provider;
-  newSession=true;clearImage();taskImage=undefined;historyLoading=true;durableReady=false;
+  newSession=true;clearImage();clearReport();taskImage=undefined;historyLoading=true;durableReady=false;
   taskReady=(async()=>{
     await taskWrites;
     const raw=await taskRequest<string|null>(project,{action:"history",id:task.id,revision:task.revision,value:null});
@@ -120,14 +120,34 @@ function renderTasks(busy:boolean){
     const row=document.createElement("p"),label=document.createElement("span");const shared=ref.shared_with.includes(provider);
     label.textContent=`${ref.name} · ${Math.ceil(ref.bytes/1024)} KiB · ${shared?"compartir permitido con "+providerNames[provider]:"solo local"} `;row.append(label);
     const button=(text:string,handler:()=>void)=>{const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent=text;b.disabled=busy;b.onclick=handler;row.append(b);};
+    button("Ver localmente",()=>void action(()=>previewReference(ref)));
     button(shared?"Revocar permiso":"Compartir con esta IA…",()=>{if(shared)void action(async()=>{const {scope}=scopedTask();await taskCommand({action:"share",...scope,reference:ref.id,allow:false});clearImage();taskImage=undefined;});else{pendingReference=ref;render();}});
     if(ref.image && shared)button("Usar imagen",()=>void action(async()=>{const {project,scope}=scopedTask();referenceImage=await taskRequest<ImageReference>(project,{action:"image",...scope,reference:ref.id});taskImage=ref.id;}));
-    button("Quitar referencia",()=>void action(async()=>{const {scope}=scopedTask();await taskCommand({action:"remove",...scope,reference:ref.id},true);inspectionNotice="Referencia retirada. Las respuestas vinculadas se retiraron del contexto; los informes anteriores quedan locales. No se borra contenido ya enviado a otros servicios.";}));
+    button("Quitar referencia",()=>void action(async()=>{clearReport();const {scope}=scopedTask();await taskCommand({action:"remove",...scope,reference:ref.id},true);inspectionNotice="Referencia retirada. Las respuestas vinculadas se retiraron del contexto; los informes anteriores quedan locales. No se borra contenido ya enviado a otros servicios.";}));
     rows.append(row);
   }
   if(restrictedTask()){const p=document.createElement("p");p.className="fine";p.textContent="Hay evidencia local sin permiso de envío. Puedes seguir conversando; los contenidos, historial y resultados nativos quedan fuera de la IA hasta contar con autorización. El análisis local con extracción revisada se habilitará en una siguiente etapa.";rows.append(p);}
 }
 function clearImage() { referenceImage = undefined; $<HTMLInputElement>("image-reference").value = ""; }
+function clearReport(){
+  const dialog=$<HTMLDialogElement>("report");if(dialog.open)dialog.close();
+  $("report-text").textContent="";$("report-note").textContent="";
+  const image=$<HTMLImageElement>("report-image");image.hidden=true;image.removeAttribute("src");
+  for(const id of ["report-next","report-first"]){const b=$<HTMLButtonElement>(id);b.hidden=true;b.onclick=null;}
+  $("report-heading").textContent="Resultado guardado · solo lectura";
+}
+async function previewReference(ref:TaskReference,offset=0){
+  const {project,scope}=scopedTask(),key=storageKey;
+  const page=await taskRequest<{kind:"text"|"binary"|"image";content?:string;image?:ImageReference;next_offset:number|null}>(project,{action:"preview_reference",...scope,reference:ref.id,offset});
+  if(storageKey!==key || state.tasks?.active.id!==scope.id || state.tasks.active.revision!==scope.revision)return;
+  clearReport();$("report-heading").textContent=`${ref.name} · vista local`;
+  $("report-note").textContent="Solo lectura en este equipo. Abrir esta vista no permite enviarla a una IA. El texto se muestra por páginas de hasta 4096 caracteres.";
+  $("report-text").textContent=page.content??"";
+  if(page.image){const image=$<HTMLImageElement>("report-image");image.src=`data:${page.image.media_type};base64,${page.image.data}`;image.hidden=false;}
+  const next=$<HTMLButtonElement>("report-next");next.hidden=page.next_offset===null;next.onclick=()=>void action(()=>previewReference(ref,page.next_offset!));
+  const first=$<HTMLButtonElement>("report-first");first.hidden=offset===0;first.onclick=()=>void action(()=>previewReference(ref,0));
+  $<HTMLDialogElement>("report").showModal();
+}
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
@@ -210,7 +230,7 @@ function renderLegacy() {
 }
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
-  if (projectChanged) { appliedProgramRoute=undefined; clearImage(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
+  if (projectChanged) { appliedProgramRoute=undefined; clearImage();clearReport(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
   if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
   if (next.codex_login && state.codex_login?.id === next.codex_login.id && state.codex_login.sequence > next.codex_login.sequence) next.codex_login = state.codex_login;
@@ -331,7 +351,7 @@ function renderHistory() {
         const button = document.createElement("button"); button.className = "secondary"; button.textContent = label; button.disabled = commandBusy;
         button.onclick = () => void action(async () => {
           const content = await invoke<string | null>("open_artifact", { jobId: run.input.job_id, format });
-          if (content !== null) { $("report-text").textContent = content; $<HTMLDialogElement>("report").showModal(); }
+          if (content !== null) { clearReport();$("report-text").textContent = content; $<HTMLDialogElement>("report").showModal(); }
           $("opening-status").textContent = content !== null ? "Informe guardado abierto en modo de solo lectura." : "Se solicitó abrir el archivo verificado en Windows.";
         }); actions.append(button);
       } row.append(actions);

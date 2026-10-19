@@ -7,14 +7,12 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Read, Write},
-    os::windows::fs::{MetadataExt, OpenOptionsExt},
+    io::{self, Write},
+    os::windows::fs::OpenOptionsExt,
     path::PathBuf,
 };
 use uuid::Uuid;
-use windows_sys::Win32::Storage::FileSystem::{
-    FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_READ,
-};
+use windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ;
 
 const FILE_LIMIT: usize = 32 * 1024 * 1024;
 const TASK_LIMIT: u64 = 256 * 1024 * 1024;
@@ -228,12 +226,19 @@ pub enum Request {
         revision: u64,
         reference: Uuid,
     },
+    PreviewReference {
+        id: Uuid,
+        revision: u64,
+        reference: Uuid,
+        #[serde(default)]
+        offset: usize,
+    },
 }
 impl Request {
     pub fn changes_scope(&self) -> bool {
         !matches!(
             self,
-            Self::State | Self::History { .. } | Self::Image { .. }
+            Self::State | Self::History { .. } | Self::Image { .. } | Self::PreviewReference { .. }
         )
     }
 }
@@ -303,9 +308,21 @@ impl<'a> Store<'a> {
             .iter()
             .find(|r| r.id == reference && r.shared_with.contains(&task.provider))
             .ok_or_else(|| error("Esta referencia no tiene permiso para la IA seleccionada."))?;
-        let (folder, _pins) = self.blob_dir(task.id)?;
+        let bytes = self.reference_bytes(task.id, r)?;
+        let text=String::from_utf8(bytes).map_err(|_|error("Esta referencia es binaria. Usa una extracción local revisada o la imagen autorizada; no se envió contenido."))?;
+        if !printable_text(&text) {
+            return Err(error("La referencia contiene controles binarios. Usa una extracción local revisada; no se envió contenido."));
+        }
+        let (content, next) =
+            crate::host_tools::result_page(&text, offset).map_err(io::Error::other)?;
+        Ok(
+            serde_json::json!({"reference_id":r.id,"sha256":r.sha256,"content":content,"offset":offset,"next_offset":next,"total_bytes":r.bytes,"source_is_untrusted_data":true}),
+        )
+    }
+    fn reference_bytes(&self, task: Uuid, r: &Reference) -> io::Result<Vec<u8>> {
+        let (folder, _pins) = self.blob_dir(task)?;
         let bytes = crate::kicad_project::read_regular(
-            &folder.join(format!("{reference}.bin")),
+            &folder.join(format!("{}.bin", r.id)),
             FILE_LIMIT as u64,
         )
         .map_err(|_| error("No se pudo leer la referencia local."))?;
@@ -314,16 +331,13 @@ impl<'a> Store<'a> {
                 "La referencia cambió; su permiso no se aplica al nuevo contenido.",
             ));
         }
-        let text=String::from_utf8(bytes).map_err(|_|error("Esta referencia es binaria. Usa una extracción local revisada o la imagen autorizada; no se envió contenido."))?;
-        let total = text.chars().count();
-        if offset > total {
-            return Err(error("Página de referencia no válida."));
-        }
-        let content: String = text.chars().skip(offset).take(4096).collect();
-        let next = offset + content.chars().count();
-        Ok(
-            serde_json::json!({"reference_id":reference,"sha256":r.sha256,"content":content,"offset":offset,"next_offset":if next<total{Some(next)}else{None},"source_is_untrusted_data":true}),
-        )
+        Ok(bytes)
+    }
+    fn preview_image(&self, task: Uuid, reference: Uuid) -> io::Result<ImageInput> {
+        let (folder, _pins) = self.blob_dir(task)?;
+        let image: ImageInput = read_json(&folder.join(format!("{reference}.preview.json")))?;
+        image.validate().map_err(io::Error::other)?;
+        Ok(image)
     }
     fn empty(provider: &str) -> Task {
         Task {
@@ -626,6 +640,38 @@ impl<'a> Store<'a> {
                     }
                 }
             }
+            Request::PreviewReference {
+                id,
+                revision,
+                reference,
+                offset,
+            } => {
+                let task = self.scoped(id, revision)?;
+                let r = task
+                    .references
+                    .iter()
+                    .find(|r| r.id == reference)
+                    .ok_or_else(|| error("Referencia local no disponible."))?;
+                let bytes = self.reference_bytes(id, r)?;
+                if r.image {
+                    if offset != 0 {
+                        return Err(error("Página de imagen no válida."));
+                    }
+                    return Ok(
+                        json!({"kind":"image","image":self.preview_image(id,reference)?,"next_offset":null}),
+                    );
+                }
+                return match String::from_utf8(bytes) {
+                    Ok(text) if printable_text(&text) => {
+                        let mut page = reference_page(r, &text, offset)?;
+                        page["kind"] = json!("text");
+                        Ok(page)
+                    }
+                    _ => Ok(
+                        json!({"kind":"binary","content":"Archivo binario local. La vista no ejecuta decodificadores ni lo envía a una IA. Usa una extracción local revisada para inspeccionar su contenido.","next_offset":null}),
+                    ),
+                };
+            }
             Request::Image {
                 id,
                 revision,
@@ -643,28 +689,8 @@ impl<'a> Store<'a> {
                             "Aprueba compartir esta imagen con la IA seleccionada antes de usarla.",
                         )
                     })?;
-                let (folder, _pins) = self.blob_dir(id)?;
-                let mut file = OpenOptions::new()
-                    .read(true)
-                    .share_mode(FILE_SHARE_READ)
-                    .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
-                    .open(folder.join(format!("{}.bin", r.id)))?;
-                let metadata = file.metadata()?;
-                if !metadata.is_file()
-                    || metadata.len() != r.bytes
-                    || metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-                {
-                    return Err(error("La referencia original cambió."));
-                }
-                let mut bytes = Vec::new();
-                (&mut file)
-                    .take(FILE_LIMIT as u64 + 1)
-                    .read_to_end(&mut bytes)?;
-                if crate::kicad_project::digest(&bytes) != r.sha256 {
-                    return Err(error("La referencia original cambió."));
-                }
-                let image: ImageInput = read_json(&folder.join(format!("{}.preview.json", r.id)))?;
-                image.validate().map_err(io::Error::other)?;
+                self.reference_bytes(id, r)?;
+                let image = self.preview_image(id, r.id)?;
                 return serde_json::to_value(image).map_err(io::Error::other);
             }
         }
@@ -672,9 +698,174 @@ impl<'a> Store<'a> {
     }
 }
 
+fn reference_page(r: &Reference, text: &str, offset: usize) -> io::Result<serde_json::Value> {
+    let total = text.chars().count();
+    if offset > total {
+        return Err(error("Página de referencia no válida."));
+    }
+    let content: String = text.chars().skip(offset).take(4096).collect();
+    let next = offset + content.chars().count();
+    Ok(
+        serde_json::json!({"reference_id":r.id,"sha256":r.sha256,"content":content,"offset":offset,"next_offset":if next<total{Some(next)}else{None},"source_is_untrusted_data":true}),
+    )
+}
+fn printable_text(text: &str) -> bool {
+    !text
+        .chars()
+        .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn owned_preview_is_local_revision_bound_and_does_not_grant_sharing() {
+        let (root, p) = setup();
+        let store = Store::new(&p).unwrap();
+        let t = store.state().unwrap().active;
+        let text = "á🛠 PRIVATE_LOCAL_SENTINEL ".repeat(4000);
+        store
+            .request(Request::AddReference {
+                id: t.id,
+                revision: t.revision,
+                name: "capture.txt".into(),
+                data: STANDARD.encode(text.as_bytes()),
+                preview: None,
+            })
+            .unwrap();
+        let t = store.state().unwrap().active;
+        let reference = t.references[0].id;
+        let mut offset = 0;
+        let mut joined = String::new();
+        loop {
+            let page = store
+                .request(Request::PreviewReference {
+                    id: t.id,
+                    revision: t.revision,
+                    reference,
+                    offset,
+                })
+                .unwrap();
+            assert_eq!(page["kind"], "text");
+            let content = page["content"].as_str().unwrap();
+            assert!(content.chars().count() <= 4096);
+            joined.push_str(content);
+            if let Some(next) = page["next_offset"].as_u64() {
+                assert!(next as usize > offset);
+                offset = next as usize;
+            } else {
+                break;
+            }
+        }
+        assert_eq!(joined, text);
+        assert_eq!(store.state().unwrap().active.revision, t.revision);
+        assert!(store.state().unwrap().active.references[0]
+            .shared_with
+            .is_empty());
+        assert!(store.shared_reference(reference, 0).is_err());
+        assert!(store
+            .request(Request::PreviewReference {
+                id: t.id,
+                revision: t.revision - 1,
+                reference,
+                offset: 0
+            })
+            .is_err());
+        assert!(store
+            .request(Request::PreviewReference {
+                id: t.id,
+                revision: t.revision,
+                reference: Uuid::new_v4(),
+                offset: 0
+            })
+            .is_err());
+        store
+            .request(Request::Share {
+                id: t.id,
+                revision: t.revision,
+                reference,
+                allow: true,
+            })
+            .unwrap();
+        let mut offset = 0;
+        let mut joined = String::new();
+        loop {
+            let page = store.shared_reference(reference, offset).unwrap();
+            let content = page["content"].as_str().unwrap();
+            assert!(content.len() <= 65536);
+            joined.push_str(content);
+            if let Some(next) = page["next_offset"].as_u64() {
+                offset = next as usize;
+            } else {
+                break;
+            }
+        }
+        assert_eq!(joined, text);
+        assert!(store.shared_reference(reference, 1).is_err());
+        let t = store.state().unwrap().active;
+        fs::write(
+            store
+                .root
+                .join(t.id.to_string())
+                .join(format!("{reference}.bin")),
+            b"tampered",
+        )
+        .unwrap();
+        assert!(store
+            .request(Request::PreviewReference {
+                id: t.id,
+                revision: t.revision,
+                reference,
+                offset: 0
+            })
+            .is_err());
+        drop(store);
+        drop(p);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn binary_preview_identifies_data_without_decoding_or_granting_external_access() {
+        assert!(!printable_text("private\0firmware"));
+        assert!(!printable_text("private\u{1b}log"));
+        assert!(printable_text("normal\ntext\twith\rwhitespace"));
+        let (root, p) = setup();
+        let store = Store::new(&p).unwrap();
+        let task = store.state().unwrap().active;
+        store
+            .request(Request::AddReference {
+                id: task.id,
+                revision: task.revision,
+                name: "firmware.bin".into(),
+                data: STANDARD.encode([255, 254, 1]),
+                preview: None,
+            })
+            .unwrap();
+        let task = store.state().unwrap().active;
+        let reference = task.references[0].id;
+        let page = store
+            .request(Request::PreviewReference {
+                id: task.id,
+                revision: task.revision,
+                reference,
+                offset: 0,
+            })
+            .unwrap();
+        assert_eq!(page["kind"], "binary");
+        assert!(task.references[0].shared_with.is_empty());
+        assert!(store.shared_reference(reference, 0).is_err());
+        store
+            .request(Request::Share {
+                id: task.id,
+                revision: task.revision,
+                reference,
+                allow: true,
+            })
+            .unwrap();
+        assert!(store.shared_reference(reference, 0).is_err());
+        drop(store);
+        drop(p);
+        fs::remove_dir_all(root).unwrap();
+    }
     fn setup() -> (PathBuf, Project) {
         let root = std::env::temp_dir().join(format!("hazlo-tasks-{}", Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
@@ -762,6 +953,18 @@ mod tests {
             .unwrap();
         let t = store.state().unwrap().active;
         let reference = t.references[0].id;
+        let preview = store
+            .request(Request::PreviewReference {
+                id: t.id,
+                revision: t.revision,
+                reference,
+                offset: 0,
+            })
+            .unwrap();
+        assert_eq!(preview["kind"], "image");
+        assert!(store.state().unwrap().active.references[0]
+            .shared_with
+            .is_empty());
         assert!(store
             .request(Request::Image {
                 id: t.id,

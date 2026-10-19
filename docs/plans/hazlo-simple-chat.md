@@ -94,6 +94,14 @@ A matching property read does not prove that a native operation caused it or tha
 
 The source suite has 232 passing tests; 65 environment tests are skipped by the regular run. One of those is also run explicitly against the rebuilt disposable MCP executable: it covers partial-effect errors, pending steps staying unsent, no batch replay, mismatched native identity, preservation of a later manual edit, and rejection of altered approved checks. This is real MCP transport with a synthetic program, not engineering-window or physical-device acceptance. Reconciliation replies have their own raw-evidence sentinel in the sharing-gate test. Frontend build, desktop command tests, Clippy, chat IPC fixtures and readable approval checks also pass. No model is downloaded; the installer remains unchanged.
 
+### Local evidence inspection before sharing
+
+The task's reference rows now offer an owned, read-only local preview before any sharing decision. Text is paged at up to 4096 characters; retained images use their bounded local preview. Binary files are identified without running decoders. Reads validate the active task/revision and the original content hash, and do not change sharing grants or contact a provider. Task/project/provider changes and reference removal clear the displayed preview; opening a native report also clears any prior reference image. Approved agent reads keep UTF-8-safe pages of up to 64 KiB to avoid reducing the existing native report paging capacity.
+
+The source suite has 234 passing tests and 65 skipped environment tests. Coverage includes unshared local preview, unchanged revision/grants, stale/foreign reference refusal, retained image preview, original tampering, and reconstruction of Unicode text through local and approved pages. The browser fixture checks no provider invocation during preview, markup rendered as text, continued withholding when sending a message, and displayed content cleared on provider change/removal. Build and Clippy checks remain applicable; native-window, full sharing-lineage/caches and release checks are still pending.
+
+The client-boundary audit found an additional unfinished path: Codex's app-managed profile enables live web search, and Claude's allowed tools include WebSearch/WebFetch. Permission to send a retained reference to an AI service does not authorize sending it in a web query. Those client tools need a host-enforced research-sharing policy, preserving public-document research through an explicitly bounded route. The [official Codex configuration documentation](https://learn.chatgpt.com/docs/config-file/config-basic#web-search-mode) confirms that `web_search = "disabled"` removes its built-in search tool; this finding is not yet a tested implementation of that policy.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

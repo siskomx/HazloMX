@@ -368,7 +368,7 @@ struct AgentEditRequest {
     base_job_id: Option<Uuid>,
     source: String,
 }
-fn result_page(content: &str, offset: usize) -> Result<(&str, Option<usize>), String> {
+pub(crate) fn result_page(content: &str, offset: usize) -> Result<(&str, Option<usize>), String> {
     if offset > content.len() || !content.is_char_boundary(offset) {
         return Err("La posición del informe no es válida.".into());
     }
