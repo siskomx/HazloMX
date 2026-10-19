@@ -253,17 +253,28 @@ impl Workflow {
         project.native_recovery(None).map_err(|e|e.to_string())
     }
     pub(crate) fn recover_native_result(&self,expected:(Uuid,PathBuf),job_id:Uuid,cancel:Arc<AtomicBool>)->Result<serde_json::Value,String>{
-        let project={let state=self.state.lock().map_err(|_|"No se pudo comprobar el trabajo local.")?;inference_idle(&state)?;
+        let (project,agent_connection)={let state=self.state.lock().map_err(|_|"No se pudo comprobar el trabajo local.")?;inference_idle(&state)?;
             if state.job.as_ref().is_some_and(|job|job.view.busy || job.view.snapshot.phase==Phase::AwaitingApproval){return Err("Termina o cancela la propuesta actual antes de recuperar el resultado anterior.".into());}
-            state.project.clone().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió; no se consultó otro trabajo.")?};
+            let project=state.project.clone().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió; no se consultó otro trabajo.")?;
+            (project,state.job.as_ref().filter(|job|job.view.snapshot.input.job_id()==job_id).and_then(|job|job.live_agent.clone()))};
         let snapshot=project.history().map_err(|_|"No se pudo leer el registro local.")?.into_iter().find(|s|s.input.job_id()==job_id).ok_or("No se encontró la operación en este proyecto.")?;
         if !self.task_allows_snapshot(&snapshot)?{return Err("Vuelve a la conversación de la operación para recuperar su resultado.".into());}
-        let OperationInput::LiveCad(input)=&snapshot.input else{return Err("Este programa todavía necesita su revisión nativa específica. No se repitió ninguna operación.".into());};
+        if !matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LiveAgent(_)|OperationInput::LivePcb(_)|OperationInput::LiveDrawing(_)){return Err("Este programa todavía necesita su revisión nativa específica. No se repitió ninguna operación.".into());}
         let stage=project.store("staging").join(job_id.to_string());let directory=if stage.try_exists().map_err(|_|"No se pudo comprobar el trabajo local.")?{stage}else{project.artifact_directory(job_id)};
         let _pins=crate::project::pin_lineage(&directory).map_err(|_|"No se pudo fijar el resultado local para recuperación.")?;
         let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
         if record.outcome==crate::native_journal::Outcome::Pending{return Err("La llamada no fue admitida; prepara una nueva propuesta con el estado actual.".into());}
-        if record.outcome!=crate::native_journal::Outcome::Acknowledged && !crate::cadpilot_live::recover_result(input,&directory,&cancel)?{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
+        if record.outcome!=crate::native_journal::Outcome::Acknowledged{
+            let recovered=match &snapshot.input{
+                OperationInput::LiveCad(input)=>crate::cadpilot_live::recover_result(input,&directory,&cancel)?,
+                OperationInput::LiveAgent(input)=>{
+                    let connection=if let Some(connection)=agent_connection{connection}else{crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id))).map_err(|_|"La instancia original del editor ya no está conectada. Se conserva el trabajo y la pausa.")?};
+                    crate::agent_editor::recover_result(input,&connection,&directory,&cancel)?
+                },
+                _=>return Err("Este programa todavía necesita su evidencia nativa de finalización. Se conserva el trabajo y la pausa.".into()),
+            };
+            if !recovered{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
+        }
         let mut checked=snapshot.input.clone();checked.retain_receipt(&directory).map_err(|_|"El resultado sigue local, pero no se pudo conservar su recibo.")?;
         project.validate_outputs(&directory,&checked).map_err(|_|"El resultado nativo no pasó sus comprobaciones; se conserva la pausa.")?;
         crate::live_dispatch::recover_checked(&directory,&checked)?;
@@ -3399,6 +3410,24 @@ mod tests {
             assert!(workflow.begin(pending.approval_id.unwrap()).is_err());let t=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::New).unwrap();assert_ne!(workflow.task_state().unwrap().unwrap().active.id,t.id);assert!(workflow.recover_native_result(project,id,Arc::new(AtomicBool::new(false))).is_err());
             drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
         }
+    }
+    #[tokio::test]
+    async fn chat_recovers_an_admitted_agent_result_without_source_egress_or_edit_replay(){
+        use tokio::{io::{AsyncReadExt,AsyncWriteExt},net::windows::named_pipe::ServerOptions};
+        let (root,workflow)=setup();let workflow=Arc::new(workflow);let project=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();
+        let input=crate::agent_editor::tests::job_fixture();let id=input.job_id;let pipe=format!(r"\\.\pipe\hazlomexa-arduino-{}",input.before.instance_id);let mut server=ServerOptions::new().first_pipe_instance(true).reject_remote_clients(true).create(&pipe).unwrap();
+        let pending=workflow.propose_live_agent(project.clone(),input.clone(),crate::agent_editor::tests::connection_fixture(&input)).unwrap();let mut dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);dispatch.project.save(&dispatch.snapshot).unwrap();
+        let stage=dispatch.project.reserve_stage(id).unwrap();let fence=crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone()).unwrap();drop(fence.enter().unwrap());drop(fence);drop(stage);workflow.finish(dispatch,Err("lost outer reply".into())).unwrap();assert!(workflow.native_recovery().unwrap()[0].needs_review);
+        let expected=input.clone();let worker=tokio::spawn(async move{
+            server.connect().await.unwrap();let mut bytes=Vec::new();loop{let byte=server.read_u8().await.unwrap();if byte==b'\n'{break;}bytes.push(byte);assert!(bytes.len()<512*1024);}
+            let message:serde_json::Value=serde_json::from_slice(&bytes).unwrap();assert_eq!(message["request"]["action"],"recover");assert_eq!(message["request"]["original"]["job_id"],expected.job_id.to_string());assert_eq!(message["request"]["original"]["source"],expected.source);
+            let mut report=crate::agent_editor::tests::report_fixture(&expected);report["after"]["source"]=serde_json::json!(expected.source);server.write_all(&serde_json::to_vec(&serde_json::json!({"ok":true,"result":report})).unwrap()).await.unwrap();
+        });
+        let host=Arc::new(crate::host_tools::HostTools::new(workflow.clone()));let tools=crate::host_tools::McpTools::for_chat(host.clone(),project.clone(),Some(crate::host_tools::Program::Planning),"codex").unwrap();
+        let recovered=tools.call_in_project("recover_native_result".into(),serde_json::json!({"job_id":id}),Arc::new(AtomicBool::new(false))).await.unwrap();worker.await.unwrap();assert_eq!(recovered["recovered"],true);assert_eq!(recovered["published"],true);assert!(!recovered.to_string().contains(&input.source));assert!(!workflow.native_recovery().unwrap()[0].needs_review);assert_eq!(workflow.current().unwrap().unwrap().snapshot.phase,Phase::Completed);
+        let again=tools.call_in_project("recover_native_result".into(),serde_json::json!({"job_id":id}),Arc::new(AtomicBool::new(false))).await.unwrap();assert_eq!(again["published"],true);assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+        let report=workflow.artifact(id,ArtifactFormat::LiveAgentReport).unwrap().read_text().unwrap();assert!(!report.contains("\"source\""));
+        drop(tools);drop(host);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn checked_live_result_survives_stop_and_publication_failure_without_replay() {

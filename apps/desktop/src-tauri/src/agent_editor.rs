@@ -395,15 +395,33 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,cancel:&
             cancel,
             dispatch,
         )) }.map_err(|error| error.message())?;
+    retain_report(input,receipt,stage,false)
+}
+fn retain_report(input:&Input,receipt:Receipt,stage:&Path,recovery:bool)->Result<(),String>{
+    receipt.validate_operation(input.job_id,&input.before,&input.source,input.save).map_err(|error|error.message())?;
     let mut report = serde_json::to_value(receipt).map_err(|_| Failure::Uncertain.message())?;
     report["after"]
         .as_object_mut()
         .ok_or(Failure::Uncertain.message())?
         .remove("source");
     validate_report(input, &report)?;
+    if recovery && stage.join("result.json").try_exists().map_err(|_|"No se pudo comprobar el resultado local.")?{
+        let saved:serde_json::Value=crate::project::read_json(&stage.join("result.json")).map_err(|_|"El informe local cambió; se conserva sin reemplazarlo.")?;
+        return if saved==report{Ok(())}else{Err("El informe local no coincide con el recibo nativo. Se conserva el trabajo y la pausa.".into())};
+    }
     let bytes = serde_json::to_vec_pretty(&report).map_err(|_| Failure::Uncertain.message())?;
     crate::kicad_project::write_new(&stage.join("result.json"), &bytes)
         .map_err(|_| Failure::Uncertain.message().to_string())
+}
+pub(crate) fn recover_result(input:&Input,connection:&Connection,stage:&Path,cancel:&AtomicBool)->Result<bool,String>{
+    input.validate()?;connection.validate_for(&input.before).map_err(|error|error.message())?;
+    let mut original=json!({"action":if input.save{"save"}else{"apply"},"job_id":input.job_id,"instance_id":input.before.instance_id,"document_token":input.before.document_token,"version":input.before.version,"state_sha256":input.before.state_sha256});
+    if !input.save{original["source"]=json!(input.source);}
+    let runtime=tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_|"No se pudo iniciar la recuperación nativa.")?;
+    let value:serde_json::Value=runtime.block_on(exchange(connection,json!({"action":"recover","original":original}),false,cancel,Duration::from_secs(15))).map_err(|_|"El editor no conserva un resultado comprobado de esa operación. Se conserva el trabajo y la pausa; no repitas la edición.")?;
+    if value==json!({"editor_recovery_version":1,"status":"running"}){return Ok(false);}
+    let receipt:Receipt=serde_json::from_value(value).map_err(|_|"El recibo nativo no es compatible; se conserva la pausa.")?;
+    retain_report(input,receipt,stage,true)?;Ok(true)
 }
 impl Receipt {
     pub fn validate(&self, job: Uuid, before: &Observation, source: &str) -> Result<(), Failure> {
@@ -926,6 +944,29 @@ pub(crate) mod tests {
                     .validate(job, &before, &source),
                 Err(Failure::Uncertain)
             );
+        }
+    }
+    #[tokio::test]
+    async fn recovery_pipe_looks_up_exact_native_attempts_and_preserves_local_reports(){
+        for scenario in ["edit","save","running","wrong_job","changed_report"]{
+            let root=std::env::temp_dir().join(format!("hazlo-editor-recovery-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+            let (connection,mut server)=fixture();let mut input=job_fixture();input.before=observation(connection.instance_id);input.source=input.before.source.replace("1000","500");
+            if scenario=="save"{input.save=true;input.source=input.before.source.clone();}
+            let mut raw=report_fixture(&input);raw["after"]["source"]=json!(input.source);if scenario=="wrong_job"{raw["job_id"]=json!(Uuid::new_v4());}
+            let manual=if scenario=="changed_report"{let mut changed=report_fixture(&input);changed["after"]["version"]=json!(input.before.version+100);validate_report(&input,&changed).unwrap();let bytes=serde_json::to_vec_pretty(&changed).unwrap();std::fs::write(root.join("result.json"),&bytes).unwrap();Some(bytes)}else{None};
+            let expected=input.clone();let token=connection.token.clone();let worker=tokio::spawn(async move{
+                let message=receive(&mut server).await;let mut original=json!({"action":if expected.save{"save"}else{"apply"},"job_id":expected.job_id,"instance_id":expected.before.instance_id,"document_token":expected.before.document_token,"version":expected.before.version,"state_sha256":expected.before.state_sha256});if !expected.save{original["source"]=json!(expected.source);}
+                assert_eq!(message,json!({"token":token,"request":{"action":"recover","original":original}}));
+                let result=if scenario=="running"{json!({"editor_recovery_version":1,"status":"running"})}else{raw};server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":result})).unwrap()).await.unwrap();
+            });
+            let directory=root.clone();let checked=input.clone();let result=tokio::task::spawn_blocking(move||recover_result(&checked,&connection,&directory,&AtomicBool::new(false))).await.unwrap();worker.await.unwrap();
+            match scenario{
+                "running"=>{assert!(!result.unwrap());assert!(!root.join("result.json").exists());},
+                "wrong_job"=>{assert!(result.is_err());assert!(!root.join("result.json").exists());},
+                "changed_report"=>{assert!(result.is_err());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),manual.unwrap());},
+                _=>{assert!(result.unwrap());let report:serde_json::Value=crate::project::read_json(&root.join("result.json")).unwrap();assert!(report["after"].get("source").is_none());validate_report(&input,&report).unwrap();},
+            }
+            std::fs::remove_dir_all(root).unwrap();
         }
     }
 

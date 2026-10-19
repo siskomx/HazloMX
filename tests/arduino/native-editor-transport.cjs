@@ -70,7 +70,11 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     const request = {action:"apply", job_id:crypto.randomUUID(), instance_id:first.result.instance_id,
       document_token:first.result.document_token, version:first.result.version,
       state_sha256:first.result.state_sha256, source:doc.source + "void setup() {}\n"};
-    assert.equal((await send({token:connection.token, request})).ok, true);
+    const completed=await send({token:connection.token, request});assert.equal(completed.ok, true);
+    const beforeRecovery=reads;
+    assert.deepEqual(await send({token:connection.token,request:{action:"recover",original:request}}),completed);
+    assert.equal(reads,beforeRecovery);assert.equal(edits,1);assert.equal(saves,0);
+    assert.equal((await send({token:"0".repeat(64),request:{action:"recover",original:request}})).ok,false);
     assert.equal((await send({token:connection.token, request})).outcome, "refused");
     assert.equal((await send({token:connection.token, request:{...request, path:"C:/another.ino"}})).ok, false);
     assert.equal(edits, 1); assert(doc.source.startsWith("// unsaved user note"));

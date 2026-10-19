@@ -47,6 +47,43 @@ function save(before) {
   const {source,...request}=apply(before,before.source);
   return {...request,action:"save"};
 }
+test("native recovery preserves completed edits and later manual changes without replay",async()=>{
+  const f=fixture(),before=await read(f),request=apply(before,before.source.replace("1000","500"));
+  const done=await f.tools.request(request);assert.equal(done.ok,true);
+  const expected=JSON.parse(JSON.stringify(done));done.result.after.source="caller changed its copy";
+  f.doc.text+="// later manual change\n";f.doc.version++;const manual=f.doc.text;
+  assert.deepEqual(await f.tools.request({action:"recover",original:request}),expected);
+  f.doc.isClosed=true;f.api.window.activeTextEditor=undefined;
+  assert.deepEqual(await f.tools.request({action:"recover",original:{...request}}),expected);
+  assert.equal(f.doc.text,manual);assert.equal(f.editor.calls,1);assert.equal(f.editor.history.length,1);
+  for(const field of ["job_id","instance_id","document_token","version","state_sha256","source","action"]){
+    const changed={...request,[field]:field==="version"?request.version+1:field==="action"?"save":"other"};
+    assert.equal((await f.tools.request({action:"recover",original:changed})).ok,false);
+  }
+  const restarted=createEditorTools(f.api);assert.equal((await restarted.request({action:"recover",original:request})).ok,false);assert.equal(f.editor.calls,1);
+});
+test("native save recovery never saves again and rejects reuse of an attempted identity",async()=>{
+  const f=fixture(),before=await read(f),request=save(before);let saves=0;
+  f.doc.save=async()=>{saves++;f.doc.isDirty=false;return true;};
+  const done=await f.tools.request(request);assert.equal(done.ok,true);f.doc.isDirty=true;
+  assert.deepEqual(await f.tools.request({action:"recover",original:request}),done);
+  assert.equal((await f.tools.request(request)).outcome,"refused");assert.equal(f.doc.isDirty,true);assert.equal(saves,1);assert.equal(f.editor.calls,0);
+});
+test("running and uncertain attempts never become recovered completion",async()=>{
+  const f=fixture(),before=await read(f),request=apply(before,before.source.replace("1000","500"));let release;
+  f.editor.hold=new Promise(resolve=>{release=resolve;});const pending=f.tools.request(request);
+  assert.deepEqual(await f.tools.request({action:"recover",original:request}),{ok:true,result:{editor_recovery_version:1,status:"running"}});
+  assert.equal((await f.tools.request(request)).outcome,"refused");release();assert.equal((await pending).ok,true);assert.equal(f.editor.calls,1);
+  const bad=fixture(),initial=await read(bad),uncertain=apply(initial,initial.source.replace("1000","500"));bad.editor.mode="lost_reply";
+  assert.equal((await bad.tools.request(uncertain)).outcome,"uncertain");assert.equal((await bad.tools.request({action:"recover",original:uncertain})).ok,false);assert.equal((await bad.tools.request(uncertain)).outcome,"refused");assert.equal(bad.editor.calls,1);
+});
+test("native receipt quota refuses before effects and preserves earlier completed work",async()=>{
+  const f=fixture();let first,done;
+  for(let i=0;i<128;i++){
+    const before=await read(f),request=apply(before,before.source+`// change ${i}\n`),reply=await f.tools.request(request);assert.equal(reply.ok,true);if(i===0){first=request;done=reply;}
+  }
+  const before=await read(f),request=apply(before,before.source+"// not admitted\n");assert.equal((await f.tools.request(request)).outcome,"refused");assert.equal(f.editor.calls,128);assert.equal(f.doc.text,before.source);assert.deepEqual(await f.tools.request({action:"recover",original:first}),done);
+});
 test("explicit native save retains the exact buffer and edit history", async()=>{
   const f=fixture(),before=await read(f);let saves=0;
   f.doc.save=async()=>{saves++;f.doc.isDirty=false;return true;};
