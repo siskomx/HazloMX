@@ -377,13 +377,14 @@ pub fn reconcile(
     )
 }
 
-pub fn validate_observations(directory: &Path, input: &Input) -> Result<(), String> {
+pub(crate) fn recorded_observations(directory: &Path, input: &Input, finished:bool) -> Result<Option<Vec<Value>>, String> {
     let Some(journal) = read(directory, input).map_err(|_| "El registro nativo cambió.")? else {
-        return Ok(());
+        return Ok(None);
     };
-    if !journal.finished {
+    if (finished && !journal.finished) || journal.steps.iter().any(|step|step.outcome!=Outcome::Acknowledged) {
         return Err("El registro nativo tiene pasos sin confirmar.".into());
     }
+    let mut results=Vec::new();
     for (index, step) in journal.steps.iter().enumerate() {
         let bytes = crate::kicad_project::read_regular(
             &directory.join(format!("observation-{index}.json")),
@@ -394,7 +395,16 @@ pub fn validate_observations(directory: &Path, input: &Input) -> Result<(), Stri
                 "Una observación nativa cambió; se conserva sin repetir las llamadas.".into(),
             );
         }
+        let value:Value=serde_json::from_slice(&bytes).map_err(|_|"La observación nativa no es válida.")?;
+        if value.as_object().is_none_or(|object|object.len()!=1 || !object.contains_key("result")) || value["result"]["isError"]==true{return Err("La observación no confirma una respuesta nativa correcta; no se repiten llamadas.".into());}
+        results.push(value["result"].clone());
     }
+    Ok(Some(results))
+}
+pub(crate) fn finish_recorded(directory:&Path,input:&Input)->Result<(),String>{
+    let journal=read(directory,input).map_err(|_|"El registro nativo cambió.")?.ok_or("Falta el registro nativo.")?;
+    if journal.input_sha256.is_none(){return Err("El registro anterior no vincula la entrada completa; se conserva su estado.".into());}
+    if !journal.finished{Batch{path:directory.join("dispatch.json"),journal}.complete()?;}
     Ok(())
 }
 

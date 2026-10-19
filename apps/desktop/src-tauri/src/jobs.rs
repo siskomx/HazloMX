@@ -297,9 +297,14 @@ impl Workflow {
             (project,state.job.as_ref().filter(|job|job.view.snapshot.input.job_id()==job_id).and_then(|job|job.live_agent.clone()))};
         let snapshot=project.history().map_err(|_|"No se pudo leer el registro local.")?.into_iter().find(|s|s.input.job_id()==job_id).ok_or("No se encontró la operación en este proyecto.")?;
         if !self.task_allows_snapshot(&snapshot)?{return Err("Vuelve a la conversación de la operación para recuperar su resultado.".into());}
-        if !matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LiveAgent(_)|OperationInput::LivePcb(_)|OperationInput::LiveDrawing(_)){return Err("Este programa todavía necesita su revisión nativa específica. No se repitió ninguna operación.".into());}
+        if !matches!(&snapshot.input,OperationInput::NativeTools(_)|OperationInput::LiveCad(_)|OperationInput::LiveAgent(_)|OperationInput::LivePcb(_)|OperationInput::LiveDrawing(_)){return Err("Este programa todavía necesita su revisión nativa específica. No se repitió ninguna operación.".into());}
         let stage=project.store("staging").join(job_id.to_string());let directory=if stage.try_exists().map_err(|_|"No se pudo comprobar el trabajo local.")?{stage}else{project.artifact_directory(job_id)};
         let _pins=crate::project::pin_lineage(&directory).map_err(|_|"No se pudo fijar el resultado local para recuperación.")?;
+        let mut checked=snapshot.input.clone();
+        if let OperationInput::NativeTools(input)=&snapshot.input{
+            checked=OperationInput::NativeTools(crate::native_tools::recover_recorded_result(&directory,input)?);
+            let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|_|"El resultado sigue local; no se pudo registrar su recibo recuperado.")?;
+        }else{
         let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
         if record.outcome==crate::native_journal::Outcome::Pending{return Err("La llamada no fue admitida; prepara una nueva propuesta con el estado actual.".into());}
         if record.refusal_sha256.is_some() || matches!(&snapshot.input,OperationInput::LiveDrawing(input) if crate::cadcraft_live::refusal_proof(input,&directory).unwrap_or(false)){
@@ -321,9 +326,10 @@ impl Workflow {
             };
             if !recovered{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
         }
-        let mut checked=snapshot.input.clone();checked.retain_receipt(&directory).map_err(|_|"El resultado sigue local, pero no se pudo conservar su recibo.")?;
+        checked.retain_receipt(&directory).map_err(|_|"El resultado sigue local, pero no se pudo conservar su recibo.")?;
         project.validate_outputs(&directory,&checked).map_err(|_|"El resultado nativo no pasó sus comprobaciones; se conserva la pausa.")?;
         crate::live_dispatch::recover_checked(&directory,&checked)?;
+        }
         drop(_pins);
         let recovered=project.recover().map_err(|_|"El resultado se conservó, pero su publicación local sigue pendiente. No repitas la operación.")?;
         let saved=recovered.into_iter().find(|s|s.input.job_id()==job_id).ok_or("El resultado sigue local; vuelve a comprobar su publicación.")?;let published=saved.phase==Phase::Completed;
@@ -3543,6 +3549,12 @@ mod tests {
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn chat_recovers_recorded_catalog_batches_without_an_editor_or_replaying_calls(){
+        let (fixture,input,_)=crate::native_tools::tests::recorded_fixture("all_acknowledged");let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let expected=workflow.view().unwrap().project.unwrap();let project=workflow.state.lock().unwrap().project.clone().unwrap();let id=input.job_id;let stage=project.reserve_stage(id).unwrap();for entry in fs::read_dir(&fixture).unwrap(){let entry=entry.unwrap();fs::copy(entry.path(),stage.path.join(entry.file_name())).unwrap();}let mut snapshot=project.snapshot(OperationInput::NativeTools(input),Phase::Interrupted).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();fs::write(root.join("manual.native"),b"keep manual work").unwrap();drop(stage);drop(project);
+        let task_before=workflow.task_state().unwrap().unwrap().active;let result=workflow.recover_native_result(expected.clone(),id,Arc::new(AtomicBool::new(false))).unwrap();assert_eq!(result["recovered"],true);assert_eq!(result["published"],true);assert_eq!(result["edit_repeated"],false);assert!(!result.to_string().contains("PRIVATE_NATIVE_SENTINEL"));assert_eq!(workflow.task_state().unwrap().unwrap().active.revision,task_before.revision);assert_eq!(workflow.task_state().unwrap().unwrap().active.id,task.id);let bytes=workflow.artifact(id,ArtifactFormat::NativeToolsReport).unwrap().read_text().unwrap();assert!(bytes.contains("PRIVATE_NATIVE_SENTINEL"));assert_eq!(workflow.recover_native_result(expected.clone(),id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);assert_eq!(workflow.artifact(id,ArtifactFormat::NativeToolsReport).unwrap().read_text().unwrap(),bytes);assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"keep manual work");assert!(!workflow.native_recovery().unwrap()[0].needs_review);
+        workflow.task_request(expected.clone(),crate::tasks::Request::New).unwrap();assert!(workflow.recover_native_result(expected,id,Arc::new(AtomicBool::new(false))).is_err());drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()) && fixture.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();fs::remove_dir_all(fixture).unwrap();
+    }
     #[test]
     fn recovered_native_receipts_publish_without_replay_and_preserve_occupied_outputs(){
         for blocked in [false,true]{

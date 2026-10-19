@@ -1068,6 +1068,10 @@ impl Project {
         for mut snapshot in self.history()? {
             let published = self.artifact_directory(snapshot.input.job_id());
             let previous_phase = snapshot.phase;
+            if let OperationInput::NativeTools(input)=&snapshot.input{if input.receipt_sha256.is_none(){
+                let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
+                if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if let Ok(checked)=crate::native_tools::recover_recorded_result(&directory,input){snapshot.input=OperationInput::NativeTools(checked);self.save(&snapshot)?;}}
+            }}
             if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) && snapshot.input.receipt_sha256().is_none() {
                 let stage=self.store("staging").join(snapshot.input.job_id().to_string());
                 let directory=if stage.try_exists()?{stage}else{published.clone()};
@@ -1129,6 +1133,18 @@ pub(crate) mod tests {
     use super::*;
     use crate::{freecad::Geometry, Dimensions};
 
+    #[test]
+    fn restart_recovers_only_fully_recorded_catalog_batches_and_preserves_occupied_outputs(){
+        for mode in ["all_acknowledged","uncertain","occupied","changed_report"]{
+            let (fixture,input,_)=crate::native_tools::tests::recorded_fixture(if mode=="uncertain"{"uncertain"}else{"all_acknowledged"});let root=root();let project=Project::create(&root).unwrap();let id=input.job_id;let stage=project.reserve_stage(id).unwrap();for entry in fs::read_dir(&fixture).unwrap(){let entry=entry.unwrap();fs::copy(entry.path(),stage.path.join(entry.file_name())).unwrap();}if mode=="changed_report"{fs::write(stage.path.join("result.json"),b"preserve changed report").unwrap();}let mut snapshot=project.snapshot(OperationInput::NativeTools(input),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();let published=project.artifact_directory(id);if mode=="occupied"{fs::create_dir(&published).unwrap();fs::write(published.join("manual.native"),b"preserve occupied output").unwrap();}drop(stage);drop(project);
+            let project=Project::open(&root).unwrap();let result=project.recover().unwrap();assert_eq!(result[0].phase,if mode=="all_acknowledged"{Phase::Completed}else{Phase::Interrupted});let stage=project.store("staging").join(id.to_string());
+            if mode=="all_acknowledged"{assert!(result[0].audit.as_ref().unwrap().files_verified);assert!(published.join("result.json").exists());assert!(!project.native_recovery(None).unwrap()[0].needs_review);}
+            if mode=="uncertain"{assert!(result[0].input.receipt_sha256().is_none());assert!(!stage.join("result.json").exists());assert!(project.native_recovery(None).unwrap()[0].needs_review);}
+            if mode=="changed_report"{assert_eq!(fs::read(stage.join("result.json")).unwrap(),b"preserve changed report");assert!(result[0].input.receipt_sha256().is_none());}
+            if mode=="occupied"{assert_eq!(fs::read(published.join("manual.native")).unwrap(),b"preserve occupied output");assert!(stage.join("result.json").exists());assert!(result[0].input.receipt_sha256().is_some());fs::remove_file(published.join("manual.native")).unwrap();fs::remove_dir(&published).unwrap();assert_eq!(project.recover().unwrap()[0].phase,Phase::Completed);}
+            drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()) && fixture.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();fs::remove_dir_all(fixture).unwrap();
+        }
+    }
     #[test]
     fn all_live_receipts_recover_without_native_calls_and_reject_tampering() {
         let agent=crate::agent_editor::tests::job_fixture();

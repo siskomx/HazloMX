@@ -1074,21 +1074,29 @@ fn dispatch_permit<'a>(gate:&'a Mutex<()>,cancel:&AtomicBool,paused:&AtomicBool)
     Ok(permit)
 }
 pub fn validate_artifacts(directory: &Path, input: &Input) -> Result<(), String> {
-    crate::native_journal::validate_observations(directory,input)?;
+    input.validate()?;
+    let observations=crate::native_journal::recorded_observations(directory,input,true)?;
     let bytes = crate::kicad_project::read_regular(&directory.join("result.json"), REPORT_LIMIT)?;
     if input.receipt_sha256.as_deref() != Some(&crate::kicad_project::digest(&bytes)) {
         return Err("El informe nativo cambió.".into());
     }
     let value: Value = serde_json::from_slice(&bytes).map_err(|_| "Informe nativo no válido.")?;
+    validate_report(input,&value)?;
+    if let Some(observations)=observations{validate_recorded_report(input,&value,&observations)?;}
+    Ok(())
+}
+fn validate_report(input:&Input,value:&Value)->Result<(),String>{
     if value["job_id"] != input.job_id.to_string()
         || value["connection_id"] != input.connection_id.to_string()
         || value["catalog_sha256"] != input.catalog_sha256
         || value["program"]
             != serde_json::to_value(input.program).map_err(|_| "Programa no válido.")?
         || value["native_tools_version"] != 1
+        || value.get("geometry_independently_verified").is_some_and(|v|v!=false) || value.get("source_is_untrusted_data").is_some_and(|v|v!=true)
         || value["results"]
             .as_array()
             .is_none_or(|r| r.len() != input.calls.len())
+        || value["results"].as_array().is_some_and(|results|results.iter().any(|result|result["isError"]==true)) || value["readback"]["isError"]==true
         || value["readback_sha256"]
             != crate::kicad_project::digest(
                 &serde_json::to_vec(&value["readback"]).map_err(|_| "Lectura no válida.")?,
@@ -1096,12 +1104,79 @@ pub fn validate_artifacts(directory: &Path, input: &Input) -> Result<(), String>
     {
         return Err("El informe no corresponde a las llamadas nativas aprobadas.".into());
     }
+    if let Some(guard)=input.guard.as_ref().filter(|guard|!guard.checks.is_empty()){
+        let observed=crate::native_checks::observed(&value["readback"]);
+        if guard.checks.iter().any(|check|!crate::native_checks::matches(check,&observed)){return Err("El informe no satisface las comprobaciones nativas aprobadas; se conserva el trabajo.".into());}
+    }
     Ok(())
+}
+fn validate_recorded_report(input:&Input,report:&Value,observations:&[Value])->Result<(),String>{
+    let offset=usize::from(input.guard.is_some());
+    if observations.len()!=offset+input.calls.len()+1{return Err("Faltan respuestas nativas del lote original.".into());}
+    if let Some(guard)=&input.guard{
+        if crate::kicad_project::digest(&serde_json::to_vec(&observations[0]).map_err(|_|"Observación no válida.")?)!=guard.result_sha256 || !crate::native_checks::identities(&guard.checks,&observations[0]){return Err("La observación previa no corresponde al estado aprobado.".into());}
+    }
+    if report["results"]!=json!(&observations[offset..offset+input.calls.len()]) || report["readback"]!=observations[offset+input.calls.len()]{return Err("El informe no coincide con las respuestas nativas guardadas; no se reemplazó ni repitió trabajo.".into());}
+    Ok(())
+}
+pub(crate) fn recover_recorded_result(directory:&Path,input:&Input)->Result<Input,String>{
+    input.validate()?;
+    let journal=crate::native_journal::read(directory,input).map_err(|_|"El registro nativo cambió.")?.ok_or("Falta el registro nativo original.")?;
+    if journal.input_sha256.is_none(){return Err("El registro anterior no vincula la entrada completa; se conserva la pausa.".into());}
+    let observations=crate::native_journal::recorded_observations(directory,input,false)?.ok_or("Faltan respuestas nativas del lote original.")?;
+    let path=directory.join("result.json");
+    let existing=path.try_exists().map_err(|_|"No se pudo comprobar el informe local.")?;
+    let report=if existing{
+        let bytes=crate::kicad_project::read_regular(&path,REPORT_LIMIT)?;
+        if input.receipt_sha256.as_ref().is_some_and(|hash|*hash!=crate::kicad_project::digest(&bytes)){return Err("El informe guardado cambió; se conserva sin reemplazarlo.".into());}
+        serde_json::from_slice(&bytes).map_err(|_|"El informe existente no es válido; se conserva sin reemplazarlo.")?
+    }else{
+        if input.receipt_sha256.is_some(){return Err("Falta el informe del recibo original; no se sustituyó por otro.".into());}
+        let offset=usize::from(input.guard.is_some());let readback=observations.last().ok_or("Falta la lectura final original.")?;
+        json!({"native_tools_version":1,"job_id":input.job_id,"connection_id":input.connection_id,"program":input.program,"catalog_sha256":input.catalog_sha256,"results":&observations[offset..offset+input.calls.len()],"readback":readback,"readback_sha256":crate::kicad_project::digest(&serde_json::to_vec(readback).map_err(|_|"Lectura no válida.")?),"scope":"recorded_native_responses","reconstructed_report":true,"geometry_independently_verified":false,"source_is_untrusted_data":true})
+    };
+    validate_report(input,&report)?;validate_recorded_report(input,&report,&observations)?;
+    if serde_json::to_vec_pretty(&report).map_err(|_|"Informe no válido.")?.len() as u64>REPORT_LIMIT{return Err("El informe recuperado supera el límite; se conservan las respuestas originales.".into());}
+    if !existing{crate::project::atomic_json(&path,&report,false).map_err(|_|"No se pudo guardar el informe recuperado; no se repitieron llamadas.")?;}
+    let bytes=crate::kicad_project::read_regular(&path,REPORT_LIMIT)?;
+    let mut checked=input.clone();checked.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
+    crate::native_journal::finish_recorded(directory,input)?;
+    validate_artifacts(directory,&checked)?;
+    Ok(checked)
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+    pub(crate) fn recorded_fixture(mode:&str)->(std::path::PathBuf,Input,Value){
+        let root=std::env::temp_dir().join(format!("hazlo-recorded-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let id=Uuid::new_v4();let query=Call{tool:"read_document".into(),arguments:Default::default()};let before=json!({"structuredContent":{"document_id":id,"width_mm":10,"manual_label":"PRIVATE_NATIVE_SENTINEL"}});let after=json!({"structuredContent":{"document_id":id,"width_mm":20,"manual_label":"PRIVATE_NATIVE_SENTINEL"}});
+        let mut input=Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned recorded batch".into(),calls:vec![Call{tool:"edit_parameter".into(),arguments:serde_json::from_value(json!({"width_mm":20})).unwrap()}],readback:query.clone(),guard:Some(Guard{call:query,result_sha256:crate::kicad_project::digest(&serde_json::to_vec(&before).unwrap()),checks:vec![crate::native_checks::Check{role:crate::native_checks::Role::Identity,label:"Native document".into(),pointer:"/document_id".into(),expected:json!(id),step:None},crate::native_checks::Check{role:crate::native_checks::Role::Outcome,label:"Agreed width".into(),pointer:"/width_mm".into(),expected:json!(20),step:Some(0)}]}),receipt_sha256:None};input.validate().unwrap();
+        let mut batch=crate::native_journal::Batch::start(&root,&input).unwrap();batch.dispatch(0).unwrap();let mut actual_before=before;if mode=="wrong_guard"{actual_before["structuredContent"]["width_mm"]=json!(11);}batch.observe(0,&Ok(actual_before)).unwrap();batch.dispatch(1).unwrap();
+        if mode=="uncertain"{batch.observe(1,&Err("PRIVATE_NATIVE_SENTINEL".into())).unwrap();return (root,input,after);}
+        batch.observe(1,&Ok(if mode=="native_error"{json!({"isError":true})}else{json!({"acknowledged":true})})).unwrap();if mode=="pending"{return (root,input,after);}batch.dispatch(2).unwrap();let mut actual_after=after.clone();if mode=="wrong_outcome"{actual_after["structuredContent"]["width_mm"]=json!(21);}batch.observe(2,&Ok(actual_after)).unwrap();
+        if mode=="finished"{batch.complete().unwrap();}
+        if mode=="legacy"{let path=root.join("dispatch.json");let mut journal:Value=crate::project::read_json(&path).unwrap();journal.as_object_mut().unwrap().remove("input_sha256");crate::project::atomic_json(&path,&journal,true).unwrap();}
+        if mode=="known_missing"{input.receipt_sha256=Some("c".repeat(64));}(root,input,after)
+    }
+    #[test]
+    fn fully_recorded_batches_recover_without_native_calls_and_preserve_original_bytes(){
+        for mode in ["finished","all_acknowledged"]{let (root,input,after)=recorded_fixture(mode);std::fs::write(root.join("manual.native"),b"preserve manual edits").unwrap();let checked=recover_recorded_result(&root,&input).unwrap();validate_artifacts(&root,&checked).unwrap();let bytes=std::fs::read(root.join("result.json")).unwrap();let report:Value=serde_json::from_slice(&bytes).unwrap();assert_eq!(report["readback"],after);assert_eq!(report["reconstructed_report"],true);assert_eq!(report["geometry_independently_verified"],false);assert!(crate::native_journal::read(&root,&checked).unwrap().unwrap().finished);assert_eq!(recover_recorded_result(&root,&checked).unwrap().receipt_sha256,checked.receipt_sha256);assert_eq!(std::fs::read(root.join("result.json")).unwrap(),bytes);assert_eq!(std::fs::read(root.join("manual.native")).unwrap(),b"preserve manual edits");assert!(crate::native_journal::Batch::start(&root,&input).is_err());std::fs::remove_dir_all(root).unwrap();}
+    }
+    #[test]
+    fn interrupted_recovery_keeps_the_created_report_and_resumes_after_journal_unlock(){
+        let(root,input,_)=recorded_fixture("all_acknowledged");let journal=root.join("dispatch.json");let original=std::fs::read(&journal).unwrap();let lock=OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(&journal).unwrap();assert!(recover_recorded_result(&root,&input).is_err());assert_eq!(std::fs::read(&journal).unwrap(),original);let report=std::fs::read(root.join("result.json")).unwrap();assert!(!crate::native_journal::read(&root,&input).unwrap().unwrap().finished);drop(lock);let checked=recover_recorded_result(&root,&input).unwrap();validate_artifacts(&root,&checked).unwrap();assert_eq!(std::fs::read(root.join("result.json")).unwrap(),report);assert!(crate::native_journal::read(&root,&checked).unwrap().unwrap().finished);std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn recorded_recovery_refuses_uncertainty_missing_bindings_and_failed_native_checks(){
+        for mode in ["uncertain","pending","legacy","wrong_guard","wrong_outcome","native_error","known_missing"]{let(root,input,_)=recorded_fixture(mode);let journal=std::fs::read(root.join("dispatch.json")).unwrap();let error=recover_recorded_result(&root,&input).unwrap_err();assert!(!error.contains("PRIVATE_NATIVE_SENTINEL"));assert!(!root.join("result.json").exists());assert_eq!(std::fs::read(root.join("dispatch.json")).unwrap(),journal);std::fs::remove_dir_all(root).unwrap();}
+    }
+    #[test]
+    fn recorded_report_validation_rejects_self_consistent_substitutions_and_keeps_changed_reports(){
+        let (root,input,_)=recorded_fixture("finished");let checked=recover_recorded_result(&root,&input).unwrap();let path=root.join("result.json");let original=std::fs::read(&path).unwrap();let report:Value=serde_json::from_slice(&original).unwrap();
+        for field in ["width_mm","manual_label"]{let mut altered=report.clone();altered["readback"]["structuredContent"][field]=json!("changed");altered["readback_sha256"]=json!(crate::kicad_project::digest(&serde_json::to_vec(&altered["readback"]).unwrap()));let bytes=serde_json::to_vec(&altered).unwrap();std::fs::write(&path,&bytes).unwrap();let mut matching_hash=checked.clone();matching_hash.receipt_sha256=Some(crate::kicad_project::digest(&bytes));assert!(validate_artifacts(&root,&matching_hash).is_err());assert!(recover_recorded_result(&root,&input).is_err());assert_eq!(std::fs::read(&path).unwrap(),bytes);}
+        let mut false_claim=report.clone();false_claim["geometry_independently_verified"]=json!(true);let bytes=serde_json::to_vec(&false_claim).unwrap();std::fs::write(&path,&bytes).unwrap();let mut matching_hash=checked.clone();matching_hash.receipt_sha256=Some(crate::kicad_project::digest(&bytes));assert!(validate_artifacts(&root,&matching_hash).is_err());assert!(recover_recorded_result(&root,&input).is_err());assert_eq!(std::fs::read(&path).unwrap(),bytes);
+        std::fs::write(&path,&original).unwrap();let adopted=recover_recorded_result(&root,&input).unwrap();assert_eq!(adopted.receipt_sha256,checked.receipt_sha256);assert_eq!(std::fs::read(&path).unwrap(),original);std::fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     #[ignore="Requires explicitly built disposable native_tools_fixture executable"]
     fn native_reconciliation_preserves_uncertain_effects_without_replay(){
