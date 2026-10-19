@@ -176,6 +176,56 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    pub fn task_state(&self) -> Result<Option<crate::tasks::State>, String> {
+        let state=self.state.lock().map_err(|e|e.to_string())?;
+        state.project.as_ref().map(|p|crate::tasks::Store::new(p).and_then(|s|s.state()).map_err(|e|e.to_string())).transpose()
+    }
+    pub fn task_binding(&self) -> Result<Option<crate::tasks::Binding>, String> {
+        let state=self.state.lock().map_err(|e|e.to_string())?;
+        state.project.as_ref().map(|p|crate::tasks::Store::new(p).and_then(|s|s.binding()).map_err(|e|e.to_string())).transpose().map(Option::flatten)
+    }
+    pub fn task_allows_snapshot(&self,snapshot:&Snapshot)->Result<bool,String>{
+        let state=self.state.lock().map_err(|e|e.to_string())?;
+        let Some(project)=&state.project else{return Ok(false);};
+        let task=crate::tasks::Store::new(project).and_then(|s|s.active()).map_err(|e|e.to_string())?;
+        Ok(task.is_none_or(|task|snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).map_or(task.legacy,|binding|binding.id==task.id)))
+    }
+    pub fn task_restricted(&self) -> Result<bool,String> {
+        let state=self.state.lock().map_err(|e|e.to_string())?;
+        Ok(state.project.as_ref().map(|p|crate::tasks::Store::new(p).and_then(|s|s.active())).transpose().map_err(|e|e.to_string())?.flatten().is_some_and(|t|t.restricted()))
+    }
+    pub fn task_request(&self,expected:(Uuid,PathBuf),request:crate::tasks::Request)->Result<serde_json::Value,String>{
+        let mut state=self.state.lock().map_err(|e|e.to_string())?;inference_idle(&state)?;
+        if state.job.as_ref().is_some_and(|j|j.view.busy){return Err("Termina o detén la operación antes de cambiar la tarea.".into());}
+        let changed=request.changes_scope();let switches=matches!(request,crate::tasks::Request::New|crate::tasks::Request::Open{..});
+        let project=state.project.as_ref().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió; la tarea se conservó.")?;
+        let result=crate::tasks::Store::new(project).and_then(|s|s.request(request)).map_err(|e|e.to_string())?;
+        if changed {if let Some(job)=state.job.as_mut().filter(|j|j.view.snapshot.phase==Phase::AwaitingApproval){
+            job.view.approval_id=None;job.view.snapshot.phase=Phase::Cancelled;job.view.advance();
+        }}
+        if changed {if let (Some(project),Some(job))=(&state.project,&state.job){project.save(&job.view.snapshot).map_err(|e|e.to_string())?;}}
+        if switches {*self.agent_source.lock().map_err(|e|e.to_string())?=None;}
+        Ok(result)
+    }
+    pub fn task_prompt(&self,provider:&str,prompt:String,human:Option<String>,image:Option<&crate::image_input::ImageInput>)->Result<(String,bool),String>{
+        let state=self.state.lock().map_err(|e|e.to_string())?;
+        let Some(project)=&state.project else{return Ok((prompt,false));};
+        let store=crate::tasks::Store::new(project).map_err(|e|e.to_string())?;
+        let Some(task)=store.active().map_err(|e|e.to_string())? else{return Ok((prompt,false));};
+        if task.provider!=provider{return Err("Aprueba el cambio de IA en la conversación antes de enviar contexto.".into());}
+        if let Some(image)=image {
+            let matched=task.references.iter().filter(|r|r.image && r.shared_with.contains(&task.provider)).any(|r|{
+                store.request(crate::tasks::Request::Image{id:task.id,revision:task.revision,reference:r.id}).ok().is_some_and(|v|v==serde_json::json!({"media_type":image.media_type,"data":image.data}))
+            });
+            if !matched{return Err("La imagen no pertenece a una referencia aprobada para esta IA.".into());}
+        }
+        if task.restricted(){
+            let text=human.unwrap_or_else(||"La operación terminó; sus datos permanecen locales. Explica que falta autorización para compartir evidencia y ofrece el siguiente paso sin describir su contenido.".into());
+            if text.len()>4096{return Err("Mensaje demasiado grande.".into());}
+            return Ok((serde_json::json!({"user_request":text,"instruction":"Las referencias y resultados de esta tarea permanecen locales. No puedes leerlos ni suponer su contenido. Continúa con investigación pública o pide la autorización específica necesaria. Hazlo sigue siendo un chat que coordina herramientas nativas; no descargues modelos."}).to_string(),true));
+        }
+        Ok((prompt,false))
+    }
     pub fn new(executable: PathBuf, profiles: PathBuf) -> Result<Self, String> {
         if !executable.is_absolute() || !profiles.is_absolute() {
             return Err("Las rutas de configuración deben ser absolutas.".into());
@@ -2203,6 +2253,7 @@ impl Workflow {
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
         let project = state.project.clone().ok_or("Seleccione un proyecto.")?;
+        let current_task=crate::tasks::Store::new(&project).and_then(|s|s.binding()).map_err(|e|e.to_string())?;
         let job = state
             .job
             .as_mut()
@@ -2214,6 +2265,7 @@ impl Workflow {
         {
             return Err("La aprobación venció o ya fue utilizada.".into());
         }
+        if job.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref())!=current_task.as_ref(){return Err("La tarea o sus entradas cambiaron; prepara una nueva propuesta.".into());}
         let agent = if matches!(job.view.snapshot.input, OperationInput::Agent(_)) {
             let connection = self
                 .agent_connection()?
@@ -2676,6 +2728,30 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn tasks_bind_approval_and_keep_restricted_content_out_of_prompts(){
+        use crate::tasks::Request;
+        let (root,workflow)=setup();let workflow=Arc::new(workflow);let project=workflow.view().unwrap().project.unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        let proposed=workflow.propose(dimensions()).unwrap();assert_eq!(proposed.snapshot.audit.as_ref().unwrap().task.as_ref().unwrap().id,task.id);
+        let approval=proposed.approval_id.unwrap();
+        workflow.task_request(project.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve my edits".into(),history:"{\"version\":1,\"turns\":[]}".into()}).unwrap();
+        assert!(workflow.begin(approval).is_err());
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(project.clone(),Request::AddReference{id:task.id,revision:task.revision,name:"capture.bin".into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,b"private sentinel"),preview:None}).unwrap();
+        let (prompt,isolated)=workflow.task_prompt("codex","native error contains private sentinel".into(),None,None).unwrap();
+        assert!(isolated && !prompt.contains("private sentinel"));
+        let (prompt,_)=workflow.task_prompt("codex","history contains private sentinel".into(),Some("Research public documents".into()),None).unwrap();
+        assert!(!prompt.contains("private sentinel") && prompt.contains("Research public documents"));
+        assert!(workflow.task_prompt("claude","hello".into(),None,None).is_err());
+        workflow.task_request(project,Request::New).unwrap();assert!(!workflow.task_allows_snapshot(&proposed.snapshot).unwrap());
+        let host=Arc::new(crate::host_tools::HostTools::new(workflow.clone()));
+        let tools=crate::host_tools::McpTools::new(host.clone()).unwrap();
+        assert!(host.call("propose_cad_document_change",serde_json::json!({"base_job_id":proposed.snapshot.input.job_id()})).unwrap_err().contains("otra conversación"));
+        workflow.task_request(workflow.view().unwrap().project.unwrap(),Request::New).unwrap();
+        assert!(tools.check_scope().is_err());
+        drop(tools);drop(host);drop(workflow);std::fs::remove_dir_all(root).unwrap();
+    }
     use super::*;
     #[test]
     fn conversation_history_is_bound_to_current_project_and_folder() {

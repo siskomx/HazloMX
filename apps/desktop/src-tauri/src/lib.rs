@@ -4,6 +4,9 @@ use uuid::Uuid;
 pub mod image_input;
 
 #[cfg(windows)]
+pub mod tasks;
+
+#[cfg(windows)]
 pub mod process;
 
 #[cfg(windows)]

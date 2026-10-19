@@ -37,6 +37,7 @@ function doubledLength(value: unknown): string | undefined {
 export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
+  if(run.audit?.task) facts.push("Esta aprobación solo permite el cambio mostrado en esta conversación. Cambiar la tarea, sus mensajes o referencias invalida la propuesta; no permite instalar herramientas, compartir nuevas referencias ni controlar hardware.");
   if(input.native_tools_version){
     facts.push("Usar las herramientas nativas de " + input.program + ".", "Objetivo: " + input.description,
       "El programa ejecutará las llamadas del catálogo conectado; puedes revisar sus argumentos en los detalles.",

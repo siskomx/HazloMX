@@ -442,6 +442,18 @@ struct SelectedKicadCheckRequest {
 }
 
 impl HostTools {
+    pub fn clear_task_context(&self)->Result<(),String>{
+        self.disconnect_native_tools()?;
+        *self.schematic.lock().map_err(|e|e.to_string())?=None;
+        *self.pcb.lock().map_err(|e|e.to_string())?=None;
+        *self.drawing.lock().map_err(|e|e.to_string())?=None;
+        *self.live_pcb.lock().map_err(|e|e.to_string())?=None;
+        *self.live_drawing.lock().map_err(|e|e.to_string())?=None;
+        *self.slice.lock().map_err(|e|e.to_string())?=None;
+        *self.check_source.lock().map_err(|e|e.to_string())?=None;
+        *self.cad_document.lock().map_err(|e|e.to_string())?=None;
+        Ok(())
+    }
     fn cancel_unapproved_result(&self, result: &Result<Value, String>) {
         if let Ok(value) = result {
             if let Some(id) = value
@@ -1373,6 +1385,13 @@ impl HostTools {
         arguments: Value,
         cancelled: Arc<AtomicBool>,
     ) -> Result<Value, String> {
+        if self.workflow.task_restricted()? && !matches!(name,"select_program"|"get_design_capabilities"|"inspect_native_tools"|"propose_native_tool_calls") {return Err("La evidencia y los resultados permanecen locales; falta permiso para compartirlos con esta IA.".into());}
+        if let Some(base)=arguments.get("base_job_id").and_then(Value::as_str).and_then(|s|Uuid::parse_str(s).ok()) {
+            let view=self.workflow.view()?;
+            if let Some(snapshot)=view.history.iter().find(|s|s.input.job_id()==base) {
+                if !self.workflow.task_allows_snapshot(snapshot)? {return Err("El resultado base pertenece a otra conversación.".into());}
+            }
+        }
         if cancelled.load(Ordering::SeqCst) {
             return Err("Solicitud cancelada.".into());
         }
@@ -1690,6 +1709,7 @@ impl HostTools {
                 let view=self.workflow.view()?;
                 let project=view.project.ok_or("Selecciona un proyecto.")?;
                 let snapshot=view.history.iter().find(|run|run.input.job_id()==request.job_id).ok_or("La operación no pertenece al proyecto seleccionado.")?;
+                if !self.workflow.task_allows_snapshot(snapshot)?{return Err("El resultado pertenece a otra tarea; no se compartió su contenido.".into());}
                 if snapshot.phase!=Phase::Completed{return Err("La operación aún no tiene un resultado publicado y verificado.".into());}
                 let format=match &snapshot.input {
                     OperationInput::Freecad(_)=>ArtifactFormat::SolidReport,
@@ -1744,6 +1764,9 @@ impl HostTools {
             "get_workflow_status"=>{
                 let _:NoArguments=serde_json::from_value(arguments).map_err(decode_error)?;
                 let mut view=self.workflow.view()?;
+                let allowed=view.history.iter().map(|s|self.workflow.task_allows_snapshot(s)).collect::<Result<Vec<_>,_>>()?;
+                let mut flags=allowed.into_iter();view.history.retain(|_|flags.next().unwrap_or(false));
+                if view.job.as_ref().is_some_and(|j|!self.workflow.task_allows_snapshot(&j.snapshot).unwrap_or(false)){view.job=None;}
                 view.history.sort_by_key(|s| std::cmp::Reverse((
                     s.audit.as_ref().map(|a| (a.updated_unix_ms, a.created_unix_ms)),
                     s.input.job_id(),
@@ -1853,7 +1876,7 @@ pub fn catalog() -> Vec<Tool> {
 }
 
 #[derive(Clone)]
-pub struct McpTools(pub Arc<HostTools>, Option<(Uuid, PathBuf)>, Arc<Mutex<Option<Program>>>);
+pub struct McpTools(pub Arc<HostTools>, Option<(Uuid, PathBuf)>, Arc<Mutex<Option<Program>>>, Option<crate::tasks::Binding>);
 impl McpTools {
     pub fn for_project(host: Arc<HostTools>, project: Uuid) -> Result<Self, String> {
         let selected = host
@@ -1862,7 +1885,8 @@ impl McpTools {
             .project
             .filter(|selected| selected.0 == project)
             .ok_or("El proyecto cambió. Conecta el agente de nuevo.")?;
-        Ok(Self(host, Some(selected), Arc::new(Mutex::new(None))))
+        let task=host.workflow.task_binding()?;
+        Ok(Self(host, Some(selected), Arc::new(Mutex::new(None)),task))
     }
     pub fn for_program(host: Arc<HostTools>, project: (Uuid, PathBuf), program: Program) -> Result<Self, String> {
         let scoped = Self::for_project(host, project.0)?;
@@ -1872,12 +1896,14 @@ impl McpTools {
     }
     pub fn new(host: Arc<HostTools>) -> Result<Self, String> {
         let project = host.workflow.view()?.project;
-        Ok(Self(host, project, Arc::new(Mutex::new(None))))
+        let task=host.workflow.task_binding()?;
+        Ok(Self(host, project, Arc::new(Mutex::new(None)),task))
     }
     pub(crate) fn check_scope(&self) -> Result<(), String> {
         if self.0.workflow.view()?.project != self.1 {
             return Err("El proyecto cambió. Conecta el agente de nuevo.".into());
         }
+        if self.0.workflow.task_binding()?!=self.3{return Err("La tarea cambió. Conecta la conversación de nuevo.".into());}
         Ok(())
     }
     pub(crate) fn project(&self) -> Option<(Uuid, PathBuf)> { self.1.clone() }
@@ -1975,6 +2001,7 @@ impl McpTools {
     }
     pub(crate) async fn call_in_project(&self, name: String, arguments: Value, cancelled: Arc<AtomicBool>) -> Result<Value, String> {
         self.check_scope()?;
+        if self.0.workflow.task_restricted()? && !matches!(name.as_str(),"select_program"|"get_design_capabilities"|"inspect_native_tools"|"propose_native_tool_calls") {return Err("La evidencia y los resultados de esta tarea permanecen locales. Falta autorización explícita para compartirlos con esta IA.".into());}
         self.check_tool(&name)?;
         self.check_native_scope(&name)?;
         self.check_capability_scope(&name,&arguments)?;

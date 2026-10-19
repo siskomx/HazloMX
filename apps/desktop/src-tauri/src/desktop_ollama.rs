@@ -14,6 +14,7 @@ pub(crate) async fn start_ollama_chat(
     program: hazlomexa::host_tools::Program,
     prompt: String,
     image: Option<hazlomexa::image_input::ImageInput>,
+    task_user_request: Option<String>,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
     if prompt.trim().is_empty() || prompt.len() > 8192 {
@@ -42,6 +43,7 @@ pub(crate) async fn start_ollama_chat(
         ModelProfile::LocalExperimental => "ollama_local",
         ModelProfile::Cloud => "ollama_cloud",
     };
+    let (prompt,_)=state.workflow.task_prompt(provider,prompt,task_user_request,image.as_ref())?;
     let cancelled = Arc::new(AtomicBool::new(false));
     *current = Some(ChatTurn {
         view: ChatView {

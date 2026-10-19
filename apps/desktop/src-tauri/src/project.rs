@@ -169,6 +169,8 @@ pub enum RunSource {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RunAudit {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task: Option<crate::tasks::Binding>,
     pub source: RunSource,
     pub user_edited: bool,
     pub adapter_version: u32,
@@ -398,7 +400,7 @@ pub(crate) fn pin_lineage(path: &Path) -> io::Result<Vec<File>> {
     Ok(pins)
 }
 
-fn read_json<T: DeserializeOwned>(path: &Path) -> io::Result<T> {
+pub(crate) fn read_json<T: DeserializeOwned>(path: &Path) -> io::Result<T> {
     let file = OpenOptions::new()
         .read(true)
         .share_mode(FILE_SHARE_READ)
@@ -441,7 +443,7 @@ fn rename_handle(source: &File, target: &Path, replace: bool) -> io::Result<()> 
     Ok(())
 }
 
-fn atomic_json<T: Serialize>(target: &Path, value: &T, replace: bool) -> io::Result<()> {
+pub(crate) fn atomic_json<T: Serialize>(target: &Path, value: &T, replace: bool) -> io::Result<()> {
     let bytes = serde_json::to_vec_pretty(value).map_err(io::Error::other)?;
     let temporary = target.with_file_name(format!("{}.tmp", Uuid::new_v4()));
     let mut file = OpenOptions::new()
@@ -538,7 +540,7 @@ impl Project {
     pub fn open(root: &Path) -> io::Result<Self> {
         Self::acquire(root, false)
     }
-    fn store(&self, name: &str) -> PathBuf {
+    pub(crate) fn store(&self, name: &str) -> PathBuf {
         self.root.join(".hazlomexa").join(name)
     }
     fn snapshot_path(&self, job: Uuid) -> PathBuf {
@@ -718,6 +720,7 @@ impl Project {
             input,
             phase,
             audit: Some(RunAudit {
+                task: crate::tasks::Store::new(self)?.binding()?,
                 source: RunSource::Manual,
                 user_edited: false,
                 adapter_version: 1,
@@ -772,6 +775,9 @@ impl Project {
         match (snapshot.schema_version, &snapshot.audit) {
             (1, None) => (),
             (2..=17, Some(audit)) => {
+                if audit.task.as_ref().is_some_and(|task|task.id.is_nil() || task.revision==0) {
+                    return Err(error("La identidad de tarea de la ejecución no es válida."));
+                }
                 if matches!(audit.source, RunSource::Mcp)
                     != matches!(snapshot.schema_version, 10 | 12 | 13 | 14 | 15 | 16 | 17)
                 {

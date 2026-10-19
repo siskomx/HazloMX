@@ -67,6 +67,8 @@ struct ChatTurn {
 
 #[derive(Serialize)]
 struct DesktopSnapshot {
+    task_support: bool,
+    tasks: Option<hazlomexa::tasks::State>,
     project: Option<(Uuid, PathBuf)>,
     job: Option<JobView>,
     inference: Option<InferenceView>,
@@ -107,6 +109,8 @@ fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
         .as_ref()
         .is_some_and(|session| Some(session.0) == project_id && session.2.is_some());
     Ok(DesktopSnapshot {
+        task_support: true,
+        tasks: state.workflow.task_state()?,
         claude_conversation_ready,
         codex_conversation_ready,
         project: view.project,
@@ -328,15 +332,19 @@ fn cancel_chat(state: State<AppState>, id: Uuid) -> Result<ChatView, String> {
     Ok(turn.view.clone())
 }
 #[tauri::command]
+#[allow(clippy::too_many_arguments)] // Tauri IPC arguments are the desktop command contract.
 async fn start_claude_chat(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     prompt: String,
     image: Option<hazlomexa::image_input::ImageInput>,
+    task_user_request: Option<String>,
     program: hazlomexa::host_tools::Program,
     new_session: bool,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
+    let (prompt,isolated)=state.workflow.task_prompt("claude",prompt,task_user_request,image.as_ref())?;
+    let new_session=new_session || isolated;
     if prompt.trim().is_empty() || prompt.len() > 8192 {
         return Err("Escribe una solicitud de hasta 8 KiB.".into());
     }
@@ -1270,6 +1278,38 @@ fn conversation_history(state: State<AppState>, project_id: Uuid, project_direct
 }
 
 #[tauri::command]
+fn task_action(state:State<AppState>,project_id:Uuid,project_directory:PathBuf,request:hazlomexa::tasks::Request)->Result<serde_json::Value,String>{
+    let changes=request.changes_scope();
+    let switches=matches!(request,hazlomexa::tasks::Request::New|hazlomexa::tasks::Request::Open{..});
+    if changes && desktop_codex::agent_busy(&state)? {return Err("Detén la conversación antes de cambiar la tarea o sus referencias.".into());}
+    let result=state.workflow.task_request((project_id,project_directory),request)?;
+    if changes {
+        *state.codex_session.lock().map_err(|e|e.to_string())?=None;
+        *state.chat_session.lock().map_err(|e|e.to_string())?=None;
+    }
+    if switches {state.tools.clear_task_context()?;*state.chat.lock().map_err(|e|e.to_string())?=None;}
+    Ok(result)
+}
+
+#[tauri::command]
+fn ensure_task_workspace(app:tauri::AppHandle,state:State<AppState>,provider:Option<String>)->Result<DesktopSnapshot,String>{
+    if desktop_codex::agent_busy(&state)? {return Err("Espera a que termine la conversación.".into());}
+    if state.workflow.view()?.project.is_none(){
+        let parent=app.path().app_local_data_dir().map_err(|e|e.to_string())?.join("workspaces");
+        std::fs::create_dir_all(&parent).map_err(|e|e.to_string())?;
+        let root=parent.join("default");std::fs::create_dir_all(&root).map_err(|e|e.to_string())?;
+        let project=if root.join("hazlomx.json").exists(){Project::open(&root)}else{Project::create(&root)}.map_err(|e|e.to_string())?;
+        state.workflow.select_project(project)?;
+        if let Some(provider)=provider {
+            let tasks=state.workflow.task_state()?.ok_or("No se pudo preparar la tarea.")?;
+            let project=state.workflow.view()?.project.ok_or("No se pudo preparar el proyecto.")?;
+            state.workflow.task_request(project,hazlomexa::tasks::Request::Provider{id:tasks.active.id,revision:tasks.active.revision,provider})?;
+        }
+    }
+    snapshot(&state)
+}
+
+#[tauri::command]
 fn open_artifact(
     state: State<AppState>,
     job_id: Uuid,
@@ -1368,6 +1408,8 @@ fn main() {
             let local = PathBuf::from(std::env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA missing")?);
             let freecad = std::env::var_os("HAZLOMEXA_FREECAD_CMD").map(PathBuf::from).unwrap_or_else(|| local.join("HazloMexa/runtimes/FreeCAD-1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311/FreeCADCmd.exe"));
             let workflow = Arc::new(Workflow::new(freecad.clone(), data.join("freecad-profiles"))?);
+            let saved_workspace=data.join("workspaces/default");
+            if saved_workspace.join("hazlomx.json").exists() {workflow.select_project(Project::open(&saved_workspace)?)?;}
             if let (Some(executable), Some(toolchain)) = (std::env::var_os("HAZLOMEXA_ARDUINO_CLI"), std::env::var_os("HAZLOMEXA_ARDUINO_DATA")) {
                 // Optional runtime configuration must not prevent the existing FreeCAD workflow starting.
                 let _ = workflow.set_arduino(PathBuf::from(executable), PathBuf::from(toolchain));
@@ -1398,7 +1440,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, prepare_diagnostic_tool, conversation_history, detect_clients, connect_native_tools, disconnect_native_tools, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, task_action, ensure_task_workspace, prepare_diagnostic_tool, conversation_history, detect_clients, connect_native_tools, disconnect_native_tools, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 

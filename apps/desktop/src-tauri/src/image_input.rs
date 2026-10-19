@@ -1,9 +1,9 @@
 //! Bounded, inline references only: no agent-selected paths or remote image URLs.
 use base64::{engine::general_purpose::STANDARD, Engine};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub const MAX_BYTES: usize = 512 * 1024;
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImageInput {
     pub media_type: String,

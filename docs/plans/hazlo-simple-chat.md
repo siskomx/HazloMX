@@ -64,6 +64,16 @@ Classify raw captures, firmware, private logs and revealing derivatives as local
 
 Missing native facilities must produce an honest scope limit, faithful working-copy alternative or specific blocker. Do not build another editor or a general workflow framework to hide those limits. Native transactions do not automatically guarantee concurrency isolation. CLI help and repository release metadata do not prove installed compatibility; use real runtime catalogs and required capability probes.
 
+## Implementation status: durable-task foundation
+
+The first slice adds separate, reopenable conversations in a local workspace, including an automatic default workspace reopened on app startup. Existing provider histories are imported as separate tasks without changing the original histories. A task retains its first request, transcript, selected provider and immutable local reference copies; new conversations preserve prior ones. Files and image previews stay local until explicit sharing consent for the selected provider. Switching providers is a separate explicit chat action and does not transfer reference grants. No model download is added.
+
+Native proposals record task identity and revision. New messages, task switches and reference/provider changes invalidate pending approvals; stale agent tool connections are rejected. Result reads and follow-up base results are checked against the active task. This adds task boundaries to the existing one-use software approval, not the later complete effect-envelope or hardware approval system.
+
+Until reviewed local extraction and full evidence lineage exist, any unshared reference causes native results and prior prompt/history content to be withheld from the model. Public research and explicitly typed requests can continue in a fresh provider session. Removing a reference deletes its managed original/preview and linked assistant context while retaining user messages. Native reports remain local after removal of a previously shared reference because their per-reference lineage is not yet available. Copies already sent to a provider or embedded in native deliverables are not erased by this action. Native tools are not sandboxed from arbitrary filesystem access; this slice does not establish complete cross-tool egress isolation.
+
+Remaining work includes durable constraints/progress and correction barriers, forward recovery of uncertain writes, reviewed local extraction and comprehensive derivative/cache cleanup, full per-call egress enforcement, effect-bound approvals and the separate hardware boundary. Real native-window and installer/restart lifecycle checks remain necessary after these source-level and browser-fixture checks. The currently installed release is unchanged by this slice.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

@@ -252,15 +252,19 @@ pub(crate) fn open_codex_login(state: State<AppState>, id: Uuid) -> Result<(), S
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)] // Tauri IPC arguments are the desktop command contract.
 pub(crate) async fn start_codex_chat(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     prompt: String,
     image: Option<hazlomexa::image_input::ImageInput>,
+    task_user_request: Option<String>,
     program: hazlomexa::host_tools::Program,
     new_session: bool,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
+    let (prompt,isolated)=state.workflow.task_prompt("codex",prompt,task_user_request,image.as_ref())?;
+    let new_session=new_session || isolated;
     if prompt.trim().is_empty() || prompt.len() > 8192 {
         return Err("Escribe una solicitud de hasta 8 KiB.".into());
     }

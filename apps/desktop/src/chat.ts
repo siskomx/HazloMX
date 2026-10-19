@@ -2,6 +2,8 @@ import { invoke, Channel } from "@tauri-apps/api/core";
 import { agentPrompt, CHAT_HISTORY_BYTES, savedConversation, type Turn } from "./design";
 import { legacyConversations } from "./chat-history";
 import { readConversation, writeConversation } from "./chat-storage";
+import { taskRequest, referenceData } from "./task-storage";
+import type {TaskState, TaskReference} from "./contracts";
 import { proposalFacts } from "./proposal-review";
 import type { DiscoveredLiveDrawing, ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import {prepareImageReference, type ImageReference} from "./image-reference";
@@ -24,10 +26,12 @@ document.querySelector("#app")!.innerHTML = `
     <p id="document-scope" class="fine"></p>
     <h2>Proyecto local</h2><p id="project-name" class="fine"></p><div class="actions"><button id="create-project" class="secondary">Crear proyecto…</button><button id="open-project" class="secondary">Abrir proyecto…</button></div>
   </details>
-  <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
+  <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="task-title" class="fine"></p><details id="task-history" hidden><summary>Conversaciones guardadas</summary><label for="saved-task">Conversación</label><select id="saved-task"></select><button id="open-task" class="secondary">Abrir conversación</button></details><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
+    <section id="provider-offer" hidden><p id="provider-offer-text"></p><button id="approve-provider">Cambiar IA y compartir el contexto indicado</button><button id="keep-provider" class="secondary">Seguir con la IA actual</button></section>
+    <div id="task-references"></div><section id="reference-offer" hidden><p id="reference-offer-text"></p><button id="approve-reference">Permitir compartir con esta IA</button><button id="keep-reference-local" class="secondary">Mantener local</button></section>
     <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
     <p id="error" role="alert" hidden></p>
-    <form id="chat-form"><div class="actions"><button id="attach-image" type="button" class="secondary">Adjuntar imagen…</button><button id="remove-image" type="button" class="secondary" hidden>Quitar imagen</button></div><input id="image-reference" type="file" accept="image/png,image/jpeg" hidden><img id="reference-preview" alt="Imagen de referencia adjunta" hidden><p id="image-status" class="fine">Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.</p><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
+    <form id="chat-form"><div class="actions"><button id="attach-image" type="button" class="secondary">Adjuntar imagen…</button><button id="attach-file" type="button" class="secondary" hidden>Adjuntar archivo…</button><button id="remove-image" type="button" class="secondary" hidden>Quitar imagen</button></div><input id="image-reference" type="file" accept="image/png,image/jpeg" hidden><input id="file-reference" type="file" hidden><img id="reference-preview" alt="Imagen de referencia adjunta" hidden><p id="image-status" class="fine">Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.</p><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
     <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
@@ -52,12 +56,88 @@ let resultReview: { revision: number; project: string; provider: Provider; progr
 let inspection: {id?:string;cancelled:boolean;stopping:boolean;stop:Promise<void>} | undefined;
 let inspectionNotice = "";
 let referenceImage: ImageReference | undefined;
+let taskWrites:Promise<void>=Promise.resolve(), taskReady:Promise<void>=Promise.resolve();
+let pendingProvider:Provider|undefined, pendingReference:TaskReference|undefined;
+let taskImage:string|undefined;
+function scopedTask() {
+  const task=state.tasks?.active;if(!task || !state.project) throw Error("No hay una tarea activa.");
+  return {project:state.project,task,scope:{id:task.id,revision:task.revision}};
+}
+function restrictedTask() {const task=state.tasks?.active;return !!task && (task.restricted_results || task.references.some(r=>!r.shared_with.includes(provider)));}
+async function taskCommand(request:Record<string,unknown>,reload=false) {
+  await taskWrites;
+  const {project}=scopedTask();
+  const tasks=await taskRequest<TaskState>(project,request);
+  if(reload){storageKey="";clearImage();pendingProvider=undefined;pendingReference=undefined;sourceContext={};sourceNames={};sourcePreviousJobs={};nativeCatalog=undefined;program="planning";}
+  const next=await invoke<DesktopSnapshot>("get_snapshot");
+  newSession=true;revision++;apply({...next,tasks,codex_conversation_ready:false,claude_conversation_ready:false});
+  await taskReady;
+}
+function restoreTask() {
+  const task=state.tasks!.active,project=state.project!;
+  const key=`hazlomexa.task:${JSON.stringify([...project,task.id])}`;
+  if(key===storageKey)return;
+  storageKey=key;turns=[];answeredChat=state.chat?.id;provider=task.provider;
+  $<HTMLSelectElement>("provider").value=provider;
+  newSession=true;clearImage();taskImage=undefined;historyLoading=true;durableReady=false;
+  taskReady=(async()=>{
+    await taskWrites;
+    const raw=await taskRequest<string|null>(project,{action:"history",id:task.id,revision:task.revision,value:null});
+    if(storageKey!==key)return;
+    const saved=savedConversation(raw,CHAT_HISTORY_BYTES);
+    if(raw!==null && !saved)throw Error("La conversación guardada no es válida. Sus datos se conservan.");
+    turns=saved?.turns??[];historyLoading=false;durableReady=true;
+    const image=[...task.references].reverse().find(r=>r.image && r.shared_with.includes(provider));
+    if(image){referenceImage=await taskRequest<ImageReference>(project,{action:"image",id:task.id,revision:task.revision,reference:image.id});taskImage=image.id;}
+    render();
+  })().catch(e=>{if(storageKey===key){historyLoading=false;error(e);render();}});
+}
+async function ensureTask() {
+  if(!state.project && state.task_support)apply(await invoke<DesktopSnapshot>("ensure_task_workspace",{provider}));
+  await taskReady;
+  if(state.task_support && !durableReady)throw Error("No se confirmó la lectura de la tarea. Se conservó el mensaje; no se enviará contexto incompleto.");
+}
+async function addReference(file:File,image:boolean){
+  await ensureTask();const {scope}=scopedTask();
+  const preview=image?await prepareImageReference(file):null;
+  await taskCommand({action:"add_reference",...scope,name:file.name,data:await referenceData(file),preview});
+  if(preview){referenceImage=preview;taskImage=state.tasks!.active.references.at(-1)!.id;}
+  inspectionNotice="Referencia guardada localmente. No se ha enviado a una IA.";render();
+}
+function renderTasks(busy:boolean){
+  const tasks=state.tasks;$("task-history").hidden=!tasks;$("attach-file").hidden=!state.task_support;
+  $<HTMLButtonElement>("attach-file").disabled=busy;
+  $("task-title").textContent=tasks?`${tasks.active.title} · guardado local en ${state.project?.[1]}`:"";
+  if(tasks){const list=$<HTMLSelectElement>("saved-task"),selected=list.value;list.replaceChildren(...tasks.tasks.map(t=>new Option(t.title,t.id)));list.value=tasks.tasks.some(t=>t.id===selected)?selected:tasks.active.id;list.disabled=busy;}
+  $<HTMLButtonElement>("open-task").disabled=busy;
+  $("provider-offer").hidden=!pendingProvider;
+  $("provider-offer-text").textContent=pendingProvider?`Cambiar a ${providerNames[pendingProvider]} compartirá el contexto autorizado de esta tarea. Las referencias sin permiso para esa IA siguen locales; sus resultados e historial no se enviarán automáticamente. No se descargan modelos.`:"";
+  $("reference-offer").hidden=!pendingReference;
+  $("reference-offer-text").textContent=pendingReference?`¿Permites que ${providerNames[provider]} reciba el contenido de «${pendingReference.name}» y los resultados de su análisis para esta tarea? Puede enviarse a su servicio externo. Puedes revocar el permiso; no borra lo ya enviado.`:"";
+  for(const id of ["approve-provider","keep-provider","approve-reference","keep-reference-local"]) $<HTMLButtonElement>(id).disabled=busy;
+  const rows=$("task-references");rows.replaceChildren();
+  for(const ref of tasks?.active.references??[]){
+    const row=document.createElement("p"),label=document.createElement("span");const shared=ref.shared_with.includes(provider);
+    label.textContent=`${ref.name} · ${Math.ceil(ref.bytes/1024)} KiB · ${shared?"compartir permitido con "+providerNames[provider]:"solo local"} `;row.append(label);
+    const button=(text:string,handler:()=>void)=>{const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent=text;b.disabled=busy;b.onclick=handler;row.append(b);};
+    button(shared?"Revocar permiso":"Compartir con esta IA…",()=>{if(shared)void action(async()=>{const {scope}=scopedTask();await taskCommand({action:"share",...scope,reference:ref.id,allow:false});clearImage();taskImage=undefined;});else{pendingReference=ref;render();}});
+    if(ref.image && shared)button("Usar imagen",()=>void action(async()=>{const {project,scope}=scopedTask();referenceImage=await taskRequest<ImageReference>(project,{action:"image",...scope,reference:ref.id});taskImage=ref.id;}));
+    button("Quitar referencia",()=>void action(async()=>{const {scope}=scopedTask();await taskCommand({action:"remove",...scope,reference:ref.id},true);inspectionNotice="Referencia retirada. Las respuestas vinculadas se retiraron del contexto; los informes anteriores quedan locales. No se borra contenido ya enviado a otros servicios.";}));
+    rows.append(row);
+  }
+  if(restrictedTask()){const p=document.createElement("p");p.className="fine";p.textContent="Hay evidencia local sin permiso de envío. Puedes seguir conversando; los contenidos, historial y resultados nativos quedan fuera de la IA hasta contar con autorización. El análisis local con extracción revisada se habilitará en una siguiente etapa.";rows.append(p);}
+}
 function clearImage() { referenceImage = undefined; $<HTMLInputElement>("image-reference").value = ""; }
 
 function error(message: unknown) { $("error").textContent = String(message); $("error").hidden = false; }
 function persist() {
   if (!storageKey || historyLoading) return;
   const saved = JSON.stringify({ version: 1, turns, answeredChat });
+  if(state.tasks && state.project){
+    const {project,scope}=scopedTask();const key=storageKey;
+    taskWrites=taskWrites.catch(()=>{}).then(async()=>{await taskRequest(project,{action:"history",...scope,value:saved});if(storageKey===key)$("storage-status").textContent="Conversación guardada localmente con esta tarea.";});
+    void taskWrites.catch(e=>{if(storageKey===key)error(e);});return;
+  }
   const scope = storageKey, version = ++storageVersion;
   const current = () => scope === storageKey && version === storageVersion;
   try {
@@ -73,6 +153,7 @@ function persist() {
   } catch { $("storage-status").textContent = "No se pudo guardar esta conversación. Conserva lo importante antes de cerrar."; }
 }
 function restore() {
+  if(state.tasks && state.project){restoreTask();return;}
   const key = state.project ? `hazlomexa.chat.v2:${JSON.stringify([...state.project, provider])}` : "";
   if (key === storageKey) return;
   persist(); storageKey = key; turns = []; answeredChat = undefined; newSession = true; contextNotice = "";
@@ -277,15 +358,16 @@ function renderQuestion() {
 function render() {
   $<HTMLSelectElement>("program").value=program;
   const busy = historyLoading || commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
+  renderTasks(busy);
   $("context-status").textContent = contextNotice;
-  $<HTMLButtonElement>("attach-image").disabled = busy || !state.project;
+  $<HTMLButtonElement>("attach-image").disabled = busy || (!state.project && !state.task_support);
   $<HTMLButtonElement>("remove-image").disabled = busy;
   $("remove-image").hidden = !referenceImage;
   const preview = $<HTMLImageElement>("reference-preview"); preview.hidden = !referenceImage;
   const imageUrl = referenceImage ? `data:${referenceImage.media_type};base64,${referenceImage.data}` : "";
   if (imageUrl && preview.getAttribute("src") !== imageUrl) preview.src = imageUrl;
   if (!imageUrl) preview.removeAttribute("src");
-  $("image-status").textContent = referenceImage ? "La referencia se incluirá al enviar a la IA seleccionada. Hazlo no guarda la imagen en el historial; vuelve a adjuntarla si reinicias." : "Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.";
+  $("image-status").textContent = state.task_support ? "Las referencias quedan guardadas con esta tarea. Cada envío de contenido necesita permiso para la IA seleccionada. Puedes usar una imagen con una IA con visión." : referenceImage ? "La referencia se incluirá al enviar a la IA seleccionada. Hazlo no guarda la imagen en el historial; vuelve a adjuntarla si reinicias." : "Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.";
   const ollama = provider.startsWith("ollama_");
   const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
   $("project-name").textContent = state.project ? `Carpeta del proyecto: ${state.project[1]}. Sus archivos e historial se conservan aquí.` : "Elige dónde guardar el proyecto y su historial.";
@@ -293,7 +375,7 @@ function render() {
   $("live-pcb-setup").hidden = program !== "kicad";
   $("live-drawing-setup").hidden = program !== "drawing";
   $("document-scope").textContent = ["tshark","usbpcap","serial"].includes(program) ? "Describe el dispositivo y qué quieres observar. Conectar la herramienta no confirma acceso al equipo. El chat preparará cada consulta o captura para tu aprobación; no instala controladores ni transmite comandos automáticamente." : sourceContext.native_tools && sourceContext.native_tools.program === program ? "Conexión nativa: el chat descubre los nombres y esquemas del programa y prepara llamadas para tu aprobación. Hazlo conserva una lectura final. La CLI no implica acceso al editor abierto." : program === "rea" ? "Rea viene incluido en Hazlo y se conecta al abrir el proyecto. Analiza software o firmware con sus herramientas reales. Para recrear una pieza a partir de una foto, elige un programa CAD y una IA con visión." : program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : program === "drawing" && sourceContext.live_drawing_source ? "Dibujo abierto conectado: el chat prepara círculos y movimientos que verás en CADCraft al aprobarlos. Puedes deshacer las ediciones allí. Si pides una copia DXF, aprobarás su exportación por separado: incluye el estado actual sin guardar y Hazlo comprueba la copia. El dibujo abierto conserva su nombre y estado." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
-  $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${sourceContext.native_tools?.program === program ? sourceContext.native_tools.transport === "cli" ? ["tshark","usbpcap","serial"].includes(program) ? "herramientas de diagnóstico conectadas" : "CLI instalada · archivos guardados" : "herramientas MCP conectadas" : program === "planning" ? "vamos a elegir el programa" : program === "drawing" && sourceContext.live_drawing_source ? "dibujo abierto en CADCraft" : native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : ["tshark","usbpcap","serial"].includes(program) ? "herramienta pendiente de conexión" : "archivos guardados"}`;
+  $("connection-status").textContent = !state.project ? state.task_support ? "Describe tu idea; Hazlo guardará esta conversación en un espacio local." : "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${sourceContext.native_tools?.program === program ? sourceContext.native_tools.transport === "cli" ? ["tshark","usbpcap","serial"].includes(program) ? "herramientas de diagnóstico conectadas" : "CLI instalada · archivos guardados" : "herramientas MCP conectadas" : program === "planning" ? "vamos a elegir el programa" : program === "drawing" && sourceContext.live_drawing_source ? "dibujo abierto en CADCraft" : native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : ["tshark","usbpcap","serial"].includes(program) ? "herramienta pendiente de conexión" : "archivos guardados"}`;
   $("source-status").textContent = program === "planning" ? "La IA elige el programa adecuado y conecta sus herramientas instaladas. Puedes ajustar las conexiones aquí." : sourceNames[program] ?? (["tshark","usbpcap","serial"].includes(program) ? "La detección buscará herramientas instaladas; puedes descargarlas si faltan." : program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
   if (JSON.stringify(messages) !== renderedConversation) {
@@ -304,7 +386,7 @@ function render() {
     if (follow) log.scrollTop = log.scrollHeight;
   }
   $("chat-progress").textContent = inspection ? inspection.cancelled || inspection.stopping ? "Deteniendo inspección…" : inspection.id ? "Inspeccionando el documento con sus herramientas…" : "Selecciona las fuentes o cancela la ventana de selección." : state.chat?.provider === provider && state.chat.busy ? state.chat.cancelled ? "Deteniendo conversación…" : state.chat.text || "Consultando a tu IA…" : inspectionNotice;
-  for (const id of ["send", "new-chat"]) $<HTMLButtonElement>(id).disabled = busy || !state.project || !clientReady;
+  for (const id of ["send", "new-chat"]) $<HTMLButtonElement>(id).disabled = busy || (!state.project && !state.task_support) || !clientReady;
   $<HTMLTextAreaElement>("prompt").disabled = busy;
   $<HTMLButtonElement>("stop").disabled = inspection ? !inspection.id || inspection.stopping || inspection.cancelled : commandBusy || !state.chat?.busy || !!state.chat.cancelled;
   $("stop").textContent = inspection ? "Detener inspección" : "Detener";
@@ -486,13 +568,23 @@ function context() {
   return { project_id: state.project?.[0], native_tools:sourceContext.native_tools?.program === program ? sourceContext.native_tools : undefined, program: programs[program], ...selected, current_job: job && (!native || !!job.input.live_pcb_version) && (!drawingNative || !!job.input.live_drawing_version) ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: drawingNative ? "open_native_drawing" : native ? "open_native_pcb" : program === "agent" ? "open_agent_and_explicit_saved_copies" : program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies", live_document_connection: program === "freecad" || program === "agent" ? null : native || drawingNative, live_mutations_allowed: native || drawingNative || program === "freecad" || program === "agent", native_connection_check: drawingNative ? "inspect_open_drawing" : native ? "inspect_selected_live_pcb" : program === "freecad" ? "inspect_open_cad_documents" : program === "agent" ? "inspect_open_agent_documents" : null };
 }
 async function send(content: string, userInitiated = true) {
+  if(state.task_support){
+    await ensureTask();await taskWrites;
+    if(userInitiated){
+      const {scope}=scopedTask();
+      const history=JSON.stringify({version:1,turns:[...turns,{role:"user",content}]});
+      await taskCommand({action:"message",...scope,text:content,history});
+    }
+  }
   if (historyLoading) return;
   inspectionNotice = "";
   const token = ++revision;
   const ready = provider === "codex" ? state.codex_conversation_ready : provider === "claude" ? state.claude_conversation_ready : false;
   const startNew = newSession || !ready;
-  const image = userInitiated ? referenceImage : undefined;
-  const prompt = agentPrompt(content, startNew ? turns : [], {...context(), project_directory:state.project?.[1], reference_image_attached:!!image});
+  const ref=state.tasks?.active.references.find(r=>r.id===taskImage);
+  const image = userInitiated && (!state.tasks || ref?.shared_with.includes(provider)) ? referenceImage : undefined;
+  const task=state.tasks?.active;
+  const prompt = agentPrompt(content, startNew && !restrictedTask() ? turns : [], {...context(), project_directory:state.project?.[1], reference_image_attached:!!image,...(task?{task:{id:task.id,revision:task.revision,goal:task.goal,local_reference_count:task.references.length,native_evidence_withheld:restrictedTask()}}:{})});
   contextNotice = JSON.parse(prompt).omitted_conversation_turns ? "Se envió solo parte del historial a la IA. Los mensajes completos siguen visibles; revisaremos el documento y confirmaremos cualquier dato que falte." : "";
   const events = new Channel<ChatView>();
   events.onmessage = chat => {
@@ -500,13 +592,23 @@ async function send(content: string, userInitiated = true) {
     apply({ ...state, chat });
     if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
   };
-  if (userInitiated) { turns.push({ role: "user", content: content + (image ? "\n[Imagen de referencia adjunta; no se guarda en el historial de Hazlo.]" : "") }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
+  if (userInitiated) { turns.push({ role: "user", content: content + (image && !state.tasks ? "\n[Imagen de referencia adjunta; no se guarda en el historial de Hazlo.]" : "") }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
   render();
-  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(image ? {image} : {}), ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
+  const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(image ? {image} : {}), ...(state.tasks && userInitiated?{taskUserRequest:content}:{}), ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
 }
 $("setup").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("provider").focus(); };
-$("provider").onchange = () => { clearImage(); persist(); revision++; provider = $<HTMLSelectElement>("provider").value as Provider; storageKey = ""; turns = []; answeredChat = undefined; restore(); render(); };
+$("provider").onchange = () => {
+  if(state.tasks){pendingProvider=$<HTMLSelectElement>("provider").value as Provider;$<HTMLSelectElement>("provider").value=provider;render();return;}
+  clearImage(); persist(); revision++; provider = $<HTMLSelectElement>("provider").value as Provider; storageKey = ""; turns = []; answeredChat = undefined; restore(); render();
+};
+$("approve-provider").onclick=()=>void action(async()=>{const next=pendingProvider;if(!next)return;const {scope}=scopedTask();await taskCommand({action:"provider",...scope,provider:next},true);pendingProvider=undefined;});
+$("keep-provider").onclick=()=>{pendingProvider=undefined;render();};
+$("approve-reference").onclick=()=>void action(async()=>{const ref=pendingReference;if(!ref)return;const {scope}=scopedTask();await taskCommand({action:"share",...scope,reference:ref.id,allow:true});pendingReference=undefined;if(ref.image){const {project,scope}=scopedTask();referenceImage=await taskRequest<ImageReference>(project,{action:"image",...scope,reference:ref.id});taskImage=ref.id;}});
+$("keep-reference-local").onclick=()=>{pendingReference=undefined;render();};
+$("open-task").onclick=()=>void action(async()=>{await taskCommand({action:"open",id:$<HTMLSelectElement>("saved-task").value},true);});
+$("attach-file").onclick=()=>$<HTMLInputElement>("file-reference").click();
+$("file-reference").onchange=()=>{const input=$<HTMLInputElement>("file-reference"),file=input.files?.[0];if(file)void action(async()=>{try{await addReference(file,false);}finally{input.value="";}});};
 $("program").onchange = () => { program = $<HTMLSelectElement>("program").value as Program; $("opening-status").textContent = ""; render(); void action(autoConnect); };
 $("select-client").onclick = () => void action(async () => { revision++; apply(await invoke<DesktopSnapshot>(provider === "codex" ? "select_codex" : "select_claude")); });
 $("connect-account").onclick = () => void action(async () => {
@@ -522,10 +624,13 @@ $("attach-image").onclick = () => $<HTMLInputElement>("image-reference").click()
 $("remove-image").onclick = () => { clearImage(); render(); };
 $("image-reference").onchange = () => {
   const input=$<HTMLInputElement>("image-reference"),file=input.files?.[0];
-  if (file) void action(async()=>{try { referenceImage=await prepareImageReference(file); } finally { input.value=""; }});
+  if (file) void action(async()=>{try { if(state.task_support)await addReference(file,true);else referenceImage=await prepareImageReference(file); } finally { input.value=""; }});
 };
 $("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if (content) void action(() => send(content)); };
-$("new-chat").onclick = () => { if (state.chat?.busy || commandBusy) return; clearImage(); revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render(); };
+$("new-chat").onclick = () => {
+  if(state.task_support){void action(async()=>{await ensureTask();persist();await taskCommand({action:"new"},true);});return;}
+  if (state.chat?.busy || commandBusy) return; clearImage(); revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render();
+};
 $("stop").onclick = () => {
   const pending = inspection;
   if (pending) {
