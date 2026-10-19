@@ -100,7 +100,7 @@ pub(crate) fn validate_artifacts(
     directory: &Path,
     result: &Value,
     expected_hash: &str,
-) -> Result<(), String> {
+) -> Result<Value, String> {
     let root = directory.join("NativeVersion");
     let (capture, _) = receipt(&root, result)?;
     let bytes =
@@ -132,7 +132,7 @@ pub(crate) fn validate_artifacts(
             "Faltan las comprobaciones de la versión nativa; la tarea sigue pendiente.".into(),
         );
     }
-    Ok(())
+    Ok(verified)
 }
 pub(crate) fn pin_verifier(executable: &Path, plan: &Plan) -> Result<Vec<fs::File>, String> {
     plan.validate()?;

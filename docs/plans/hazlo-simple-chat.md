@@ -446,6 +446,12 @@ Regular recovery cases cover bound versus unbound proof, changed outputs, occupi
 
 The safe reopen scope remains self-contained native boxes, cylinders, spheres, cones and toruses, with explicit property/geometry/unit/frame checks and no external dependencies. Unsupported documents preserve their valid edit but leave version verification pending. GUI fidelity, physical function and arbitrary task outcomes are not inferred from the reopen proof. Other program working-version paths, task-wide outcome review, remaining plan boundaries and Windows release acceptance remain active. The installed app and installer are unchanged; KiCad 10 live schematics remain pending.
 
+## Read the reopen proof through the existing evidence boundary
+
+The shared result reader now returns the validated native working-version manifest identity and bounded property/geometry/unit/frame/dependency checks in `checks.native_working_version`, with a distinct historical copy-report scope. It explicitly leaves GUI fidelity, physical function, current live state and the overall agreed task outcome unchecked. The complete reply remains local evidence before any external delivery; its summary and native filename do not bypass exact-reference/service consent. The existing sharing test covers withholding, explicit grant and service-switch refusal for this new result data.
+
+The [actual production-host acceptance](../research/native-working-version-chat-2026-10-19.md) exercises creation, revision and a no-edit checkpoint through a fresh owned FreeCAD/CADPilot session. All three copies pass isolated native reopening, published receipts remain intact, local recovery adopts all three completed batches, and two native Undo steps restore the empty document. This uses backend fixture approvals and an offscreen native GUI; visual, real-provider, installed-app and installer acceptance are not inferred. The full goal remains active.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

@@ -1,6 +1,7 @@
 //! Actual empty-document creation through shared tools; backend fixture approvals only.
 use hazlomexa::{host_tools::HostTools,jobs::Workflow,project::{ArtifactFormat,Phase,Project}};
 use serde_json::{json,Value};
+use sha2::Digest;
 use std::{fs,path::{Path,PathBuf},sync::Arc};
 
 fn inspect(host:&HostTools)->Value {
@@ -46,7 +47,9 @@ fn main() {
         (json!([{"action":"create_object","obj_type":"Part::Box","obj_name":"Support",
             "obj_properties":{"Length":"0.5 in","Width":"20 mm","Height":"10 mm"}}]),10.),
         (json!([{"action":"edit_object","obj_name":"Support","obj_properties":{"Height":"1 in"}}]),25.4),
+        (json!([]),25.4),
     ] {
+        let editing=!operations.as_array().unwrap().is_empty();
         let proposal=request(&current,operations);
         host.call("propose_open_cad_change",proposal.clone()).unwrap();
         let pending=workflow.current().unwrap().unwrap();
@@ -58,14 +61,23 @@ fn main() {
         let result=workflow.execute(dispatch).unwrap();
         assert_eq!(result.snapshot.phase,Phase::Completed,"{:?}",result.error);
         let id=result.snapshot.input.job_id();
+        let version=workflow.artifact(id,ArtifactFormat::NativeWorkingVersion).unwrap();
+        let checked:Value=serde_json::from_slice(&fs::read(version.path.join("verification.json")).unwrap()).unwrap();
+        assert_eq!(checked["reopen_checked"],true);assert_eq!(checked["native_geometry_checked"],true);
+        assert_eq!(checked["physical_function_checked"],false);assert_eq!(checked["gui_state_checked"],false);
         let report=host.call("read_verified_result",json!({"job_id":id})).unwrap();
         assert_eq!(report["format"],"cadpilot_report");
+        assert_eq!(report["scope"],"verified_native_working_version_report");
+        let proof=&report["checks"]["native_working_version"];
+        assert_eq!(proof["reopen_checked"],true);assert_eq!(proof["native_geometry_checked"],true);
+        assert_eq!(proof["manifest_sha256"],format!("{:x}",sha2::Sha256::digest(fs::read(version.path.join("verification.json")).unwrap())));
+        for key in ["gui_state_checked","physical_function_checked","current_live_document_checked","agreed_task_outcome_checked"]{assert_eq!(proof[key],false);}
         let bytes=workflow.artifact(id,ArtifactFormat::CadpilotReport).unwrap().read_text().unwrap();
         let parsed:Value=serde_json::from_str(&bytes).unwrap();
         current=inspect(&host);
         assert_eq!(parsed["after"]["state_sha256"],current["state_sha256"]);
         measure(&current,"Length",12.7);measure(&current,"Width",20.);measure(&current,"Height",height);
-        assert!(host.call("propose_open_cad_change",proposal).is_err());
+        if editing{assert!(host.call("propose_open_cad_change",proposal).is_err());}
         receipt_bytes.push((id,bytes));
     }
     for (id,bytes) in receipt_bytes {assert_eq!(workflow.artifact(id,ArtifactFormat::CadpilotReport).unwrap().read_text().unwrap(),bytes);}
@@ -73,11 +85,11 @@ fn main() {
     drop(host);drop(workflow);
     let project=Project::open(&root.join("project")).unwrap();
     let runs=project.recover().unwrap();
-    assert_eq!(runs.len(),2);
+    assert_eq!(runs.len(),3);
     assert!(runs.iter().all(|run|run.phase==Phase::Completed && run.schema_version==13));
     fs::write(root.join("host-result.json"),serde_json::to_vec_pretty(&json!({"pass":true,
         "empty_document_creation":true,"missing_size_refused":true,"native_followup":true,
         "metric_and_imperial":true,"separate_fixture_approvals":true,"stale_refusal":true,
-        "prior_receipt_preserved":true,"recovered_completed_jobs":2,"native_ui_approval":false,"real_model":false})).unwrap()).unwrap();
+        "prior_receipt_preserved":true,"recovered_completed_jobs":3,"checked_native_versions":3,"checkpoint_without_edit":true,"native_copy_proof_summary":true,"native_ui_approval":false,"real_model":false})).unwrap()).unwrap();
     println!("Owned native creation and follow-up passed with backend fixture approvals");
 }
