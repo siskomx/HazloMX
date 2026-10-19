@@ -99,6 +99,7 @@ pub mod agent;
 
 #[cfg(windows)]
 pub mod agent_editor;
+mod agent_companion;
 
 #[cfg(windows)]
 pub mod project;

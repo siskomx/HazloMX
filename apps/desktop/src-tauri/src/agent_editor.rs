@@ -70,7 +70,7 @@ pub fn default_directory() -> Result<PathBuf, String> {
     Ok(root)
 }
 
-const COMPANION_FILES: [(&str, &[u8]); 3] = [
+pub(crate) const COMPANION_FILES: [(&str, &[u8]); 3] = [
     ("package.json", include_bytes!("../resources/arduino-editor/package.json")),
     ("extension.cjs", include_bytes!("../resources/arduino-editor/extension.cjs")),
     ("core.cjs", include_bytes!("../resources/arduino-editor/core.cjs")),
@@ -89,15 +89,8 @@ pub fn install_companion(profile: &Path) -> Result<bool, String> {
     }
     let _plugins = crate::project::pin_directory(&plugins, false).map_err(|_| invalid)?;
     let destination = plugins.join("hazlomexa-arduino-editor");
-    if destination.try_exists().map_err(|_| invalid)? {
-        let _installed = crate::project::pin_directory(&destination, false).map_err(|_| invalid)?;
-        let unchanged = fs::read_dir(&destination).map_err(|_| invalid)?.count() == COMPANION_FILES.len()
-            && COMPANION_FILES.iter().all(|(name, bytes)|
-                crate::kicad_project::read_regular(&destination.join(name), bytes.len() as u64)
-                    .is_ok_and(|current| current == *bytes));
-        return if unchanged { Ok(false) } else {
-            Err("Ya existe otro contenido en el complemento de Hazlo. No se reemplazó; revísalo antes de instalar esta versión.".into())
-        };
+    if destination.try_exists().map_err(|_| invalid)? || profile.join(".hazlomexa-editor-update.json").try_exists().map_err(|_|invalid)? {
+        return crate::agent_companion::upgrade(profile,&COMPANION_FILES);
     }
     // Publish the manifest with the complete directory, never an incomplete plugin.
     let staging = profile.join(format!(".hazlomexa-editor-install-{}", Uuid::new_v4()));

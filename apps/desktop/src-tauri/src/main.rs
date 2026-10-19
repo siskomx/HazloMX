@@ -1171,8 +1171,10 @@ async fn install_agent_companion(state: State<'_, AppState>) -> Result<String, S
     let profile = directory.parent().ok_or("No se encontró el perfil de Arduino Agent.")?.to_path_buf();
     let installed = tauri::async_runtime::spawn_blocking(move || hazlomexa::agent_editor::install_companion(&profile))
         .await.map_err(|_| "No se pudo completar la instalación del complemento.")??;
-    Ok(if installed { "Complemento instalado. Guarda tu trabajo y reinicia Arduino Agent para activarlo; después describe el cambio en el chat." }
-       else { "El complemento ya está instalado. Si aún no responde, guarda tu trabajo y reinicia Arduino Agent." }.into())
+    let native_pending=state.workflow.native_recovery()?.iter().any(|work|work.program==Some(hazlomexa::host_tools::Program::Agent) && work.needs_review);
+    if native_pending{return Ok("Complemento preparado en disco. El editor todavía tiene una operación sin confirmar: conserva su ventana y recupera o revisa ese resultado antes de reiniciar Arduino Agent. Preparar el complemento no cancela ni repite esa operación.".into());}
+    Ok(if installed { "Complemento preparado. Guarda tu trabajo y reinicia Arduino Agent para activarlo; después describe el cambio en el chat." }
+       else { "El complemento ya está preparado. Si aún no responde, guarda tu trabajo y reinicia Arduino Agent." }.into())
 }
 
 #[tauri::command]

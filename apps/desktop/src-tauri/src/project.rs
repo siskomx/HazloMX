@@ -472,7 +472,7 @@ pub(crate) fn read_json<T: DeserializeOwned>(path: &Path) -> io::Result<T> {
 }
 
 // Rename the pinned object, rather than releasing it and trusting a mutable source path.
-fn rename_handle(source: &File, target: &Path, replace: bool) -> io::Result<()> {
+pub(crate) fn rename_handle(source: &File, target: &Path, replace: bool) -> io::Result<()> {
     let name: Vec<_> = target.as_os_str().encode_wide().collect();
     let size = offset_of!(FILE_RENAME_INFO, FileName) + (name.len() + 1) * size_of::<u16>();
     let mut buffer = vec![0usize; size.div_ceil(size_of::<usize>())];
