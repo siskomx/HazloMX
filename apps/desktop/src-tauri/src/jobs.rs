@@ -200,7 +200,7 @@ impl Workflow {
         let project=state.project.as_ref().ok_or("No hay proyecto activo.")?;
         let store=crate::tasks::Store::new(project).map_err(|_|"No se pudo conservar evidencia local.")?;
         if store.binding().map_err(|_|"No se pudo comprobar la tarea.")?.as_ref()!=Some(expected){return Err("La tarea cambió; no se compartió la respuesta nativa.".into());}
-        let reference_name=if tool=="read_verified_result" && result.as_ref().is_ok_and(|v|v["format"]=="public_document_report"){"Documento público.json"}else{"Observación nativa.json"};
+        let reference_name=if tool=="inspect_native_tools"{"Catálogo nativo.json"}else if tool=="read_verified_result" && result.as_ref().is_ok_and(|v|v["format"]=="public_document_report"){"Documento público.json"}else{"Observación nativa.json"};
         let value=match result {Ok(value)=>serde_json::json!({"tool":tool,"result":value}),Err(error)=>serde_json::json!({"tool":tool,"error":error})};
         let bytes=serde_json::to_vec(&value).map_err(|_|"No se pudo conservar evidencia local.")?;
         store.retain_evidence(expected,reference_name.into(),bytes).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.".into())

@@ -650,7 +650,10 @@ pub(crate) mod tests {
         let permit=gate.try_lock().expect("Correction must not wait for CLI completion");
         cancelled.store(true,Ordering::SeqCst);drop(permit);
         assert_eq!(worker.join().unwrap().reason,StopReason::Cancelled);
-        let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();assert!(!is_alive(child));
+        let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();
+        // Termination is asynchronous; observe the owned child instead of assuming immediate exit.
+        let stopped=Instant::now();while is_alive(child)&&stopped.elapsed()<Duration::from_secs(5){thread::sleep(Duration::from_millis(10));}
+        assert!(!is_alive(child));
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
         fs::remove_dir_all(root).unwrap();
     }

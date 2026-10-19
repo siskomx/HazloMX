@@ -1,5 +1,7 @@
 # Current Windows package acceptance
 
+The active [simple-chat implementation plan](../../../docs/plans/hazlo-simple-chat.md) supersedes older catalog-count and raw-response assumptions below. Unbound/exported bridges are metadata-only; owned provider chats bind a task and selected service. Native catalogs, replies and operational errors require local evidence sharing. The explicit `host_tools::tests::native_catalog_sharing_fixture_protocol` check uses a rebuilt `native_tools_fixture` selected by `HAZLOMEXA_NATIVE_FIXTURE`; it exercises ten program scopes through the authenticated pipe, exact catalog consent, seven engineering-scope fixture edits and preserved results after descendant revocation. It does not certify actual program windows or an installed release. Older native conversation harnesses must be migrated to task-bound connections and explicit fixture consent before reuse; historical results below are not acceptance of current source.
+
 Image references and optional Rea: `node apps/desktop/tests/image-reference.mjs` checks browser normalization, metadata removal, in-memory handling and conditional IPC transmission. Current source passes 205 regular Rust tests, seven-program native routing fixtures and 28 native chat IPC cases. Real provider/native acceptance is tracked in [the image/Rea checkpoint](../../../docs/research/image-reference-rea-2026-10-17.md).
 
 

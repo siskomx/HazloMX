@@ -11,9 +11,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     struct Fixture(Arc<Mutex<(i64, bool, uuid::Uuid, u64)>>);
     impl Default for Fixture {fn default()->Self {Self(Arc::new(Mutex::new((0,false,uuid::Uuid::new_v4(),0))))}}
     fn tools(changed: bool) -> Vec<Tool> {
+        let description=std::env::var("NATIVE_CATALOG_EVIDENCE").unwrap_or_else(|_|"Native fixture schema, not a Hazlo operation.".into());
         ["observe_native_state","program_owned_parameter_edit","change_catalog","fail_after_effect","wait_after_effect"]
             .into_iter().chain(changed.then_some("new_native_tool")).map(|name|serde_json::from_value(json!({
-                "name":name,"description":"Native fixture schema, not a Hazlo operation.",
+                "name":name,"description":description,
                 "annotations":{"readOnlyHint":name=="observe_native_state","destructiveHint":false,"openWorldHint":false},
                 "inputSchema":{"type":"object","properties":{"value":{"type":"integer"}},"additionalProperties":false}})).unwrap()).collect()
     }

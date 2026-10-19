@@ -112,6 +112,7 @@ pub async fn run_scoped(
     }
     let recipient=if client.remote_model.is_some(){"ollama_cloud"}else{"ollama_local"};
     tools.require_recipient(recipient)?;
+    let task_binding=workflow.task_binding()?.ok_or("No hay una conversación activa.")?;
     let check = || -> Result<(), String> {
         if cancelled.load(Ordering::SeqCst) || tools.check_scope().is_err() {
             return Err("El proyecto cambió o la conversación se detuvo.".into());
@@ -214,6 +215,14 @@ pub async fn run_scoped(
                 )
                 .await;
             if let Ok(value) = &result {
+                if value["local_evidence_pending"]==true {
+                    let current=workflow.task_state()?.ok_or("La conversación cambió; la evidencia sigue local.")?.active;
+                    let reference=value["reference_id"].as_str().and_then(|s|Uuid::parse_str(s).ok());
+                    if cancelled.load(Ordering::SeqCst) || workflow.view()?.project!=tools.project() || current.id!=task_binding.id || current.provider!=recipient || current.revision!=task_binding.revision.saturating_add(1) || !current.references.iter().any(|r|Some(r.id)==reference){return Err("La conversación cambió; la evidencia sigue local.".into());}
+                    if !text.is_empty(){text.push_str("\n\n");}
+                    text.push_str("Hazlo: guardé la información del programa como referencia local. Para continuar con esta IA, revisa y autoriza compartirla en Referencias de esta conversación. No envié esa respuesta al modelo ni repetí la consulta.");
+                    emit(text.clone());return Ok(text);
+                }
                 if let Some(job) = value
                     .get("job_id")
                     .and_then(Value::as_str)
@@ -293,6 +302,20 @@ mod tests {
         serde_json::from_str(request.split_once("\r\n\r\n").unwrap().1).unwrap()
     }
 
+    #[tokio::test]
+    async fn pending_local_evidence_finishes_with_a_host_notice_without_another_model_request(){
+        let (root,workflow,host,project)=setup();
+        host.configure_native_discovery(root.clone(),root.join("data")).unwrap();
+        let tools=McpTools::for_chat(host,project,Some(crate::host_tools::Program::Planning),"ollama_local").unwrap();
+        let mut replies=metadata();replies.push(reply(&record("Voy a comprobar la conexión.",vec![call("select_program",json!({"program":"rea"})),call("select_program",json!({"program":"freecad"}))]).to_string(),"application/json"));
+        let (port,fixture,_)=server(replies);let mut emitted=String::new();
+        let result=run_scoped(OllamaClient::new(port,"fixture",DIGEST).unwrap(),workflow.clone(),tools,"Investiga con las herramientas disponibles.".into(),None,Arc::new(AtomicBool::new(false)),|text|emitted=text).await.unwrap();
+        assert!(result.contains("Hazlo: guardé") && result.contains("Referencias"));assert_eq!(result,emitted);
+        let requests=fixture.join().unwrap();assert_eq!(requests.len(),4);assert!(!requests.join(" ").contains("No se encontró una conexión"));
+        let task=workflow.task_state().unwrap().unwrap().active;assert_eq!(task.references.len(),1);assert!(task.references[0].shared_with.is_empty());
+        assert!(workflow.shared_task_reference(task.references[0].id,0).is_err());
+        assert_eq!(workflow.view().unwrap().history.len(),0);drop(workflow);fs::remove_dir_all(root).unwrap();
+    }
     #[tokio::test]
     async fn wrong_or_unbound_recipient_is_refused_before_any_model_connection(){
         let (root,workflow,host,project)=setup();
