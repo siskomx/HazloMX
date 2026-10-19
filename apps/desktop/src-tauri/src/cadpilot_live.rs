@@ -59,6 +59,8 @@ pub struct Input {
     pub receipt_sha256: Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub agreement:Option<crate::native_tools::Agreement>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub working_version:Option<crate::native_working_version::Plan>,
 }
 impl Input {
     // New creation rules apply before effects; existing verified receipts remain readable.
@@ -100,6 +102,7 @@ impl Input {
 
     pub fn validate(&self) -> Result<(), String> {
         if let Some(agreement)=&self.agreement{agreement.validate()?;}
+        if let Some(plan)=&self.working_version{plan.validate()?;if self.uses_file_dialog(){return Err("La versión de trabajo acompaña las ediciones; Guardar como y STEP conservan su alcance separado.".into());}}
         name(&json!(self.document_name))?;
         if self.schema_version != 1
             || self.live_cad_version != 1
@@ -108,7 +111,7 @@ impl Input {
             || !crate::kicad_project::valid_hash(&self.state_sha256)
             || self.description.trim().is_empty()
             || self.description.len() > 1024
-            || !(1..=16).contains(&self.operations.len())
+            || self.operations.len()>16 || (self.operations.is_empty() && self.working_version.is_none())
             || self.before.as_array().is_none_or(|a| a.len() > 256)
             || self
                 .receipt_sha256
@@ -535,7 +538,8 @@ async fn native_request(
     let interactive_save = request["operations"].as_array().is_some_and(|ops| ops.iter().any(|op| matches!(op["action"].as_str(), Some("save_as" | "export_step"))));
     let data = serde_json::to_string(&serde_json::to_string(&request).map_err(|_| INVALID)?)
         .map_err(|_| INVALID)?;
-    let code = format!("import json\nHAZLO_REQUEST = json.loads({data})\n{STEP_POLICY}\n{SCRIPT}");
+    let copy_glue=if request["keep_working_version"]==true && request["action"]=="apply"{let core=serde_json::to_string(&crate::native_working_version::glue()).map_err(|_|INVALID)?;format!("import types\nHAZLO_COPY_CORE=types.ModuleType('hazlo_copy_core')\nHAZLO_COPY_CORE.__dict__.update({{'NATIVE_TYPES':NATIVE_TYPES,'PROPERTY_TYPES':PROPERTY_TYPES,'document':document}})\nexec({core},HAZLO_COPY_CORE.__dict__)\n")}else{String::new()};
+    let code = format!("import json\nHAZLO_REQUEST = json.loads({data})\n{STEP_POLICY}\n{copy_glue}{SCRIPT}");
     // Start once. Losing this response can mean the native operation was already accepted.
     let started = rpc(client, endpoint, "execute_code_async", &[&code]).await
         .map_err(|_| "FreeCAD no confirmó la solicitud. Puede haberse aplicado; vuelve a leer el documento antes de preparar otro cambio.".to_string())?;
@@ -639,7 +643,8 @@ fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispat
         .map_err(|_| INVALID)?
         .as_secs()
         + 30;
-    let request = json!({"action":"apply","document_token":input.document_token,"state_sha256":input.state_sha256,"job_id":input.job_id,"expires_at":expires,"operations":input.operations});
+    let mut request = json!({"action":"apply","document_token":input.document_token,"state_sha256":input.state_sha256,"job_id":input.job_id,"expires_at":expires,"operations":input.operations});
+    let _version_pins=if input.working_version.is_some(){let root=directory.join("NativeVersion");std::fs::create_dir(&root).map_err(|_|"No se pudo reservar una nueva versión; no se enviaron ediciones.")?;request["keep_working_version"]=json!(true);request["working_version_directory"]=json!(root);Some(crate::project::pin_lineage(&root).map_err(|_|"No se pudo fijar la carpeta de la nueva versión.")?)}else{None};
     let mut result = wait(cancelled, async {
         let client = reqwest::Client::builder()
             .no_proxy()
@@ -653,10 +658,6 @@ fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispat
     normalize_result(input,&mut result)?;
     if let Some(dispatch)=dispatch{dispatch.retain_native_completion(input,&result)?;}
     write_checked_result(input,directory,&result)
-}
-fn retain_result(input:&Input,directory:&std::path::Path,result:&mut Value)->Result<(),String>{
-    normalize_result(input,result)?;
-    write_checked_result(input,directory,result)
 }
 fn write_checked_result(input:&Input,directory:&std::path::Path,result:&Value)->Result<(),String>{
     validate_result(input,result)?;
@@ -675,23 +676,25 @@ fn recover_result_at(input:&Input,directory:&std::path::Path,cancelled:&AtomicBo
     input.validate()?;
     if recover_recorded_result(directory,input)?{return Ok(true);}
     let path=directory.join("result.json");
-    let request=json!({"action":"recover","job_id":input.job_id,"document_token":input.document_token,"state_sha256":input.state_sha256,"operations":input.operations});
+    let mut request=json!({"action":"recover","job_id":input.job_id,"document_token":input.document_token,"state_sha256":input.state_sha256,"operations":input.operations});if input.working_version.is_some(){request["keep_working_version"]=json!(true);}
     let mut result=wait(cancelled,async {
         let client=reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none()).timeout(Duration::from_secs(15)).build().map_err(|_|INVALID)?;
         native_request(&client,endpoint,request).await
     })?;
     if result==json!({"recovery_status":"running"}){return Ok(false);}
+    normalize_result(input,&mut result)?;
+    if crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveCad(input.clone()))?.is_some_and(|record|matches!(record.outcome,crate::native_journal::Outcome::Dispatched|crate::native_journal::Outcome::Uncertain)){crate::live_dispatch::retain_native_completion(directory,input,&result)?;}
     if path.try_exists().map_err(|_|"No se pudo comprobar el resultado local.")?{
-        normalize_result(input,&mut result)?;
         let saved:Value=crate::project::read_json(&path).map_err(|_|"El resultado local no es válido; se conservó sin reemplazarlo.")?;
         if saved!=result{return Err("El informe local cambió frente al recibo nativo; se conservó sin reemplazarlo ni liberar la pausa.".into());}
         return Ok(true);
     }
-    retain_result(input,directory,&mut result)?;Ok(true)
+    write_checked_result(input,directory,&result)?;Ok(true)
 }
 
 pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
     input.validate()?;
+    if input.working_version.is_some(){if !matches!(result["working_version"]["state"].as_str(),Some("captured"|"blocked")){return Err("Falta el resultado de captura de la versión nativa.".into());}}else if !result["working_version"].is_null(){return Err(INVALID.into());}
     if result["live_cad_version"] != 1
         || result["job_id"] != input.job_id.to_string()
         || result["document_token"] != input.document_token.to_string()
@@ -747,7 +750,7 @@ pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
 pub(crate) mod tests {
     use super::*;
     pub(crate) fn completed_fixture()->(Input,Value){
-        let input=Input{schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Preserve the native edit".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None,agreement:Some(crate::native_tools::tests::agreement_fixture())};
+        let input=Input{working_version:None,schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Preserve the native edit".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None,agreement:Some(crate::native_tools::tests::agreement_fixture())};
         let result=json!({"live_cad_version":1,"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[{"name":"Box","label":"Preserved user label","properties":{"Length":"12 mm"}}]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});(input,result)
     }
     #[test]
@@ -797,8 +800,16 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn working_version_checkpoint_binds_runtime_and_excludes_file_dialogs(){
+        let(mut input,mut result)=completed_fixture();assert!(serde_json::to_value(&input).unwrap().get("working_version").is_none());
+        input.operations.clear();assert!(input.validate_for_dispatch().is_err());input.working_version=Some(crate::native_working_version::Plan{verifier_sha256:"a".repeat(64)});input.validate_for_dispatch().unwrap();
+        result["operations"]=json!([]);assert!(validate_result(&input,&result).is_err());result["working_version"]=json!({"state":"blocked","reason":"native_working_copy_unverified"});validate_result(&input,&result).unwrap();
+        let original=crate::kicad_project::digest(&serde_json::to_vec(&input).unwrap());input.working_version.as_mut().unwrap().verifier_sha256="b".repeat(64);assert_ne!(original,crate::kicad_project::digest(&serde_json::to_vec(&input).unwrap()));
+        for op in [json!({"action":"save_as"}),json!({"action":"export_step","obj_name":"Box"})]{input.operations=vec![op];assert!(input.validate_for_dispatch().is_err());}
+    }
+    #[test]
     fn primitive_creation_requires_explicit_sizes_without_changing_history_validation() {
-        let mut input=Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
+        let mut input=Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
             document_name:"NewPart".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),
             description:"Create the confirmed shape".into(),operations:vec![],before:json!([]),receipt_sha256:None};
         for (kind,properties) in [
@@ -837,7 +848,7 @@ pub(crate) mod tests {
 
     #[test]
     fn creation_coordinates_use_native_placement_before_dispatch() {
-        let mut input=Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
+        let mut input=Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
             document_name:"NewPart".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),
             description:"Create a support".into(),before:json!([]),receipt_sha256:None,
             operations:vec![json!({"action":"create_object","obj_type":"Part::Box","obj_name":"Support",
@@ -859,7 +870,7 @@ pub(crate) mod tests {
 
     #[test]
     fn native_proposals_reject_code_paths_and_scripted_types_before_execution() {
-        let valid = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
+        let valid = Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_cad_version: 1,
             job_id: uuid::Uuid::new_v4(),
@@ -893,7 +904,7 @@ pub(crate) mod tests {
 
     #[test]
     fn native_save_requires_one_pathless_action_and_a_verified_native_file_receipt() {
-        let mut input = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
+        let mut input = Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1, live_cad_version: 1, job_id: uuid::Uuid::new_v4(),
             document_name: "Enclosure".into(), document_token: uuid::Uuid::new_v4(),
             state_sha256: "a".repeat(64), description: "Save the finished enclosure".into(),
@@ -927,7 +938,7 @@ pub(crate) mod tests {
 
     #[test]
     fn native_step_export_is_separate_pathless_and_verifies_unchanged_document() {
-        let mut input = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
+        let mut input = Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1, live_cad_version: 1, job_id: uuid::Uuid::new_v4(),
             document_name: "Enclosure".into(), document_token: uuid::Uuid::new_v4(),
             state_sha256: "a".repeat(64), description: "Export the enclosure".into(),
@@ -1033,7 +1044,7 @@ pub(crate) mod tests {
                 loop {
                     let mut chunk = [0; 4096];
                     let count = stream.read(&mut chunk).await.unwrap();
-                    assert!(count > 0 && request.len() + count < 32768);
+                    assert!(count > 0 && request.len() + count < 65536);
                     request.extend_from_slice(&chunk[..count]);
                     if request.windows(13).any(|s| s == b"</methodCall>") {
                         break;
@@ -1045,6 +1056,7 @@ pub(crate) mod tests {
                     assert!(request.contains("Frame &amp; Box"));
                     assert!(request.contains("inspect"));
                     assert!(request.contains("_run_one_operation"));
+                    assert!(!request.contains("HAZLO_COPY_CORE=types.ModuleType"),"Inspection must not attach the copy implementation");
                 }
                 assert!(!request.contains("<methodName>execute_operations</methodName>"));
                 let value = if method == "list_documents" {
@@ -1086,7 +1098,7 @@ pub(crate) mod tests {
         use tokio::io::{AsyncReadExt,AsyncWriteExt};
         let root=std::env::temp_dir().join(format!("hazlo-cad-task-fence-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
-        let input=crate::project::OperationInput::LiveCad(Input{agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned native submission fence".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None});
+        let input=crate::project::OperationInput::LiveCad(Input{working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned native submission fence".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None});
         let gate=Arc::new(Mutex::new(()));let paused=Arc::new(AtomicBool::new(true));
         let dispatch=crate::live_dispatch::Dispatch::start(&root,&input,gate.clone(),paused,Arc::new(AtomicBool::new(false))).unwrap();
         let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());
@@ -1131,7 +1143,7 @@ pub(crate) mod tests {
     fn native_recovery_uses_only_the_original_receipt_and_preserves_changed_local_reports(){
         use std::{io::{Read,Write},net::TcpListener};
         let root=std::env::temp_dir().join(format!("hazlo-native-recovery-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
-        let input=Input{agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Change the approved part".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None};
+        let input=Input{working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Change the approved part".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None};
         let result=json!({"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
         let listener=TcpListener::bind("127.0.0.1:0").unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());let expected=input.clone();let native=result.clone();
         let server=std::thread::spawn(move||{

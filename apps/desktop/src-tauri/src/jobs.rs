@@ -211,6 +211,7 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    pub(crate) fn native_version_plan(&self)->Result<crate::native_working_version::Plan,String>{crate::native_working_version::plan(&self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?)}
     pub fn correct_chat(&self,scope:&ConversationScope,input:&crate::tasks::ChatCorrectionInput,draft:&str)->Result<(),String>{
         self.interrupt_chat(scope,Some(input),input.chat_id,draft,None)
     }
@@ -328,6 +329,7 @@ impl Workflow {
             };
             if !recovered{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
         }
+        if let OperationInput::LiveCad(input)=&snapshot.input{if input.working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío original.")?;if record.working_version_sha256.is_none(){let result:serde_json::Value=crate::project::read_json(&directory.join("result.json")).map_err(|_|"Falta la captura nativa conservada.")?;let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();let hash=crate::native_working_version::verify(&executable,input.working_version.as_ref().unwrap(),&directory,&self.profiles.join(format!("native-version-recovery-{}",Uuid::new_v4())),&result,cancel.clone())?;crate::live_dispatch::retain_working_version(&directory,input,&hash)?;}}}
         checked.retain_receipt(&directory).map_err(|_|"El resultado sigue local, pero no se pudo conservar su recibo.")?;
         project.validate_outputs(&directory,&checked).map_err(|_|"El resultado nativo no pasó sus comprobaciones; se conserva la pausa.")?;
         crate::live_dispatch::recover_checked(&directory,&checked)?;
@@ -2817,7 +2819,10 @@ impl Workflow {
                         &stage.path,&profile,dispatch.cancelled.clone(),live_dispatch.as_ref().unwrap())?;
                 }
                 OperationInput::LiveCad(input) => {
+                    let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();
+                    let _verifier_pin=input.working_version.as_ref().map(|plan|crate::native_working_version::pin_verifier(&executable,plan)).transpose()?;
                     crate::cadpilot_live::run_gated(input, &stage.path, &dispatch.cancelled,live_dispatch.as_ref().unwrap())?;
+                    if let Some(plan)=&input.working_version{let result:serde_json::Value=crate::project::read_json(&stage.path.join("result.json")).map_err(|_|"Falta el recibo de captura de la nueva versión.")?;let hash=crate::native_working_version::verify(&executable,plan,&stage.path,&profile,&result,dispatch.cancelled.clone())?;live_dispatch.as_ref().unwrap().retain_working_version(input,&hash)?;}
                 }
                 OperationInput::Cadpilot(input) => {
                     cadpilot::run(
@@ -3603,7 +3608,7 @@ mod tests {
         for blocked in [false,true]{
             let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();
             let task=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::Message{id:task.id,revision:task.revision,text:"Keep this requirement local after withdrawal".into(),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).unwrap();let original_sources=workflow.task_state().unwrap().unwrap().active.instruction_sources();
-            let input=crate::cadpilot_live::Input{agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Keep the approved change".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};let id=input.job_id;
+            let input=crate::cadpilot_live::Input{working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Keep the approved change".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};let id=input.job_id;
             let pending=workflow.propose_live_cad(project.clone(),input.clone()).unwrap();let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();let stage=dispatch.project.reserve_stage(id).unwrap();
             let fence=crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone()).unwrap();drop(fence.enter().unwrap());
             let report=serde_json::json!({"live_cad_version":1,"job_id":id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});fs::write(stage.path.join("result.json"),serde_json::to_vec_pretty(&report).unwrap()).unwrap();
@@ -3820,7 +3825,7 @@ mod tests {
     fn native_primitive_creation_refuses_hidden_default_dimensions_before_approval() {
         let (root,workflow)=setup();
         let project=workflow.view().unwrap().project.unwrap();
-        let mut input=crate::cadpilot_live::Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),
+        let mut input=crate::cadpilot_live::Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),
             document_name:"NewPart".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),
             description:"Create a box; its size is not known yet".into(),
             operations:vec![serde_json::json!({"action":"create_object","obj_type":"Part::Box","obj_name":"Box"})],
@@ -3841,7 +3846,7 @@ mod tests {
     fn native_changes_require_one_time_approval_and_persist_a_verified_receipt_hash() {
         let (root,workflow)=setup();
         let project=workflow.view().unwrap().project.unwrap();
-        let input=crate::cadpilot_live::Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Enclosure".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Make it longer".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"1.2 in"}})],before:serde_json::json!([]),receipt_sha256:None};
+        let input=crate::cadpilot_live::Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Enclosure".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Make it longer".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"1.2 in"}})],before:serde_json::json!([]),receipt_sha256:None};
         assert!(workflow.propose_live_cad((Uuid::new_v4(),project.1.clone()),input.clone()).is_err());
         let pending=workflow.propose_live_cad(project,input.clone()).unwrap();
         assert_eq!(pending.snapshot.schema_version,13);

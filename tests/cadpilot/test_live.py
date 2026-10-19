@@ -70,6 +70,7 @@ class LiveTests(unittest.TestCase):
 
         self.rpc.FreeCADRPC = lambda: types.SimpleNamespace(_run_one_operation=operation)
         app = types.ModuleType("FreeCAD")
+        app.Version = lambda: ["1", "1", "4"]
         app.listDocuments = lambda: self.opened
         self.gui = types.ModuleType("FreeCADGui")
         self.active = self.doc
@@ -93,6 +94,15 @@ class LiveTests(unittest.TestCase):
         serialize.serialize_object = lambda obj: {"Name": obj.Name, "Label": "Box", "TypeId": "Part::Box", "Properties": {"Length": obj.length}}
         self.modules = {"FreeCAD": app, "FreeCADGui": self.gui, "rpc_server": package, "rpc_server.rpc_server": self.rpc, "rpc_server.serialize": serialize}
         self.originals = {key: sys.modules.get(key) for key in self.modules}
+        self.copy_calls = 0
+        self.copy_fails = False
+        def capture(doc, path, state):
+            self.copy_calls += 1
+            if self.copy_fails:
+                raise IOError("PRIVATE_COPY_ERROR_SENTINEL")
+            path.write_bytes(b"native copy fixture")
+            return {"version": 1, "file": {"name": path.name, "bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}, "expected": state(doc), "source_preserved": True, "reopen_checked": False}
+        self.copy_core = types.SimpleNamespace(capture=capture)
         sys.modules.update(self.modules)
 
     def tearDown(self):
@@ -105,7 +115,7 @@ class LiveTests(unittest.TestCase):
 
     def call(self, request):
         output = []
-        exec(compile(SCRIPT, "hazlo-fixed-native-glue", "exec"), {"HAZLO_REQUEST": request, "task_print": output.append})
+        exec(compile(SCRIPT, "hazlo-fixed-native-glue", "exec"), {"HAZLO_REQUEST": request, "task_print": output.append, "HAZLO_COPY_CORE": self.copy_core})
         self.assertEqual(len(output), 1)
         return json.loads(output[0])
 
@@ -113,6 +123,49 @@ class LiveTests(unittest.TestCase):
         result = self.call({"action": "inspect", "document_name": "Enclosure"})
         self.assertTrue(result["ok"], result)
         return result["result"]
+
+    def test_working_version_joins_the_native_edit_and_recovery_never_captures_again(self):
+        request=self.request(self.inspect())
+        request.update(keep_working_version=True,working_version_directory=str(Path(self.saved_folder.name)))
+        reply=self.call(request)
+        self.assertTrue(reply["ok"],reply)
+        version=reply["result"]["working_version"]
+        self.assertEqual(version["state"],"captured")
+        payload=(Path(self.saved_folder.name)/"capture.json").read_bytes()
+        self.assertEqual(version["capture_sha256"],hashlib.sha256(payload).hexdigest())
+        self.assertEqual(self.copy_calls,1)
+        self.assertEqual(self.doc.FileName,"")
+        self.assertTrue(self.modified)
+        self.doc.Objects[0].length=99
+        recovered=self.call({**request,"action":"recover"})
+        self.assertEqual(recovered,reply)
+        self.assertEqual(self.copy_calls,1)
+        self.assertEqual(len(self.calls),1)
+        self.assertEqual(self.doc.Objects[0].length,99)
+
+    def test_capture_failure_does_not_erase_the_confirmed_edit_or_repeat_it(self):
+        request=self.request(self.inspect())
+        request.update(keep_working_version=True,working_version_directory=str(Path(self.saved_folder.name)))
+        self.copy_fails=True
+        reply=self.call(request)
+        self.assertTrue(reply["ok"],reply)
+        self.assertEqual(reply["result"]["working_version"]["state"],"blocked")
+        self.assertNotIn("PRIVATE_COPY_ERROR_SENTINEL",json.dumps(reply))
+        self.assertEqual(len(self.calls),1)
+        self.assertEqual(self.call({**request,"action":"recover"}),reply)
+        self.assertEqual(self.copy_calls,1)
+
+    def test_checkpoint_only_captures_current_state_without_a_native_edit_or_undo_entry(self):
+        before=self.inspect()
+        request=self.request(before)
+        request.update(operations=[],keep_working_version=True,working_version_directory=str(Path(self.saved_folder.name)))
+        reply=self.call(request)
+        self.assertTrue(reply["ok"],reply)
+        self.assertEqual(reply["result"]["after"]["state_sha256"],before["state_sha256"])
+        self.assertEqual(reply["result"]["working_version"]["state"],"captured")
+        self.assertEqual(self.calls,[])
+        self.assertEqual(self.doc.UndoNames,[])
+        self.assertEqual(self.view_events,[])
 
     def test_recovery_returns_original_completion_without_repeating_or_reverting_manual_edits(self):
         request = self.request(self.inspect())

@@ -89,6 +89,7 @@ try {
       drawing:{live_drawing_version:1,units:"mm",before:{title:"Owned.dxf"},operation:{action:"circle",diameter:12,center:[0,0]}},
       cad:{live_cad_version:1,document_name:"Owned",before:[],operations:[{action:"edit_object",obj_name:"Box",obj_properties:{Length:"12 mm"}}]},
      };
+     if(kind==="cad" && window.checkpointOnNext){window.checkpointOnNext=false;inputs.cad.working_version={verifier_sha256:"a".repeat(64)};inputs.cad.operations=[];}
      snapshot.job={snapshot:{schema_version:{agent:15,pcb:14,drawing:16,cad:13}[kind],project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,job_id:crypto.randomUUID(),description:"Owned typed correction",agreement:{kind:"provisional_draft",outcome:"Apply the requested typed fixture change <img src=x onerror=alert(1)>",assumptions:["Fit is unmeasured"],constraints:["Preserve manual edits"],losses:["Physical function is not checked"],verification:"Inspect native state; checked reopen remains pending"},...inputs[kind]},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};
     }
     if(window.startPublicOnNext){window.startPublicOnNext=false;snapshot.job={snapshot:{schema_version:18,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,public_document_version:1,job_id:crypto.randomUUID(),url:"https://example.org/manual?language=en",purpose:"Check the official public manual"},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
@@ -96,8 +97,9 @@ try {
    }
    else if(command==="approve_operation"){
     snapshot.job.busy=true;snapshot.job.snapshot.phase="running";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));
-    return await new Promise(resolve=>{window.finishOwnedBatch=()=>{snapshot.job.busy=false;snapshot.job.snapshot.phase=snapshot.job.snapshot.input.public_document_version?"completed":"cancelled";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));persist();resolve(structuredClone(snapshot.job));};});
+    return await new Promise(resolve=>{window.finishOwnedBatch=()=>{snapshot.job.busy=false;snapshot.job.snapshot.phase=snapshot.job.snapshot.input.public_document_version||window.completeBatch?"completed":"cancelled";window.completeBatch=false;snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));persist();resolve(structuredClone(snapshot.job));};});
    }
+   else if(command==="open_artifact")return null;
    else if(command==="cancel_job"){snapshot.job.snapshot.phase="cancelled";snapshot.job.sequence++;return structuredClone(snapshot.job);}
    else if(!["get_snapshot","detect_clients"].includes(command))throw Error(command);
    persist();return structuredClone(snapshot);
@@ -306,5 +308,9 @@ try {
   assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command==="start_codex_chat").length),started+(mode==="stopped"?0:1));assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command==="answer_codex_question").length),submitted+(mode==="failed-save"?2:1),"A lost answer reply repeated the submission");
   await page.reload();await page.locator("#send:enabled").waitFor();assert.match(await page.locator("#conversation").innerText(),/USER_ANSWER_SENTINEL/);assert.match(await page.locator("#task-references").innerText(),/Respuestas guardadas de la conversación/);assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),0,"Reload resumed answers without user input");
  }
- console.log("Durable task chat fixture passed: workspace/history, evidence, corrections and Stop across all routes; scoped statements, agreements and durable question answers including save failure, lost reply, Stop and reload. No real provider, native program or model download ran.");
+ await page.locator("#new-chat:enabled").click();await page.locator("#send:enabled").waitFor();await page.evaluate(()=>{window.startTypedOnNext="cad";window.checkpointOnNext=true;});await page.locator("#prompt").fill("Keep a checked native version without repeating the edit");await page.locator("#send").click();await page.locator("#approve:enabled").waitFor();
+ assert.match(await page.locator("#change-facts").innerText(),/sin repetir ni cambiar su geometría/);const copyPlan=JSON.parse(await page.locator("#change-details").textContent());assert.equal(copyPlan.working_version.verifier_sha256,"a".repeat(64));assert.deepEqual(copyPlan.native_operations,[]);assert(copyPlan.agreement);
+ const copyApprovals=await page.evaluate(()=>window.calls.filter(c=>c.command==="approve_operation").length);await page.locator("#approve").click();await page.waitForFunction(()=>typeof window.finishOwnedBatch==="function"&&document.querySelector("#cancel-running"));await page.evaluate(()=>{window.completeBatch=true;window.finishOwnedBatch();});await page.locator("#new-chat:enabled").waitFor();await page.locator("#results").evaluate(el=>el.open=true);
+ const folder=page.getByRole("button",{name:"Ver carpeta de la versión nativa",exact:true});await folder.waitFor();assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command==="open_artifact").length),0,"Completion automatically opened a GUI document");await folder.click();assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command==="open_artifact").at(-1).args.format),"native_working_version");assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command==="approve_operation").length),copyApprovals+1);
+ console.log("Durable task chat fixture passed: workspace/history, evidence, corrections, scoped statements, agreements, durable question answers and one-approval native checkpoint/folder output. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}

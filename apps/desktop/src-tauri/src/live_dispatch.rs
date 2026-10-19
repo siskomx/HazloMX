@@ -26,6 +26,8 @@ pub(crate) struct Record {
     pub refusal_sha256:Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub native_completion_sha256:Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub working_version_sha256:Option<String>,
 }
 fn digest(input: &OperationInput) -> Result<String, String> {
     if !matches!(
@@ -100,6 +102,10 @@ pub(crate) fn read(directory: &Path, input: &OperationInput) -> Result<Option<Re
         let matches=if path.try_exists().map_err(|_|"No se pudo comprobar el informe nativo.")?{crate::kicad_project::digest(&crate::kicad_project::read_regular(&path,65536)?)==*hash}else{retained_result.as_ref()==Some(hash)};
         if !matches || input.receipt_sha256().is_some_and(|h|h!=hash){return Err("El resultado nativo cambió; se conserva la pausa.".into());}
     }
+    if let Some(hash)=&record.working_version_sha256{
+        let OperationInput::LiveCad(cad)=input else{return Err("La comprobación de copia no pertenece a este programa.".into());};if cad.working_version.is_none() || record.native_completion_sha256.is_none() || !crate::kicad_project::valid_hash(hash){return Err("La comprobación no pertenece a la captura aprobada.".into());}
+        let native=crate::cadpilot_live::read_native_completion(directory,cad,record.native_completion_sha256.as_ref().unwrap())?.ok_or("Falta el recibo original de captura.")?;crate::native_working_version::validate_artifacts(directory,&native,hash)?;
+    }
     if let Some(hash)=&record.refusal_sha256{
         let OperationInput::LiveDrawing(drawing)=input else{return Err("Prueba de rechazo incompatible; se conserva la pausa.".into());};
         if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || !crate::kicad_project::valid_hash(hash) || crate::kicad_project::digest(&crate::kicad_project::read_regular(&directory.join("drawing-completion.json"),256*1024)?)!=*hash || !crate::cadcraft_live::refusal_proof(drawing,directory)?{return Err("La prueba de rechazo cambió; se conserva la pausa.".into());}
@@ -113,6 +119,13 @@ pub(crate) fn retain_native_completion(directory:&Path,input:&crate::cadpilot_li
     if record.native_completion_sha256.as_ref().is_some_and(|saved|saved!=&hash){return Err("El recibo original ya tiene otro contenido; se conserva sin reemplazarlo.".into());}
     if record.native_completion_sha256.is_none(){record.native_completion_sha256=Some(hash.clone());atomic_json(&directory.join("live-dispatch.json"),&record,true).map_err(|_|"La respuesta sigue local, pero no se confirmó su vínculo al envío. No repitas la edición.".to_string())?;}
     Ok(hash)
+}
+pub(crate) fn retain_working_version(directory:&Path,input:&crate::cadpilot_live::Input,hash:&str)->Result<String,String>{
+    let operation=OperationInput::LiveCad(input.clone());let mut record=read(directory,&operation)?.ok_or("Falta el envío original de captura.")?;
+    if input.working_version.is_none() || !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || !crate::kicad_project::valid_hash(hash){return Err("La comprobación no corresponde a una captura admitida.".into());}
+    let native=crate::cadpilot_live::read_native_completion(directory,input,record.native_completion_sha256.as_deref().ok_or("Falta el recibo original de captura.")?)?.ok_or("Falta la captura original.")?;crate::native_working_version::validate_artifacts(directory,&native,hash)?;
+    if record.working_version_sha256.as_ref().is_some_and(|saved|saved!=hash){return Err("La copia ya tiene otra comprobación; no se reemplazó.".into());}
+    if record.working_version_sha256.is_none(){record.working_version_sha256=Some(hash.into());atomic_json(&directory.join("live-dispatch.json"),&record,true).map_err(|_|"La comprobación sigue local, pero falta vincularla al envío; no repitas la edición.".to_string())?;}Ok(hash.into())
 }
 pub(crate) fn recover_refused(directory:&Path,input:&OperationInput)->Result<(),String>{
     let mut record=read(directory,input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
@@ -154,6 +167,7 @@ impl Dispatch {
             receipt_sha256: None,
             refusal_sha256:None,
             native_completion_sha256:None,
+            working_version_sha256:None,
         };
         let path = directory.join("live-dispatch.json");
         atomic_json(&path,&record,false).map_err(|_|"La operación ya tiene un registro o no se pudo reservar. No se enviaron nuevas llamadas.")?;
@@ -188,6 +202,9 @@ impl Dispatch {
     pub(crate) fn retain_native_completion(&self,input:&crate::cadpilot_live::Input,result:&serde_json::Value)->Result<(),String>{
         let mut record=self.record.lock().map_err(|_|"No se pudo conservar el resultado nativo.")?;
         record.native_completion_sha256=Some(retain_native_completion(self.path.parent().ok_or("Falta el registro nativo.")?,input,result)?);Ok(())
+    }
+    pub(crate) fn retain_working_version(&self,input:&crate::cadpilot_live::Input,hash:&str)->Result<(),String>{
+        let mut record=self.record.lock().map_err(|_|"No se pudo vincular la comprobación de copia.")?;record.working_version_sha256=Some(retain_working_version(self.path.parent().ok_or("Falta el registro nativo.")?,input,hash)?);Ok(())
     }
     pub fn complete(&self, checked: &OperationInput) -> Result<(), String> {
         if read(self.path.parent().ok_or("Falta el registro nativo.")?,checked)?.is_some_and(|record|record.refusal_sha256.is_some()){return Err("La edición no inició; no se marcará como completada.".into());}

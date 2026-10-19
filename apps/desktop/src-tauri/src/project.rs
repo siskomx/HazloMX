@@ -294,6 +294,7 @@ pub enum ArtifactFormat {
     LiveAgentReport,
     LiveDrawingReport,
     NativeToolsReport,
+    NativeWorkingVersion,
     PublicDocumentReport,
     KonnectOriginal,
     KonnectEdited,
@@ -692,6 +693,7 @@ impl Project {
             }
             (OperationInput::Cadpilot(_), ArtifactFormat::CadpilotReport) => "result.json".into(),
             (OperationInput::LiveCad(_), ArtifactFormat::CadpilotReport) => "result.json".into(),
+            (OperationInput::LiveCad(input), ArtifactFormat::NativeWorkingVersion) if input.working_version.is_some() => "NativeVersion".into(),
             (OperationInput::LivePcb(input), ArtifactFormat::KicadSource) if input.export_copy => "Board.kicad_pcb".into(),
             (OperationInput::LivePcb(_), ArtifactFormat::LivePcbReport) => "result.json".into(),
             (OperationInput::LiveAgent(_), ArtifactFormat::LiveAgentReport) => "result.json".into(),
@@ -727,7 +729,7 @@ impl Project {
             _ => return Err(error("El formato no corresponde a esta operación.")),
         };
         let path = directory.join(name);
-        if matches!(format, ArtifactFormat::KicadOutputs) {
+        if matches!(format, ArtifactFormat::KicadOutputs|ArtifactFormat::NativeWorkingVersion) {
             let file = pin_directory(&path, false)?;
             return Ok(Artifact {
                 path,
@@ -949,7 +951,8 @@ impl Project {
                 return Err(error("El informe de la transacción nativa cambió."));
             }
             let result: serde_json::Value = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
-            return crate::cadpilot_live::validate_result(input, &result).map_err(io::Error::other);
+            crate::cadpilot_live::validate_result(input, &result).map_err(io::Error::other)?;
+            if input.working_version.is_some(){let record=crate::live_dispatch::read(directory,&OperationInput::LiveCad(input.clone())).map_err(io::Error::other)?.ok_or_else(||error("Falta la comprobación vinculada a la copia nativa."))?;let hash=record.working_version_sha256.ok_or_else(||error("La edición está confirmada, pero la nueva versión sigue pendiente de comprobar."))?;crate::native_working_version::validate_artifacts(directory,&result,&hash).map_err(io::Error::other)?;}return Ok(());
         }
         if let OperationInput::Cadpilot(input) = input {
             let result: cadpilot::ResultDocument = read_json(&directory.join("result.json"))?;
@@ -1076,7 +1079,7 @@ impl Project {
             if let OperationInput::LiveCad(input)=&snapshot.input{
                 let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
                 if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::cadpilot_live::recover_recorded_result(&directory,input),Ok(true)){
-                    let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;self.validate_outputs(&directory,&checked)?;crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}
+                    let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;if self.validate_outputs(&directory,&checked).is_ok(){crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}}
                 }}
             }
             if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) && snapshot.input.receipt_sha256().is_none() {
@@ -1157,7 +1160,7 @@ pub(crate) mod tests {
         let agent=crate::agent_editor::tests::job_fixture();
         let pcb=crate::kicad_live::tests::move_fixture();
         let drawing=crate::cadcraft_live::tests::fixture_input();
-        let cad=crate::cadpilot_live::Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};
+        let cad=crate::cadpilot_live::Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};
         let cad_report=serde_json::json!({"live_cad_version":1,"job_id":cad.job_id,"document_token":cad.document_token,"before_sha256":cad.state_sha256,"after":{"document_name":cad.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
         let cases=vec![
             (OperationInput::LiveAgent(agent.clone()),crate::agent_editor::tests::report_fixture(&agent)),
@@ -1200,6 +1203,23 @@ pub(crate) mod tests {
             if mode!="tampered" {let before=serde_json::to_value(project.history().unwrap()).unwrap();assert_eq!(serde_json::to_value(project.recover().unwrap()).unwrap(),before);}
             drop(project);fs::remove_dir_all(root).unwrap();
         }}
+    }
+    #[test]
+    fn native_copy_recovery_requires_a_bound_reopen_proof_and_preserves_pending_work(){
+        use std::sync::{Arc,Mutex,atomic::AtomicBool};
+        for scenario in ["unbound","checked","changed_copy","changed_proof","occupied"]{
+            let root=root();let project=Project::create(&root).unwrap();let(mut input,mut result)=crate::cadpilot_live::tests::completed_fixture();input.working_version=Some(crate::native_working_version::Plan{verifier_sha256:"a".repeat(64)});let id=input.job_id;let operation=OperationInput::LiveCad(input.clone());let mut snapshot=project.snapshot(operation.clone(),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;project.save(&snapshot).unwrap();let stage=project.reserve_stage(id).unwrap();let native=stage.path.join("NativeVersion");fs::create_dir(&native).unwrap();let file=serde_json::json!({"name":"Owned.FCStd","bytes":16,"sha256":crate::kicad_project::digest(b"owned copy bytes")});fs::write(native.join("Owned.FCStd"),b"owned copy bytes").unwrap();let capture=serde_json::to_vec(&serde_json::json!({"version":1,"file":file,"source_preserved":true,"reopen_checked":false})).unwrap();fs::write(native.join("capture.json"),&capture).unwrap();result["working_version"]=serde_json::json!({"state":"captured","capture_sha256":crate::kicad_project::digest(&capture),"file":file});
+            let proof=serde_json::to_vec(&serde_json::json!({"version":1,"file":file,"source_preserved":true,"reopen_checked":true,"headless":true,"native_properties_checked":true,"native_geometry_checked":true,"native_primitives_recomputed":true,"runtime_version":"1.1.4","units":"mm","coordinate_frame":"document_world","dependency_scope":"self_contained_native_primitives","external_dependencies":[],"gui_state_checked":false,"physical_function_checked":false})).unwrap();let hash=crate::kicad_project::digest(&proof);fs::write(native.join("verification.json"),&proof).unwrap();
+            let fence=crate::live_dispatch::Dispatch::start(&stage.path,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());fence.retain_native_completion(&input,&result).unwrap();let mut foreign=input.clone();foreign.working_version.as_mut().unwrap().verifier_sha256="b".repeat(64);assert!(crate::live_dispatch::read(&stage.path,&OperationInput::LiveCad(foreign)).is_err());assert!(fence.enter().is_err());
+            if scenario!="unbound"{fence.retain_working_version(&input,&hash).unwrap();}let path=stage.path.clone();drop(fence);drop(stage);
+            fs::write(root.join("manual.native"),b"preserve later manual work").unwrap();
+            if scenario=="changed_copy"{fs::write(native.join("Owned.FCStd"),b"preserve changed copy").unwrap();}
+            if scenario=="changed_proof"{fs::write(native.join("verification.json"),b"preserve changed proof").unwrap();}
+            if scenario=="occupied"{fs::create_dir(project.artifact_directory(id)).unwrap();fs::write(project.artifact_directory(id).join("manual.native"),b"preserve occupied destination").unwrap();}
+            if matches!(scenario,"changed_copy"|"changed_proof"){assert!(project.recover().is_err());assert!(path.join("native-completion.json").is_file());}
+            else{let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,if scenario=="checked"{Phase::Completed}else{Phase::Interrupted});if scenario=="checked"{assert!(recovered[0].audit.as_ref().unwrap().files_verified);assert_eq!(fs::read(project.artifact_directory(id).join("NativeVersion/verification.json")).unwrap(),proof);}else{assert!(path.join("result.json").is_file());let summary=project.native_recovery(None).unwrap();assert_eq!(summary[0].acknowledged,1);assert_eq!(summary[0].uncertain,0);assert_eq!(summary[0].needs_review,scenario=="unbound");}}
+            assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"preserve later manual work");drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
     }
     #[test]
     fn native_completion_survives_a_missing_final_report_and_publishes_without_the_native_runtime(){

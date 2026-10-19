@@ -158,7 +158,10 @@ def document(path, *, headless=False):
             total += item.file_size
             if total > 128 * 1024 * 1024:
                 raise ValueError("Expanded document exceeds limit")
-            if name not in {"Document.xml", "GuiDocument.xml", "thumbnails/Thumbnail.png"} and not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*\.Shape\.brp", name):
+            # FreeCADCmd never restores view providers. Keep their native color
+            # arrays as opaque hashed resources; this does not certify GUI state.
+            opaque_view = headless and re.fullmatch(r"(?:LineColorArray|PointColorArray|ShapeAppearance)[0-9]*", name)
+            if name not in {"Document.xml", "GuiDocument.xml", "thumbnails/Thumbnail.png"} and not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*\.Shape\.brp", name) and not opaque_view:
                 raise ValueError("Document resource is not certified")
             entries[name.lower()] = archive.read(item)
     root = xml(entries.get('document.xml', b''))

@@ -108,7 +108,7 @@ export function proposalFacts(run: Snapshot): string[] {
   } else if(input.live_cad_version){
     const saving = input.operations[0]?.action === "save_as";
     const exporting = input.operations[0]?.action === "export_step";
-    facts.push(saving ? "Guardar el documento abierto de FreeCAD." : exporting ? "Exportar la pieza abierta a STEP." : "Cambiar el documento abierto de FreeCAD.", "Objetivo: " + input.description);
+    facts.push(saving ? "Guardar el documento abierto de FreeCAD." : exporting ? "Exportar la pieza abierta a STEP." : input.working_version && !input.operations.length ? "Conservar una versión del documento abierto de FreeCAD." : "Cambiar el documento abierto de FreeCAD.", "Objetivo: " + input.description);
     const actions:Record<string,string>={create_object:"Crear objeto",edit_object:"Cambiar objeto",delete_object:"Eliminar objeto",boolean:"Combinar sólidos",fillet:"Redondear bordes",chamfer:"Biselar bordes",loft:"Crear forma entre secciones",sweep:"Crear barrido",mirror:"Reflejar",pattern:"Crear patrón",move:"Mover",color:"Cambiar color",variables:"Cambiar variables",sketch:"Crear boceto",pad:"Extruir",pocket:"Crear vaciado",revolution:"Crear revolución",groove:"Crear ranura",thickness:"Cambiar espesor",draft:"Crear ángulo de salida",datum_plane:"Crear plano de referencia",hull:"Crear envolvente"};
     let explainedDiameter=false;
     const names:Record<string,string>={Length:"largo",Width:"ancho",Height:"alto",Radius:"distancia del centro al borde",Radius1:"primer radio (del centro al borde)",Radius2:"segundo radio (del centro al borde)",Placement:"posición"};
@@ -134,6 +134,7 @@ export function proposalFacts(run: Snapshot): string[] {
       const object = input.before.find(object => object.name === input.operations[0].obj_name);
       facts.push("Pieza: " + (object?.label ?? input.operations[0].obj_name) + ".", "FreeCAD pedirá un archivo nuevo. No se sobrescriben destinos existentes.", "Se verifican los sólidos, volumen, tamaño y posición del STEP. El documento abierto no cambia ni se guarda al exportar.");
     }
+    else if(input.working_version)facts.push(input.operations.length?"Las ediciones forman una transacción que puedes deshacer en FreeCAD.":"Conservar una nueva versión del documento actual, sin repetir ni cambiar su geometría.","Incluye una nueva copia nativa en la carpeta de esta operación y su comprobación al reabrirla en un proceso aislado, con propiedades, unidades, geometría y recursos nativos.","Se conservan el documento abierto, sus cambios actuales sin guardar y su archivo original. No se usa Guardar como ni se sobrescribe el original.","Esta comprobación admite documentos independientes de cajas, cilindros, esferas, conos y toros. Si no puede capturarse o comprobarse, el trabajo queda pendiente y la edición no se repite.","La vista gráfica y la función física no se comprueban. La carpeta conserva los archivos parciales si falla una etapa.");
     else facts.push("Las acciones forman una transacción que puedes deshacer en FreeCAD. No se guarda ni exporta el modelo.");
     facts.push("Cancelar detiene la espera; una operación ya aceptada puede completarse después. Releeremos FreeCAD antes del siguiente cambio.");
   } else if (input.konnect_version) {

@@ -121,7 +121,31 @@ def _export_step(doc, operation, before):
 
 
 def _request_identity(request):
-    return _digest({key: request[key] for key in ("job_id", "document_token", "state_sha256", "operations")})
+    value = {key: request[key] for key in ("job_id", "document_token", "state_sha256", "operations")}
+    if request.get("keep_working_version"):
+        value["keep_working_version"] = True
+    return _digest(value)
+
+
+def _working_version(doc, request):
+    if not request.get("keep_working_version"):
+        return None
+    try:
+        from pathlib import Path
+        root = Path(request["working_version_directory"])
+        captured = HAZLO_COPY_CORE.capture(doc, root / (doc.Label + ".FCStd"),
+                                         lambda current: {"live": _state(current), "undo": list(current.UndoNames)})
+        payload = json.dumps(captured, ensure_ascii=False, allow_nan=False).encode()
+        if len(payload) > 2 * 1024 * 1024:
+            raise ValueError("working_copy_limit")
+        with open(root / "capture.json", "xb") as output:
+            output.write(payload)
+            output.flush()
+            os.fsync(output.fileno())
+        return {"state": "captured", "capture_sha256": hashlib.sha256(payload).hexdigest(), "file": captured["file"]}
+    except BaseException:
+        # Preserve the successful native edit and every partial copy. No retries here.
+        return {"state": "blocked", "reason": "native_working_copy_unverified"}
 
 
 def _completed_result(registry, request, result):
@@ -169,6 +193,8 @@ def _run(request):
         return result
     if action != "apply":
         raise ValueError("invalid_action")
+    if not request["operations"] and not request.get("keep_working_version"):
+        raise ValueError("invalid_action")
     bound = documents.get(request["document_token"])
     if bound is None:
         raise ValueError("stale_document")
@@ -178,13 +204,15 @@ def _run(request):
         raise ValueError("changed_document")
     saving = request["operations"] == [{"action": "save_as"}]
     exporting = len(request["operations"]) == 1 and request["operations"][0]["action"] == "export_step"
-    if doc.HasPendingTransaction or (not saving and not exporting and doc.UndoMode != 1):
+    if doc.HasPendingTransaction or (request["operations"] and not saving and not exporting and doc.UndoMode != 1):
         raise ValueError("native_undo_unavailable")
     # Do not edit a hidden tab while the user is looking at a different document.
     if Gui.activeDocument() is None or Gui.activeDocument().Document is not doc:
         raise ValueError("document_not_visible")
     if time.time() > request["expires_at"]:
         raise ValueError("expired_request")
+    if request.get("keep_working_version") and ".".join(App.Version()[:3]) != "1.1.4":
+        raise ValueError("native_working_version_runtime")
     receipts = registry["receipts"]
     job = request["job_id"]
     if job in receipts:
@@ -193,6 +221,13 @@ def _run(request):
         raise ValueError("native_operation_pending")
     if len(receipts) >= 128:
         raise ValueError("receipt_limit")
+    if not request["operations"]:
+        receipts[job] = {"status": "running", "document_token": request["document_token"]}
+        result = {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": before, "operations": [], "undo_available": True}
+        if request.get("keep_working_version"):
+            result["working_version"] = _working_version(doc, request)
+        receipts[job] = {"status": "completed", "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after_sha256": before["state_sha256"]}
+        return _completed_result(registry, request, result)
     receipts[job] = {"status": "running", "document_token": request["document_token"]}
     if saving:
         try:
@@ -241,7 +276,10 @@ def _run(request):
     view = Gui.getDocument(doc.Name).activeView()
     view.fitAll()
     view.redraw()
-    return _completed_result(registry, request, {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": results, "undo_available": undo_available})
+    result = {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": results, "undo_available": undo_available}
+    if request.get("keep_working_version"):
+        result["working_version"] = _working_version(doc, request)
+    return _completed_result(registry, request, result)
 
 
 def _dispatch():
@@ -250,7 +288,7 @@ def _dispatch():
     except Exception as error:
         # Do not forward native tracebacks, paths or document contents in failures.
         safe = {"model_limit", "closed_document", "document_limit", "stale_document", "changed_document", "native_undo_unavailable", "document_not_visible", "expired_request", "already_attempted", "receipt_limit", "native_operation_rolled_back", "rollback_uncertain", "native_save_not_completed", "native_save_uncertain", "native_operation_pending", "native_export_unsupported", "native_export_not_completed", "native_export_destination_exists", "native_export_uncertain"}
-        safe.update({"native_result_unavailable", "native_result_mismatch"})
+        safe.update({"native_result_unavailable", "native_result_mismatch", "native_working_version_runtime"})
         return {"ok": False, "error": str(error) if str(error) in safe else "native_operation_uncertain"}
 
 

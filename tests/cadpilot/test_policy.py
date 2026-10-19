@@ -18,6 +18,25 @@ ORIGINAL = ROOT/'docs/research/cadpilot-primitives-2026-10-11/artifacts/Original
 
 
 class Policy(unittest.TestCase):
+    def test_headless_only_preserves_opaque_native_view_arrays(self):
+        with zipfile.ZipFile(ORIGINAL) as archive:
+            contents = {name: archive.read(name) for name in archive.namelist()}
+        with tempfile.TemporaryDirectory(prefix='hazlo-headless-policy-') as directory:
+            path = Path(directory) / 'copy.FCStd'
+            for extra, allowed in [('LineColorArray', True), ('PointColorArray2', True),
+                                   ('ShapeAppearance', True), ('ShapeAppearance.py', False),
+                                   ('../LineColorArray', False), ('UnknownResource', False)]:
+                with zipfile.ZipFile(path, 'w') as archive:
+                    for name, data in dict(contents, **{extra:b'opaque view bytes'}).items():
+                        archive.writestr(name, data)
+                with self.assertRaises(ValueError):
+                    policy.document(path)
+                if allowed:
+                    self.assertEqual(policy.document(path, headless=True), {'Target':'Part::Box'})
+                else:
+                    with self.assertRaises(ValueError):
+                        policy.document(path, headless=True)
+
     def test_step_solids_match_individually_without_assuming_export_order(self):
         def solid(x=0, length=10, width=20, height=30):
             return SimpleNamespace(Volume=length*width*height,

@@ -107,6 +107,9 @@ pub mod project;
 #[cfg(windows)]
 pub mod jobs;
 
+#[cfg(windows)]
+pub mod native_working_version;
+
 pub mod ollama;
 
 pub const MIN_DIMENSION_MM: f64 = 1.0;

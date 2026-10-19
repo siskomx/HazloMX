@@ -30,7 +30,8 @@ fn main() {
     assert!(root.file_name().unwrap().to_str().unwrap().starts_with("native-creation-"));
     let marker:Value=serde_json::from_slice(&fs::read(root.join("native-ready.json")).unwrap()).unwrap();
     assert_eq!(marker["owned"],true);assert_eq!(marker["document"],"OwnedCreationFixture");
-    let workflow=Arc::new(Workflow::new(root.join("unused-FreeCADCmd.exe"),root.join("profiles")).unwrap());
+    let executable=std::env::var_os("HAZLOMEXA_NATIVE_COPY_VERIFIER").map(PathBuf::from).unwrap_or_else(||PathBuf::from(std::env::var_os("LOCALAPPDATA").unwrap()).join("HazloMexa/runtimes/FreeCAD-1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311/FreeCADCmd.exe"));assert!(executable.is_file());
+    let workflow=Arc::new(Workflow::new(executable,root.join("profiles")).unwrap());
     workflow.select_project(Project::create(&root.join("project")).unwrap()).unwrap();
     let host=HostTools::new(workflow.clone());
     let before=inspect(&host);

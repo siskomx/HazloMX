@@ -39,6 +39,14 @@ assert.match(live,/largo: 25.4 mm → 30.4 mm/);
 assert.match(live,/No se guarda ni exporta el modelo/);
 assert(!live.includes("InternalBox") && !live.includes("archivos originales se conservan"));
 
+for(const operations of [[],[{action:"edit_object",obj_name:"Box",obj_properties:{Length:30}}]]){
+  const version=review({live_cad_version:1,working_version:{verifier_sha256:"a".repeat(64)},description:"Conserva el trabajo actual",before:[],operations});
+  assert.match(version,/nueva copia nativa/);assert.match(version,/proceso aislado/);
+  assert.match(version,/ni se sobrescribe el original/);assert.match(version,/la edición no se repite/);
+  assert.match(version,/vista gráfica y la función física no se comprueban/);
+  assert(!version.includes("No se guarda ni exporta el modelo"));
+  if(!operations.length){assert.match(version,/sin repetir ni cambiar su geometría/);assert(!version.includes("Cambiar el documento abierto"));assert(!version.includes("puedes deshacer"));}
+}
 const save=review({live_cad_version:1,description:"Guarda la carcasa",before:[],operations:[{action:"save_as"}]});
 assert.match(save,/Guardar el documento abierto de FreeCAD/);
 assert.match(save,/FreeCAD abrirá Guardar como/);
