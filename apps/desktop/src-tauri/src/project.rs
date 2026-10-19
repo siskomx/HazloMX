@@ -212,6 +212,8 @@ pub struct RunAudit {
     pub native_attempted: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub task: Option<crate::tasks::Binding>,
+    #[serde(default,skip_serializing_if="Vec::is_empty")]
+    pub instruction_sources:Vec<crate::tasks::InstructionSource>,
     pub source: RunSource,
     pub user_edited: bool,
     pub adapter_version: u32,
@@ -778,6 +780,7 @@ impl Project {
                 approval_invalidated: false,
                 native_attempted,
                 task: crate::tasks::Store::new(self)?.binding()?,
+                instruction_sources:crate::tasks::Store::new(self)?.active()?.map(|task|task.instruction_sources()).unwrap_or_default(),
                 source: RunSource::Manual,
                 user_edited: false,
                 adapter_version: 1,
@@ -836,6 +839,7 @@ impl Project {
                 if audit.task.as_ref().is_some_and(|task|task.id.is_nil() || task.revision==0) {
                     return Err(error("La identidad de tarea de la ejecución no es válida."));
                 }
+                if !crate::tasks::valid_instruction_sources(&audit.instruction_sources){return Err(error("Proveniencia de instrucciones de la ejecución no válida."));}
                 if matches!(audit.source, RunSource::Mcp)
                     != matches!(snapshot.schema_version, 10 | 12 | 13 | 14 | 15 | 16 | 17 | 18)
                 {

@@ -97,7 +97,7 @@ struct DesktopSnapshot {
 fn purge_withdrawn_reply(state:&AppState,tasks:Option<&hazlomexa::tasks::State>)->Result<(),String>{
     let Some(tasks)=tasks else{return Ok(());};
     let mut chat=state.chat.lock().map_err(|_|"No se pudo comprobar la respuesta local.")?;
-    if chat.as_ref().is_some_and(|turn|!turn.view.busy && turn.scope.task.as_ref().is_some_and(|t|t.id==tasks.active.id && (turn.scope.references.iter().any(|source|!tasks.active.reply_source_allowed(source,turn.scope.provider.as_deref().unwrap_or(""))) || (!tasks.active.reply_receipt_allows(turn.view.id,&turn.view.text) && tasks.active.reply_was_withdrawn_after(&turn.view.text,t.revision))))){*chat=None;}
+    if chat.as_ref().is_some_and(|turn|!turn.view.busy && turn.scope.task.as_ref().is_some_and(|t|t.id==tasks.active.id && (!tasks.active.instruction_content_allowed(&turn.view.text) || turn.scope.references.iter().any(|source|!tasks.active.reply_source_allowed(source,turn.scope.provider.as_deref().unwrap_or(""))) || (!tasks.active.reply_receipt_allows(turn.view.id,&turn.view.text) && tasks.active.reply_was_withdrawn_after(&turn.view.text,t.revision))))){*chat=None;}
     Ok(())
 }
 fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
@@ -1570,6 +1570,10 @@ mod tests {
         let corrected=correct_owned_chat(&state,scope.project.0,root.clone(),request.clone()).unwrap();assert!(cancel.load(std::sync::atomic::Ordering::SeqCst));assert!(corrected.chat.unwrap().cancelled);assert_eq!(corrected.tasks.unwrap().active.chat_correction.unwrap().id,request.correction_id);assert!(state.chat_session.lock().unwrap().is_none() && state.codex_session.lock().unwrap().is_none());
         let revision=state.workflow.task_state().unwrap().unwrap().active.revision;correct_owned_chat(&state,scope.project.0,root.clone(),request).unwrap();assert_eq!(state.workflow.task_state().unwrap().unwrap().active.revision,revision);state.chat.lock().unwrap().as_mut().unwrap().view.busy=false;
         assert!(cancel_owned_chat(&state,Uuid::new_v4()).is_err());cancel_owned_chat(&state,chat_id).unwrap();let stopped=state.workflow.task_state().unwrap().unwrap().active;assert_eq!(stopped.chat_stop.as_ref().unwrap().chat_id,chat_id);assert!(stopped.chat_stop.as_ref().unwrap().revision>stopped.chat_correction.as_ref().unwrap().revision);cancel_owned_chat(&state,chat_id).unwrap();assert_eq!(state.workflow.task_state().unwrap().unwrap().active.revision,stopped.revision);
+        let scope=state.workflow.conversation_scope().unwrap().unwrap();let latest=stopped.instructions.last().unwrap();
+        *state.chat.lock().unwrap()=Some(ChatTurn{scope:scope.clone(),view:ChatView{provider:"codex",id:Uuid::new_v4(),project_id:scope.project.0,sequence:1,busy:false,cancelled:false,text:latest.text.clone().unwrap(),error:None,question:None},cancel:Arc::new(std::sync::atomic::AtomicBool::new(false)),question:None});
+        state.workflow.task_request(scope.project,hazlomexa::tasks::Request::ShareInstructions{id:stopped.id,revision:stopped.revision,statements:vec![latest.id],allow:false}).unwrap();
+        assert!(snapshot(&state).unwrap().chat.is_none());assert!(state.chat.lock().unwrap().is_none());
         let other = root.join("other");
         std::fs::create_dir(&other).unwrap();
         state

@@ -40,3 +40,7 @@ dialog::backdrop { background: #183d2e88; }
 #reference-preview { max-width: 100%; max-height: 160px; object-fit: contain; margin-top: 8px; }
 
 #report-image {max-width:100%;max-height:60vh;object-fit:contain}
+#instruction-entries {max-height:45vh;overflow:auto}
+#instruction-entries input[type="checkbox"] {width:auto;margin-right:10px}
+#instruction-entries pre {max-height:none;margin:8px 0 16px}
+#instruction-error {color:#8b2c20;white-space:pre-wrap}

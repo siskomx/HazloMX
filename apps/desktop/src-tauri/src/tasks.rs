@@ -23,6 +23,7 @@ fn error(s: &str) -> io::Error {
 fn provider(s: &str) -> bool {
     matches!(s, "codex" | "claude" | "ollama_local" | "ollama_cloud")
 }
+fn instruction_text(s:&str)->bool{!s.trim().is_empty() && s.len()<=4096 && !s.chars().any(|c|c.is_control() && !matches!(c,'\n'|'\r'|'\t'))}
 fn history(raw: &str) -> io::Result<()> {
     if raw.len() > 512 * 1024 {
         return Err(error("La conversación supera 512 KiB."));
@@ -60,6 +61,8 @@ pub struct Reference {
     pub shared_with: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub parents: Vec<Uuid>,
+    #[serde(default,skip_serializing_if="Vec::is_empty")]
+    pub instruction_sources:Vec<InstructionSource>,
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -83,6 +86,19 @@ pub struct ChatCorrection {pub id:Uuid,pub chat_id:Uuid,pub revision:u64,pub tex
 #[derive(Clone,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChatStop {pub chat_id:Uuid,pub revision:u64}
+#[derive(Clone,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Instruction {
+    pub id:Uuid,
+    pub revision:u64,
+    pub sha256:String,
+    pub text:Option<String>,
+    pub shared_with:Vec<String>,
+}
+#[derive(Debug,Clone,PartialEq,Eq,PartialOrd,Ord,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct InstructionSource{pub id:Uuid,pub sha256:String}
+pub(crate) fn valid_instruction_sources(sources:&[InstructionSource])->bool{sources.len()<=128 && sources.iter().all(|s|!s.id.is_nil() && crate::kicad_project::valid_hash(&s.sha256)) && sources.iter().map(|s|s.id).collect::<std::collections::BTreeSet<_>>().len()==sources.len()}
 #[derive(Clone,PartialEq,Eq,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReplySource {
@@ -104,6 +120,8 @@ pub struct ReplyReceipt {
     pub position:usize,
     pub references:Vec<ReplySource>,
     pub revoked:bool,
+    #[serde(default,skip_serializing_if="Vec::is_empty")]
+    pub instruction_sources:Vec<InstructionSource>,
 }
 pub(crate) fn history_parent(raw:Option<&str>)->io::Result<(String,usize)>{
     let value:serde_json::Value=serde_json::from_str(raw.unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
@@ -123,6 +141,8 @@ pub struct Task {
     #[serde(default)]
     pub last_user_revision: u64,
     pub goal: String,
+    #[serde(default,skip_serializing_if="Vec::is_empty")]
+    pub instructions:Vec<Instruction>,
     pub provider: String,
     pub references: Vec<Reference>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -147,12 +167,27 @@ pub struct Task {
     pub history: Option<String>,
 }
 impl Task {
+    pub(crate) fn instruction_sources(&self)->Vec<InstructionSource>{self.instructions.iter().filter(|entry|entry.text.is_some() && entry.shared_with.contains(&self.provider)).map(|entry|InstructionSource{id:entry.id,sha256:entry.sha256.clone()}).collect()}
+    pub(crate) fn user_statement_allows(&self,text:&str)->bool{let hash=crate::kicad_project::digest(text.as_bytes());self.instructions.iter().any(|entry|entry.sha256==hash && entry.text.is_some() && entry.shared_with.contains(&self.provider))}
+    pub(crate) fn history_instruction_sources_allowed(&self,turn:&serde_json::Value)->bool{turn["instruction_ids"].as_array().is_none_or(|ids|ids.iter().all(|id|id.as_str().and_then(|id|Uuid::parse_str(id).ok()).is_some_and(|id|self.instructions.iter().any(|entry|entry.id==id && entry.text.is_some() && entry.shared_with.contains(&self.provider)))))}
+    fn known_instruction_sources(&self,sources:&[InstructionSource])->bool{valid_instruction_sources(sources) && sources.iter().all(|source|self.instructions.iter().any(|entry|entry.id==source.id && entry.sha256==source.sha256))}
+    fn instruction_source_allowed(&self,source:&InstructionSource,provider:&str)->bool{self.instructions.iter().any(|entry|entry.id==source.id && entry.sha256==source.sha256 && entry.text.is_some() && entry.shared_with.iter().any(|p|p==provider))}
+    pub fn instruction_content_allowed(&self,text:&str)->bool{
+        let hash=crate::kicad_project::digest(text.as_bytes());let matching=self.instructions.iter().filter(|entry|entry.sha256==hash).collect::<Vec<_>>();
+        matching.is_empty() || matching.iter().any(|entry|entry.text.is_some() && entry.shared_with.contains(&self.provider))
+    }
+    pub(crate) fn instruction_context(&self,text:&str)->serde_json::Value{
+        if !self.instruction_content_allowed(text){return serde_json::json!({"content_withheld":true,"read_tool":"read_task_instructions"});}
+        let hash=crate::kicad_project::digest(text.as_bytes());
+        if text.len()>512{if let Some(entry)=self.instructions.iter().rev().find(|entry|entry.sha256==hash && entry.text.is_some() && entry.shared_with.contains(&self.provider)){return serde_json::json!({"instruction_id":entry.id,"read_tool":"read_task_instructions","text_retained_in_full":true});}}
+        serde_json::json!(text)
+    }
     pub fn reply_receipt_allows(&self,id:Uuid,content:&str)->bool{
         let hash=crate::kicad_project::digest(content.as_bytes());
         self.reply_receipts.iter().any(|r|r.id==id && r.content_sha256==hash && self.receipt_authorized(r))
     }
     fn receipt_authorized(&self,r:&ReplyReceipt)->bool{
-        !r.revoked && r.task.id==self.id && r.provider==self.provider && r.references.iter().all(|source|self.reply_source_allowed(source,&r.provider))
+        !r.revoked && r.task.id==self.id && r.provider==self.provider && r.references.iter().all(|source|self.reply_source_allowed(source,&r.provider)) && r.instruction_sources.iter().all(|source|self.instruction_source_allowed(source,&r.provider))
     }
     pub fn reply_source_allowed(&self,source:&ReplySource,provider:&str)->bool{self.references.iter().any(|r|r.id==source.id && r.sha256==source.sha256 && r.preview_sha256==source.preview_sha256 && r.shared_with.iter().any(|p|p==provider))}
     pub(crate) fn history_reply_allows(&self,turn:&serde_json::Value)->bool{
@@ -182,6 +217,10 @@ impl Task {
                 .any(|r| !r.shared_with.contains(&self.provider))
     }
     fn validate(&self) -> io::Result<()> {
+        let mut instruction_ids=std::collections::BTreeSet::new();let mut prior_revision=0;
+        if self.instructions.len()>128 || self.instructions.iter().any(|entry|{
+            let invalid=entry.id.is_nil() || !instruction_ids.insert(entry.id) || entry.revision<=prior_revision || entry.revision>self.revision || !crate::kicad_project::valid_hash(&entry.sha256) || entry.shared_with.len()>4 || entry.shared_with.iter().any(|p|!provider(p)) || entry.shared_with.iter().collect::<std::collections::BTreeSet<_>>().len()!=entry.shared_with.len() || entry.text.as_ref().is_some_and(|text|!instruction_text(text) || crate::kicad_project::digest(text.as_bytes())!=entry.sha256) || entry.text.is_none() && !entry.shared_with.is_empty();prior_revision=entry.revision;invalid
+        }){return Err(error("Instrucciones guardadas no válidas; se conservó la conversación."));}
         if self.chat_stop.as_ref().is_some_and(|stop|stop.chat_id.is_nil() || stop.revision==0 || stop.revision>self.revision){return Err(error("Pausa de conversación no válida; se conservó la tarea."));}
         if self.chat_correction.as_ref().is_some_and(|c|c.id.is_nil() || c.chat_id.is_nil() || c.revision==0 || c.revision>self.revision || c.text.trim().is_empty() || c.text.len()>4096){return Err(error("Corrección de conversación no válida; se conservó la tarea."));}
         if self.latest_correction.as_ref().is_some_and(|c| {
@@ -217,6 +256,7 @@ impl Task {
             history(raw)?;
         }
         let mut receipt_ids=std::collections::BTreeSet::new();
+        if self.reply_receipts.iter().any(|receipt|!self.known_instruction_sources(&receipt.instruction_sources)) || self.references.iter().any(|reference|!self.known_instruction_sources(&reference.instruction_sources)) {return Err(error("Proveniencia de instrucciones no válida; se conservó la conversación."));}
         if self.reply_receipts.len()>128 || self.reply_receipts.iter().any(|r|r.id.is_nil() || !receipt_ids.insert(r.id) || r.task.id!=self.id || r.task.revision==0 || r.task.revision>self.revision || !provider(&r.provider) || !crate::kicad_project::valid_hash(&r.content_sha256) || !crate::kicad_project::valid_hash(&r.parent_sha256) || r.position>=128 || r.references.len()>64 || r.references.iter().any(|s|s.id.is_nil() || !crate::kicad_project::valid_hash(&s.sha256) || s.preview_sha256.as_ref().is_some_and(|h|!crate::kicad_project::valid_hash(h))) || r.references.iter().map(|s|s.id).collect::<std::collections::BTreeSet<_>>().len()!=r.references.len() || (!r.revoked && r.references.iter().any(|s|!self.references.iter().any(|reference|reference.id==s.id)))) {return Err(error("Proveniencia de respuesta no válida; se conservó la conversación."));}
         let mut reply_hashes:std::collections::BTreeSet<_>=self.withdrawn_replies.keys().cloned().collect();
         if self.interrupted_replies.len()>128 || self.interrupted_replies.iter().any(|hash|!crate::kicad_project::valid_hash(hash)){return Err(error("Registro de borradores no válido; se conservó la tarea."));}
@@ -287,7 +327,7 @@ fn scrub_history(task: &mut Task, affected: &std::collections::BTreeSet<Uuid>) -
         }
     }
     let mut value: serde_json::Value =
-        serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
+        serde_json::from_str(task.history.as_deref().unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
     let mut authenticated=std::collections::BTreeSet::new();
     if let Some(turns)=value["turns"].as_array(){
         for (position,turn) in turns.iter().enumerate().filter(|(_,turn)|turn["role"]=="assistant"){
@@ -340,24 +380,28 @@ fn retain_lineage(task: &Task, raw: &str) -> io::Result<String> {
         serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
     let incoming=value["turns"].as_array().unwrap().clone();
     for (position,turn) in value["turns"].as_array_mut().unwrap().iter_mut().enumerate(){
+        if turn["role"]!="assistant" && turn["content"].as_str().is_some_and(|text|task.reply_is_withdrawn(text) && !task.user_statement_allows(text)){*turn=serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});continue;}
+        if turn["content"].as_str().is_some_and(|text|!task.instruction_content_allowed(text) && task.instructions.iter().any(|entry|entry.text.is_none() && entry.sha256==crate::kicad_project::digest(text.as_bytes()))){*turn=serde_json::json!({"role":"assistant","content":"Instrucción retirada por ti."});continue;}
         if turn["role"] == "assistant" {
             let hash=crate::kicad_project::digest(turn["content"].as_str().unwrap().as_bytes());
             let parent=parent_digest(&incoming[..position])?;
             let reply_id=turn["reply_id"].as_str().and_then(|id|Uuid::parse_str(id).ok());
             let fresh=task.reply_receipts.iter().find(|r|Some(r.id)==reply_id && r.content_sha256==hash && r.position==position && r.parent_sha256==parent && task.receipt_authorized(r));
-            if let Some(receipt)=fresh{turn["reply_id"]=serde_json::json!(receipt.id);turn["reference_ids"]=serde_json::json!(receipt.references.iter().map(|s|s.id).collect::<Vec<_>>());continue;}
+            if let Some(receipt)=fresh{turn["reply_id"]=serde_json::json!(receipt.id);turn["reference_ids"]=serde_json::json!(receipt.references.iter().map(|s|s.id).collect::<Vec<_>>());turn["instruction_ids"]=serde_json::json!(receipt.instruction_sources.iter().map(|s|s.id).collect::<Vec<_>>());continue;}
             let known=prior["turns"][position].clone();
-            if known["role"]=="assistant" && known["content"]==turn["content"] && task.history_reply_parent_allows(&known,position,&parent){turn["reply_id"]=known["reply_id"].clone();turn["reference_ids"]=known["reference_ids"].clone();continue;}
+            if known["role"]=="assistant" && known["content"]==turn["content"] && task.history_reply_parent_allows(&known,position,&parent){turn["reply_id"]=known["reply_id"].clone();turn["reference_ids"]=known["reference_ids"].clone();turn["instruction_ids"]=known["instruction_ids"].clone();continue;}
             turn.as_object_mut().unwrap().remove("reply_id");
             if task.reply_is_interrupted(turn["content"].as_str().unwrap()) || prior["turns"].as_array().into_iter().flatten().any(|saved|saved["role"]=="assistant" && saved["interrupted"]==true && saved["content"]==turn["content"]){turn["interrupted"]=serde_json::json!(true);}
             if task.withdrawn_replies.contains_key(&hash){*turn=serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});continue;}
-            let mut references=std::collections::BTreeSet::new();let mut found=false;
+            let mut references=std::collections::BTreeSet::new();let mut instructions=std::collections::BTreeSet::new();let mut found=false;
             for saved in prior["turns"].as_array().into_iter().flatten().filter(|saved|saved["role"]=="assistant" && saved["content"]==turn["content"]){
                 found=true;
                 if let Some(ids)=saved["reference_ids"].as_array(){for id in ids {if let Some(id)=id.as_str().and_then(|id|Uuid::parse_str(id).ok()){references.insert(id);}}}
+                if let Some(ids)=saved["instruction_ids"].as_array(){for id in ids {if let Some(id)=id.as_str().and_then(|id|Uuid::parse_str(id).ok()){instructions.insert(id);}}}
             }
-            if !found{references.extend(task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(|r|r.id));}
+            if !found{references.extend(task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(|r|r.id));instructions.extend(task.instruction_sources().iter().map(|s|s.id));}
             turn["reference_ids"]=serde_json::json!(references);
+            turn["instruction_ids"]=serde_json::json!(instructions);
         }
     }
     serde_json::to_string(&value).map_err(io::Error::other)
@@ -423,6 +467,8 @@ pub enum Request {
         revision: u64,
         provider: String,
     },
+    ShareInstructions{id:Uuid,revision:u64,statements:Vec<Uuid>,allow:bool},
+    RemoveInstructions{id:Uuid,revision:u64,statements:Vec<Uuid>},
     AddReference {
         id: Uuid,
         revision: u64,
@@ -475,10 +521,39 @@ fn remember_interrupted(task:&mut Task)->io::Result<()>{
 fn interrupt_reply(task:&mut Task,chat_id:Uuid){
     for receipt in task.reply_receipts.iter_mut().filter(|receipt|receipt.id==chat_id){receipt.revoked=true;task.interrupted_replies.insert(receipt.content_sha256.clone());}
 }
+fn remember_instruction(task:&mut Task,text:&str)->io::Result<()>{
+    if !instruction_text(text){return Err(error("Escribe una instrucción de hasta 4 KiB sin caracteres de control; se conservó la conversación."));}
+    if task.instructions.len()>=128{return Err(error("Esta conversación alcanzó 128 instrucciones guardadas. Conserva su trabajo e inicia otra conversación para continuar; no se borró ninguna instrucción."));}
+    task.instructions.push(Instruction{id:Uuid::new_v4(),revision:task.revision,sha256:crate::kicad_project::digest(text.as_bytes()),text:Some(text.into()),shared_with:vec![task.provider.clone()]});Ok(())
+}
+fn validate_statement_selection(task:&Task,ids:&[Uuid])->io::Result<()>{
+    if ids.is_empty() || ids.len()>128 || ids.iter().collect::<std::collections::BTreeSet<_>>().len()!=ids.len() || ids.iter().any(|id|!task.instructions.iter().any(|entry|entry.id==*id)){return Err(error("Selecciona instrucciones de la conversación actual; no se modificaron otros permisos."));}Ok(())
+}
+fn withdraw_statement_derivatives(task:&mut Task,ids:&[Uuid],remove:bool)->io::Result<()>{
+    let removed=task.instructions.iter().filter(|entry|remove && ids.contains(&entry.id)).map(|entry|entry.sha256.clone()).collect::<std::collections::BTreeSet<_>>();
+    let mut affected=task.references.iter().filter(|reference|reference.instruction_sources.iter().any(|source|ids.contains(&source.id))).map(|reference|reference.id).collect::<std::collections::BTreeSet<_>>();
+    for reference in &task.references{if reference.parents.iter().any(|parent|affected.contains(parent)){affected.insert(reference.id);}}
+    let revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite."))?;
+    for receipt in &mut task.reply_receipts{if removed.contains(&receipt.content_sha256) || (remove || receipt.provider==task.provider) && receipt.instruction_sources.iter().any(|source|ids.contains(&source.id)){receipt.revoked=true;task.withdrawn_replies.insert(receipt.content_sha256.clone(),revision);}}
+    let before:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;let mut authenticated=std::collections::BTreeSet::new();
+    if let Some(turns)=before["turns"].as_array(){for (position,turn) in turns.iter().enumerate(){if task.history_reply_parent_allows(turn,position,&parent_digest(&turns[..position])?){if let Some(id)=turn["reply_id"].as_str().and_then(|id|Uuid::parse_str(id).ok()){authenticated.insert((id,position));}}}}
+    scrub_history(task,&affected)?;
+    let mut value:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap()).map_err(io::Error::other)?;
+    for (position,turn) in value["turns"].as_array_mut().unwrap().iter_mut().enumerate(){
+        if turn["content"].as_str().is_some_and(|text|removed.contains(&crate::kicad_project::digest(text.as_bytes()))){*turn=serde_json::json!({"role":"assistant","content":"Instrucción retirada por ti."});continue;}
+        let owned=turn["reply_id"].as_str().and_then(|id|Uuid::parse_str(id).ok()).is_some_and(|id|authenticated.contains(&(id,position)));
+        let derived=turn["instruction_ids"].as_array().is_some_and(|sources|sources.iter().any(|source|source.as_str().and_then(|id|Uuid::parse_str(id).ok()).is_some_and(|id|ids.contains(&id))));
+        if !owned && (derived || turn["content"].as_str().is_some_and(|text|task.reply_is_withdrawn(text) && !(turn["role"]=="user" && task.user_statement_allows(text)))){if let Some(text)=turn["content"].as_str().filter(|text|*text!=WITHDRAWN_REPLY){task.withdrawn_replies.insert(crate::kicad_project::digest(text.as_bytes()),revision);}*turn=serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});}
+    }
+    let turns=value["turns"].as_array().unwrap();for (position,turn) in turns.iter().enumerate(){if let Some(id)=turn["reply_id"].as_str().and_then(|id|Uuid::parse_str(id).ok()){if authenticated.contains(&(id,position)){if let Some(receipt)=task.reply_receipts.iter_mut().find(|receipt|receipt.id==id && !receipt.revoked){receipt.parent_sha256=parent_digest(&turns[..position])?;}}}}
+    task.history=Some(value.to_string());
+    if remove{task.restricted_results|=task.references.iter().any(|r|affected.contains(&r.id));task.pending_removals.extend(task.references.iter().filter(|r|affected.contains(&r.id)).map(|r|PendingRemoval{id:r.id,bytes:r.bytes}));task.references.retain(|r|!affected.contains(&r.id));}else{for reference in &mut task.references{if affected.contains(&reference.id){reference.shared_with.retain(|p|p!=&task.provider);}}}
+    Ok(())
+}
 fn interrupted_history(task:&Task,draft:&str,sources:&[ReplySource],provider:&str)->io::Result<serde_json::Value>{
     let mut value:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
     let turns=value["turns"].as_array_mut().ok_or_else(||error("Historial no válido; se conservó la tarea."))?;
-    if !draft.is_empty(){let allowed=task.provider==provider && sources.iter().all(|s|task.reply_source_allowed(s,provider)) && !task.reply_is_withdrawn(draft);turns.push(serde_json::json!({"role":"assistant","content":if allowed{draft}else{WITHDRAWN_REPLY},"interrupted":true,"reference_ids":sources.iter().map(|s|s.id).collect::<Vec<_>>()}));}
+    if !draft.is_empty(){let allowed=task.provider==provider && sources.iter().all(|s|task.reply_source_allowed(s,provider)) && !task.reply_is_withdrawn(draft);turns.push(serde_json::json!({"role":"assistant","content":if allowed{draft}else{WITHDRAWN_REPLY},"interrupted":true,"reference_ids":sources.iter().map(|s|s.id).collect::<Vec<_>>(),"instruction_ids":task.instruction_sources().iter().map(|s|s.id).collect::<Vec<_>>()}));}
     Ok(value)
 }
 impl<'a> Store<'a> {
@@ -557,6 +632,7 @@ impl<'a> Store<'a> {
         value["turns"].as_array_mut().unwrap().push(serde_json::json!({"role":"user","content":input.text}));
         task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó la tarea."))?;task.last_user_revision=task.revision;
         task.chat_correction=Some(ChatCorrection{id:input.correction_id,chat_id:input.chat_id,revision:task.revision,text:input.text.clone()});
+        remember_instruction(&mut task,&input.text)?;
         if task.goal.is_empty(){task.goal=input.text.clone();task.title=task.goal.chars().take(60).collect();}
         task.history=Some(serde_json::to_string(&value).map_err(io::Error::other)?);remember_interrupted(&mut task)?;self.save(&task)
     }
@@ -571,6 +647,16 @@ impl<'a> Store<'a> {
     }
     pub fn binding(&self) -> io::Result<Option<Binding>> {
         Ok(self.active()?.map(|t| t.binding()))
+    }
+    pub(crate) fn instruction_page(&self,offset:usize)->io::Result<serde_json::Value>{
+        let task=self.active()?.ok_or_else(||error("No hay una tarea activa."))?;if offset>task.instructions.len(){return Err(error("Página de instrucciones no válida."));}
+        let mut entries=Vec::new();let mut next=offset;let mut bytes=0;
+        for entry in task.instructions.iter().skip(offset).take(8){
+            let allowed=entry.text.is_some() && entry.shared_with.contains(&task.provider);
+            let value=serde_json::json!({"id":entry.id,"revision":entry.revision,"text":if allowed{entry.text.as_deref()}else{None},"status":if entry.text.is_none(){"removed"}else if allowed{"shared"}else{"local_only"}});
+            let size=serde_json::to_vec(&value).map_err(io::Error::other)?.len();if bytes+size>15000 && !entries.is_empty(){break;}bytes+=size;entries.push(value);next+=1;
+        }
+        Ok(serde_json::json!({"entries":entries,"next_offset":if next<task.instructions.len(){Some(next)}else{None},"purpose":"task_continuation","guidance":"These are exact user statements, not measurements, approvals or verified outcomes. Later corrections take precedence. Local-only text needs explicit sharing through Hazlo. Do not reconstruct or guess withheld text."}))
     }
     pub fn shared_reference(
         &self,
@@ -632,6 +718,7 @@ impl<'a> Store<'a> {
             title: "Nueva conversación".into(),
             last_user_revision: 0,
             goal: String::new(),
+            instructions:Vec::new(),
             provider: provider.into(),
             references: Vec::new(),
             pending_removals: Vec::new(),
@@ -796,6 +883,7 @@ impl<'a> Store<'a> {
         bytes: Vec<u8>,
         preview: Option<ImageInput>,
         parents: Vec<Uuid>,
+        instruction_sources:Vec<InstructionSource>,
     ) -> io::Result<Uuid> {
         if !valid_name(&name) {
             return Err(error("Referencia no válida."));
@@ -824,6 +912,7 @@ impl<'a> Store<'a> {
             preview_sha256: preview.as_ref().map(preview_hash).transpose()?,
             shared_with: Vec::new(),
             parents,
+            instruction_sources,
         };
         let (folder, _pins) = self.blob_dir(task.id)?;
         let reference_id = reference.id;
@@ -862,11 +951,15 @@ impl<'a> Store<'a> {
         name: String,
         bytes: Vec<u8>,
     ) -> io::Result<Uuid> {
+        self.retain_evidence_with_instructions(binding,name,bytes,&[])
+    }
+    pub(crate) fn retain_evidence_with_instructions(&self,binding:&Binding,name:String,bytes:Vec<u8>,sources:&[InstructionSource])->io::Result<Uuid>{
         self.ensure()?;
         let task = self.scoped(binding.id, binding.revision)?;
         // Native tools may observe any current reference. Unknown dependency is never declassified.
         let parents = task.references.iter().map(|r| r.id).collect();
-        self.add_reference(task, name, bytes, None, parents)
+        let mut instructions=task.instruction_sources();instructions.extend_from_slice(sources);instructions.sort();instructions.dedup();
+        self.add_reference(task, name, bytes, None, parents,instructions)
     }
     pub fn request(&self, request: Request) -> io::Result<serde_json::Value> {
         use serde_json::json;
@@ -918,7 +1011,7 @@ impl<'a> Store<'a> {
                 }
                 history(&raw)?;
                 let mut task = self.scoped(id, revision)?;
-                task.revision += 1;
+                task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó la conversación."))?;
                 if let Some(job_id) = correction_of {
                     task.latest_correction = Some(Correction {
                         job_id,
@@ -927,6 +1020,7 @@ impl<'a> Store<'a> {
                     });
                 }
                 task.last_user_revision = task.revision;
+                remember_instruction(&mut task,&text)?;
                 if task.goal.is_empty() {
                     task.goal = text;
                     task.title = task.goal.chars().take(60).collect();
@@ -935,6 +1029,28 @@ impl<'a> Store<'a> {
                 remember_interrupted(&mut task)?;
                 self.save(&task)?;
             }
+            Request::ShareInstructions{id,revision,statements,allow}=>{
+                let mut task=self.scoped(id,revision)?;validate_statement_selection(&task,&statements)?;
+                for entry in task.instructions.iter_mut().filter(|entry|statements.contains(&entry.id)){
+                    if entry.text.is_none(){return Err(error("Una instrucción fue retirada; no se renovó su permiso."));}
+                    entry.shared_with.retain(|p|p!=&task.provider);if allow{entry.shared_with.push(task.provider.clone());}
+                }
+                if !allow{withdraw_statement_derivatives(&mut task,&statements,false)?;}
+                task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite."))?;self.save(&task)?;
+            },
+            Request::RemoveInstructions{id,revision,statements}=>{
+                let mut task=self.scoped(id,revision)?;validate_statement_selection(&task,&statements)?;
+                withdraw_statement_derivatives(&mut task,&statements,true)?;
+                let removed=task.instructions.iter_mut().filter(|entry|statements.contains(&entry.id)).map(|entry|{entry.text=None;entry.shared_with.clear();entry.sha256.clone()}).collect::<std::collections::BTreeSet<_>>();
+                let affected=|text:&str|removed.contains(&crate::kicad_project::digest(text.as_bytes()));
+                let mut saved:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
+                for turn in saved["turns"].as_array_mut().unwrap(){if turn["content"].as_str().is_some_and(&affected){*turn=serde_json::json!({"role":"assistant","content":"Instrucción retirada por ti."});}}
+                task.history=Some(saved.to_string());if affected(&task.goal){task.goal.clear();task.title="Conversación conservada".into();}
+                if task.latest_correction.as_ref().is_some_and(|c|affected(&c.text)){task.latest_correction=None;}
+                if task.chat_correction.as_ref().is_some_and(|c|affected(&c.text)){task.chat_correction=None;}
+                for receipt in &mut task.reply_receipts{if removed.contains(&receipt.content_sha256){receipt.revoked=true;}}
+                task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite."))?;task.last_user_revision=task.revision;self.save(&task)?;self.cleanup_references(&mut task)?;
+            },
             Request::Provider {
                 id,
                 revision,
@@ -962,7 +1078,7 @@ impl<'a> Store<'a> {
                     .decode(data)
                     .map_err(|_| error("Referencia no válida."))?;
                 let task = self.scoped(id, revision)?;
-                self.add_reference(task, name, bytes, preview, Vec::new())?;
+                self.add_reference(task, name, bytes, preview, Vec::new(),Vec::new())?;
             }
             Request::Share {
                 id,
@@ -1112,6 +1228,71 @@ fn printable_text(text: &str) -> bool {
 mod tests {
     use super::*;
     #[test]
+    fn owned_statements_survive_history_replacement_and_need_separate_service_consent(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;
+        store.request(Request::Message{id:task.id,revision:task.revision,text:"Keep my manual edits and use inches".into(),history:r#"{"version":1,"turns":[{"role":"user","content":"renderer-only invented value"}]}"#.into(),correction_of:None}).unwrap();let task=store.active().unwrap().unwrap();let entry=task.instructions[0].clone();assert_eq!(entry.text.as_deref(),Some("Keep my manual edits and use inches"));assert_eq!(store.instruction_page(0).unwrap()["entries"][0]["text"],entry.text.as_ref().unwrap().as_str());
+        store.request(Request::History{id:task.id,revision:task.revision,value:Some(r#"{"version":1,"turns":[]}"#.into())}).unwrap();assert_eq!(store.active().unwrap().unwrap().instructions.len(),1);
+        store.request(Request::Provider{id:task.id,revision:task.revision,provider:"claude".into()}).unwrap();let task=store.active().unwrap().unwrap();assert!(store.instruction_page(0).unwrap()["entries"][0]["text"].is_null());assert!(!task.instruction_content_allowed(entry.text.as_ref().unwrap()));
+        store.request(Request::ShareInstructions{id:task.id,revision:task.revision,statements:vec![entry.id],allow:true}).unwrap();let task=store.active().unwrap().unwrap();assert!(task.instruction_content_allowed(entry.text.as_ref().unwrap()));assert!(task.references.is_empty());
+        store.request(Request::ShareInstructions{id:task.id,revision:task.revision,statements:vec![entry.id],allow:false}).unwrap();let task=store.active().unwrap().unwrap();assert!(!task.instruction_content_allowed(entry.text.as_ref().unwrap()));assert_eq!(task.instructions[0].text,entry.text);drop(store);drop(p);
+        let p=Project::open(&root).unwrap();let store=Store::new(&p).unwrap();let task=store.active().unwrap().unwrap();assert_eq!(task.instructions[0].id,entry.id);assert!(store.instruction_page(0).unwrap()["entries"][0]["text"].is_null());drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn statement_removal_scrubs_exact_copies_and_preserves_other_intent_and_work(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;let raw=r#"{"version":1,"turns":[{"role":"user","content":"PRIVATE_STATEMENT_SENTINEL"},{"role":"assistant","content":"PRIVATE_STATEMENT_SENTINEL"}]}"#;
+        store.request(Request::Message{id:task.id,revision:task.revision,text:"PRIVATE_STATEMENT_SENTINEL".into(),history:raw.into(),correction_of:None}).unwrap();let task=store.active().unwrap().unwrap();let removed=task.instructions[0].id;let file=root.join("manual.native");fs::write(&file,b"keep manual work").unwrap();
+        store.correct_chat(&ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:"Keep the valid work".into()},"",&[],"codex").unwrap();let task=store.active().unwrap().unwrap();assert_eq!(task.instructions.len(),2);
+        store.request(Request::RemoveInstructions{id:task.id,revision:task.revision,statements:vec![removed]}).unwrap();let task=store.active().unwrap().unwrap();assert!(task.goal.is_empty());assert_eq!(task.instructions[0].text,None);assert_eq!(task.instructions[1].text.as_deref(),Some("Keep the valid work"));assert!(!fs::read_to_string(store.path(task.id)).unwrap().contains("PRIVATE_STATEMENT_SENTINEL"));assert_eq!(fs::read(file).unwrap(),b"keep manual work");
+        store.request(Request::History{id:task.id,revision:task.revision,value:Some(raw.into())}).unwrap();assert!(!store.active().unwrap().unwrap().instruction_content_allowed("PRIVATE_STATEMENT_SENTINEL"));assert!(!fs::read_to_string(store.path(task.id)).unwrap().contains("PRIVATE_STATEMENT_SENTINEL"));assert!(store.request(Request::ShareInstructions{id:task.id,revision:task.revision,statements:vec![removed],allow:true}).is_err());drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn statement_withdrawal_fences_derived_evidence_and_replies_without_deleting_native_work(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;
+        store.request(Request::Message{id:task.id,revision:task.revision,text:"PRIVATE_REQUIREMENT_SENTINEL".into(),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).unwrap();
+        let task=store.active().unwrap().unwrap();let statement=task.instructions[0].id;
+        store.request(Request::AddReference{id:task.id,revision:task.revision,name:"original.txt".into(),data:STANDARD.encode(b"independent original"),preview:None}).unwrap();
+        let task=store.active().unwrap().unwrap();let original=task.references[0].id;
+        let derived=store.retain_evidence(&task.binding(),"derived.json".into(),b"PRIVATE_DERIVATIVE_SENTINEL".to_vec()).unwrap();
+        let task=store.active().unwrap().unwrap();assert_eq!(task.references[1].instruction_sources,task.instruction_sources());
+        store.request(Request::Share{id:task.id,revision:task.revision,reference:derived,allow:true}).unwrap();
+        let reply="PRIVATE_PARAPHRASE_SENTINEL";let mut owned=receipt(&store.active().unwrap().unwrap(),reply);owned.references.clear();assert!(store.record_reply(owned.clone()).unwrap());
+        save_history(&store,serde_json::json!([{"role":"assistant","content":reply,"reply_id":owned.id},{"role":"assistant","content":"UNRECEIPTED_PARAPHRASE_SENTINEL"}]));
+        let task=store.active().unwrap().unwrap();assert_eq!(serde_json::from_str::<serde_json::Value>(task.history.as_deref().unwrap()).unwrap()["turns"][0]["instruction_ids"],serde_json::json!([statement]));
+        fs::write(root.join("manual.native"),b"preserved native edits").unwrap();
+        store.request(Request::ShareInstructions{id:task.id,revision:task.revision,statements:vec![statement],allow:false}).unwrap();let task=store.active().unwrap().unwrap();
+        assert!(task.references[1].shared_with.is_empty());assert!(store.shared_reference(derived,0).is_err());assert!(!task.reply_receipt_allows(owned.id,reply));assert!(!task.history.as_ref().unwrap().contains("PARAPHRASE_SENTINEL"));
+        store.request(Request::ShareInstructions{id:task.id,revision:task.revision,statements:vec![statement],allow:true}).unwrap();let task=store.active().unwrap().unwrap();assert!(!task.reply_receipt_allows(owned.id,reply));assert!(task.references[1].shared_with.is_empty());
+        save_history(&store,serde_json::json!([{"role":"user","content":reply},{"role":"assistant","content":"UNRECEIPTED_PARAPHRASE_SENTINEL","instruction_ids":[]}]));assert!(!store.active().unwrap().unwrap().history.as_ref().unwrap().contains("PARAPHRASE_SENTINEL"));
+        let task=store.active().unwrap().unwrap();store.request(Request::RemoveInstructions{id:task.id,revision:task.revision,statements:vec![statement]}).unwrap();let task=store.active().unwrap().unwrap();assert_eq!(task.references.len(),1);assert_eq!(task.references[0].id,original);assert_eq!(store.reference_bytes(task.id,&task.references[0]).unwrap(),b"independent original");assert!(task.pending_removals.is_empty());assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"preserved native edits");
+        // A later report retains the original instruction identity, even after its text was removed.
+        let late=store.retain_evidence_with_instructions(&task.binding(),"late.json".into(),b"late original result".to_vec(),&owned.instruction_sources).unwrap();let task=store.active().unwrap().unwrap();assert_eq!(task.references.iter().find(|r|r.id==late).unwrap().instruction_sources,owned.instruction_sources);assert!(store.shared_reference(late,0).is_err());task.validate().unwrap();
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn statement_removal_rebases_only_authenticated_unrelated_replies_after_exact_text_scrub(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;
+        store.request(Request::Message{id:task.id,revision:task.revision,text:"REMOVE_THIS_EXACT_REQUEST".into(),history:r#"{"version":1,"turns":[{"role":"user","content":"REMOVE_THIS_EXACT_REQUEST"}]}"#.into(),correction_of:None}).unwrap();
+        let task=store.active().unwrap().unwrap();let mut independent=receipt(&task,"Keep this separately verified reply");independent.instruction_sources.clear();assert!(store.record_reply(independent.clone()).unwrap());
+        save_history(&store,serde_json::json!([{"role":"user","content":"REMOVE_THIS_EXACT_REQUEST"},{"role":"assistant","content":"Keep this separately verified reply","reply_id":independent.id}]));let task=store.active().unwrap().unwrap();
+        store.request(Request::RemoveInstructions{id:task.id,revision:task.revision,statements:vec![task.instructions[0].id]}).unwrap();let task=store.active().unwrap().unwrap();let history:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap()).unwrap();let turns=history["turns"].as_array().unwrap();assert!(!task.history.as_ref().unwrap().contains("REMOVE_THIS_EXACT_REQUEST"));assert!(task.history_reply_parent_allows(&turns[1],1,&parent_digest(&turns[..1]).unwrap()));
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn statement_removal_commits_restriction_before_deleting_derived_bytes_and_recovers_locked_cleanup(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;store.request(Request::Message{id:task.id,revision:task.revision,text:"Withdraw this requirement safely".into(),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).unwrap();let task=store.active().unwrap().unwrap();let derived=store.retain_evidence(&task.binding(),"derived.json".into(),b"keep local until removal commits".to_vec()).unwrap();let task=store.active().unwrap().unwrap();let before=fs::read(store.path(task.id)).unwrap();
+        let metadata_lock=OpenOptions::new().read(true).share_mode(FILE_SHARE_READ).open(store.path(task.id)).unwrap();assert!(store.request(Request::RemoveInstructions{id:task.id,revision:task.revision,statements:vec![task.instructions[0].id]}).is_err());assert_eq!(fs::read(store.path(task.id)).unwrap(),before);assert_eq!(store.reference_bytes(task.id,&task.references[0]).unwrap(),b"keep local until removal commits");drop(metadata_lock);
+        let (folder,pins)=store.blob_dir(task.id).unwrap();let blob=folder.join(format!("{derived}.bin"));let blob_lock=OpenOptions::new().read(true).share_mode(FILE_SHARE_READ).open(&blob).unwrap();store.request(Request::RemoveInstructions{id:task.id,revision:task.revision,statements:vec![task.instructions[0].id]}).unwrap();let task=store.active().unwrap().unwrap();assert!(task.references.is_empty());assert!(task.instructions[0].text.is_none());assert_eq!(task.pending_removals.len(),1);assert!(blob.exists());assert!(store.shared_reference(derived,0).is_err());drop(blob_lock);drop(pins);
+        store.request(Request::State).unwrap();assert!(store.active().unwrap().unwrap().pending_removals.is_empty());assert!(!blob.exists());drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn statement_pages_and_intake_are_bounded_without_eviction_or_partial_grants(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let mut task=store.state().unwrap().active;
+        for n in 0..9{store.request(Request::Message{id:task.id,revision:task.revision,text:format!("{n}{}","\t".repeat(4000)),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).unwrap();task=store.active().unwrap().unwrap();}
+        let mut offset=0;let mut found=Vec::new();loop{let page=store.instruction_page(offset).unwrap();assert!(serde_json::to_vec(&page).unwrap().len()<=16384);for entry in page["entries"].as_array().unwrap(){found.push(entry["id"].clone());}let Some(next)=page["next_offset"].as_u64() else{break;};assert!(next>offset as u64);offset=next as usize;}assert_eq!(found.len(),9);
+        let before=fs::read(store.path(task.id)).unwrap();assert!(store.request(Request::ShareInstructions{id:task.id,revision:task.revision,statements:vec![task.instructions[0].id,Uuid::new_v4()],allow:false}).is_err());assert_eq!(fs::read(store.path(task.id)).unwrap(),before);
+        while task.instructions.len()<128{task.revision+=1;task.instructions.push(Instruction{id:Uuid::new_v4(),revision:task.revision,sha256:crate::kicad_project::digest(b"keep scope"),text:Some("keep scope".into()),shared_with:vec!["codex".into()]});}store.save(&task).unwrap();let before=fs::read(store.path(task.id)).unwrap();assert!(store.request(Request::Message{id:task.id,revision:task.revision,text:"Do not erase old requirements".into(),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).is_err());assert_eq!(fs::read(store.path(task.id)).unwrap(),before);drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
     fn interrupted_turns_fence_existing_and_late_completion_proofs(){
         for mode in ["stop","correction"]{for timing in ["before","after"]{
             let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;let old=receipt(&task,"OLD_COMPLETE_REPLY_SENTINEL");
@@ -1165,7 +1346,7 @@ mod tests {
     }
     fn receipt(task:&Task,text:&str)->ReplyReceipt{
         let (parent_sha256,position)=history_parent(task.history.as_deref()).unwrap();
-        ReplyReceipt{id:Uuid::new_v4(),task:task.binding(),provider:task.provider.clone(),content_sha256:crate::kicad_project::digest(text.as_bytes()),parent_sha256,position,references:task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(Reference::reply_source).collect(),revoked:false}
+        ReplyReceipt{id:Uuid::new_v4(),instruction_sources:task.instruction_sources(),task:task.binding(),provider:task.provider.clone(),content_sha256:crate::kicad_project::digest(text.as_bytes()),parent_sha256,position,references:task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(Reference::reply_source).collect(),revoked:false}
     }
     fn save_history(store:&Store,turns:serde_json::Value){
         let t=store.active().unwrap().unwrap();store.request(Request::History{id:t.id,revision:t.revision,value:Some(serde_json::json!({"version":1,"turns":turns}).to_string())}).unwrap();
@@ -1423,6 +1604,7 @@ mod tests {
             preview_sha256: None,
             shared_with: Vec::new(),
             parents: Vec::new(),
+            instruction_sources:Vec::new(),
         };
         task.references.push(a.clone());
         let mut legacy = serde_json::to_value(&task).unwrap();

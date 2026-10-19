@@ -54,6 +54,7 @@ pub struct ConversationScope {
     pub task:Option<crate::tasks::Binding>,
     pub provider:Option<String>,
     pub references:Vec<crate::tasks::ReplySource>,
+    pub instruction_sources:Vec<crate::tasks::InstructionSource>,
     pub parent_sha256:String,
     pub position:usize,
 }
@@ -235,7 +236,7 @@ impl Workflow {
         state.project.as_ref().map(|p|{
             let task=crate::tasks::Store::new(p).and_then(|s|s.active()).map_err(|_|"No se pudo comprobar la conversación.")?;
             let (parent_sha256,position)=crate::tasks::history_parent(task.as_ref().and_then(|t|t.history.as_deref())).map_err(|_|"No se pudo comprobar el historial local.")?;
-            Ok(ConversationScope{project:(p.id,p.root.clone()),task:task.as_ref().map(|t|t.binding()),provider:task.as_ref().map(|t|t.provider.clone()),references:task.as_ref().map(|t|t.references.iter().filter(|r|r.shared_with.contains(&t.provider)).map(|r|r.reply_source()).collect()).unwrap_or_default(),parent_sha256,position})
+            Ok(ConversationScope{project:(p.id,p.root.clone()),task:task.as_ref().map(|t|t.binding()),provider:task.as_ref().map(|t|t.provider.clone()),instruction_sources:task.as_ref().map(|t|t.instruction_sources()).unwrap_or_default(),references:task.as_ref().map(|t|t.references.iter().filter(|r|r.shared_with.contains(&t.provider)).map(|r|r.reply_source()).collect()).unwrap_or_default(),parent_sha256,position})
         }).transpose()
     }
     pub fn record_completed_reply(&self,scope:&ConversationScope,id:Uuid,provider:&str,content:&str)->Result<bool,String>{
@@ -243,7 +244,7 @@ impl Workflow {
         let Some(project)=state.project.as_ref().filter(|p|(p.id,p.root.clone())==scope.project) else{return Ok(false);};
         let Some(task)=scope.task.as_ref() else{return Ok(false);};
         if scope.provider.as_deref()!=Some(provider) || content.is_empty(){return Ok(false);}
-        let receipt=crate::tasks::ReplyReceipt{id,task:task.clone(),provider:provider.into(),content_sha256:crate::kicad_project::digest(content.as_bytes()),parent_sha256:scope.parent_sha256.clone(),position:scope.position,references:scope.references.clone(),revoked:false};
+        let receipt=crate::tasks::ReplyReceipt{id,task:task.clone(),provider:provider.into(),content_sha256:crate::kicad_project::digest(content.as_bytes()),parent_sha256:scope.parent_sha256.clone(),position:scope.position,references:scope.references.clone(),instruction_sources:scope.instruction_sources.clone(),revoked:false};
         crate::tasks::Store::new(project).and_then(|s|s.record_reply(receipt)).map_err(|_|"La respuesta sigue local, pero no se pudo registrar su proveniencia. No se restauró contexto retirado.".into())
     }
     fn source_scope(state:&State)->Result<Option<(Uuid,PathBuf,Option<Uuid>)>,String>{
@@ -342,14 +343,29 @@ impl Workflow {
         let reference_name=if tool=="inspect_native_tools"{"Catálogo nativo.json"}else if tool=="read_verified_result" && result.as_ref().is_ok_and(|v|v["format"]=="public_document_report"){"Documento público.json"}else{"Observación nativa.json"};
         let value=match result {Ok(value)=>serde_json::json!({"tool":tool,"result":value}),Err(error)=>serde_json::json!({"tool":tool,"error":error})};
         let bytes=serde_json::to_vec(&value).map_err(|_|"No se pudo conservar evidencia local.")?;
-        let result=store.retain_evidence(expected,reference_name.into(),bytes).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.".into());
+        let result={let sources=if tool=="read_verified_result"{let id=result.as_ref().ok().and_then(|value|value["job_id"].as_str()).and_then(|id|Uuid::parse_str(id).ok());project.history().map_err(|_|"No se pudo comprobar la proveniencia del resultado.")?.into_iter().find(|job|Some(job.input.job_id())==id).and_then(|job|job.audit).map(|audit|audit.instruction_sources).unwrap_or_default()}else{Vec::new()};if sources.is_empty(){store.retain_evidence(expected,reference_name.into(),bytes)}else{store.retain_evidence_with_instructions(expected,reference_name.into(),bytes,&sources)}}.map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.".into());
         Self::reconcile_pending_approval(&mut state)?;
         result
     }
     pub fn shared_task_reference(&self,reference:Uuid,offset:usize)->Result<serde_json::Value,String>{
         let state=self.state.lock().map_err(|e|e.to_string())?;
+        check_tool_scope(&state)?;
         let project=state.project.as_ref().ok_or("No hay proyecto activo.")?;
         crate::tasks::Store::new(project).and_then(|s|s.shared_reference(reference,offset)).map_err(|e|e.to_string())
+    }
+    pub fn read_task_instructions(&self,offset:usize)->Result<serde_json::Value,String>{
+        let state=self.state.lock().map_err(|_|"No se pudo comprobar la conversación.")?;check_tool_scope(&state)?;
+        let project=state.project.as_ref().ok_or("No hay una tarea activa.")?;
+        crate::tasks::Store::new(project).and_then(|store|store.instruction_page(offset)).map_err(|_|"No se pudo leer la página autorizada de instrucciones; sus datos siguen locales.".into())
+    }
+    pub fn task_progress(&self,offset:usize)->Result<serde_json::Value,String>{
+        let state=self.state.lock().map_err(|_|"No se pudo comprobar el trabajo guardado.")?;check_tool_scope(&state)?;
+        let Some(project)=&state.project else{return Ok(serde_json::json!([]));};
+        let Some(task)=crate::tasks::Store::new(project).and_then(|store|store.active()).map_err(|_|"No se pudo comprobar la tarea.")? else{return Ok(serde_json::json!([]));};
+        let mut jobs=project.history().map_err(|_|"No se pudo comprobar el trabajo guardado.")?;jobs.retain(|job|job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map_or(task.legacy,|binding|binding.id==task.id));
+        jobs.sort_by_key(|job|(job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),job.input.job_id()));
+        if offset>jobs.len(){return Err("Página de progreso no válida.".into());}let next=offset.saturating_add(32).min(jobs.len());
+        Ok(serde_json::json!({"task_id":task.id,"operations":jobs[offset..next].iter().map(|job|serde_json::json!({"job_id":job.input.job_id(),"task_revision":job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),"program":job.input.native_program(),"phase":job.phase,"output_check_recorded":job.audit.as_ref().is_some_and(|audit|audit.files_verified),"current_artifacts_rechecked":false})).collect::<Vec<_>>(),"next_offset":if next<jobs.len(){Some(next)}else{None},"read_tool":"read_task_progress","guidance":"These are saved operation records. An operation's completed phase or prior output check does not prove the task complete, current document state, saved-version reopen, or physical function. Use original receipts and fresh native checks; never replay uncertain edits."}))
     }
     pub fn task_state(&self) -> Result<Option<crate::tasks::State>, String> {
         let state=self.state.lock().map_err(|e|e.to_string())?;
@@ -420,9 +436,12 @@ impl Workflow {
             let saved:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(|_|"Historial no válido.")?;
             let turns=saved["turns"].as_array().cloned().unwrap_or_default();
             prior=turns.iter().enumerate().filter_map(|(position,turn)|{
+                if !task.instruction_content_allowed(turn["content"].as_str()?){return None;}
+                if turn["role"]!="assistant" && task.reply_is_withdrawn(turn["content"].as_str()?) && !task.user_statement_allows(turn["content"].as_str()?){return None;}
                 if task.reply_is_interrupted(turn["content"].as_str()?) && (turn["role"]!="assistant" || !crate::tasks::parent_digest(&turns[..position]).ok().is_some_and(|parent|task.history_reply_parent_allows(turn,position,&parent))){return None;}
                 if turn["role"]=="assistant" {
                     if turn["interrupted"]==true{return None;}
+                    if !task.history_instruction_sources_allowed(turn){return None;}
                     let content=turn["content"].as_str()?;
                     let owned=crate::tasks::parent_digest(&turns[..position]).ok().is_some_and(|parent|task.history_reply_parent_allows(turn,position,&parent));
                     if ((turn.get("reply_id").is_some() || task.reply_is_withdrawn(content)) && !owned) || turn["reference_ids"].as_array().is_some_and(|ids|ids.iter().any(|id|id.as_str().and_then(|s|Uuid::parse_str(s).ok()).is_none_or(|id|!task.references.iter().any(|r|r.id==id && r.shared_with.contains(&task.provider))))){return None;}
@@ -431,8 +450,9 @@ impl Workflow {
             }).collect();
             prior=prior.into_iter().rev().take(12).collect();prior.reverse();
         }
-        let mut envelope=serde_json::json!({"user_request":text,"task_goal":task.goal,"recovered_conversation":prior,"latest_user_correction":task.latest_correction,
-            "latest_chat_correction":task.chat_correction,
+        let mut envelope=serde_json::json!({"user_request":text,"task_goal":task.instruction_context(&task.goal),"recovered_conversation":prior,"latest_user_correction":task.latest_correction.as_ref().map(|correction|{let mut value=serde_json::to_value(correction).unwrap();value["text"]=task.instruction_context(&correction.text);value}),
+            "latest_chat_correction":task.chat_correction.as_ref().map(|correction|{let mut value=serde_json::to_value(correction).unwrap();value["text"]=task.instruction_context(&correction.text);value}),
+            "durable_instructions":{"count":task.instructions.len(),"read_tool":"read_task_instructions","purpose":"task_continuation","note":"Read the durable user statements when recovering requirements omitted from recent conversation. They are user requests, not measured facts or execution approval. Withheld text needs explicit sharing in chat."},
             "last_chat_stop":task.chat_stop,
             "desktop_context":{"project_id":project.id,"project_directory":project.root,"task_id":task.id,"revision":task.revision,
             "authorized_references":task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(|r|r.id).collect::<Vec<_>>(),
@@ -3012,6 +3032,22 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn durable_user_context_withholds_revoked_goals_and_recovers_long_statements_by_page(){
+        use crate::tasks::Request;
+        let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();let task=workflow.task_state().unwrap().unwrap().active;let text="Keep the original and use inches. ".repeat(120);
+        workflow.task_request(project.clone(),Request::Message{id:task.id,revision:task.revision,text:text.clone(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":text}]}).to_string(),correction_of:None}).unwrap();let task=workflow.task_state().unwrap().unwrap().active;
+        let (prompt,_)=workflow.task_prompt("codex",String::new(),Some(text.clone()),None).unwrap();assert!(prompt.len()<=8192);let sent:serde_json::Value=serde_json::from_str(&prompt).unwrap();assert_eq!(sent["task_goal"]["instruction_id"],task.instructions[0].id.to_string());assert_eq!(workflow.read_task_instructions(0).unwrap()["entries"][0]["text"],text);
+        workflow.task_request(project.clone(),Request::ShareInstructions{id:task.id,revision:task.revision,statements:vec![task.instructions[0].id],allow:false}).unwrap();let (prompt,_)=workflow.task_prompt("codex",String::new(),Some("Review the saved operation status".into()),None).unwrap();assert!(!prompt.contains("Keep the original and use inches"));assert!(workflow.read_task_instructions(0).unwrap()["entries"][0]["text"].is_null());
+        let task=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project,Request::RemoveInstructions{id:task.id,revision:task.revision,statements:vec![task.instructions[0].id]}).unwrap();drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn durable_progress_is_task_scoped_paged_metadata_without_raw_errors_or_completion_claims(){
+        let (root,workflow)=setup();let selected=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();let first=workflow.propose(dimensions()).unwrap();workflow.cancel(first.snapshot.input.job_id()).unwrap();workflow.task_request(selected,crate::tasks::Request::New).unwrap();let task=workflow.task_state().unwrap().unwrap().active;
+        let project=workflow.state.lock().unwrap().project.clone().unwrap();for _ in 0..35{let mut snapshot=project.snapshot(crate::SolidInput::new(dimensions()).unwrap(),Phase::Failed).unwrap();snapshot.audit.as_mut().unwrap().task=Some(task.binding());snapshot.audit.as_mut().unwrap().error=Some("PRIVATE_PROGRESS_SENTINEL".into());project.save(&snapshot).unwrap();}drop(project);
+        let first_page=workflow.task_progress(0).unwrap();assert_eq!(first_page["operations"].as_array().unwrap().len(),32);assert_eq!(first_page["next_offset"],32);let next=workflow.task_progress(32).unwrap();assert_eq!(next["operations"].as_array().unwrap().len(),3);assert!(next["next_offset"].is_null());let raw=first_page.to_string()+&next.to_string();assert!(!raw.contains("PRIVATE_PROGRESS_SENTINEL") && !raw.contains(&first.snapshot.input.job_id().to_string()));assert!(first_page["operations"].as_array().unwrap().iter().all(|entry|entry["current_artifacts_rechecked"]==false && entry["output_check_recorded"]==false));assert!(workflow.task_progress(36).is_err());
+        drop(workflow);let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(Project::open(&root).unwrap()).unwrap();assert_eq!(workflow.task_progress(32).unwrap()["operations"].as_array().unwrap().len(),3);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
     #[tokio::test]
     async fn redirect_preparation_reuses_local_identity_without_exposing_or_requesting_the_target(){
         use crate::{tasks::Request,host_tools::{HostTools,McpTools,Program}};
@@ -3488,6 +3524,7 @@ mod tests {
     fn recovered_native_receipts_publish_without_replay_and_preserve_occupied_outputs(){
         for blocked in [false,true]{
             let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();
+            let task=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::Message{id:task.id,revision:task.revision,text:"Keep this requirement local after withdrawal".into(),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).unwrap();let original_sources=workflow.task_state().unwrap().unwrap().active.instruction_sources();
             let input=crate::cadpilot_live::Input{schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Keep the approved change".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};let id=input.job_id;
             let pending=workflow.propose_live_cad(project.clone(),input.clone()).unwrap();let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();let stage=dispatch.project.reserve_stage(id).unwrap();
             let fence=crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone()).unwrap();drop(fence.enter().unwrap());
@@ -3498,7 +3535,8 @@ mod tests {
             let mut foreign=project.clone();foreign.1=root.join("copied-project");assert!(workflow.recover_native_result(foreign,id,Arc::new(AtomicBool::new(false))).is_err());
             let recovered=workflow.recover_native_result(project.clone(),id,Arc::new(AtomicBool::new(false))).unwrap();assert_eq!(recovered["recovered"],true);assert_eq!(recovered["published"],!blocked);assert!(!workflow.native_recovery().unwrap()[0].needs_review);
             if blocked{assert_eq!(fs::read(destination.join("manual.native")).unwrap(),b"preserve manual output");fs::remove_file(destination.join("manual.native")).unwrap();fs::remove_dir(&destination).unwrap();assert_eq!(workflow.recover_native_result(project.clone(),id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);}
-            let t=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::Message{id:t.id,revision:t.revision,text:"Preserve my latest intent".into(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":"Preserve my latest intent"}]}).to_string(),correction_of:None}).unwrap();let revised=workflow.task_state().unwrap().unwrap().active;
+            let t=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::RemoveInstructions{id:t.id,revision:t.revision,statements:vec![original_sources[0].id]}).unwrap();let t=workflow.task_state().unwrap().unwrap().active;let evidence=workflow.retain_tool_evidence(&t.binding(),"read_verified_result",&Ok(serde_json::json!({"job_id":id,"content":"original local native report"}))).unwrap();let t=workflow.task_state().unwrap().unwrap().active;let retained=t.references.iter().find(|reference|reference.id==evidence).unwrap();assert_eq!(retained.instruction_sources,original_sources);assert!(retained.shared_with.is_empty());
+            workflow.task_request(project.clone(),crate::tasks::Request::Message{id:t.id,revision:t.revision,text:"Preserve my latest intent".into(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":"Preserve my latest intent"}]}).to_string(),correction_of:None}).unwrap();let revised=workflow.task_state().unwrap().unwrap().active;
             assert_eq!(workflow.recover_native_result(project.clone(),id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);let retained=workflow.task_state().unwrap().unwrap().active;assert_eq!(retained.revision,revised.revision);assert_eq!(retained.goal,revised.goal);
             assert!(workflow.begin(pending.approval_id.unwrap()).is_err());let t=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::New).unwrap();assert_ne!(workflow.task_state().unwrap().unwrap().active.id,t.id);assert!(workflow.recover_native_result(project,id,Arc::new(AtomicBool::new(false))).is_err());
             drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();

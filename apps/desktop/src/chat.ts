@@ -37,7 +37,8 @@ document.querySelector("#app")!.innerHTML = `
   </section>
   <details id="past-chats" class="panel" hidden><summary>Conversaciones de la versión anterior</summary><p class="fine">Puedes leerlas sin enviarlas a una IA. Para continuar con sus mensajes, empieza una conversación vacía y elige la IA con la que seguirás. Solo se enviarán cuando pulses Enviar. No se restauran documentos, medidas ni aprobaciones; inspeccionaremos de nuevo la selección actual.</p><div id="past-chat-list"></div></details>
   <details id="results" class="panel"><summary>Resultados e historial verificados</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
-  <dialog id="report"><h2 id="report-heading">Resultado guardado · solo lectura</h2><p id="report-note" class="fine"></p><img id="report-image" alt="Referencia local" hidden><pre id="report-text"></pre><div class="actions"><button id="report-first" hidden>Volver al inicio</button><button id="report-next" hidden>Página siguiente</button></div><form method="dialog"><button>Cerrar</button></form></dialog>`;
+  <dialog id="report"><h2 id="report-heading">Resultado guardado · solo lectura</h2><p id="report-note" class="fine"></p><img id="report-image" alt="Referencia local" hidden><pre id="report-text"></pre><div class="actions"><button id="report-first" hidden>Volver al inicio</button><button id="report-next" hidden>Página siguiente</button></div><form method="dialog"><button>Cerrar</button></form></dialog>
+  <dialog id="instruction-review" aria-labelledby="instruction-heading"><h2 id="instruction-heading">Lo que has pedido</h2><p id="instruction-destination"></p><p class="fine">Son copias exactas de tus mensajes. Compartir permite enviar solo el texto seleccionado para continuar esta tarea. Los archivos y las herramientas tienen sus propios permisos. Retirar acceso conserva el texto local y retira las respuestas y evidencias vinculadas del contexto de esta IA. Quitar también borra el texto guardado, sus coincidencias exactas del historial y del objetivo, y las copias de evidencia derivadas que administra Hazlo. Conservamos el trabajo nativo y los archivos originales adjuntos. No elimina copias ya enviadas a un servicio.</p><div id="instruction-entries"></div><p id="instruction-error" role="alert"></p><div class="actions"><button id="share-instructions">Compartir texto seleccionado</button><button id="revoke-instructions" class="secondary">Retirar acceso al seleccionado</button><button id="remove-instructions" class="secondary">Quitar texto seleccionado</button></div><form method="dialog"><button>Cerrar</button></form></dialog>`;
 for (const [value, label] of Object.entries(programs)) $("program").append(new Option(label, value));
 
 let state: DesktopSnapshot = { project: null, job: null, inference: null, recovered: [], freecad: "", freecad_available: false };
@@ -66,6 +67,29 @@ let referenceImage: ImageReference | undefined;
 let taskWrites:Promise<void>=Promise.resolve(), taskReady:Promise<void>=Promise.resolve();
 let pendingProvider:Provider|undefined, pendingReference:TaskReference|undefined;
 let taskImage:string|undefined;
+let instructionReview:{task:string;revision:number;project:string;provider:Provider}|undefined;
+function closeInstructionReview(){const dialog=$<HTMLDialogElement>("instruction-review");if(dialog.open)dialog.close();instructionReview=undefined;$("instruction-entries").replaceChildren();$("instruction-error").textContent="";}
+$("instruction-review").addEventListener("close",()=>{if(!$<HTMLDialogElement>("instruction-review").open)closeInstructionReview();});
+function reviewInstructions(){
+  const {task,project}=scopedTask();instructionReview={task:task.id,revision:task.revision,project:JSON.stringify(project),provider};
+  $("instruction-destination").textContent=`Destino: ${providerNames[provider]} · finalidad: continuar esta tarea. Revisa el texto exacto antes de compartir.`;
+  $("instruction-error").textContent="";const rows=$("instruction-entries");rows.replaceChildren();
+  for(const entry of task.instructions??[]){const label=document.createElement("label"),input=document.createElement("input"),text=document.createElement("pre"),status=document.createElement("span");input.type="checkbox";input.value=entry.id;input.disabled=entry.text===null;input.checked=entry.text!==null && !entry.shared_with.includes(provider);status.textContent=entry.text===null?"Texto retirado":entry.shared_with.includes(provider)?"Compartir permitido con esta IA":"Solo local para esta IA";text.textContent=entry.text??"El texto fue retirado. Conservamos solo su identidad de auditoría.";label.append(input,status,text);rows.append(label);}
+  $<HTMLDialogElement>("instruction-review").showModal();
+}
+async function changeInstructionAccess(kind:"share"|"revoke"|"remove"){
+  const review=instructionReview;if(!review)return;const ids=Array.from(document.querySelectorAll<HTMLInputElement>("#instruction-entries input:checked")).map(input=>input.value);
+  try{
+    const {scope,project}=scopedTask();if(!ids.length)throw Error("Selecciona los mensajes que quieres revisar.");
+    if(scope.id!==review.task || scope.revision!==review.revision || JSON.stringify(project)!==review.project || provider!==review.provider)throw Error("La conversación cambió. Vuelve a revisar el texto antes de confirmar.");
+    try{await taskCommand({action:kind==="remove"?"remove_instructions":"share_instructions",...scope,statements:ids,...(kind==="remove"?{}:{allow:kind==="share"})},kind==="remove");}
+    catch(failure){const task=state.tasks?.active;if(task?.id!==review.task || provider!==review.provider || JSON.stringify(state.project)!==review.project || !ids.every(id=>{const entry=task.instructions?.find(entry=>entry.id===id);return entry && (kind==="remove"?entry.text===null:entry.shared_with.includes(provider)===(kind==="share"));}))throw failure;}
+    closeInstructionReview();inspectionNotice=kind==="remove"?"Texto y copias de evidencia derivadas retirados; las respuestas vinculadas quedan fuera del contexto. El trabajo nativo y los archivos originales se conservan.":kind==="share"?"Permiso guardado para el texto seleccionado y esta IA. No autoriza archivos, herramientas ni cambios.":"Acceso retirado para esta IA y sus respuestas y evidencias vinculadas. El texto sigue guardado localmente.";
+  }catch(failure){$("instruction-error").textContent=String(failure);throw failure;}
+}
+$("share-instructions").onclick=()=>void action(()=>changeInstructionAccess("share"));
+$("revoke-instructions").onclick=()=>void action(()=>changeInstructionAccess("revoke"));
+$("remove-instructions").onclick=()=>void action(()=>changeInstructionAccess("remove"));
 function scopedTask() {
   const task=state.tasks?.active;if(!task || !state.project) throw Error("No hay una tarea activa.");
   return {project:state.project,task,scope:{id:task.id,revision:task.revision}};
@@ -131,6 +155,9 @@ function renderTasks(busy:boolean){
   $("reference-offer-text").textContent=pendingReference?`¿Permites que ${providerNames[provider]} reciba el contenido de «${pendingReference.name}» y los resultados de su análisis para esta tarea? Puede enviarse a su servicio externo. Puedes revocar el permiso; no borra lo ya enviado.`:"";
   for(const id of ["approve-provider","keep-provider","approve-reference","keep-reference-local"]) $<HTMLButtonElement>(id).disabled=busy;
   const rows=$("task-references");rows.replaceChildren();
+  if(tasks?.active.instructions?.length){const button=document.createElement("button");button.type="button";button.className="secondary";button.textContent=`Revisar mensajes guardados (${tasks.active.instructions.length})`;button.disabled=busy;button.onclick=reviewInstructions;rows.append(button);}
+  const localStatements=tasks?.active.instructions?.filter(entry=>entry.text!==null && !entry.shared_with.includes(provider)).length??0;if(localStatements){const note=document.createElement("p");note.className="fine";note.textContent=`${localStatements} mensajes guardados siguen locales para esta IA. Puedes revisar y autorizar solo el texto necesario para continuar.`;rows.append(note);}
+  for(const id of ["share-instructions","revoke-instructions","remove-instructions"])$<HTMLButtonElement>(id).disabled=busy;
   if(tasks?.active.latest_correction || tasks?.active.chat_correction){const p=document.createElement("p");p.className="fine";p.textContent="La última corrección queda guardada con la tarea. Las llamadas ya enviadas se revisan antes de nuevos cambios; cancelar no las deshace.";rows.append(p);}
   if(tasks?.active.chat_stop && (tasks.active.last_user_revision??tasks.active.revision)<=tasks.active.chat_stop.revision){const p=document.createElement("p");p.className="fine";p.textContent="La pausa queda guardada. El trabajo se conserva; puedes pedir continuar cuando quieras, después de revisar cualquier llamada enviada.";rows.append(p);}
   if(tasks?.active.pending_removals?.length){const p=document.createElement("p");p.className="fine";p.textContent="Hay copias locales retiradas pendientes de borrar porque no están disponibles. Su acceso y permisos ya están revocados. Hazlo reintentará borrar sus copias al volver a esta conversación; el trabajo del proyecto se conserva.";rows.append(p);}
@@ -250,6 +277,7 @@ function renderLegacy() {
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
   if(!projectChanged && next.tasks?.active.id===state.tasks?.active.id && next.tasks && state.tasks && next.tasks.active.revision<state.tasks.active.revision)next.tasks=state.tasks;
+  if(instructionReview && (next.tasks?.active.id!==instructionReview.task || next.tasks.active.revision!==instructionReview.revision || JSON.stringify(next.project)!==instructionReview.project || next.tasks.active.provider!==instructionReview.provider))closeInstructionReview();
   if(!projectChanged && ((next.tasks?.active.chat_correction?.id && next.tasks.active.chat_correction.id!==state.tasks?.active.chat_correction?.id) || (next.tasks?.active.chat_stop?.revision && next.tasks.active.chat_stop.revision!==state.tasks?.active.chat_stop?.revision))){storageKey="";newSession=true;resultReview=undefined;}
   if (projectChanged) { appliedProgramRoute=undefined; clearImage();clearReport(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
