@@ -112,6 +112,9 @@ impl Reference {
 #[derive(Clone,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReplyReceipt {
+    // Older receipts predate host-filtered history; retain them locally without inheriting consent.
+    #[serde(default)]
+    pub context_policy_version:u8,
     pub id:Uuid,
     pub task:Binding,
     pub provider:String,
@@ -177,7 +180,7 @@ impl Task {
         matching.is_empty() || matching.iter().any(|entry|entry.text.is_some() && entry.shared_with.contains(&self.provider))
     }
     pub(crate) fn instruction_context(&self,text:&str)->serde_json::Value{
-        if !self.instruction_content_allowed(text){return serde_json::json!({"content_withheld":true,"read_tool":"read_task_instructions"});}
+        if !text.is_empty() && !self.user_statement_allows(text){return serde_json::json!({"content_withheld":true,"read_tool":"read_task_instructions","saved_context_tool":"read_task_history"});}
         let hash=crate::kicad_project::digest(text.as_bytes());
         if text.len()>512{if let Some(entry)=self.instructions.iter().rev().find(|entry|entry.sha256==hash && entry.text.is_some() && entry.shared_with.contains(&self.provider)){return serde_json::json!({"instruction_id":entry.id,"read_tool":"read_task_instructions","text_retained_in_full":true});}}
         serde_json::json!(text)
@@ -187,7 +190,7 @@ impl Task {
         self.reply_receipts.iter().any(|r|r.id==id && r.content_sha256==hash && self.receipt_authorized(r))
     }
     fn receipt_authorized(&self,r:&ReplyReceipt)->bool{
-        !r.revoked && r.task.id==self.id && r.provider==self.provider && r.references.iter().all(|source|self.reply_source_allowed(source,&r.provider)) && r.instruction_sources.iter().all(|source|self.instruction_source_allowed(source,&r.provider))
+        r.context_policy_version==1 && !r.revoked && r.task.id==self.id && r.provider==self.provider && r.references.iter().all(|source|self.reply_source_allowed(source,&r.provider)) && r.instruction_sources.iter().all(|source|self.instruction_source_allowed(source,&r.provider))
     }
     pub fn reply_source_allowed(&self,source:&ReplySource,provider:&str)->bool{self.references.iter().any(|r|r.id==source.id && r.sha256==source.sha256 && r.preview_sha256==source.preview_sha256 && r.shared_with.iter().any(|p|p==provider))}
     pub(crate) fn history_reply_allows(&self,turn:&serde_json::Value)->bool{
@@ -257,7 +260,7 @@ impl Task {
         }
         let mut receipt_ids=std::collections::BTreeSet::new();
         if self.reply_receipts.iter().any(|receipt|!self.known_instruction_sources(&receipt.instruction_sources)) || self.references.iter().any(|reference|!self.known_instruction_sources(&reference.instruction_sources)) {return Err(error("Proveniencia de instrucciones no válida; se conservó la conversación."));}
-        if self.reply_receipts.len()>128 || self.reply_receipts.iter().any(|r|r.id.is_nil() || !receipt_ids.insert(r.id) || r.task.id!=self.id || r.task.revision==0 || r.task.revision>self.revision || !provider(&r.provider) || !crate::kicad_project::valid_hash(&r.content_sha256) || !crate::kicad_project::valid_hash(&r.parent_sha256) || r.position>=128 || r.references.len()>64 || r.references.iter().any(|s|s.id.is_nil() || !crate::kicad_project::valid_hash(&s.sha256) || s.preview_sha256.as_ref().is_some_and(|h|!crate::kicad_project::valid_hash(h))) || r.references.iter().map(|s|s.id).collect::<std::collections::BTreeSet<_>>().len()!=r.references.len() || (!r.revoked && r.references.iter().any(|s|!self.references.iter().any(|reference|reference.id==s.id)))) {return Err(error("Proveniencia de respuesta no válida; se conservó la conversación."));}
+        if self.reply_receipts.len()>128 || self.reply_receipts.iter().any(|r|r.context_policy_version>1 || r.id.is_nil() || !receipt_ids.insert(r.id) || r.task.id!=self.id || r.task.revision==0 || r.task.revision>self.revision || !provider(&r.provider) || !crate::kicad_project::valid_hash(&r.content_sha256) || !crate::kicad_project::valid_hash(&r.parent_sha256) || r.position>=128 || r.references.len()>64 || r.references.iter().any(|s|s.id.is_nil() || !crate::kicad_project::valid_hash(&s.sha256) || s.preview_sha256.as_ref().is_some_and(|h|!crate::kicad_project::valid_hash(h))) || r.references.iter().map(|s|s.id).collect::<std::collections::BTreeSet<_>>().len()!=r.references.len() || (!r.revoked && r.references.iter().any(|s|!self.references.iter().any(|reference|reference.id==s.id)))) {return Err(error("Proveniencia de respuesta no válida; se conservó la conversación."));}
         let mut reply_hashes:std::collections::BTreeSet<_>=self.withdrawn_replies.keys().cloned().collect();
         if self.interrupted_replies.len()>128 || self.interrupted_replies.iter().any(|hash|!crate::kicad_project::valid_hash(hash)){return Err(error("Registro de borradores no válido; se conservó la tarea."));}
         reply_hashes.extend(self.interrupted_replies.iter().cloned());
@@ -953,6 +956,13 @@ impl<'a> Store<'a> {
     ) -> io::Result<Uuid> {
         self.retain_evidence_with_instructions(binding,name,bytes,&[])
     }
+    pub(crate) fn retain_history_snapshot(&self,binding:&Binding,bytes:Vec<u8>)->io::Result<Uuid>{
+        self.ensure()?;let task=self.scoped(binding.id,binding.revision)?;
+        let mut sources=task.instructions.iter().map(|entry|InstructionSource{id:entry.id,sha256:entry.sha256.clone()}).collect::<Vec<_>>();sources.sort();
+        let hash=crate::kicad_project::digest(&bytes);
+        if let Some(reference)=task.references.iter().find(|reference|reference.name=="Conversación guardada.json" && reference.sha256==hash && reference.instruction_sources==sources){self.reference_bytes(task.id,reference)?;return Ok(reference.id);}
+        self.retain_evidence_with_instructions(binding,"Conversación guardada.json".into(),bytes,&sources)
+    }
     pub(crate) fn retain_evidence_with_instructions(&self,binding:&Binding,name:String,bytes:Vec<u8>,sources:&[InstructionSource])->io::Result<Uuid>{
         self.ensure()?;
         let task = self.scoped(binding.id, binding.revision)?;
@@ -1285,6 +1295,12 @@ mod tests {
         store.request(Request::State).unwrap();assert!(store.active().unwrap().unwrap().pending_removals.is_empty());assert!(!blob.exists());drop(store);drop(p);fs::remove_dir_all(root).unwrap();
     }
     #[test]
+    fn retained_history_reuse_checks_actual_bytes_and_never_overwrites_a_changed_copy(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;let bytes=br#"{"historical_context_only":true,"turns":[]}"#.to_vec();let reference=store.retain_history_snapshot(&task.binding(),bytes.clone()).unwrap();let task=store.active().unwrap().unwrap();let metadata=fs::read(store.path(task.id)).unwrap();
+        assert_eq!(store.retain_history_snapshot(&task.binding(),bytes.clone()).unwrap(),reference);assert_eq!(fs::read(store.path(task.id)).unwrap(),metadata);
+        let (folder,pins)=store.blob_dir(task.id).unwrap();let path=folder.join(format!("{reference}.bin"));fs::write(&path,b"preserve externally changed local evidence").unwrap();assert!(store.retain_history_snapshot(&task.binding(),bytes).is_err());assert_eq!(fs::read(&path).unwrap(),b"preserve externally changed local evidence");assert_eq!(fs::read(store.path(task.id)).unwrap(),metadata);drop(pins);drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
     fn statement_pages_and_intake_are_bounded_without_eviction_or_partial_grants(){
         let (root,p)=setup();let store=Store::new(&p).unwrap();let mut task=store.state().unwrap().active;
         for n in 0..9{store.request(Request::Message{id:task.id,revision:task.revision,text:format!("{n}{}","\t".repeat(4000)),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).unwrap();task=store.active().unwrap().unwrap();}
@@ -1346,10 +1362,14 @@ mod tests {
     }
     fn receipt(task:&Task,text:&str)->ReplyReceipt{
         let (parent_sha256,position)=history_parent(task.history.as_deref()).unwrap();
-        ReplyReceipt{id:Uuid::new_v4(),instruction_sources:task.instruction_sources(),task:task.binding(),provider:task.provider.clone(),content_sha256:crate::kicad_project::digest(text.as_bytes()),parent_sha256,position,references:task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(Reference::reply_source).collect(),revoked:false}
+        ReplyReceipt{context_policy_version:1,id:Uuid::new_v4(),instruction_sources:task.instruction_sources(),task:task.binding(),provider:task.provider.clone(),content_sha256:crate::kicad_project::digest(text.as_bytes()),parent_sha256,position,references:task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(Reference::reply_source).collect(),revoked:false}
     }
     fn save_history(store:&Store,turns:serde_json::Value){
         let t=store.active().unwrap().unwrap();store.request(Request::History{id:t.id,revision:t.revision,value:Some(serde_json::json!({"version":1,"turns":turns}).to_string())}).unwrap();
+    }
+    #[test]
+    fn pre_boundary_reply_receipts_remain_local_without_silently_gaining_context_permission(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;let mut old=receipt(&task,"LEGACY_RECEIPT_SENTINEL");old.context_policy_version=0;let mut persisted=serde_json::to_value(&old).unwrap();persisted.as_object_mut().unwrap().remove("context_policy_version");let old:ReplyReceipt=serde_json::from_value(persisted).unwrap();let mut task=task;task.reply_receipts.push(old.clone());task.history=Some(serde_json::json!({"version":1,"turns":[{"role":"assistant","content":"LEGACY_RECEIPT_SENTINEL","reply_id":old.id}]}).to_string());store.save(&task).unwrap();task.validate().unwrap();assert!(!task.reply_receipt_allows(old.id,"LEGACY_RECEIPT_SENTINEL"));assert!(!store.record_reply(old).unwrap());assert!(store.active().unwrap().unwrap().history.unwrap().contains("LEGACY_RECEIPT_SENTINEL"));task.reply_receipts[0].context_policy_version=2;assert!(task.validate().is_err());drop(store);drop(p);fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn reply_receipts_preserve_new_authorized_answers_without_reauthorizing_old_context(){
