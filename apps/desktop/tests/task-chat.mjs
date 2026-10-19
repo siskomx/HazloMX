@@ -17,12 +17,14 @@ try {
   window.calls=[];
   let snapshot={project:db.project,task_support:true,tasks:null,job:null,inference:null,recovered:[],freecad:"",freecad_available:false,codex:{version:"0.159.2"},codex_login:{id:"owned-login",sequence:1,busy:false,connected:true},claude:{version:"2.1.302"},chat:null};
   const task=()=>db.records[db.active];
+  const affected=(t,id)=>{const ids=new Set([id]);for(const r of t.references)if(r.parents?.some(p=>ids.has(p)))ids.add(r.id);return ids;};
   const state=()=>db.active?{active:{...task(),history:undefined},tasks:Object.values(db.records).map(t=>({id:t.id,title:t.title}))}:null;
   const persist=()=>{snapshot.tasks=state();localStorage.setItem("owned-task-fixture",JSON.stringify(db));};
   const create=()=>{const id=crypto.randomUUID();db.records[id]={id,revision:1,title:"Nueva conversación",goal:"",provider:task()?.provider??"codex",references:[],restricted_results:false,history:JSON.stringify({version:1,turns:[]})};db.active=id;};
   persist();
   window.__TAURI_INTERNALS__={transformCallback:()=>1,unregisterCallback:()=>{},invoke:async(command,args={})=>{
    window.calls.push({command,args:structuredClone(args)});
+   if(command==="get_snapshot"&&window.failSnapshotOnce){window.failSnapshotOnce=false;throw Error("Owned snapshot reply unavailable");}
    if(command==="ensure_task_workspace"){db.project=["owned-project","C:/OwnedFixture/Task"];snapshot.project=db.project;create();task().provider=args.provider??"codex";persist();}
    else if(command==="task_action"){
     const r=args.request;
@@ -35,15 +37,15 @@ try {
      if(r.action==="provider"){t.revision++;t.provider=r.provider;}
      if(r.action==="add_reference"){t.revision++;t.references.push({id:crypto.randomUUID(),name:r.name,bytes:atob(r.data).length,sha256:"f".repeat(64),image:!!r.preview,shared_with:[],preview:r.preview,data:r.data});}
      if(r.action==="preview_reference"){const ref=t.references.find(x=>x.id===r.reference);if(!ref)throw Error("missing local reference");const text=atob(ref.data),offset=r.offset??0,next=offset+4096;return {kind:"text",content:text.slice(offset,next),next_offset:next<text.length?next:null};}
-     if(r.action==="share"){const ref=t.references.find(x=>x.id===r.reference);ref.shared_with=ref.shared_with.filter(p=>p!==t.provider);if(r.allow)ref.shared_with.push(t.provider);t.revision++;}
-     if(r.action==="remove"){const removed=t.references.find(x=>x.id===r.reference);t.references=t.references.filter(x=>x.id!==r.reference);t.pending_removals=[{id:removed.id,bytes:removed.bytes}];t.revision++;}
+     if(r.action==="share"){const ref=t.references.find(x=>x.id===r.reference);ref.shared_with=ref.shared_with.filter(p=>p!==t.provider);if(r.allow)ref.shared_with.push(t.provider);else{const ids=affected(t,r.reference);for(const ref of t.references)if(ids.has(ref.id))ref.shared_with=ref.shared_with.filter(p=>p!==t.provider);}t.revision++;}
+     if(r.action==="remove"){const ids=affected(t,r.reference),removed=t.references.filter(x=>ids.has(x.id));t.references=t.references.filter(x=>!ids.has(x.id));t.pending_removals=removed.map(({id,bytes})=>({id,bytes}));t.revision++;}
      if(r.action==="image"){const ref=t.references.find(x=>x.id===r.reference);if(!ref?.shared_with.includes(t.provider))throw Error("sharing required");return structuredClone(ref.preview);}
     }
-    persist();return structuredClone(state());
+    persist();if(window.failAfterScope===r.action){window.failAfterScope=null;throw Error("Owned storage reply lost after commit");}return structuredClone(state());
    }
    else if(command.startsWith("start_") && command.endsWith("_chat")){
     if(window.publicEvidenceOnNext){window.publicEvidenceOnNext=false;task().revision++;task().references.push({id:crypto.randomUUID(),name:"Documento público.json",bytes:100,sha256:"c".repeat(64),image:false,shared_with:[],data:btoa("PUBLIC_RESPONSE_SENTINEL <script>never execute</script>")});}
-    if(window.nativeOnNext){task().revision++;task().references.push({id:crypto.randomUUID(),name:"Observación nativa.json",bytes:100,sha256:"e".repeat(64),image:false,shared_with:[]});window.nativeOnNext=false;}
+    if(window.nativeOnNext){task().revision++;task().references.push({id:crypto.randomUUID(),name:"Observación nativa.json",bytes:100,sha256:"e".repeat(64),image:false,shared_with:[],parents:task().references.map(r=>r.id)});window.nativeOnNext=false;}
     snapshot.chat={provider:task().provider,id:crypto.randomUUID(),project_id:db.project[0],sequence:1,busy:false,cancelled:false,text:"La tarea sigue guardada; podemos continuar.",error:null};
     if(window.startBatchOnNext){window.startBatchOnNext=false;snapshot.job={snapshot:{schema_version:17,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,native_tools_version:1,job_id:crypto.randomUUID(),connection_id:crypto.randomUUID(),program:"drawing",catalog_sha256:"a".repeat(64),description:"Owned correction batch",calls:[{tool:"native_edit",arguments:{value:7}},{tool:"native_edit",arguments:{value:99}}],readback:{tool:"native_state",arguments:{}},guard:{call:{tool:"native_state",arguments:{}},result_sha256:"b".repeat(64)}},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
     if(window.startPublicOnNext){window.startPublicOnNext=false;snapshot.job={snapshot:{schema_version:18,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,public_document_version:1,job_id:crypto.randomUUID(),url:"https://example.org/manual?language=en",purpose:"Check the official public manual"},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
@@ -103,11 +105,31 @@ try {
  assert.match(await page.locator("#conversation").innerText(),/non-content native status/);
  assert.match(await page.locator("#task-references").innerText(),/Observación nativa.json/);
  const retained=page.locator("#task-references > p").filter({hasText:"capture.bin"});
+ assert.match(await page.locator("#task-references").innerText(),/copia derivada/);
+ assert.match(await page.locator("#task-references").innerText(),/también retira sus copias/);
+ await retained.getByRole("button",{name:"Compartir con esta IA…",exact:true}).click();await page.locator("#approve-reference").click();await page.locator("#send:enabled").waitFor();
+ const child=page.locator("#task-references > p").filter({hasText:"Observación nativa.json"});
+ await child.getByRole("button",{name:"Compartir con esta IA…",exact:true}).click();await page.locator("#approve-reference").click();await page.locator("#send:enabled").waitFor();
+ const revokeCallsBefore=await page.evaluate(()=>window.calls.filter(c=>c.command==="task_action"&&c.args.request.action==="share"&&!c.args.request.allow).length);
+ const agentCallsBeforeRevoke=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);
+ await page.locator("#prompt").fill("Keep this unsent correction");
+ await page.evaluate(()=>window.failAfterScope="share");
+ await retained.getByRole("button",{name:"Revocar permiso",exact:true}).click();await page.locator("#send:enabled").waitFor();
+ assert.match(await page.locator("#error").innerText(),/reply lost after commit/);
+ assert.equal(await page.locator("#prompt").inputValue(),"Keep this unsent correction");
+ assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command==="task_action"&&c.args.request.action==="share"&&!c.args.request.allow).length),revokeCallsBefore+1);
+ assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),agentCallsBeforeRevoke);
+ assert.match(await child.innerText(),/solo local/);
+ assert.equal(await page.getByRole("button",{name:"Revocar permiso",exact:true}).count(),0);
  await retained.getByRole("button",{name:"Ver localmente",exact:true}).click();await page.locator("#report[open]").waitFor();
  assert.match(await page.locator("#report-text").innerText(),/RAW_PRIVATE_SENTINEL/);
  await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
+ await page.evaluate(()=>window.failSnapshotOnce=true);
  await retained.getByRole("button",{name:"Quitar referencia",exact:true}).click();await page.locator("#send:enabled").waitFor();
+ assert.match(await page.locator("#error").innerText(),/snapshot reply unavailable/);
+ assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command==="task_action"&&c.args.request.action==="remove").length),1);
  assert.equal(await page.locator("#report-text").textContent(),"");assert(!await page.locator("#task-references").innerText().then(t=>t.includes("capture.bin")));
+ assert.doesNotMatch(await page.locator("#task-references").innerText(),/Observación nativa.json/);
  assert.match(await page.locator("#task-references").innerText(),/pendientes de borrar/);
  await page.reload();await page.locator("#send:enabled").waitFor();
  assert.match(await page.locator("#task-references").innerText(),/permisos ya están revocados/);

@@ -203,9 +203,7 @@ impl Workflow {
         let reference_name=if tool=="read_verified_result" && result.as_ref().is_ok_and(|v|v["format"]=="public_document_report"){"Documento público.json"}else{"Observación nativa.json"};
         let value=match result {Ok(value)=>serde_json::json!({"tool":tool,"result":value}),Err(error)=>serde_json::json!({"tool":tool,"error":error})};
         let bytes=serde_json::to_vec(&value).map_err(|_|"No se pudo conservar evidencia local.")?;
-        store.request(crate::tasks::Request::AddReference{id:expected.id,revision:expected.revision,name:reference_name.into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,bytes),preview:None}).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.")?;
-        let task=store.active().map_err(|_|"No se pudo comprobar la evidencia local.")?.ok_or("No hay tarea activa.")?;
-        task.references.last().map(|r|r.id).ok_or("No se pudo comprobar la evidencia local.".into())
+        store.retain_evidence(expected,reference_name.into(),bytes).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.".into())
     }
     pub fn shared_task_reference(&self,reference:Uuid,offset:usize)->Result<serde_json::Value,String>{
         let state=self.state.lock().map_err(|e|e.to_string())?;

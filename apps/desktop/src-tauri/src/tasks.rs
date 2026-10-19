@@ -54,7 +54,11 @@ pub struct Reference {
     pub bytes: u64,
     pub sha256: String,
     pub image: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview_sha256: Option<String>,
     pub shared_with: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub parents: Vec<Uuid>,
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -139,12 +143,18 @@ impl Task {
         let mut ids = std::collections::BTreeSet::new();
         let mut total = 0;
         for r in &self.references {
+            let parents: std::collections::BTreeSet<_> = r.parents.iter().copied().collect();
             if r.id.is_nil()
+                || parents.len() != r.parents.len()
+                || parents.iter().any(|id| !ids.contains(id))
                 || !ids.insert(r.id)
                 || !valid_name(&r.name)
                 || r.bytes == 0
                 || r.bytes > FILE_LIMIT as u64
                 || !crate::kicad_project::valid_hash(&r.sha256)
+                || r.preview_sha256
+                    .as_ref()
+                    .is_some_and(|h| !r.image || !crate::kicad_project::valid_hash(h))
                 || r.shared_with.len() > 4
                 || r.shared_with.iter().any(|p| !provider(p))
             {
@@ -165,6 +175,33 @@ impl Task {
         }
         Ok(())
     }
+}
+fn descendants(task: &Task, reference: Uuid) -> std::collections::BTreeSet<Uuid> {
+    let mut affected = std::collections::BTreeSet::from([reference]);
+    // References are validated in parent-before-child order; cycles and missing parents fail closed.
+    for r in &task.references {
+        if r.parents.iter().any(|id| affected.contains(id)) {
+            affected.insert(r.id);
+        }
+    }
+    affected
+}
+fn scrub_history(task: &mut Task, affected: &std::collections::BTreeSet<Uuid>) -> io::Result<()> {
+    let mut value: serde_json::Value =
+        serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
+    if let Some(turns) = value["turns"].as_array_mut() {
+        for turn in turns {
+            if turn["reference_ids"].as_array().is_some_and(|ids| {
+                ids.iter()
+                    .filter_map(|v| v.as_str().and_then(|s| Uuid::parse_str(s).ok()))
+                    .any(|id| affected.contains(&id))
+            }) {
+                *turn = serde_json::json!({"role":"assistant","content":"Respuesta retirada junto con su permiso de referencia local."});
+            }
+        }
+    }
+    task.history = Some(serde_json::to_string(&value).map_err(io::Error::other)?);
+    Ok(())
 }
 fn valid_name(s: &str) -> bool {
     !s.is_empty()
@@ -323,10 +360,16 @@ impl<'a> Store<'a> {
         Ok(Some(value))
     }
     fn read(&self, id: Uuid) -> io::Result<Task> {
-        let task: Task = read_json(&self.path(id))?;
+        let mut task: Task = read_json(&self.path(id))?;
         task.validate()?;
         if task.id != id {
             return Err(error("La identidad de tarea cambió."));
+        }
+        // Legacy previews have no immutable receipt. Keep their pixels local until fresh consent.
+        for r in &mut task.references {
+            if r.image && r.preview_sha256.is_none() {
+                r.shared_with.clear();
+            }
         }
         Ok(task)
     }
@@ -374,10 +417,19 @@ impl<'a> Store<'a> {
         }
         Ok(bytes)
     }
-    fn preview_image(&self, task: Uuid, reference: Uuid) -> io::Result<ImageInput> {
+    fn preview_image(&self, task: Uuid, reference: &Reference) -> io::Result<ImageInput> {
         let (folder, _pins) = self.blob_dir(task)?;
-        let image: ImageInput = read_json(&folder.join(format!("{reference}.preview.json")))?;
+        let image: ImageInput = read_json(&folder.join(format!("{}.preview.json", reference.id)))?;
         image.validate().map_err(io::Error::other)?;
+        if reference
+            .preview_sha256
+            .as_ref()
+            .is_some_and(|h| preview_hash(&image).as_ref().ok() != Some(h))
+        {
+            return Err(error(
+                "La vista de la imagen cambió. No se aplica el permiso al nuevo contenido.",
+            ));
+        }
         Ok(image)
     }
     fn empty(provider: &str) -> Task {
@@ -507,6 +559,84 @@ impl<'a> Store<'a> {
         }
         Ok(())
     }
+    fn add_reference(
+        &self,
+        mut task: Task,
+        name: String,
+        bytes: Vec<u8>,
+        preview: Option<ImageInput>,
+        parents: Vec<Uuid>,
+    ) -> io::Result<Uuid> {
+        if !valid_name(&name) {
+            return Err(error("Referencia no válida."));
+        }
+        if bytes.is_empty()
+            || bytes.len() > FILE_LIMIT
+            || task.references.len() + task.pending_removals.len() >= 64
+            || task.references.iter().map(|r| r.bytes).sum::<u64>()
+                + task.pending_removals.iter().map(|r| r.bytes).sum::<u64>()
+                + bytes.len() as u64
+                > TASK_LIMIT
+        {
+            return Err(error(
+                "Límite: 32 MiB por archivo, 64 referencias y 256 MiB por tarea.",
+            ));
+        }
+        if let Some(image) = &preview {
+            image.validate().map_err(io::Error::other)?;
+        }
+        let reference = Reference {
+            id: Uuid::new_v4(),
+            name,
+            bytes: bytes.len() as u64,
+            sha256: crate::kicad_project::digest(&bytes),
+            image: preview.is_some(),
+            preview_sha256: preview.as_ref().map(preview_hash).transpose()?,
+            shared_with: Vec::new(),
+            parents,
+        };
+        let (folder, _pins) = self.blob_dir(task.id)?;
+        let reference_id = reference.id;
+        let blob = folder.join(format!("{reference_id}.bin"));
+        let preview_path = folder.join(format!("{reference_id}.preview.json"));
+        // Reserve cleanup before creating bytes. An interrupted intake has no sharing permission.
+        task.pending_removals.push(PendingRemoval {
+            id: reference_id,
+            bytes: reference.bytes,
+        });
+        task.revision += 1;
+        self.save(&task)?;
+        task.pending_removals.retain(|r| r.id != reference_id);
+        task.references.push(reference);
+        task.validate()?;
+        let result = (|| {
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .share_mode(FILE_SHARE_READ)
+                .open(&blob)?;
+            file.write_all(&bytes)?;
+            file.sync_all()?;
+            if let Some(image) = preview {
+                atomic_json(&preview_path, &image, false)?;
+            }
+            self.save(&task)
+        })();
+        // Failure leaves either a committed reference or its reserved cleanup; never guess which.
+        result?;
+        Ok(reference_id)
+    }
+    pub(crate) fn retain_evidence(
+        &self,
+        binding: &Binding,
+        name: String,
+        bytes: Vec<u8>,
+    ) -> io::Result<Uuid> {
+        let task = self.scoped(binding.id, binding.revision)?;
+        // Native tools may observe any current reference. Unknown dependency is never declassified.
+        let parents = task.references.iter().map(|r| r.id).collect();
+        self.add_reference(task, name, bytes, None, parents)
+    }
     pub fn request(&self, request: Request) -> io::Result<serde_json::Value> {
         use serde_json::json;
         self.ensure()?;
@@ -602,65 +732,8 @@ impl<'a> Store<'a> {
                 let bytes = STANDARD
                     .decode(data)
                     .map_err(|_| error("Referencia no válida."))?;
-                let mut task = self.scoped(id, revision)?;
-                if bytes.is_empty()
-                    || bytes.len() > FILE_LIMIT
-                    || task.references.len() + task.pending_removals.len() >= 64
-                    || task.references.iter().map(|r| r.bytes).sum::<u64>()
-                        + task.pending_removals.iter().map(|r| r.bytes).sum::<u64>()
-                        + bytes.len() as u64
-                        > TASK_LIMIT
-                {
-                    return Err(error(
-                        "Límite: 32 MiB por archivo, 64 referencias y 256 MiB por tarea.",
-                    ));
-                }
-                if let Some(image) = &preview {
-                    image.validate().map_err(io::Error::other)?;
-                }
-                let reference = Reference {
-                    id: Uuid::new_v4(),
-                    name,
-                    bytes: bytes.len() as u64,
-                    sha256: crate::kicad_project::digest(&bytes),
-                    image: preview.is_some(),
-                    shared_with: Vec::new(),
-                };
-                let (folder, _pins) = self.blob_dir(task.id)?;
-                let reference_id = reference.id;
-                let blob = folder.join(format!("{reference_id}.bin"));
-                let preview_path = folder.join(format!("{reference_id}.preview.json"));
-                task.references.push(reference);
-                task.revision += 1;
-                task.validate()?;
-                let result = (|| {
-                    let mut file = OpenOptions::new()
-                        .write(true)
-                        .create_new(true)
-                        .share_mode(FILE_SHARE_READ)
-                        .open(&blob)?;
-                    file.write_all(&bytes)?;
-                    file.sync_all()?;
-                    if let Some(image) = preview {
-                        atomic_json(&preview_path, &image, false)?;
-                    }
-                    self.save(&task)
-                })();
-                // A failed title-cache update may follow a committed task; keep its bytes.
-                if result.is_err()
-                    && self
-                        .read(task.id)?
-                        .references
-                        .iter()
-                        .all(|r| r.id != reference_id)
-                {
-                    for path in [&blob, &preview_path] {
-                        if path.try_exists()? {
-                            fs::remove_file(path)?;
-                        }
-                    }
-                }
-                result?;
+                let task = self.scoped(id, revision)?;
+                self.add_reference(task, name, bytes, preview, Vec::new())?;
             }
             Request::Share {
                 id,
@@ -676,7 +749,18 @@ impl<'a> Store<'a> {
                     .ok_or_else(|| error("Referencia no disponible."))?;
                 r.shared_with.retain(|p| p != &task.provider);
                 if allow {
+                    if r.image {
+                        r.preview_sha256 = Some(preview_hash(&self.preview_image(task.id, r)?)?);
+                    }
                     r.shared_with.push(task.provider.clone());
+                } else {
+                    let affected = descendants(&task, reference);
+                    for r in &mut task.references {
+                        if affected.contains(&r.id) {
+                            r.shared_with.retain(|p| p != &task.provider);
+                        }
+                    }
+                    scrub_history(&mut task, &affected)?;
                 }
                 task.revision += 1;
                 self.save(&task)?;
@@ -687,37 +771,28 @@ impl<'a> Store<'a> {
                 reference,
             } => {
                 let mut task = self.scoped(id, revision)?;
-                let bytes = task
-                    .references
+                task.references
                     .iter()
                     .find(|r| r.id == reference)
-                    .ok_or_else(|| error("Referencia no disponible."))?
-                    .bytes;
+                    .ok_or_else(|| error("Referencia no disponible."))?;
+                let affected = descendants(&task, reference);
                 // Revoke access before deleting bytes; a failed deletion must never restore sharing.
                 // shortcut: old native reports have no per-reference lineage; keep them local after removal.
                 task.restricted_results |= task
                     .references
                     .iter()
-                    .any(|r| r.id == reference && !r.shared_with.is_empty());
-                task.references.retain(|r| r.id != reference);
-                task.pending_removals.push(PendingRemoval {
-                    id: reference,
-                    bytes,
-                });
-                let mut value: serde_json::Value =
-                    serde_json::from_str(task.history.as_deref().unwrap_or("{}"))
-                        .map_err(io::Error::other)?;
-                if let Some(turns) = value["turns"].as_array_mut() {
-                    for turn in turns {
-                        if turn["reference_ids"]
-                            .as_array()
-                            .is_some_and(|ids| ids.iter().any(|id| *id == json!(reference)))
-                        {
-                            *turn = json!({"role":"assistant","content":"Respuesta retirada junto con su referencia local."});
-                        }
-                    }
-                }
-                task.history = Some(serde_json::to_string(&value).map_err(io::Error::other)?);
+                    .any(|r| affected.contains(&r.id) && !r.shared_with.is_empty());
+                task.pending_removals.extend(
+                    task.references
+                        .iter()
+                        .filter(|r| affected.contains(&r.id))
+                        .map(|r| PendingRemoval {
+                            id: r.id,
+                            bytes: r.bytes,
+                        }),
+                );
+                task.references.retain(|r| !affected.contains(&r.id));
+                scrub_history(&mut task, &affected)?;
                 task.revision += 1;
                 self.save(&task)?;
             }
@@ -739,7 +814,7 @@ impl<'a> Store<'a> {
                         return Err(error("Página de imagen no válida."));
                     }
                     return Ok(
-                        json!({"kind":"image","image":self.preview_image(id,reference)?,"next_offset":null}),
+                        json!({"kind":"image","image":self.preview_image(id,r)?,"next_offset":null}),
                     );
                 }
                 return match String::from_utf8(bytes) {
@@ -763,7 +838,10 @@ impl<'a> Store<'a> {
                     .references
                     .iter()
                     .find(|r| {
-                        r.id == reference && r.image && r.shared_with.contains(&task.provider)
+                        r.id == reference
+                            && r.image
+                            && r.preview_sha256.is_some()
+                            && r.shared_with.contains(&task.provider)
                     })
                     .ok_or_else(|| {
                         error(
@@ -771,7 +849,7 @@ impl<'a> Store<'a> {
                         )
                     })?;
                 self.reference_bytes(id, r)?;
-                let image = self.preview_image(id, r.id)?;
+                let image = self.preview_image(id, r)?;
                 return serde_json::to_value(image).map_err(io::Error::other);
             }
         }
@@ -779,6 +857,11 @@ impl<'a> Store<'a> {
     }
 }
 
+fn preview_hash(image: &ImageInput) -> io::Result<String> {
+    Ok(crate::kicad_project::digest(
+        &serde_json::to_vec(image).map_err(io::Error::other)?,
+    ))
+}
 fn reference_page(r: &Reference, text: &str, offset: usize) -> io::Result<serde_json::Value> {
     let total = text.chars().count();
     if offset > total {
@@ -799,6 +882,358 @@ fn printable_text(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn derived_evidence_removal_and_revocation_follow_ancestry_without_deleting_designs() {
+        let (root, p) = setup();
+        let store = Store::new(&p).unwrap();
+        let add = |name: &str, bytes: &[u8]| {
+            let t = store.state().unwrap().active;
+            store
+                .request(Request::AddReference {
+                    id: t.id,
+                    revision: t.revision,
+                    name: name.into(),
+                    data: STANDARD.encode(bytes),
+                    preview: None,
+                })
+                .unwrap();
+            store.state().unwrap().active.references.last().unwrap().id
+        };
+        let original = add("capture.bin", b"PRIVATE_PARENT_SENTINEL");
+        let unrelated = add("unrelated.txt", b"keep unrelated reference");
+        let t = store.state().unwrap().active;
+        let child = store
+            .retain_evidence(
+                &t.binding(),
+                "analysis.json".into(),
+                b"PRIVATE_CHILD_SENTINEL".to_vec(),
+            )
+            .unwrap();
+        let t = store.state().unwrap().active;
+        assert_eq!(
+            t.references.last().unwrap().parents,
+            vec![original, unrelated]
+        );
+        let grandchild = store
+            .retain_evidence(
+                &t.binding(),
+                "encoded.json".into(),
+                b"PRIVATE_GRANDCHILD_SENTINEL".to_vec(),
+            )
+            .unwrap();
+        let share = |reference, allow| {
+            let t = store.state().unwrap().active;
+            store
+                .request(Request::Share {
+                    id: t.id,
+                    revision: t.revision,
+                    reference,
+                    allow,
+                })
+                .unwrap();
+        };
+        share(grandchild, true);
+        assert!(store.shared_reference(grandchild, 0).unwrap()["content"]
+            .as_str()
+            .unwrap()
+            .contains("GRANDCHILD"));
+        let t = store.state().unwrap().active;
+        store
+            .request(Request::History {
+                id: t.id,
+                revision: t.revision,
+                value: Some(
+                    serde_json::json!({"version":1,"turns":[
+                        {"role":"user","content":"preserve my manual work"},
+                        {"role":"assistant","content":"PRIVATE_ASSISTANT_SENTINEL"}
+                    ]})
+                    .to_string(),
+                ),
+            })
+            .unwrap();
+        // The ancestor itself was never shared; revoking it must still revoke its shared derivative.
+        share(original, false);
+        assert!(store.shared_reference(grandchild, 0).is_err());
+        assert!(!store
+            .active()
+            .unwrap()
+            .unwrap()
+            .history
+            .unwrap()
+            .contains("PRIVATE_ASSISTANT_SENTINEL"));
+        share(grandchild, true);
+        let t = store.state().unwrap().active;
+        let blob = store
+            .root
+            .join(t.id.to_string())
+            .join(format!("{grandchild}.bin"));
+        let lock = OpenOptions::new()
+            .read(true)
+            .share_mode(FILE_SHARE_READ)
+            .open(&blob)
+            .unwrap();
+        let design = root.join("manual-work.native");
+        fs::write(&design, b"valid native work and user edits").unwrap();
+        store
+            .request(Request::Remove {
+                id: t.id,
+                revision: t.revision,
+                reference: original,
+            })
+            .unwrap();
+        let removed = store.state().unwrap().active;
+        assert_eq!(
+            removed.references.iter().map(|r| r.id).collect::<Vec<_>>(),
+            vec![unrelated]
+        );
+        assert_eq!(removed.pending_removals.len(), 1);
+        assert_eq!(removed.pending_removals[0].id, grandchild);
+        assert!(removed.restricted_results);
+        for id in [original, child, grandchild] {
+            assert!(store.shared_reference(id, 0).is_err());
+            assert!(store
+                .request(Request::PreviewReference {
+                    id: t.id,
+                    revision: removed.revision,
+                    reference: id,
+                    offset: 0
+                })
+                .is_err());
+        }
+        assert!(store
+            .retain_evidence(
+                &t.binding(),
+                "stale.json".into(),
+                b"stale response".to_vec()
+            )
+            .is_err());
+        assert!(store
+            .active()
+            .unwrap()
+            .unwrap()
+            .history
+            .as_ref()
+            .unwrap()
+            .contains("preserve my manual work"));
+        drop(store);
+        drop(p);
+        let p = Project::open(&root).unwrap();
+        let store = Store::new(&p).unwrap();
+        assert_eq!(store.state().unwrap().active.pending_removals.len(), 1);
+        drop(lock);
+        let recovered = store.state().unwrap().active;
+        assert!(recovered.pending_removals.is_empty());
+        assert!(!blob.exists());
+        assert_eq!(recovered.references[0].id, unrelated);
+        assert_eq!(
+            fs::read(design).unwrap(),
+            b"valid native work and user edits"
+        );
+        drop(store);
+        drop(p);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn evidence_ancestry_is_host_owned_acyclic_and_backward_compatible() {
+        let mut task = Store::empty("codex");
+        let a = Reference {
+            id: Uuid::new_v4(),
+            name: "a.txt".into(),
+            bytes: 1,
+            sha256: "a".repeat(64),
+            image: false,
+            preview_sha256: None,
+            shared_with: Vec::new(),
+            parents: Vec::new(),
+        };
+        task.references.push(a.clone());
+        let mut legacy = serde_json::to_value(&task).unwrap();
+        legacy["references"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("parents");
+        serde_json::from_value::<Task>(legacy)
+            .unwrap()
+            .validate()
+            .unwrap();
+        let mut b = a.clone();
+        b.id = Uuid::new_v4();
+        b.parents = vec![a.id];
+        task.references.push(b.clone());
+        task.validate().unwrap();
+        task.references[0].parents = vec![b.id];
+        assert!(task.validate().is_err());
+        task.references[0].parents = vec![Uuid::new_v4()];
+        assert!(task.validate().is_err());
+        task.references[0].parents.clear();
+        task.references[1].parents = vec![a.id, a.id];
+        assert!(task.validate().is_err());
+        assert!(serde_json::from_value::<Request>(serde_json::json!({"action":"add_reference","id":task.id,"revision":1,"name":"forged.txt","data":"eA==","preview":null,"parents":[a.id]})).is_err());
+    }
+    #[test]
+    fn interrupted_intake_keeps_only_durable_cleanup_and_never_grants_access() {
+        let (root, p) = setup();
+        let store = Store::new(&p).unwrap();
+        let mut task = store.state().unwrap().active;
+        let reference = Uuid::new_v4();
+        let bytes = b"UNCOMMITTED_PRIVATE_REFERENCE_SENTINEL";
+        let (folder, pins) = store.blob_dir(task.id).unwrap();
+        // Exact persisted reservation/write state if the process stops before reference publication.
+        task.revision += 1;
+        task.pending_removals.push(PendingRemoval {
+            id: reference,
+            bytes: bytes.len() as u64,
+        });
+        store.save(&task).unwrap();
+        let blob = folder.join(format!("{reference}.bin"));
+        fs::write(&blob, bytes).unwrap();
+        assert!(store.shared_reference(reference, 0).is_err());
+        drop(pins);
+        drop(store);
+        drop(p);
+        let p = Project::open(&root).unwrap();
+        let store = Store::new(&p).unwrap();
+        let recovered = store.state().unwrap().active;
+        assert!(recovered.references.is_empty());
+        assert!(recovered.pending_removals.is_empty());
+        assert!(!blob.exists());
+        // If cleanup reservation itself cannot commit, intake must not create any bytes.
+        let lock = OpenOptions::new()
+            .read(true)
+            .share_mode(FILE_SHARE_READ)
+            .open(store.path(task.id))
+            .unwrap();
+        assert!(store
+            .request(Request::AddReference {
+                id: task.id,
+                revision: recovered.revision,
+                name: "blocked.txt".into(),
+                data: STANDARD.encode(bytes),
+                preview: None
+            })
+            .is_err());
+        assert_eq!(fs::read_dir(folder).unwrap().count(), 0);
+        drop(lock);
+        drop(store);
+        drop(p);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn image_permission_binds_preview_bytes_and_legacy_images_require_new_consent() {
+        let (root, p) = setup();
+        let store = Store::new(&p).unwrap();
+        let t = store.state().unwrap().active;
+        let image = ImageInput {
+            media_type: "image/jpeg".into(),
+            data: STANDARD.encode([255, 216, 255, 192, 0, 8, 8, 0, 1, 0, 1, 0, 255, 217]),
+        };
+        store
+            .request(Request::AddReference {
+                id: t.id,
+                revision: t.revision,
+                name: "part.jpg".into(),
+                data: image.data.clone(),
+                preview: Some(image.clone()),
+            })
+            .unwrap();
+        let t = store.state().unwrap().active;
+        let id = t.references[0].id;
+        assert_eq!(
+            t.references[0].preview_sha256.as_ref(),
+            Some(&preview_hash(&image).unwrap())
+        );
+        store
+            .request(Request::Share {
+                id: t.id,
+                revision: t.revision,
+                reference: id,
+                allow: true,
+            })
+            .unwrap();
+        let mut t = store.active().unwrap().unwrap();
+        assert!(store
+            .request(Request::Image {
+                id: t.id,
+                revision: t.revision,
+                reference: id
+            })
+            .is_ok());
+        // Simulate an older task with a valid original and prior grant but no preview receipt.
+        t.references[0].preview_sha256 = None;
+        store.save(&t).unwrap();
+        let t = store.active().unwrap().unwrap();
+        assert!(t.references[0].shared_with.is_empty());
+        assert!(store
+            .request(Request::Image {
+                id: t.id,
+                revision: t.revision,
+                reference: id
+            })
+            .is_err());
+        assert!(store
+            .request(Request::PreviewReference {
+                id: t.id,
+                revision: t.revision,
+                reference: id,
+                offset: 0
+            })
+            .is_ok());
+        store
+            .request(Request::Share {
+                id: t.id,
+                revision: t.revision,
+                reference: id,
+                allow: true,
+            })
+            .unwrap();
+        let t = store.active().unwrap().unwrap();
+        assert!(t.references[0].preview_sha256.is_some());
+        assert!(store
+            .request(Request::Image {
+                id: t.id,
+                revision: t.revision,
+                reference: id
+            })
+            .is_ok());
+        let changed = ImageInput {
+            media_type: "image/jpeg".into(),
+            data: STANDARD.encode([255, 216, 255, 192, 0, 8, 8, 0, 2, 0, 1, 0, 255, 217]),
+        };
+        changed.validate().unwrap();
+        let (folder, pins) = store.blob_dir(t.id).unwrap();
+        atomic_json(&folder.join(format!("{id}.preview.json")), &changed, true).unwrap();
+        assert!(store
+            .request(Request::Image {
+                id: t.id,
+                revision: t.revision,
+                reference: id
+            })
+            .is_err());
+        assert!(store
+            .request(Request::PreviewReference {
+                id: t.id,
+                revision: t.revision,
+                reference: id,
+                offset: 0
+            })
+            .is_err());
+        assert!(store
+            .request(Request::Share {
+                id: t.id,
+                revision: t.revision,
+                reference: id,
+                allow: true
+            })
+            .is_err());
+        assert_eq!(
+            store.reference_bytes(t.id, &t.references[0]).unwrap(),
+            STANDARD.decode(&image.data).unwrap()
+        );
+        drop(pins);
+        drop(store);
+        drop(p);
+        fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn owned_preview_is_local_revision_bound_and_does_not_grant_sharing() {
         let (root, p) = setup();
@@ -1070,6 +1505,10 @@ mod tests {
     fn setup() -> (PathBuf, Project) {
         let root = std::env::temp_dir().join(format!("hazlo-tasks-{}", Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
+        assert!(root
+            .canonicalize()
+            .unwrap()
+            .starts_with(std::env::temp_dir().canonicalize().unwrap()));
         let p = Project::create(&root).unwrap();
         (root, p)
     }

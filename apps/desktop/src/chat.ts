@@ -69,11 +69,19 @@ function restrictedTask() {const task=state.tasks?.active;return !!task && (task
 async function taskCommand(request:Record<string,unknown>,reload=false) {
   await taskWrites;
   const {project}=scopedTask();
-  const tasks=await taskRequest<TaskState>(project,request);
-  if(reload){storageKey="";clearImage();pendingProvider=undefined;pendingReference=undefined;sourceContext={};sourceNames={};sourcePreviousJobs={};nativeCatalog=undefined;program="planning";}
-  const next=await invoke<DesktopSnapshot>("get_snapshot");
-  newSession=true;revision++;apply({...next,tasks,codex_conversation_ready:false,claude_conversation_ready:false});
-  await taskReady;
+  try {
+    const tasks=await taskRequest<TaskState>(project,request);
+    if(reload){storageKey="";clearImage();pendingProvider=undefined;pendingReference=undefined;sourceContext={};sourceNames={};sourcePreviousJobs={};nativeCatalog=undefined;program="planning";}
+    const next=await invoke<DesktopSnapshot>("get_snapshot");
+    newSession=true;revision++;apply({...next,tasks,codex_conversation_ready:false,claude_conversation_ready:false});
+    await taskReady;
+  }
+  catch(failure){
+    // Storage may have committed before its reply failed. Read state; never repeat the mutation.
+    newSession=true;revision++;durableReady=false;storageKey="";clearImage();clearReport();taskImage=undefined;pendingReference=undefined;pendingProvider=undefined;sourceContext={};sourceNames={};sourcePreviousJobs={};nativeCatalog=undefined;program="planning";
+    try {apply(await invoke<DesktopSnapshot>("get_snapshot"));await taskReady;}catch{/* Keep sending blocked until owned task state can be read. */}
+    throw failure;
+  }
 }
 function restoreTask() {
   const task=state.tasks!.active,project=state.project!;
@@ -120,14 +128,15 @@ function renderTasks(busy:boolean){
   const rows=$("task-references");rows.replaceChildren();
   if(tasks?.active.latest_correction){const p=document.createElement("p");p.className="fine";p.textContent="La última corrección queda guardada con la tarea. Las llamadas ya enviadas se revisan antes de nuevos cambios; cancelar no las deshace.";rows.append(p);}
   if(tasks?.active.pending_removals?.length){const p=document.createElement("p");p.className="fine";p.textContent="Hay copias locales retiradas pendientes de borrar porque no están disponibles. Su acceso y permisos ya están revocados. Hazlo reintentará borrar sus copias al volver a esta conversación; el trabajo del proyecto se conserva.";rows.append(p);}
+  if(tasks?.active.references.some(r=>r.parents?.length)){const p=document.createElement("p");p.className="fine";p.textContent="Quitar una referencia también retira sus copias de evidencia derivadas. Revocar su permiso lo revoca para esas copias en esta IA y retira las respuestas vinculadas del contexto. Los archivos de diseño del proyecto se conservan.";rows.append(p);}
   for(const ref of tasks?.active.references??[]){
     const row=document.createElement("p"),label=document.createElement("span");const shared=ref.shared_with.includes(provider);
-    label.textContent=`${ref.name} · ${Math.ceil(ref.bytes/1024)} KiB · ${shared?"compartir permitido con "+providerNames[provider]:"solo local"} `;row.append(label);
+    label.textContent=`${ref.name} · ${Math.ceil(ref.bytes/1024)} KiB · ${shared?"compartir permitido con "+providerNames[provider]:"solo local"}${ref.parents?.length?" · copia derivada":""} `;row.append(label);
     const button=(text:string,handler:()=>void)=>{const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent=text;b.disabled=busy;b.onclick=handler;row.append(b);};
     button("Ver localmente",()=>void action(()=>previewReference(ref)));
-    button(shared?"Revocar permiso":"Compartir con esta IA…",()=>{if(shared)void action(async()=>{const {scope}=scopedTask();await taskCommand({action:"share",...scope,reference:ref.id,allow:false});clearImage();taskImage=undefined;});else{pendingReference=ref;render();}});
+    button(shared?"Revocar permiso":"Compartir con esta IA…",()=>{if(shared)void action(async()=>{clearReport();const {scope}=scopedTask();await taskCommand({action:"share",...scope,reference:ref.id,allow:false},true);clearImage();taskImage=undefined;});else{pendingReference=ref;render();}});
     if(ref.image && shared)button("Usar imagen",()=>void action(async()=>{const {project,scope}=scopedTask();referenceImage=await taskRequest<ImageReference>(project,{action:"image",...scope,reference:ref.id});taskImage=ref.id;}));
-    button("Quitar referencia",()=>void action(async()=>{clearReport();const {scope}=scopedTask();await taskCommand({action:"remove",...scope,reference:ref.id},true);inspectionNotice="Referencia retirada. Las respuestas vinculadas se retiraron del contexto; los informes anteriores quedan locales. No se borra contenido ya enviado a otros servicios.";}));
+    button("Quitar referencia",()=>void action(async()=>{clearReport();const {scope}=scopedTask();await taskCommand({action:"remove",...scope,reference:ref.id},true);inspectionNotice="Referencia y copias de evidencia derivadas retiradas. Las respuestas vinculadas se retiraron del contexto; el trabajo nativo y los informes anteriores quedan locales. No se borra contenido ya enviado a otros servicios.";}));
     rows.append(row);
   }
   if(restrictedTask()){const p=document.createElement("p");p.className="fine";p.textContent="Hay evidencia local sin permiso de envío. Puedes seguir conversando; los contenidos, historial y resultados nativos quedan fuera de la IA hasta contar con autorización. El análisis local con extracción revisada se habilitará en una siguiente etapa.";rows.append(p);}
