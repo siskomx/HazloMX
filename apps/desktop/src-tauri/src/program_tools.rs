@@ -119,6 +119,16 @@ pub(crate) fn allowed(id: &str, program: Option<Program>) -> bool {
         .any(|s| s.id == id && program.is_none_or(|p| p == Program::Planning || p == s.program))
 }
 
+pub(crate) fn available_programs() -> Value {
+    let mut programs=serde_json::Map::new();
+    for source in sources() {
+        let id=serde_json::to_value(source.program).expect("Program identifier").as_str().unwrap().to_owned();
+        let entry=programs.entry(id).or_insert_with(||json!({"connection_status":"not_checked","selection_tool":"select_program","sources":[]}));
+        entry["sources"].as_array_mut().unwrap().push(json!({"repository":source.repository,"capabilities":source.discovery}));
+    }
+    Value::Object(programs)
+}
+
 pub(crate) fn retain_scope(value: &mut Value, program: Option<Program>) {
     if let Some(entries) = value.as_object_mut() {
         entries.retain(|id, _| allowed(id, program));

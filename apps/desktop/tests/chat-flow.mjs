@@ -53,14 +53,14 @@ try {
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
       if ((command === "get_snapshot" || command === "detect_clients")) return copy();
-      if (command === "connect_native_tools") {args.events.onmessage(crypto.randomUUID());if(args.automatic&&!window.autoNativeInstalled&&!window.preparedPrograms?.includes(args.program)) throw "No se encontraron herramientas compatibles instaladas.";return {connection_id:"native-connection",catalog_sha256:"d".repeat(64),transport:args.mcp ? "mcp" : "cli",tools:[{name:"program_owned_tool"},{name:"observe_native_state"}]};}
+      if (command === "connect_native_tools") {args.events.onmessage(crypto.randomUUID());if(args.automatic&&!window.autoNativeInstalled&&!window.preparedPrograms?.includes(args.program)) throw "No se encontraron herramientas compatibles instaladas.";snapshot.program_route=null;return {connection_id:"native-connection",catalog_sha256:"d".repeat(64),transport:args.mcp ? "mcp" : "cli",tools:[{name:"program_owned_tool"},{name:"observe_native_state"}]};}
       if (command === "prepare_diagnostic_tool") {
         args.events.onmessage(crypto.randomUUID());
         if(window.prepareCancelled) throw "Preparación detenida.";
         if(args.program==="serial") window.preparedPrograms=[...(window.preparedPrograms??[]),args.program];
         return args.program==="serial" ? "pySerial preparado en entorno privado." : "Instalador oficial verificado abierto; completa sus opciones.";
       }
-      if (command === "disconnect_native_tools") return;
+      if (command === "disconnect_native_tools") {snapshot.program_route=null;return;}
       if (command === "install_agent_companion") {
         if (window.refuseCompanionInstall) throw "No se reemplazó el complemento existente.";
         return "Complemento instalado. Guarda tu trabajo y reinicia Arduino Agent para activarlo.";
@@ -98,6 +98,7 @@ try {
         const chat = snapshot.chat;
         const finish = () => {
           if (snapshot.chat?.id !== chat.id || chat.cancelled) return;
+          if(window.nextProgramRoute) {snapshot.program_route=window.nextProgramRoute;delete window.nextProgramRoute;}
           chat.sequence++; chat.busy = false; chat.question = null; chat.text = window.replyText ?? "Primero revisemos el documento. <img src=x onerror=window.injection=true>";
           if (window.chatFailure === "event") { chat.text = ""; chat.error = "La IA interrumpió la conexión. <img src=x onerror=window.failureInjected=true>"; }
           if (provider === "codex" || provider === "claude") snapshot[provider === "codex" ? "codex_conversation_ready" : "claude_conversation_ready"] = true;
@@ -189,17 +190,42 @@ try {
     const call = await page.evaluate(() => window.calls.filter(call => call.command.startsWith("start_")).at(-1));
     assert.equal(call.args.program, "planning");
     const prompt = JSON.parse(call.args.prompt);
-    assert.equal(prompt.desktop_context.program_selection_required, true);
+    assert.equal(prompt.desktop_context.program_selection_required, false);
     assert.equal(prompt.desktop_context.live_mutations_allowed, false);
-    assert.equal(prompt.desktop_context.document_scope, "choose_program");
+    assert.equal(prompt.desktop_context.document_scope, "agent_program_routing");
     assert.equal(prompt.desktop_context.current_job, null);
     assert.equal(prompt.desktop_context.cad_document_source, undefined);
     assert.deepEqual(Object.keys(prompt.desktop_context.available_programs), ["freecad", "drawing", "arduino", "agent", "kicad", "slice", "rea", "tshark", "usbpcap", "serial"]);
-    assert.match(prompt.instruction, /no afirmes haber cambiado la selección/);
-    await page.locator("#choose-program").click();
-    assert.equal(await page.locator("#connections").getAttribute("open"), "");
-    assert.equal(await page.evaluate(() => document.activeElement.id), "program");
+    assert.match(prompt.instruction, /usa select_program tú mismo/);
+    assert.equal(await page.locator("#choose-program").count(),0);
+    await page.evaluate(()=>{window.nextProgramRoute={id:crypto.randomUUID(),program:"rea",status:"connected",message:null,connection_id:"agent-rea",transport:"mcp",tools:["observe_native_state"]};});
+    await send("Investiga el software con la herramienta adecuada.");
+    await page.waitForFunction(()=>document.querySelector("#program").value==="rea");
+    assert.match(await page.locator("#connection-status").innerText(),/Rea integrado/);
+    await send("Continúa leyendo lo que encontraste.");
+    const routed=await page.evaluate(()=>window.calls.filter(call=>call.command.startsWith("start_")).at(-1));
+    assert.equal(routed.args.program,"rea");
+    assert.equal(JSON.parse(routed.args.prompt).desktop_context.native_tools.connection_id,"agent-rea");
+    await page.evaluate(()=>{window.nextProgramRoute={id:crypto.randomUUID(),program:"tshark",status:"unavailable",message:"Falta herramienta; no se descargó nada.",connection_id:null,transport:null,tools:[]};});
+    await send("Prepara la observación de red si es posible.");
+    await page.waitForFunction(()=>document.querySelector("#program").value==="tshark");
+    assert.match(await page.locator("#chat-progress").innerText(),/Falta herramienta/);
+    await send("Continúa con la investigación pública.");
+    const unavailable=await page.evaluate(()=>window.calls.filter(call=>call.command.startsWith("start_")).at(-1));
+    assert.equal(JSON.parse(unavailable.args.prompt).desktop_context.native_tools,undefined);
+    assert.equal(JSON.parse(unavailable.args.prompt).desktop_context.document_scope,"native_connection_unavailable");
+    await page.evaluate(()=>{window.autoNativeInstalled=true;});
+    await page.locator("#setup").click();
+    await page.getByRole("button",{name:"Detectar y conectar automáticamente",exact:true}).click();
+    await page.locator("#send:enabled").waitFor();
+    await send("Ya está disponible; continúa con sus herramientas.");
+    const reconnected=await page.evaluate(()=>window.calls.filter(call=>call.command.startsWith("start_")).at(-1));
+    assert.equal(JSON.parse(reconnected.args.prompt).desktop_context.native_tools.connection_id,"native-connection");
+    assert.equal(JSON.parse(reconnected.args.prompt).desktop_context.document_scope,"device_diagnostics");
+    await page.evaluate(()=>{window.autoNativeInstalled=false;});
+    assert.equal(await page.evaluate(()=>window.calls.filter(call=>call.command==="prepare_diagnostic_tool").length),0);
     assert.equal(await page.evaluate(() => window.approvals), 0);
+    await page.locator("#setup").click();
   }
   for (const provider of ["codex", "claude", "ollama_local", "ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);

@@ -27,7 +27,8 @@ assert.deepEqual(history,original,"Composing a bounded request changed visible/s
 const planning=JSON.parse(agentPrompt("Ayúdame a elegir por dónde empezar.",history,{program:"planning",program_selection_required:true}));
 assert.match(planning.instruction,/una sola pregunta breve por turno/);
 assert.match(planning.instruction,/como máximo dos opciones relevantes/);
-assert.match(planning.instruction,/no afirmes haber cambiado la selección/);
+assert.match(planning.instruction,/usa select_program tú mismo/);
+assert(!planning.instruction.includes("pide elegirlo"));
 assert(!planning.instruction.includes("propose_open_cad_change"),"Choosing software included unrelated editing instructions");
 assert.deepEqual(planning.recovered_conversation.filter(t=>t.role==="user"),history.filter(t=>t.role==="user"));
 const native=JSON.parse(agentPrompt("Prepara el cambio acordado.",[],{native_tools:{program:"slice",transport:"mcp"},current_job:{id:"native-result",phase:"completed"}}));

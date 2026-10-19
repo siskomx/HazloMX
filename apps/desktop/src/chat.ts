@@ -24,7 +24,7 @@ document.querySelector("#app")!.innerHTML = `
     <p id="document-scope" class="fine"></p>
     <h2>Proyecto local</h2><p id="project-name" class="fine"></p><div class="actions"><button id="create-project" class="secondary">Crear proyecto…</button><button id="open-project" class="secondary">Abrir proyecto…</button></div>
   </details>
-  <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><button id="choose-program" class="secondary">Elegir el programa que acordamos</button><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
+  <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
     <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
     <p id="error" role="alert" hidden></p>
     <form id="chat-form"><div class="actions"><button id="attach-image" type="button" class="secondary">Adjuntar imagen…</button><button id="remove-image" type="button" class="secondary" hidden>Quitar imagen</button></div><input id="image-reference" type="file" accept="image/png,image/jpeg" hidden><img id="reference-preview" alt="Imagen de referencia adjunta" hidden><p id="image-status" class="fine">Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.</p><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
@@ -38,6 +38,7 @@ for (const [value, label] of Object.entries(programs)) $("program").append(new O
 
 let state: DesktopSnapshot = { project: null, job: null, inference: null, recovered: [], freecad: "", freecad_available: false };
 let program: Program = "planning", provider: Provider = "codex";
+let appliedProgramRoute: string | undefined;
 let commandBusy = false, revision = 0, newSession = true;
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
@@ -128,10 +129,22 @@ function renderLegacy() {
 }
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
-  if (projectChanged) { clearImage(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
+  if (projectChanged) { appliedProgramRoute=undefined; clearImage(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
   if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
   if (next.codex_login && state.codex_login?.id === next.codex_login.id && state.codex_login.sequence > next.codex_login.sequence) next.codex_login = state.codex_login;
+  const route=next.program_route;
+  if (route && route.id!==appliedProgramRoute && next.project && route.program in programs) {
+    appliedProgramRoute=route.id;
+    sourceContext={}; sourceNames={}; sourcePreviousJobs={}; nativeCatalog=undefined;
+    program=route.program;
+    if(route.status==="connected" && route.connection_id && route.transport) {
+      sourceContext.native_tools={program,connection_id:route.connection_id,transport:route.transport};
+      nativeCatalog={program,tools:route.tools.map(name=>({name}))};
+      sourceNames[program]=`${route.tools.length} herramientas nativas · ${route.transport.toUpperCase()}`;
+    }
+    inspectionNotice=route.message ?? `Herramientas de ${programs[program]} conectadas por tu IA.`;
+  }
   state = next; restore();
   const chat = state.chat;
   // A chat view carries a project UUID, not its folder; copied projects can share that UUID.
@@ -262,6 +275,7 @@ function renderQuestion() {
   }
 }
 function render() {
+  $<HTMLSelectElement>("program").value=program;
   const busy = historyLoading || commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
   $("context-status").textContent = contextNotice;
   $<HTMLButtonElement>("attach-image").disabled = busy || !state.project;
@@ -276,12 +290,11 @@ function render() {
   const clientReady = ollama || (provider === "claude" ? !!state.claude : !!state.codex && !!state.codex_login?.connected);
   $("project-name").textContent = state.project ? `Carpeta del proyecto: ${state.project[1]}. Sus archivos e historial se conservan aquí.` : "Elige dónde guardar el proyecto y su historial.";
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
-  $("choose-program").hidden = program !== "planning";
   $("live-pcb-setup").hidden = program !== "kicad";
   $("live-drawing-setup").hidden = program !== "drawing";
   $("document-scope").textContent = ["tshark","usbpcap","serial"].includes(program) ? "Describe el dispositivo y qué quieres observar. Conectar la herramienta no confirma acceso al equipo. El chat preparará cada consulta o captura para tu aprobación; no instala controladores ni transmite comandos automáticamente." : sourceContext.native_tools && sourceContext.native_tools.program === program ? "Conexión nativa: el chat descubre los nombres y esquemas del programa y prepara llamadas para tu aprobación. Hazlo conserva una lectura final. La CLI no implica acceso al editor abierto." : program === "rea" ? "Rea viene incluido en Hazlo y se conecta al abrir el proyecto. Analiza software o firmware con sus herramientas reales. Para recrear una pieza a partir de una foto, elige un programa CAD y una IA con visión." : program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : program === "drawing" && sourceContext.live_drawing_source ? "Dibujo abierto conectado: el chat prepara círculos y movimientos que verás en CADCraft al aprobarlos. Puedes deshacer las ediciones allí. Si pides una copia DXF, aprobarás su exportación por separado: incluye el estado actual sin guardar y Hazlo comprueba la copia. El dibujo abierto conserva su nombre y estado." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
   $("connection-status").textContent = !state.project ? "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${sourceContext.native_tools?.program === program ? sourceContext.native_tools.transport === "cli" ? ["tshark","usbpcap","serial"].includes(program) ? "herramientas de diagnóstico conectadas" : "CLI instalada · archivos guardados" : "herramientas MCP conectadas" : program === "planning" ? "vamos a elegir el programa" : program === "drawing" && sourceContext.live_drawing_source ? "dibujo abierto en CADCraft" : native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : ["tshark","usbpcap","serial"].includes(program) ? "herramienta pendiente de conexión" : "archivos guardados"}`;
-  $("source-status").textContent = program === "planning" ? "La IA puede explicar las opciones disponibles. Elige el programa que acuerden para habilitar sus herramientas." : sourceNames[program] ?? (["tshark","usbpcap","serial"].includes(program) ? "La detección buscará herramientas instaladas; puedes descargarlas si faltan." : program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
+  $("source-status").textContent = program === "planning" ? "La IA elige el programa adecuado y conecta sus herramientas instaladas. Puedes ajustar las conexiones aquí." : sourceNames[program] ?? (["tshark","usbpcap","serial"].includes(program) ? "La detección buscará herramientas instaladas; puedes descargarlas si faltan." : program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
   const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
   if (JSON.stringify(messages) !== renderedConversation) {
     renderedConversation = JSON.stringify(messages);
@@ -347,6 +360,7 @@ async function nativeConnect(mcp:boolean,refresh=false,automatic=false) {
     const selectedProgram=program;
     const catalog=await inspectSource<{connection_id:string;catalog_sha256:string;tools:{name:string}[];transport:string;server?:{help?:{stdout?:string;stderr?:string}}}>("connect_native_tools",{program:selectedProgram,mcp,refresh,automatic});
     if(program!==selectedProgram) return;
+    state = {...state,program_route:null};
     sourceContext.native_tools={program,connection_id:catalog.connection_id,transport:catalog.transport};
     nativeCatalog={program,tools:catalog.tools,help:catalog.server?.help ? [catalog.server.help.stdout,catalog.server.help.stderr].filter(Boolean).join("\n") : undefined};
     sourceNames[program]=`${catalog.tools.length} herramientas nativas · ${catalog.transport.toUpperCase()}`;
@@ -455,13 +469,15 @@ function jobProgram(run: Snapshot): Program | undefined {
 }
 function context() {
   const connected=sourceContext.native_tools?.program===program ? sourceContext.native_tools : undefined;
+  const route=state.program_route;
+  if(route?.program===program && route.status==="unavailable") return {project_id:state.project?.[0],program,current_job:null,program_route:{status:route.status,message:route.message},document_scope:"native_connection_unavailable",live_document_connection:false,live_mutations_allowed:false};
   if(connected) return {project_id:state.project?.[0],program:programs[program],native_tools:connected,
     current_job:state.job?.snapshot.project_id === state.project?.[0] && state.job?.snapshot.input.native_tools_version && state.job.snapshot.input.connection_id === connected.connection_id && state.job.snapshot.input.program === program ? {id:state.job.snapshot.input.job_id,phase:state.job.snapshot.phase} : null,
     document_scope:["tshark","usbpcap","serial"].includes(program) ? "device_diagnostics" : connected.transport==="cli" ? "native_cli_not_live_editor" : "selected_native_mcp_server",
     live_document_connection:null,source_is_untrusted_data:true};
   if (["tshark","usbpcap","serial"].includes(program)) return {program,current_job:null,document_scope:"device_diagnostics_requires_connection",live_document_connection:false};
   if (program === "rea") return {program:"rea",current_job:null,document_scope:"native_analysis_requires_connection",live_document_connection:false,live_mutations_allowed:false};
-  if (program === "planning") return { program: "planning", current_job: null, available_programs: Object.fromEntries(Object.entries(programs).filter(([key]) => key !== "planning")), program_selection_required: true, document_scope: "choose_program", live_document_connection: false, live_mutations_allowed: false };
+  if (program === "planning") return { program: "planning", current_job: null, available_programs: Object.fromEntries(Object.entries(programs).filter(([key]) => key !== "planning")), program_selection_required: false, automatic_program_selection: true, document_scope: "agent_program_routing", live_document_connection: false, live_mutations_allowed: false };
   let job = state.job?.snapshot.project_id === state.project?.[0] ? state.job?.snapshot : undefined;
   if (job && (jobProgram(job) !== program || job.input.job_id === sourcePreviousJobs[program])) job = undefined;
   const native = program === "kicad" && !!sourceContext.live_pcb_source;
@@ -489,7 +505,6 @@ async function send(content: string, userInitiated = true) {
   const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(image ? {image} : {}), ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
 }
-$("choose-program").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("program").focus(); };
 $("setup").onclick = () => { $<HTMLDetailsElement>("connections").open = true; $("provider").focus(); };
 $("provider").onchange = () => { clearImage(); persist(); revision++; provider = $<HTMLSelectElement>("provider").value as Provider; storageKey = ""; turns = []; answeredChat = undefined; restore(); render(); };
 $("program").onchange = () => { program = $<HTMLSelectElement>("program").value as Program; $("opening-status").textContent = ""; render(); void action(autoConnect); };

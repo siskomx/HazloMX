@@ -71,6 +71,7 @@ struct DesktopSnapshot {
     job: Option<JobView>,
     inference: Option<InferenceView>,
     recovered: Vec<Snapshot>,
+    program_route: Option<hazlomexa::host_tools::ProgramRoute>,
     freecad: PathBuf,
     freecad_available: bool,
     arduino: Option<ArduinoRuntime>,
@@ -112,6 +113,7 @@ fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
         job: view.job,
         inference: view.inference,
         recovered: view.history,
+        program_route: state.tools.program_route()?,
         freecad_available: freecad.is_file(),
         freecad,
         arduino: state.workflow.arduino_runtime()?,
@@ -206,17 +208,7 @@ async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,prog
         events.send(inspection.id).map_err(|_|"La conexión perdió su conversación.")?;
         if refresh==Some(true){return tools.refresh_native_tools(program,inspection.cancelled.clone());}
         if automatic==Some(true) {
-            if let Some(catalog)=tools.connect_native_default(program,inspection.cancelled.clone())? {return Ok(catalog);}
-            let resources=app.path().resource_dir().map_err(|_|"No se encontraron los componentes de Hazlo.")?;
-            let data=app.path().app_local_data_dir().map_err(|_|"No se encontró la configuración local de Hazlo.")?;
-            let profile=data.join("native-connections").join(Uuid::new_v4().to_string());
-            let remembered=if program==hazlomexa::host_tools::Program::Rea{None}else{hazlomexa::native_setup::remembered(&data.join("program-locations"),program,&project)?};
-            let detected=if remembered.is_some(){remembered}else{hazlomexa::native_setup::discover(program,&resources,&project,&profile,&data.join("program-locations"))?};
-            return match detected {
-                Some(hazlomexa::native_setup::Setup::Mcp(config))=>tools.connect_native_mcp(program,config,inspection.cancelled.clone()),
-                Some(hazlomexa::native_setup::Setup::Cli(executable))=>tools.connect_native_cli(program,executable,inspection.cancelled.clone()),
-                None=>Err("No se encontraron herramientas compatibles instaladas. Puedes elegir su configuración MCP o la CLI manualmente. La edición en vivo puede requerir el complemento/API del programa.".into()),
-            };
+            return tools.connect_native_automatic(program,inspection.cancelled.clone());
         }
         let result=if mcp {
             if let Some(catalog)=tools.connect_native_default(program,inspection.cancelled.clone())? {return Ok(catalog);}
@@ -1390,6 +1382,7 @@ fn main() {
                     workflow.select_project(project)?;
                 }
             let tools = Arc::new(HostTools::new(workflow.clone()));
+            tools.configure_native_discovery(app.path().resource_dir()?,data.clone())?;
             app.manage(AppState { workflow, freecad:Mutex::new(freecad), tools, bridge:Mutex::new(None), claude:Mutex::new(None), codex:Mutex::new(None), codex_login:Arc::new(Mutex::new(None)), codex_session:Mutex::new(None), chat:Arc::new(Mutex::new(None)), chat_session:Mutex::new(None) });
             // Building another WebView can dispatch IPC into the already loading main window.
             #[cfg(debug_assertions)]

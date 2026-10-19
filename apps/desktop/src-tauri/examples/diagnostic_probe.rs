@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let catalog = host.connect_native_cli(program, exe, Arc::new(AtomicBool::new(false)))?;
         let scoped =
             McpTools::for_program(host.clone(), workflow.view()?.project.unwrap(), program)?;
-        assert_eq!(scoped.catalog().len(), 6);
+        assert_eq!(scoped.catalog().len(), 7);
         let readback = match program {
             Program::Tshark => {
                 json!({"tool":"cli","arguments":{"args":["-r","owned.pcap","-n","-T","json"]}})
