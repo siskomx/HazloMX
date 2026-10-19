@@ -1375,6 +1375,7 @@ impl HostTools {
         name: String,
         arguments: Value,
         cancelled: Arc<AtomicBool>,
+        expected_task:Option<crate::tasks::Binding>,
     ) -> Result<Value, String> {
         tokio::task::spawn_blocking(move || {
             if cancelled.load(Ordering::SeqCst)
@@ -1382,7 +1383,7 @@ impl HostTools {
             {
                 return Err("El proyecto cambió o la solicitud se detuvo.".into());
             }
-            let result = self.call_with_cancel_scoped(&name, arguments, cancelled.clone(),Some(project.clone()));
+            let result = crate::jobs::with_tool_scope(project.clone(),expected_task,||self.call_with_cancel_scoped(&name, arguments, cancelled.clone(),Some(project.clone())));
             if cancelled.load(Ordering::SeqCst) || self.workflow.view()?.project != Some(project) {
                 self.cancel_unapproved_result(&result);
                 return Err("El proyecto cambió o la solicitud se detuvo.".into());
@@ -2107,7 +2108,7 @@ impl McpTools {
         if self.0.workflow.task_restricted()? && !matches!(name.as_str(),"propose_public_document_read"|"select_program"|"get_design_capabilities"|"inspect_native_tools"|"propose_native_tool_calls"|"read_task_reference"|"read_native_tool"|"read_verified_result"|"get_workflow_status"|"reconcile_native_batch" | "recover_native_result") {return Err("La evidencia y los resultados de esta tarea permanecen locales. Falta autorización explícita para compartirlos con esta IA.".into());}
         self.check_native_scope(&name)?;
         self.check_capability_scope(&name,&arguments)?;
-        let result = self.0.clone().call_in_project(self.1.clone().ok_or("Selecciona un proyecto.")?, name.clone(), arguments, cancelled).await;
+        let result = self.0.clone().call_in_project(self.1.clone().ok_or("Selecciona un proyecto.")?, name.clone(), arguments, cancelled,self.3.clone()).await;
         if let Err(error)=self.check_scope(){self.0.cancel_unapproved_result(&result);return Err(error);}
         self.scope_result(&name, result)
     }
@@ -2177,7 +2178,7 @@ impl ServerHandler for McpTools {
             }
             scope.check_scope()?;
             scope.check_native_scope(&name)?;
-            let result = host.call_with_cancel_scoped(&name, arguments, operation_cancelled,scope.1.clone());
+            let result = crate::jobs::with_tool_scope(scope.1.clone().ok_or("Selecciona un proyecto.")?,scope.3.clone(),||host.call_with_cancel_scoped(&name, arguments, operation_cancelled,scope.1.clone()));
             if cancelled.is_cancelled() {
                 host.cancel_unapproved_result(&result);
             }

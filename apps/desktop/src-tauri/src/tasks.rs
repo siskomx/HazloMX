@@ -74,6 +74,12 @@ pub struct Correction {
     pub revision: u64,
     pub text: String,
 }
+#[derive(Clone,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChatCorrectionInput {pub id:Uuid,pub revision:u64,pub chat_id:Uuid,pub correction_id:Uuid,pub text:String}
+#[derive(Clone,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChatCorrection {pub id:Uuid,pub chat_id:Uuid,pub revision:u64,pub text:String}
 #[derive(Clone,PartialEq,Eq,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReplySource {
@@ -126,6 +132,10 @@ pub struct Task {
     pub withdrawn_replies:std::collections::BTreeMap<String,u64>,
     #[serde(default,skip_serializing_if="Vec::is_empty")]
     pub reply_receipts:Vec<ReplyReceipt>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub chat_correction:Option<ChatCorrection>,
+    #[serde(default,skip_serializing_if="std::collections::BTreeSet::is_empty")]
+    pub interrupted_replies:std::collections::BTreeSet<String>,
     #[serde(default)]
     pub legacy: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -149,6 +159,7 @@ impl Task {
     pub fn reply_is_withdrawn(&self,content:&str)->bool{
         self.withdrawn_replies.contains_key(&crate::kicad_project::digest(content.as_bytes()))
     }
+    pub(crate) fn reply_is_interrupted(&self,content:&str)->bool{self.interrupted_replies.contains(&crate::kicad_project::digest(content.as_bytes()))}
     pub fn reply_was_withdrawn_after(&self,content:&str,revision:u64)->bool{
         self.withdrawn_replies.get(&crate::kicad_project::digest(content.as_bytes())).is_some_and(|withdrawn|*withdrawn>revision)
     }
@@ -166,6 +177,7 @@ impl Task {
                 .any(|r| !r.shared_with.contains(&self.provider))
     }
     fn validate(&self) -> io::Result<()> {
+        if self.chat_correction.as_ref().is_some_and(|c|c.id.is_nil() || c.chat_id.is_nil() || c.revision==0 || c.revision>self.revision || c.text.trim().is_empty() || c.text.len()>4096){return Err(error("Corrección de conversación no válida; se conservó la tarea."));}
         if self.latest_correction.as_ref().is_some_and(|c| {
             c.job_id.is_nil()
                 || c.revision == 0
@@ -201,6 +213,8 @@ impl Task {
         let mut receipt_ids=std::collections::BTreeSet::new();
         if self.reply_receipts.len()>128 || self.reply_receipts.iter().any(|r|r.id.is_nil() || !receipt_ids.insert(r.id) || r.task.id!=self.id || r.task.revision==0 || r.task.revision>self.revision || !provider(&r.provider) || !crate::kicad_project::valid_hash(&r.content_sha256) || !crate::kicad_project::valid_hash(&r.parent_sha256) || r.position>=128 || r.references.len()>64 || r.references.iter().any(|s|s.id.is_nil() || !crate::kicad_project::valid_hash(&s.sha256) || s.preview_sha256.as_ref().is_some_and(|h|!crate::kicad_project::valid_hash(h))) || r.references.iter().map(|s|s.id).collect::<std::collections::BTreeSet<_>>().len()!=r.references.len() || (!r.revoked && r.references.iter().any(|s|!self.references.iter().any(|reference|reference.id==s.id)))) {return Err(error("Proveniencia de respuesta no válida; se conservó la conversación."));}
         let mut reply_hashes:std::collections::BTreeSet<_>=self.withdrawn_replies.keys().cloned().collect();
+        if self.interrupted_replies.len()>128 || self.interrupted_replies.iter().any(|hash|!crate::kicad_project::valid_hash(hash)){return Err(error("Registro de borradores no válido; se conservó la tarea."));}
+        reply_hashes.extend(self.interrupted_replies.iter().cloned());
         reply_hashes.extend(self.reply_receipts.iter().map(|r|r.content_sha256.clone()));
         if let Some(raw)=&self.history{
             let saved:serde_json::Value=serde_json::from_str(raw).map_err(io::Error::other)?;
@@ -329,6 +343,7 @@ fn retain_lineage(task: &Task, raw: &str) -> io::Result<String> {
             let known=prior["turns"][position].clone();
             if known["role"]=="assistant" && known["content"]==turn["content"] && task.history_reply_parent_allows(&known,position,&parent){turn["reply_id"]=known["reply_id"].clone();turn["reference_ids"]=known["reference_ids"].clone();continue;}
             turn.as_object_mut().unwrap().remove("reply_id");
+            if task.reply_is_interrupted(turn["content"].as_str().unwrap()) || prior["turns"].as_array().into_iter().flatten().any(|saved|saved["role"]=="assistant" && saved["interrupted"]==true && saved["content"]==turn["content"]){turn["interrupted"]=serde_json::json!(true);}
             if task.withdrawn_replies.contains_key(&hash){*turn=serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});continue;}
             let mut references=std::collections::BTreeSet::new();let mut found=false;
             for saved in prior["turns"].as_array().into_iter().flatten().filter(|saved|saved["role"]=="assistant" && saved["content"]==turn["content"]){
@@ -446,6 +461,11 @@ pub struct Store<'a> {
     root: PathBuf,
     _pins: Vec<File>,
 }
+fn remember_interrupted(task:&mut Task)->io::Result<()>{
+    let history:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
+    for turn in history["turns"].as_array().into_iter().flatten().filter(|turn|turn["role"]=="assistant" && turn["interrupted"]==true){if let Some(content)=turn["content"].as_str().filter(|content|*content!=WITHDRAWN_REPLY){task.interrupted_replies.insert(crate::kicad_project::digest(content.as_bytes()));}}
+    Ok(())
+}
 impl<'a> Store<'a> {
     pub fn new(project: &'a Project) -> io::Result<Self> {
         let root = project.store("tasks");
@@ -511,6 +531,23 @@ impl<'a> Store<'a> {
         let (parent,position)=history_parent(task.history.as_deref())?;
         if receipt.parent_sha256!=parent || receipt.position!=position{return Ok(false);}
         task.reply_receipts.push(receipt);self.save(&task)?;Ok(true)
+    }
+    pub(crate) fn correct_chat(&self,input:&ChatCorrectionInput,draft:&str,sources:&[ReplySource],provider:&str)->io::Result<()> {
+        if input.correction_id.is_nil() || input.chat_id.is_nil() || input.text.trim().is_empty() || input.text.len()>4096{return Err(error("Escribe una corrección de hasta 4 KiB."));}
+        let mut task=self.active()?.filter(|t|t.id==input.id).ok_or_else(||error("La tarea cambió; se conservó la corrección."))?;
+        if let Some(saved)=task.chat_correction.as_ref().filter(|c|c.id==input.correction_id){return if saved.chat_id==input.chat_id && saved.text==input.text{Ok(())}else{Err(error("La corrección ya tiene otro contenido; no se reemplazó."))};}
+        if input.revision>task.revision || (task.revision!=input.revision && task.last_user_revision>input.revision){return Err(error("La tarea cambió; vuelve a leerla antes de corregir."));}
+        let mut value:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
+        let turns=value["turns"].as_array_mut().ok_or_else(||error("Historial no válido; se conservó la tarea."))?;
+        if !draft.is_empty(){
+            let allowed=task.provider==provider && sources.iter().all(|s|task.reply_source_allowed(s,provider)) && !task.reply_is_withdrawn(draft);
+            turns.push(serde_json::json!({"role":"assistant","content":if allowed{draft}else{WITHDRAWN_REPLY},"interrupted":true,"reference_ids":sources.iter().map(|s|s.id).collect::<Vec<_>>()}));
+        }
+        turns.push(serde_json::json!({"role":"user","content":input.text}));
+        task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó la tarea."))?;task.last_user_revision=task.revision;
+        task.chat_correction=Some(ChatCorrection{id:input.correction_id,chat_id:input.chat_id,revision:task.revision,text:input.text.clone()});
+        if task.goal.is_empty(){task.goal=input.text.clone();task.title=task.goal.chars().take(60).collect();}
+        task.history=Some(serde_json::to_string(&value).map_err(io::Error::other)?);remember_interrupted(&mut task)?;self.save(&task)
     }
     pub fn binding(&self) -> io::Result<Option<Binding>> {
         Ok(self.active()?.map(|t| t.binding()))
@@ -582,6 +619,8 @@ impl<'a> Store<'a> {
             restricted_results: false,
             withdrawn_replies:Default::default(),
             reply_receipts:Vec::new(),
+            chat_correction:None,
+            interrupted_replies:std::collections::BTreeSet::new(),
             legacy: false,
             history: Some("{\"version\":1,\"turns\":[]}".into()),
         }
@@ -840,6 +879,7 @@ impl<'a> Store<'a> {
                 let mut task = self.scoped(id, revision)?;
                 if let Some(raw) = value {
                     task.history = Some(retain_lineage(&task, &raw)?);
+                    remember_interrupted(&mut task)?;
                     self.save(&task)?;
                 } else {
                     return Ok(json!(task.history));
@@ -871,6 +911,7 @@ impl<'a> Store<'a> {
                     task.title = task.goal.chars().take(60).collect();
                 }
                 task.history = Some(retain_lineage(&task, &raw)?);
+                remember_interrupted(&mut task)?;
                 self.save(&task)?;
             }
             Request::Provider {
@@ -1049,6 +1090,35 @@ fn printable_text(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn chat_correction_preserves_owned_history_and_draft_without_duplicate_retries(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;
+        save_history(&store,serde_json::json!([{"role":"user","content":"Keep the original idea"},{"role":"assistant","content":"Checked earlier work"}]));
+        let input=ChatCorrectionInput{id:t.id,revision:t.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:"Use inches and preserve my manual changes".into()};
+        store.correct_chat(&input,"UNFINISHED_REPLY_SENTINEL",&[],"codex").unwrap();let t=store.active().unwrap().unwrap();let bytes=fs::read(store.path(t.id)).unwrap();assert_eq!(t.revision,input.revision+1);assert_eq!(t.chat_correction.as_ref().unwrap().text,input.text);
+        let history:serde_json::Value=serde_json::from_str(t.history.as_deref().unwrap()).unwrap();assert_eq!(history["turns"][2]["interrupted"],true);assert_eq!(history["turns"][3]["content"],input.text);assert!(t.history.as_ref().unwrap().contains("Checked earlier work"));
+        store.correct_chat(&input,"different late stream body",&[],"codex").unwrap();assert_eq!(fs::read(store.path(t.id)).unwrap(),bytes);
+        let mut wrong=input.clone();wrong.text="different correction".into();assert!(store.correct_chat(&wrong,"",&[],"codex").is_err());assert_eq!(fs::read(store.path(t.id)).unwrap(),bytes);
+        // A stale history writer cannot turn this exact unfinished body into authorized context.
+        save_history(&store,serde_json::json!([]));save_history(&store,serde_json::json!([{"role":"assistant","content":"UNFINISHED_REPLY_SENTINEL"}]));let saved=store.active().unwrap().unwrap();let history:serde_json::Value=serde_json::from_str(saved.history.as_deref().unwrap()).unwrap();assert_eq!(history["turns"][0]["interrupted"],true);
+        drop(store);drop(p);let p=Project::open(&root).unwrap();let store=Store::new(&p).unwrap();assert_eq!(store.active().unwrap().unwrap().chat_correction.unwrap().id,input.correction_id);drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn failed_chat_correction_does_not_replace_valid_history_or_restore_withdrawn_drafts(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;let input=ChatCorrectionInput{id:t.id,revision:t.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:"Preserve valid native work".into()};
+        let before=fs::read(store.path(t.id)).unwrap();let lock=OpenOptions::new().read(true).share_mode(FILE_SHARE_READ).open(store.path(t.id)).unwrap();assert!(store.correct_chat(&input,"draft",&[],"codex").is_err());assert_eq!(fs::read(store.path(t.id)).unwrap(),before);drop(lock);
+        let mut t=store.active().unwrap().unwrap();t.withdrawn_replies.insert(crate::kicad_project::digest(b"WITHDRAWN_STREAM_SENTINEL"),t.revision);store.save(&t).unwrap();store.correct_chat(&input,"WITHDRAWN_STREAM_SENTINEL",&[],"codex").unwrap();let t=store.active().unwrap().unwrap();assert!(!t.history.unwrap().contains("WITHDRAWN_STREAM_SENTINEL"));
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn chat_correction_adapts_to_new_evidence_but_preserves_a_newer_human_instruction(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;
+        let input=ChatCorrectionInput{id:t.id,revision:t.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:"Preserve the idea and my changes".into()};
+        store.request(Request::AddReference{id:t.id,revision:t.revision,name:"observation.bin".into(),data:STANDARD.encode(b"NEW_LOCAL_EVIDENCE_SENTINEL"),preview:None}).unwrap();
+        store.correct_chat(&input,"old authorized draft",&[],"codex").unwrap();let t=store.active().unwrap().unwrap();assert_eq!(t.revision,input.revision+2);assert_eq!(t.references.len(),1);assert!(!t.history.as_ref().unwrap().contains("NEW_LOCAL_EVIDENCE_SENTINEL"));let before=fs::read(store.path(t.id)).unwrap();
+        let mut conflicting=input;conflicting.correction_id=Uuid::new_v4();conflicting.text="stale competing instruction".into();assert!(store.correct_chat(&conflicting,"",&[],"codex").is_err());assert_eq!(fs::read(store.path(t.id)).unwrap(),before);
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
     fn receipt(task:&Task,text:&str)->ReplyReceipt{
         let (parent_sha256,position)=history_parent(task.history.as_deref()).unwrap();
         ReplyReceipt{id:Uuid::new_v4(),task:task.binding(),provider:task.provider.clone(),content_sha256:crate::kicad_project::digest(text.as_bytes()),parent_sha256,position,references:task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(Reference::reply_source).collect(),revoked:false}

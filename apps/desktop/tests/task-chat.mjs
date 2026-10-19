@@ -25,6 +25,7 @@ try {
   window.__TAURI_INTERNALS__={transformCallback:()=>1,unregisterCallback:()=>{},invoke:async(command,args={})=>{
    window.calls.push({command,args:structuredClone(args)});
    if(command==="get_snapshot"&&window.failSnapshotOnce){window.failSnapshotOnce=false;throw Error("Owned snapshot reply unavailable");}
+   if(command==="get_snapshot"&&window.returnStaleSnapshotOnce){window.returnStaleSnapshotOnce=false;return structuredClone(window.oldChatSnapshot);}
    if(command==="ensure_task_workspace"){db.project=["owned-project","C:/OwnedFixture/Task"];snapshot.project=db.project;create();task().provider=args.provider??"codex";persist();}
    else if(command==="task_action"){
     const r=args.request;
@@ -43,10 +44,20 @@ try {
     }
     persist();if(window.failAfterScope===r.action){window.failAfterScope=null;throw Error("Owned storage reply lost after commit");}return structuredClone(state());
    }
+   else if(command==="correct_chat"){
+    window.oldChatSnapshot=structuredClone(snapshot);
+    const t=task(),r=args.request;if(r.id!==t.id || r.revision!==t.revision || snapshot.chat?.id!==r.chat_id)throw Error("stale chat correction");
+    if(window.failCorrectionBefore){window.failCorrectionBefore=false;snapshot.chat.cancelled=true;throw Error("Owned correction store locked");}
+    const history=JSON.parse(t.history);if(snapshot.chat.text)history.turns.push({role:"assistant",content:snapshot.chat.text,interrupted:true});history.turns.push({role:"user",content:r.text});t.history=JSON.stringify(history);t.revision++;t.chat_correction={id:r.correction_id,chat_id:r.chat_id,revision:t.revision,text:r.text};snapshot.chat.cancelled=true;snapshot.chat.sequence++;
+    persist();if(window.failCorrectionAfter){window.failCorrectionAfter=false;throw Error("Owned correction reply lost after commit");}
+    if(window.holdCorrectionReply){window.holdCorrectionReply=false;await new Promise(resolve=>{window.releaseCorrectionReply=resolve;});}
+   }
+   else if(command==="cancel_chat"){snapshot.chat.cancelled=true;snapshot.chat.sequence++;return structuredClone(snapshot.chat);}
    else if(command.startsWith("start_") && command.endsWith("_chat")){
     if(window.publicEvidenceOnNext){window.publicEvidenceOnNext=false;task().revision++;task().references.push({id:crypto.randomUUID(),name:"Documento público.json",bytes:100,sha256:"c".repeat(64),image:false,shared_with:[],data:btoa("PUBLIC_RESPONSE_SENTINEL <script>never execute</script>")});}
     if(window.nativeOnNext){task().revision++;task().references.push({id:crypto.randomUUID(),name:"Observación nativa.json",bytes:100,sha256:"e".repeat(64),image:false,shared_with:[],parents:task().references.map(r=>r.id)});window.nativeOnNext=false;}
     snapshot.chat={provider:task().provider,id:crypto.randomUUID(),project_id:db.project[0],sequence:1,busy:false,cancelled:false,text:"La tarea sigue guardada; podemos continuar.",error:null};
+    if(window.holdChatOnNext){window.holdChatOnNext=false;snapshot.chat.busy=true;snapshot.chat.text="UNFINISHED_CHAT_SENTINEL";window.finishOwnedChat=()=>{snapshot.chat.busy=false;snapshot.chat.sequence++;persist();};}
     if(window.startBatchOnNext){window.startBatchOnNext=false;snapshot.job={snapshot:{schema_version:17,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,native_tools_version:1,job_id:crypto.randomUUID(),connection_id:crypto.randomUUID(),program:"drawing",catalog_sha256:"a".repeat(64),description:"Owned correction batch",calls:[{tool:"native_edit",arguments:{value:7}},{tool:"native_edit",arguments:{value:99}}],readback:{tool:"native_state",arguments:{}},guard:{call:{tool:"native_state",arguments:{}},result_sha256:"b".repeat(64)}},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
     if(window.startTypedOnNext){
      const kind=window.startTypedOnNext;window.startTypedOnNext=null;
@@ -207,5 +218,24 @@ try {
  assert.match(await page.locator("#report-text").innerText(),/native_edit/);assert.match(await page.locator("#report-text").innerText(),/Esta vista es local/);
  await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),providerCallsBeforeRetired+1);
- console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch, withheld raw input and preserved stale-review status. No real provider, native program or model download ran.");
+ for(const provider of ["codex","claude","ollama_local","ollama_cloud"]){
+  await page.locator("#new-chat").click();await page.locator("#send:enabled").waitFor();await page.locator("#connections").evaluate(el=>el.open=true);
+  const selected=await page.locator("#provider").inputValue();if(selected!==provider){await page.locator("#provider").selectOption(provider);await page.locator("#approve-provider").click();await page.locator("#send:enabled").waitFor();}
+  await page.evaluate(()=>window.holdChatOnNext=true);await page.locator("#prompt").fill("Keep the original idea for "+provider);await page.locator("#send").click();await page.getByRole("button",{name:"Enviar corrección",exact:true}).waitFor();
+  const started=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),text="Use inches and preserve my manual changes for "+provider;
+  if(provider==="claude")await page.evaluate(()=>window.failCorrectionAfter=true);
+  await page.locator("#prompt").fill(text);await page.locator("#send").click();await page.waitForFunction(text=>{const db=JSON.parse(localStorage.getItem("owned-task-fixture"));return db.records[db.active].chat_correction?.text===text;},text);
+  await page.waitForFunction(()=>document.querySelector("#conversation").textContent.includes("borrador interrumpido"));assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),started);
+  await page.evaluate(()=>window.returnStaleSnapshotOnce=true);await page.waitForFunction(()=>window.returnStaleSnapshotOnce===false);assert.match(await page.locator("#conversation").innerText(),new RegExp(text));
+  await page.evaluate(()=>window.finishOwnedChat());await page.waitForFunction(expected=>window.calls.filter(c=>c.command.startsWith("start_")).length===expected,started+1);await page.locator("#new-chat:enabled").waitFor();
+  const follow=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).at(-1));assert.equal(follow.args.taskUserRequest,text);assert(!follow.args.prompt.includes("UNFINISHED_CHAT_SENTINEL"));
+  const history=await page.evaluate(()=>{const db=JSON.parse(localStorage.getItem("owned-task-fixture"));return JSON.parse(db.records[db.active].history).turns;});assert.equal(history.filter(t=>t.role==="user"&&t.content===text).length,1);assert.equal(history.filter(t=>t.content==="UNFINISHED_CHAT_SENTINEL"&&t.interrupted===true).length,1);
+  await page.reload();await page.locator("#send:enabled").waitFor();assert.match(await page.locator("#conversation").innerText(),/borrador interrumpido/);assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),0,"Reload silently restarted a corrected conversation");
+ }
+ // Stop cancels the queued continuation while retaining the durable correction.
+ await page.locator("#new-chat").click();await page.locator("#send:enabled").waitFor();await page.evaluate(()=>window.holdChatOnNext=true);await page.locator("#prompt").fill("Keep the work");await page.locator("#send").click();await page.getByRole("button",{name:"Enviar corrección",exact:true}).waitFor();
+ const beforeStop=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);await page.locator("#prompt").fill("Change the next step only");await page.locator("#send").click();await page.waitForFunction(()=>{const db=JSON.parse(localStorage.getItem("owned-task-fixture"));return db.records[db.active].chat_correction;});await page.locator("#stop:enabled").waitFor();await page.locator("#stop").click();await page.evaluate(()=>window.finishOwnedChat());await page.locator("#new-chat:enabled").waitFor();assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),beforeStop);
+ await page.locator("#new-chat").click();await page.locator("#send:enabled").waitFor();await page.evaluate(()=>{window.holdChatOnNext=true;window.failCorrectionBefore=true;});await page.locator("#prompt").fill("Keep the original goal");await page.locator("#send").click();await page.getByRole("button",{name:"Enviar corrección",exact:true}).waitFor();const beforeFailure=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);await page.locator("#prompt").fill("My unsaved correction");await page.locator("#send").click();await page.locator("#error:not([hidden])").waitFor();assert.equal(await page.locator("#prompt").inputValue(),"My unsaved correction");await page.evaluate(()=>window.finishOwnedChat());await page.locator("#new-chat:enabled").waitFor();assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),beforeFailure);
+ await page.locator("#new-chat").click();await page.locator("#send:enabled").waitFor();await page.evaluate(()=>{window.holdChatOnNext=true;window.holdCorrectionReply=true;});await page.locator("#prompt").fill("Keep the valid work");await page.locator("#send").click();await page.getByRole("button",{name:"Enviar corrección",exact:true}).waitFor();const beforePendingStop=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);await page.locator("#prompt").fill("Save this correction but stop the continuation");await page.locator("#send").click();await page.waitForFunction(()=>typeof window.releaseCorrectionReply==="function");await page.locator("#stop:enabled").click();await page.evaluate(()=>window.releaseCorrectionReply());await page.waitForFunction(()=>document.querySelector("#prompt").value==="");await page.evaluate(()=>window.finishOwnedChat());await page.locator("#new-chat:enabled").waitFor();assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),beforePendingStop,"Stop during correction persistence restarted the AI");
+ console.log("Durable task chat fixture passed: workspace/history, local evidence, native corrections and streaming corrections for all four routes; lost replies, stale snapshots, reload and Stop preserve work without duplicate turns. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}

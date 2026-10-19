@@ -4,7 +4,7 @@
   "description": "Only bundled main UI may use the bounded Hazlo Mexa workflow",
   "webviews": ["main"],
   "permissions": [
-    "allow-task-action", "allow-ensure-task-workspace",
+    "allow-task-action", "allow-correct-chat", "allow-ensure-task-workspace",
     "allow-conversation-history",
     "allow-prepare-diagnostic-tool",
     "allow-select-codex", "allow-connect-codex", "allow-cancel-codex-login", "allow-open-codex-login", "allow-start-codex-chat", "allow-answer-codex-question",

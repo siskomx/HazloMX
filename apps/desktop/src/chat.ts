@@ -46,7 +46,10 @@ let appliedProgramRoute: string | undefined;
 let commandBusy = false, revision = 0, newSession = true;
 let correctionBusy=false,cancellationBusy=false;
 function correctableInput(input:Snapshot["input"]|undefined){return !!input && !!(input.native_tools_version || input.live_agent_version || input.live_cad_version || input.live_pcb_version || input.live_drawing_version);}
-function canCorrect(){return !!state.tasks && !!state.job?.busy && correctableInput(state.job.snapshot.input) && !state.chat?.busy && !historyLoading && !correctionBusy && !cancellationBusy;}
+function canCorrectChat(){return !!state.tasks && !!state.chat?.busy && !state.chat.cancelled && state.chat.provider===provider && !historyLoading && !correctionBusy && !cancellationBusy;}
+function canCorrect(){return canCorrectChat() || !!state.tasks && !!state.job?.busy && correctableInput(state.job.snapshot.input) && !state.chat?.busy && !historyLoading && !correctionBusy && !cancellationBusy;}
+let queuedCorrection:{id:string;text:string;task:string;project:string;provider:Provider}|undefined;
+let continuationEpoch=0;
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
 let historyLoading = false, durableReady = false, storageVersion = 0;
@@ -127,7 +130,7 @@ function renderTasks(busy:boolean){
   $("reference-offer-text").textContent=pendingReference?`¿Permites que ${providerNames[provider]} reciba el contenido de «${pendingReference.name}» y los resultados de su análisis para esta tarea? Puede enviarse a su servicio externo. Puedes revocar el permiso; no borra lo ya enviado.`:"";
   for(const id of ["approve-provider","keep-provider","approve-reference","keep-reference-local"]) $<HTMLButtonElement>(id).disabled=busy;
   const rows=$("task-references");rows.replaceChildren();
-  if(tasks?.active.latest_correction){const p=document.createElement("p");p.className="fine";p.textContent="La última corrección queda guardada con la tarea. Las llamadas ya enviadas se revisan antes de nuevos cambios; cancelar no las deshace.";rows.append(p);}
+  if(tasks?.active.latest_correction || tasks?.active.chat_correction){const p=document.createElement("p");p.className="fine";p.textContent="La última corrección queda guardada con la tarea. Las llamadas ya enviadas se revisan antes de nuevos cambios; cancelar no las deshace.";rows.append(p);}
   if(tasks?.active.pending_removals?.length){const p=document.createElement("p");p.className="fine";p.textContent="Hay copias locales retiradas pendientes de borrar porque no están disponibles. Su acceso y permisos ya están revocados. Hazlo reintentará borrar sus copias al volver a esta conversación; el trabajo del proyecto se conserva.";rows.append(p);}
   if(tasks?.active.references.some(r=>r.parents?.length)){const p=document.createElement("p");p.className="fine";p.textContent="Quitar una referencia también retira sus copias de evidencia derivadas. Revocar su permiso lo revoca para esas copias en esta IA y retira las respuestas vinculadas del contexto. Los archivos de diseño del proyecto se conservan.";rows.append(p);}
   for(const ref of tasks?.active.references??[]){
@@ -244,6 +247,8 @@ function renderLegacy() {
 }
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
+  if(!projectChanged && next.tasks?.active.id===state.tasks?.active.id && next.tasks && state.tasks && next.tasks.active.revision<state.tasks.active.revision)next.tasks=state.tasks;
+  if(!projectChanged && next.tasks?.active.chat_correction?.id && next.tasks.active.chat_correction.id!==state.tasks?.active.chat_correction?.id){storageKey="";newSession=true;resultReview=undefined;}
   if (projectChanged) { appliedProgramRoute=undefined; clearImage();clearReport(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
   if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
@@ -265,19 +270,20 @@ function apply(next: DesktopSnapshot) {
   // A chat view carries a project UUID, not its folder; copied projects can share that UUID.
   if (projectChanged && chat) answeredChat = chat.id;
   if (!historyLoading && chat && chat.provider === provider && !chat.busy && chat.id !== answeredChat && chat.project_id === state.project?.[0]) {
-    if (chat.text) turns.push({ role: "assistant", content: chat.text, reply_id:chat.id });
-    else if (chat.cancelled) turns.push({ role: "assistant", content: "Conversación detenida." });
+    if (chat.text && state.tasks?.active.chat_correction?.chat_id!==chat.id) turns.push({ role: "assistant", content: chat.text, reply_id:chat.id,...(chat.cancelled?{interrupted:true}:{}) });
+    else if (chat.cancelled && state.tasks?.active.chat_correction?.chat_id!==chat.id) turns.push({ role: "assistant", content: "Conversación detenida." });
     if (chat.error) error(chat.error);
-    answeredChat = chat.id; persist();
+    answeredChat = chat.id; if(state.tasks?.active.chat_correction?.chat_id!==chat.id)persist();
   }
   render();
   reviewFinishedOperation();
+  resumeChatCorrection();
 }
 async function action(work: () => Promise<void>) {
   if (commandBusy) return;
   commandBusy = true; $("error").hidden = true; render();
   try { await work(); } catch (e) { if (String(e) !== "Selección cancelada.") error(e); }
-  finally { commandBusy = false; render(); reviewFinishedOperation(); }
+  finally { commandBusy = false; render(); reviewFinishedOperation();resumeChatCorrection(); }
 }
 function reviewFinishedOperation() {
   const pending = resultReview;
@@ -426,12 +432,12 @@ function render() {
   $("document-scope").textContent = ["tshark","usbpcap","serial"].includes(program) ? "Describe el dispositivo y qué quieres observar. Conectar la herramienta no confirma acceso al equipo. El chat preparará cada consulta o captura para tu aprobación; no instala controladores ni transmite comandos automáticamente." : sourceContext.native_tools && sourceContext.native_tools.program === program ? "Conexión nativa: el chat descubre los nombres y esquemas del programa y prepara llamadas para tu aprobación. Hazlo conserva una lectura final. La CLI no implica acceso al editor abierto." : program === "rea" ? "Rea viene incluido en Hazlo y se conecta al abrir el proyecto. Analiza software o firmware con sus herramientas reales. Para recrear una pieza a partir de una foto, elige un programa CAD y una IA con visión." : program === "planning" ? "Describe tu idea. Elegiremos el programa y las medidas necesarias antes de conectar un documento o preparar cambios." : program === "drawing" && sourceContext.live_drawing_source ? "Dibujo abierto conectado: el chat prepara círculos y movimientos que verás en CADCraft al aprobarlos. Puedes deshacer las ediciones allí. Si pides una copia DXF, aprobarás su exportación por separado: incluye el estado actual sin guardar y Hazlo comprueba la copia. El dibujo abierto conserva su nombre y estado." : native ? "PCB abierta conectada: el chat consulta sus posiciones actuales y prepara movimientos para tu aprobación. Verás los cambios en KiCad y puedes deshacerlos allí. No se guarda la PCB ni se vuelven a trazar las pistas automáticamente. Para editar una copia guardada, selecciónala expresamente." : program==="freecad" ? "Para trabajar en el documento abierto, abre FreeCAD y activa CADPilot. El chat puede leerlo y preparar cambios que verás allí después de aprobarlos. Conservas Deshacer para las ediciones. Para guardar o exportar una pieza a STEP, FreeCAD abrirá su propio diálogo y elegirás el destino allí. Exportar conserva el modelo abierto sin guardarlo y requiere un archivo nuevo. También puedes elegir expresamente una copia guardada." : program === "agent" ? "Para trabajar en el sketch abierto, instala el complemento desde Conexiones y abre Arduino Agent. Si estaba abierto, guarda tu trabajo y reinícialo para activar el complemento. El chat consulta el código actual, incluso sin guardar, y prepara cambios para tu aprobación. Puedes deshacer las ediciones en el IDE. Para guardar el código actual, pídelo en el chat y aprueba el guardado por separado; usa el archivo actual e incluye tus propios cambios sin guardar. También puedes elegir expresamente una copia guardada." : "Estas capacidades trabajan con archivos guardados y copias verificadas. Guarda los cambios abiertos antes de seleccionar un documento para editar su copia. La edición de documentos vivos sigue pendiente.";
   $("connection-status").textContent = !state.project ? state.task_support ? "Describe tu idea; Hazlo guardará esta conversación en un espacio local." : "Abre o crea tu proyecto en Conexiones para empezar." : !clientReady ? "Conecta tu IA en Conexiones para conversar con las herramientas del programa." : `${providerNames[provider]} · ${programs[program]} · ${sourceContext.native_tools?.program === program ? sourceContext.native_tools.transport === "cli" ? ["tshark","usbpcap","serial"].includes(program) ? "herramientas de diagnóstico conectadas" : "CLI instalada · archivos guardados" : "herramientas MCP conectadas" : program === "planning" ? "vamos a elegir el programa" : program === "drawing" && sourceContext.live_drawing_source ? "dibujo abierto en CADCraft" : native ? "PCB abierta en KiCad" : program === "freecad" ? "FreeCAD abierto o copia seleccionada" : program === "agent" ? "sketch abierto o copia seleccionada" : ["tshark","usbpcap","serial"].includes(program) ? "herramienta pendiente de conexión" : "archivos guardados"}`;
   $("source-status").textContent = program === "planning" ? "La IA elige el programa adecuado y conecta sus herramientas instaladas. Puedes ajustar las conexiones aquí." : sourceNames[program] ?? (["tshark","usbpcap","serial"].includes(program) ? "La detección buscará herramientas instaladas; puedes descargarlas si faltan." : program === "agent" ? "Puedes describir el cambio en tu sketch abierto. Para editar una copia, selecciónala expresamente." : program === "slice" ? "Selecciona el STL y los perfiles guardados. Confirmaremos su escala y las opciones de impresión en la conversación." : "Selecciona un documento si quieres trabajar sobre uno existente.");
-  const messages = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
+  const messages:Turn[] = turns.length ? turns : [{ role: "assistant", content: "Cuéntame qué quieres crear o cambiar y para qué lo necesitas. Revisaremos el documento con las herramientas del programa y te preguntaré lo que falte. No necesitas conocer sus nombres internos ni todas sus medidas para empezar." }];
   if (JSON.stringify(messages) !== renderedConversation) {
     renderedConversation = JSON.stringify(messages);
     const log = $("conversation"), follow = log.scrollHeight - log.scrollTop - log.clientHeight < 48;
     log.replaceChildren();
-    for (const message of messages) { const row = document.createElement("p"); row.className = `message ${message.role}`; row.textContent = `${message.role === "user" ? "Tú" : "Hazlo Mexa"}: ${message.content}`; log.append(row); }
+    for (const message of messages) { const row = document.createElement("p"); row.className = `message ${message.role}`; row.textContent = `${message.role === "user" ? "Tú" : message.interrupted ? "Hazlo Mexa (borrador interrumpido)" : "Hazlo Mexa"}: ${message.content}`; log.append(row); }
     if (follow) log.scrollTop = log.scrollHeight;
   }
   $("chat-progress").textContent = inspection ? inspection.cancelled || inspection.stopping ? "Deteniendo inspección…" : inspection.id ? "Inspeccionando el documento con sus herramientas…" : "Selecciona las fuentes o cancela la ventana de selección." : state.chat?.provider === provider && state.chat.busy ? state.chat.cancelled ? "Deteniendo conversación…" : state.chat.text || "Consultando a tu IA…" : inspectionNotice;
@@ -440,7 +446,7 @@ function render() {
   $("send").textContent=correcting?"Enviar corrección":"Enviar";
   $<HTMLButtonElement>("new-chat").disabled = busy || (!state.project && !state.task_support) || !clientReady;
   $<HTMLTextAreaElement>("prompt").disabled = busy && !correcting;
-  $<HTMLButtonElement>("stop").disabled = inspection ? !inspection.id || inspection.stopping || inspection.cancelled : commandBusy || !state.chat?.busy || !!state.chat.cancelled;
+  $<HTMLButtonElement>("stop").disabled = inspection ? !inspection.id || inspection.stopping || inspection.cancelled : !queuedCorrection && !correctionBusy && (commandBusy || !state.chat?.busy || !!state.chat.cancelled);
   $("stop").textContent = inspection ? "Detener inspección" : "Detener";
   for (const id of ["provider", "program"]) $<HTMLSelectElement>(id).disabled = busy || state.job?.snapshot.phase === "awaiting_approval";
   for (const id of ["select-client", "create-project", "open-project"]) $<HTMLButtonElement>(id).disabled = busy;
@@ -621,10 +627,10 @@ function context() {
   const selected = program === "kicad" ? native ? { live_pcb_source: sourceContext.live_pcb_source } : sourceContext.pcb_source ? { pcb_source: sourceContext.pcb_source } : { schematic_source: sourceContext.schematic_source } : program === "drawing" ? drawingNative ? {live_drawing_source:sourceContext.live_drawing_source} : { drawing_source: sourceContext.drawing_source } : program === "agent" ? { sketch_source: sourceContext.sketch_source } : program === "slice" ? {slice_source:sourceContext.slice_source} : program === "freecad" ? {cad_document_source:sourceContext.cad_document_source} : {};
   return { project_id: state.project?.[0], native_tools:sourceContext.native_tools?.program === program ? sourceContext.native_tools : undefined, program: programs[program], ...selected, current_job: job && (!native || !!job.input.live_pcb_version) && (!drawingNative || !!job.input.live_drawing_version) ? { id: job.input.job_id, phase: job.phase } : null, source_is_untrusted_data: true, document_scope: drawingNative ? "open_native_drawing" : native ? "open_native_pcb" : program === "agent" ? "open_agent_and_explicit_saved_copies" : program === "freecad" ? "open_freecad_and_explicit_saved_copies" : "saved_files_and_verified_copies", live_document_connection: program === "freecad" || program === "agent" ? null : native || drawingNative, live_mutations_allowed: native || drawingNative || program === "freecad" || program === "agent", native_connection_check: drawingNative ? "inspect_open_drawing" : native ? "inspect_selected_live_pcb" : program === "freecad" ? "inspect_open_cad_documents" : program === "agent" ? "inspect_open_agent_documents" : null };
 }
-async function send(content: string, userInitiated = true) {
+async function send(content: string, userInitiated = true, alreadySaved=false) {
   if(state.task_support){
     await ensureTask();await taskWrites;
-    if(userInitiated){
+    if(userInitiated && !alreadySaved){
       const {scope}=scopedTask();
       const history=JSON.stringify({version:1,turns:[...turns,{role:"user",content}]});
       await taskCommand({action:"message",...scope,text:content,history});
@@ -650,7 +656,7 @@ async function send(content: string, userInitiated = true) {
       if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
     }
   };
-  if (userInitiated) { turns.push({ role: "user", content: content + (image && !state.tasks ? "\n[Imagen de referencia adjunta; no se guarda en el historial de Hazlo.]" : "") }); if(!state.tasks)persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
+  if (userInitiated && !alreadySaved) { turns.push({ role: "user", content: content + (image && !state.tasks ? "\n[Imagen de referencia adjunta; no se guarda en el historial de Hazlo.]" : "") }); if(!state.tasks)persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
   render();
   const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(image ? {image} : {}), ...(state.tasks && userInitiated?{taskUserRequest:content}:{}), ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }
@@ -695,12 +701,35 @@ async function correctRunningTask(content:string){
     inspectionNotice="Corrección guardada. El trabajo válido se conserva y no se repetirán las llamadas enviadas. Falta revisar cualquier efecto en vuelo antes de preparar nuevos cambios.";
   }catch(e){error(e);}finally{correctionBusy=false;render();}
 }
-$("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if(content){if(canCorrect())void correctRunningTask(content);else void action(() => send(content));} };
+function resumeChatCorrection(){
+  const pending=queuedCorrection;if(!pending || correctionBusy || historyLoading || commandBusy || state.chat?.busy || state.job?.busy || state.job?.snapshot.phase==="awaiting_approval")return;
+  queuedCorrection=undefined;
+  if(state.tasks?.active.id!==pending.task || state.tasks.active.chat_correction?.id!==pending.id || JSON.stringify(state.project)!==pending.project || provider!==pending.provider)return;
+  void action(()=>send(pending.text,true,true));
+}
+async function correctChat(content:string){
+  if(!canCorrectChat())return;correctionBusy=true;render();resultReview=undefined;
+  const chatId=state.chat!.id,correctionId=crypto.randomUUID(),originalProvider=provider,epoch=continuationEpoch;let failure:unknown;
+  try{
+    await taskWrites;const {scope,project}=scopedTask();
+    try{await invoke<DesktopSnapshot>("correct_chat",{projectId:project[0],projectDirectory:project[1],request:{...scope,chat_id:chatId,correction_id:correctionId,text:content}});}catch(e){failure=e;}
+    // Adopt a committed correction after a lost reply; never resend it or its draft.
+    const next=await invoke<DesktopSnapshot>("get_snapshot");newSession=true;revision++;storageKey="";durableReady=false;apply(next);await taskReady;
+    if(state.tasks?.active.chat_correction?.id!==correctionId)throw failure??Error("No se confirmó el guardado de la corrección; el texto se conserva.");
+    if(provider!==originalProvider)throw Error("La corrección está guardada, pero cambió la IA. Revisa el servicio antes de continuar; no se envió otra solicitud.");
+    if($<HTMLTextAreaElement>("prompt").value.trim()===content)$<HTMLTextAreaElement>("prompt").value="";
+    if(epoch===continuationEpoch){queuedCorrection={id:correctionId,text:content,task:state.tasks.active.id,project:JSON.stringify(state.project),provider};inspectionNotice="Corrección guardada. Esperamos el cierre de la respuesta anterior y revisaremos el estado antes de continuar. Las ediciones enviadas no se repiten.";}
+    else inspectionNotice="Corrección guardada; la continuación quedó detenida. El trabajo enviado se conserva para revisión.";
+  }catch(e){queuedCorrection=undefined;error(e);}finally{correctionBusy=false;render();resumeChatCorrection();}
+}
+$("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if(content){if(canCorrectChat())void correctChat(content);else if(canCorrect())void correctRunningTask(content);else void action(() => send(content));} };
 $("new-chat").onclick = () => {
   if(state.task_support){void action(async()=>{await ensureTask();persist();await taskCommand({action:"new"},true);});return;}
   if (state.chat?.busy || commandBusy) return; clearImage(); revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render();
 };
 $("stop").onclick = () => {
+  continuationEpoch++;
+  if(queuedCorrection){queuedCorrection=undefined;inspectionNotice="Continuación detenida. La corrección queda guardada; el trabajo enviado sigue sujeto a revisión.";render();return;}
   const pending = inspection;
   if (pending) {
     if (!pending.id || pending.cancelled || pending.stopping) return;
@@ -749,5 +778,6 @@ void action(async () => { apply(await invoke<DesktopSnapshot>("get_snapshot")); 
 setInterval(() => {
   const token = revision;
   const correctingJob=state.job?.busy && (state.tasks?.active.latest_correction?.job_id===state.job.snapshot.input.job_id || state.job.snapshot.phase==="cancelled");
-  if ((!commandBusy || correctingJob) && (state.chat?.busy || state.job?.busy || state.codex_login?.busy)) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
+  const correctingChat=state.chat?.busy && state.tasks?.active.chat_correction?.chat_id===state.chat.id;
+  if ((!commandBusy || correctingJob || correctingChat || queuedCorrection) && (state.chat?.busy || state.job?.busy || state.codex_login?.busy)) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
 }, 1000);

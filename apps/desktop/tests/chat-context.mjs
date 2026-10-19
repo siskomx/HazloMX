@@ -57,6 +57,8 @@ const replyId="1281b12f-ce00-45f2-b27a-9751a927dd01";
 const proved=savedConversation(JSON.stringify({version:1,turns:[{role:"assistant",content:"Saved answer",reply_id:replyId,reference_ids:["not-authority"]}]}));
 assert.deepEqual(proved.turns,[{role:"assistant",content:"Saved answer",reply_id:replyId}]);
 assert(!agentPrompt("Continue",proved.turns).includes(replyId),"Local reply identity escaped into an AI prompt");
+const interrupted=savedConversation(JSON.stringify({version:1,turns:[{role:"assistant",content:"UNFINISHED_DRAFT_SENTINEL",interrupted:true},{role:"user",content:"Preserve the original"}]}));
+assert.equal(interrupted.turns[0].interrupted,true);assert(!agentPrompt("Continue",interrupted.turns).includes("UNFINISHED_DRAFT_SENTINEL"));assert(agentPrompt("Continue",interrupted.turns).includes("Preserve the original"));
 assert.deepEqual(savedConversation(JSON.stringify({version:1,turns:[{role:"assistant",content:"Saved answer",reply_id:"not a receipt"},{role:"user",content:"Keep my input",reply_id:replyId}]})).turns,[{role:"assistant",content:"Saved answer"},{role:"user",content:"Keep my input"}]);
 assert.equal(savedConversation(JSON.stringify({version:1,turns:[{role:"user",content:"x".repeat(CHAT_HISTORY_BYTES)}]}),CHAT_HISTORY_BYTES),null);
 console.log("PASS: UTF-8 request bound, user constraints before verbose replies, complete ordered messages, current request/document/job preserved, explicit omitted-history marker, unchanged full history and separate bounded chat storage");

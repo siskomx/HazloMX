@@ -758,7 +758,8 @@ mod tests {
                 project,
                 "get_workflow_status".into(),
                 json!({}),
-                Arc::new(AtomicBool::new(false))
+                Arc::new(AtomicBool::new(false)),
+                None
             )
             .await
             .is_err());

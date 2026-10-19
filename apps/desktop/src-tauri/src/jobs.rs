@@ -142,6 +142,21 @@ fn inference_idle(state: &State) -> Result<(), String> {
     }
     Ok(())
 }
+type ToolScope=((Uuid,PathBuf),crate::tasks::Binding);
+// Tool handlers are synchronous on one blocking worker; keep this binding through proposal admission.
+thread_local!{static TOOL_SCOPE:std::cell::RefCell<Option<ToolScope>>=const{std::cell::RefCell::new(None)};}
+struct RestoreToolScope(Option<ToolScope>);
+impl Drop for RestoreToolScope{fn drop(&mut self){TOOL_SCOPE.with(|scope|{scope.replace(self.0.take());});}}
+pub(crate) fn with_tool_scope<T>(project:(Uuid,PathBuf),task:Option<crate::tasks::Binding>,call:impl FnOnce()->T)->T{
+    let previous=TOOL_SCOPE.with(|scope|{let previous=scope.borrow().clone();if previous.is_none(){scope.replace(task.map(|task|(project,task)));}previous});let _restore=RestoreToolScope(previous);call()
+}
+fn check_tool_scope(state:&State)->Result<(),String>{
+    TOOL_SCOPE.with(|scope|{
+        let scope=scope.borrow();let Some((expected,binding))=scope.as_ref() else{return Ok(());};
+        let project=state.project.as_ref().filter(|p|(p.id,p.root.clone())==*expected).ok_or("El contexto de la herramienta cambió; no se prepararon nuevos cambios.")?;
+        if crate::tasks::Store::new(project).and_then(|store|store.binding()).map_err(|_|"No se pudo comprobar el contexto de la herramienta.")?.as_ref()!=Some(binding){return Err("La herramienta pertenece a una revisión anterior; no se prepararon nuevos cambios.".into());}Ok(())
+    })
+}
 
 pub struct Workflow {
     state: Mutex<State>,
@@ -193,6 +208,19 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    pub fn correct_chat(&self,scope:&ConversationScope,input:&crate::tasks::ChatCorrectionInput,draft:&str)->Result<(),String>{
+        let mut state=self.state.lock().map_err(|_|"No se pudo comprobar la tarea.")?;inference_idle(&state)?;
+        let project=state.project.clone().filter(|p|(p.id,p.root.clone())==scope.project && scope.task.as_ref().is_some_and(|t|t.id==input.id)).ok_or("La conversación cambió; no se corrigió otra tarea.")?;
+        let store=crate::tasks::Store::new(&project).map_err(|_|"No se pudo comprobar la corrección guardada.")?;
+        if store.active().ok().flatten().is_some_and(|task|task.id==input.id && task.chat_correction.as_ref().is_some_and(|saved|saved.id==input.correction_id)){
+            return store.correct_chat(input,draft,&scope.references,scope.provider.as_deref().unwrap_or("")).map_err(|_|"La corrección guardada no coincide; se conservó la tarea.".into());
+        }
+        let gate=state.job.as_ref().filter(|job|job.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==input.id)).map(|job|job.dispatch_gate.clone());
+        let permit=gate.as_ref().map(|gate|gate.lock().map_err(|_|"No se pudo confirmar la pausa nativa.")).transpose()?;
+        if gate.is_some(){let job=state.job.as_mut().unwrap();job.dispatch_paused.store(true,Ordering::SeqCst);job.view.approval_id=None;job.view.error=Some("Los pasos pendientes están pausados para revisar la corrección. Las llamadas enviadas pueden terminar; cancelar no las deshace.".into());job.view.advance();}
+        let result=store.correct_chat(input,draft,&scope.references,scope.provider.as_deref().unwrap_or("")).map_err(|_|"La conversación se detuvo, pero no se confirmó el guardado de la corrección. Revisa la tarea antes de enviarla otra vez.".to_string());
+        drop(permit);Self::reconcile_pending_approval(&mut state)?;result
+    }
     pub fn conversation_scope(&self)->Result<Option<ConversationScope>,String>{
         let state=self.state.lock().map_err(|_|"No se pudo comprobar la conversación.")?;
         state.project.as_ref().map(|p|{
@@ -375,7 +403,9 @@ impl Workflow {
             let saved:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(|_|"Historial no válido.")?;
             let turns=saved["turns"].as_array().cloned().unwrap_or_default();
             prior=turns.iter().enumerate().filter_map(|(position,turn)|{
+                if task.reply_is_interrupted(turn["content"].as_str()?) && (turn["role"]!="assistant" || !crate::tasks::parent_digest(&turns[..position]).ok().is_some_and(|parent|task.history_reply_parent_allows(turn,position,&parent))){return None;}
                 if turn["role"]=="assistant" {
+                    if turn["interrupted"]==true{return None;}
                     let content=turn["content"].as_str()?;
                     let owned=crate::tasks::parent_digest(&turns[..position]).ok().is_some_and(|parent|task.history_reply_parent_allows(turn,position,&parent));
                     if ((turn.get("reply_id").is_some() || task.reply_is_withdrawn(content)) && !owned) || turn["reference_ids"].as_array().is_some_and(|ids|ids.iter().any(|id|id.as_str().and_then(|s|Uuid::parse_str(s).ok()).is_none_or(|id|!task.references.iter().any(|r|r.id==id && r.shared_with.contains(&task.provider))))){return None;}
@@ -385,6 +415,7 @@ impl Workflow {
             prior=prior.into_iter().rev().take(12).collect();prior.reverse();
         }
         let mut envelope=serde_json::json!({"user_request":text,"task_goal":task.goal,"recovered_conversation":prior,"latest_user_correction":task.latest_correction,
+            "latest_chat_correction":task.chat_correction,
             "desktop_context":{"project_id":project.id,"project_directory":project.root,"task_id":task.id,"revision":task.revision,
             "authorized_references":task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(|r|r.id).collect::<Vec<_>>(),
             "current_job":state.job.as_ref().filter(|j|j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==task.id)).map(|j|serde_json::json!({"id":j.view.snapshot.input.job_id(),"phase":j.view.snapshot.phase}))},
@@ -2269,6 +2300,7 @@ impl Workflow {
         input: OperationInput,
         source: RunSource,
     ) -> Result<JobView, String> {
+        check_tool_scope(state)?;
         input.validate()?;
         Self::reconcile_pending_approval(state)?;
         if state.job.as_ref().is_some_and(|job| {
@@ -2466,6 +2498,7 @@ impl Workflow {
             || job.view.snapshot.phase != Phase::AwaitingApproval
             || job.view.snapshot.project_id != project.id
             || job.cancelled.load(Ordering::SeqCst)
+            || job.dispatch_paused.load(Ordering::SeqCst)
         {
             return Err("La aprobación venció o ya fue utilizada.".into());
         }
@@ -3293,6 +3326,26 @@ mod tests {
         let t=workflow.task_state().unwrap().unwrap().active;let saved=workflow.task_request(project,crate::tasks::Request::History{id:t.id,revision:t.revision,value:None}).unwrap();assert!(saved.as_str().unwrap().contains(&id.to_string()));
         let mut stale=scope.clone();stale.position=0;assert!(!workflow.record_completed_reply(&stale,Uuid::new_v4(),"codex","not sent again").unwrap());
         drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn stream_corrections_fence_proposals_preserve_drafts_and_reject_old_tool_callers(){
+        let (root,workflow)=setup();let workflow=Arc::new(workflow);workflow.task_state().unwrap();let scope=workflow.conversation_scope().unwrap().unwrap();let pending=workflow.propose(dimensions()).unwrap();let binding=scope.task.clone().unwrap();
+        let (ready,waiting)=std::sync::mpsc::channel();let (resume,go)=std::sync::mpsc::channel();let old_scope=scope.clone();let worker=workflow.clone();let delayed=std::thread::spawn(move||with_tool_scope(old_scope.project,old_scope.task,||{ready.send(()).unwrap();go.recv().unwrap();worker.propose(dimensions())}));waiting.recv().unwrap();
+        let request=crate::tasks::ChatCorrectionInput{id:binding.id,revision:binding.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:"Preserve the idea; use inches".into()};
+        workflow.correct_chat(&scope,&request,"UNFINISHED_LOCAL_SENTINEL").unwrap();assert!(workflow.begin(pending.approval_id.unwrap()).is_err());let task=workflow.task_state().unwrap().unwrap().active;assert_eq!(task.chat_correction.unwrap().text,request.text);
+        resume.send(()).unwrap();assert!(delayed.join().unwrap().is_err(),"An old tool call created a proposal under the corrected revision");
+        let (prompt,_)=workflow.task_prompt("codex",String::new(),Some("Continue".into()),None).unwrap();assert!(prompt.contains(&request.text));assert!(!prompt.contains("UNFINISHED_LOCAL_SENTINEL"));
+        workflow.task_request(scope.project.clone(),crate::tasks::Request::History{id:request.id,revision:task.revision,value:Some(serde_json::json!({"version":1,"turns":[{"role":"user","content":"UNFINISHED_LOCAL_SENTINEL"},{"role":"user","content":"Keep my manual label"}]}).to_string())}).unwrap();let (prompt,_)=workflow.task_prompt("codex",String::new(),Some("Continue".into()),None).unwrap();assert!(!prompt.contains("UNFINISHED_LOCAL_SENTINEL") && prompt.contains("Keep my manual label"));
+        with_tool_scope(scope.project.clone(),Some(binding),||{assert!(workflow.propose(dimensions()).is_err());with_tool_scope(scope.project.clone(),None,||assert!(workflow.propose(dimensions()).is_err()));});
+        let fresh=workflow.propose(dimensions()).unwrap();workflow.correct_chat(&scope,&request,"late body").unwrap();assert!(workflow.begin(fresh.approval_id.unwrap()).is_ok(),"A duplicate correction paused newer work");
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn failed_stream_correction_still_fences_the_unstarted_approval_and_can_recover_forward(){
+        use std::os::windows::fs::OpenOptionsExt;
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let scope=workflow.conversation_scope().unwrap().unwrap();let pending=workflow.propose(dimensions()).unwrap();let path=root.join(".hazlomexa/tasks").join(format!("{}.json",task.id));let before=fs::read(&path).unwrap();let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(&path).unwrap();
+        let request=crate::tasks::ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:"Keep all manual changes".into()};assert!(workflow.correct_chat(&scope,&request,"local partial reply").is_err());assert_eq!(fs::read(&path).unwrap(),before);assert!(workflow.begin(pending.approval_id.unwrap()).is_err());drop(lock);
+        workflow.correct_chat(&scope,&request,"local partial reply").unwrap();drop(workflow);let project=Project::open(&root).unwrap();assert_ne!(project.recover().unwrap()[0].phase,Phase::Running);assert_eq!(crate::tasks::Store::new(&project).unwrap().active().unwrap().unwrap().chat_correction.unwrap().id,request.correction_id);drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn prompt_history_projects_only_authorized_role_and_text_and_keeps_other_fields_local(){

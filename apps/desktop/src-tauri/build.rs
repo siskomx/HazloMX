@@ -6,6 +6,7 @@ fn main() {
         tauri_build::AppManifest::new().commands(&[
             "get_snapshot",
             "task_action",
+            "correct_chat",
             "ensure_task_workspace",
             "prepare_diagnostic_tool",
             "conversation_history",

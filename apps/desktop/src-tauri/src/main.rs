@@ -344,6 +344,21 @@ fn cancel_chat(state: State<AppState>, id: Uuid) -> Result<ChatView, String> {
     Ok(turn.view.clone())
 }
 #[tauri::command]
+fn correct_chat(state:State<AppState>,project_id:Uuid,project_directory:PathBuf,request:hazlomexa::tasks::ChatCorrectionInput)->Result<DesktopSnapshot,String>{
+    correct_owned_chat(&state,project_id,project_directory,request)
+}
+fn correct_owned_chat(state:&AppState,project_id:Uuid,project_directory:PathBuf,request:hazlomexa::tasks::ChatCorrectionInput)->Result<DesktopSnapshot,String>{
+    let result={
+        let mut chat=state.chat.lock().map_err(|_|"No se pudo comprobar la conversación.")?;
+        let turn=chat.as_mut().filter(|turn|turn.view.id==request.chat_id && (turn.view.busy || turn.view.cancelled) && turn.scope.project==(project_id,project_directory.clone()) && turn.scope.task.as_ref().is_some_and(|task|task.id==request.id)).ok_or("La conversación cambió; conserva tu corrección y vuelve a leerla.")?;
+        turn.cancel.store(true,std::sync::atomic::Ordering::SeqCst);turn.view.cancelled=true;turn.view.question=None;turn.question=None;turn.view.sequence+=1;
+        state.workflow.correct_chat(&turn.scope,&request,&turn.view.text)
+    };
+    *state.codex_session.lock().map_err(|_|"No se pudo invalidar el contexto anterior.")?=None;
+    *state.chat_session.lock().map_err(|_|"No se pudo invalidar el contexto anterior.")?=None;
+    result?;snapshot(state)
+}
+#[tauri::command]
 #[allow(clippy::too_many_arguments)] // Tauri IPC arguments are the desktop command contract.
 async fn start_claude_chat(
     app: tauri::AppHandle,
@@ -1464,7 +1479,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, task_action, ensure_task_workspace, prepare_diagnostic_tool, conversation_history, detect_clients, connect_native_tools, disconnect_native_tools, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, task_action, correct_chat, ensure_task_workspace, prepare_diagnostic_tool, conversation_history, detect_clients, connect_native_tools, disconnect_native_tools, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 
@@ -1542,6 +1557,12 @@ mod tests {
         let t=state.workflow.task_state().unwrap().unwrap().active;
         state.workflow.task_request(project,hazlomexa::tasks::Request::Share{id:t.id,revision:t.revision,reference,allow:false}).unwrap();
         assert!(snapshot(&state).unwrap().chat.is_none());
+        let scope=state.workflow.conversation_scope().unwrap().unwrap();let task=scope.task.clone().unwrap();let chat_id=Uuid::new_v4();let cancel=Arc::new(std::sync::atomic::AtomicBool::new(false));
+        *state.chat.lock().unwrap()=Some(ChatTurn{scope:scope.clone(),view:ChatView{provider:"codex",id:chat_id,project_id:scope.project.0,sequence:1,busy:true,cancelled:false,text:"UNFINISHED_DESKTOP_SENTINEL".into(),error:None,question:None},cancel:cancel.clone(),question:None});
+        let request=hazlomexa::tasks::ChatCorrectionInput{id:task.id,revision:task.revision,chat_id,correction_id:Uuid::new_v4(),text:"Keep the original and adapt the next steps".into()};
+        assert!(correct_owned_chat(&state,scope.project.0,root.join("wrong-folder"),request.clone()).is_err());assert!(!cancel.load(std::sync::atomic::Ordering::SeqCst));
+        let corrected=correct_owned_chat(&state,scope.project.0,root.clone(),request.clone()).unwrap();assert!(cancel.load(std::sync::atomic::Ordering::SeqCst));assert!(corrected.chat.unwrap().cancelled);assert_eq!(corrected.tasks.unwrap().active.chat_correction.unwrap().id,request.correction_id);assert!(state.chat_session.lock().unwrap().is_none() && state.codex_session.lock().unwrap().is_none());
+        let revision=state.workflow.task_state().unwrap().unwrap().active.revision;correct_owned_chat(&state,scope.project.0,root.clone(),request).unwrap();assert_eq!(state.workflow.task_state().unwrap().unwrap().active.revision,revision);state.chat.lock().unwrap().as_mut().unwrap().view.busy=false;
         let other = root.join("other");
         std::fs::create_dir(&other).unwrap();
         state
