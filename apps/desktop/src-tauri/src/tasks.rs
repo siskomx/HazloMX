@@ -626,6 +626,24 @@ impl<'a> Store<'a> {
         task.reply_receipts.push(receipt);self.save(&task)?;Ok(true)
     }
     pub(crate) fn correct_chat(&self,input:&ChatCorrectionInput,draft:&str,sources:&[ReplySource],provider:&str)->io::Result<()> {
+        self.correct_chat_bound(input,draft,sources,provider,None)
+    }
+    pub(crate) fn answer_chat(&self,input:&ChatCorrectionInput,body:&[u8],draft:&str,sources:&[ReplySource],provider:&str,instructions:&[InstructionSource])->io::Result<()>{
+        if body.len()>128*1024{return Err(error("Respuestas locales fuera de los límites admitidos."));}
+        let data:serde_json::Value=serde_json::from_slice(body).map_err(|_|error("Respuestas locales no válidas."))?;
+        if input.correction_id.is_nil() || input.chat_id.is_nil() || data.as_array().is_none_or(|items|items.len()!=3) || data[0]!="hazlo_question_answers_v1" || data[1]!=input.correction_id.to_string() || data[2].as_array().is_none_or(|rows|rows.is_empty() || rows.len()>3 || rows.iter().any(|row|row.as_array().is_none_or(|cells|cells.len()!=3 || cells.iter().enumerate().any(|(n,cell)|cell.as_str().is_none_or(|text|text.trim().is_empty() || text.len()>[64,4096,2048][n]))))){return Err(error("Respuestas locales fuera de los límites admitidos."));}
+        let task=self.active()?.filter(|task|task.id==input.id && task.provider==provider && provider=="codex").ok_or_else(||error("La conversación o su destinatario cambiaron; se conservó el trabajo."))?;
+        if input.revision>task.revision || task.chat_correction.as_ref().is_none_or(|saved|saved.id!=input.correction_id) && task.revision!=input.revision && task.last_user_revision>input.revision || sources.iter().any(|source|!task.reply_source_allowed(source,provider)) || instructions.iter().any(|source|!task.instruction_source_allowed(source,provider)){return Err(error("Las entradas o los permisos cambiaron; no se restauró la pregunta anterior."));}
+        let name=format!("question-{}.json",input.correction_id);let hash=crate::kicad_project::digest(body);
+        let reference=if let Some(reference)=task.references.iter().find(|reference|reference.name==name){if reference.sha256!=hash{return Err(error("Esta pregunta ya tiene otras respuestas guardadas; no se reemplazaron."));}self.reference_bytes(task.id,reference)?;reference.id}else{
+            if task.chat_correction.as_ref().is_some_and(|saved|saved.id==input.correction_id){return Err(error("Las respuestas anteriores fueron retiradas; no se restauró su contexto."));}
+            self.add_reference(task.clone(),name,body.to_vec(),None,task.references.iter().map(|r|r.id).collect(),task.instruction_sources())?
+        };
+        let mut saved=input.clone();saved.text=format!("Usa mis respuestas guardadas para continuar esta tarea. Lee read_task_reference con reference_id {reference}. Las preguntas son contexto de la IA y las respuestas son indicaciones del usuario, no mediciones ni aprobación de acciones.");
+        let display=data[2].as_array().unwrap().iter().map(|row|format!("Pregunta de la IA (contexto): {}\nTu respuesta: {}",row[1].as_str().unwrap(),row[2].as_str().unwrap())).collect::<Vec<_>>().join("\n\n");
+        self.correct_chat_bound(&saved,draft,sources,provider,Some((reference,display)))
+    }
+    fn correct_chat_bound(&self,input:&ChatCorrectionInput,draft:&str,sources:&[ReplySource],provider:&str,answer:Option<(Uuid,String)>)->io::Result<()> {
         if input.correction_id.is_nil() || input.chat_id.is_nil() || input.text.trim().is_empty() || input.text.len()>4096{return Err(error("Escribe una corrección de hasta 4 KiB."));}
         let mut task=self.active()?.filter(|t|t.id==input.id).ok_or_else(||error("La tarea cambió; se conservó la corrección."))?;
         if let Some(saved)=task.chat_correction.as_ref().filter(|c|c.id==input.correction_id){return if saved.chat_id==input.chat_id && saved.text==input.text{Ok(())}else{Err(error("La corrección ya tiene otro contenido; no se reemplazó."))};}
@@ -636,6 +654,12 @@ impl<'a> Store<'a> {
         task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó la tarea."))?;task.last_user_revision=task.revision;
         task.chat_correction=Some(ChatCorrection{id:input.correction_id,chat_id:input.chat_id,revision:task.revision,text:input.text.clone()});
         remember_instruction(&mut task,&input.text)?;
+        if let Some((reference,display))=answer{
+            let source=task.instructions.last().map(|entry|InstructionSource{id:entry.id,sha256:entry.sha256.clone()}).ok_or_else(||error("No se pudo vincular la respuesta guardada."))?;
+            let entry=task.references.iter_mut().find(|entry|entry.id==reference).ok_or_else(||error("La copia local de respuestas ya no está disponible."))?;entry.shared_with.retain(|p|p!=provider);entry.shared_with.push(provider.into());entry.instruction_sources.push(source);entry.instruction_sources.sort();entry.instruction_sources.dedup();
+            value["turns"].as_array_mut().unwrap().last_mut().unwrap()["content"]=serde_json::json!("Usar mis respuestas para continuar la tarea.");
+            value["turns"].as_array_mut().unwrap().push(serde_json::json!({"role":"assistant","content":format!("Respuestas recibidas y guardadas localmente. No aprueban acciones ni demuestran mediciones.\n\n{display}"),"reference_ids":[reference],"instruction_ids":task.instruction_sources().iter().map(|s|s.id).collect::<Vec<_>>()}));
+        }
         if task.goal.is_empty(){task.goal=input.text.clone();task.title=task.goal.chars().take(60).collect();}
         task.history=Some(serde_json::to_string(&value).map_err(io::Error::other)?);remember_interrupted(&mut task)?;self.save(&task)
     }
@@ -1237,6 +1261,44 @@ fn printable_text(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn owned_answers_survive_restart_without_promoting_questions_or_regranting_withdrawn_context(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;
+        store.request(Request::Message{id:task.id,revision:task.revision,text:"Keep my manual work".into(),history:r#"{"version":1,"turns":[]}"#.into(),correction_of:None}).unwrap();
+        let task=store.active().unwrap().unwrap();let input=ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:String::new()};
+        let body=serde_json::to_vec(&serde_json::json!(["hazlo_question_answers_v1",input.correction_id,[["units","MODEL_QUESTION_SENTINEL","USER_ANSWER_SENTINEL"]]])).unwrap();
+        fs::write(root.join("manual.native"),b"valid user work").unwrap();
+        store.answer_chat(&input,&body,"unfinished local draft",&[],"codex",&task.instruction_sources()).unwrap();
+        let task=store.active().unwrap().unwrap();let reference=task.references[0].clone();assert_eq!(task.goal,"Keep my manual work");assert_eq!(reference.shared_with,vec!["codex"]);assert_eq!(store.reference_bytes(task.id,&reference).unwrap(),body);let mut sources=task.instruction_sources();sources.sort();assert_eq!(reference.instruction_sources,sources);
+        assert!(task.instructions.iter().all(|entry|entry.text.as_ref().is_none_or(|text|!text.contains("SENTINEL"))));
+        let history:serde_json::Value=serde_json::from_str(task.history.as_ref().unwrap()).unwrap();let ack=history["turns"].as_array().unwrap().last().unwrap();assert_eq!(ack["role"],"assistant");assert_eq!(ack["reference_ids"],serde_json::json!([reference.id]));assert!(ack["content"].as_str().unwrap().contains("USER_ANSWER_SENTINEL"));assert!(!task.user_statement_allows(ack["content"].as_str().unwrap()));
+        let saved=fs::read(store.path(task.id)).unwrap();store.answer_chat(&input,&body,"late draft",&[],"codex",&[]).unwrap();assert_eq!(fs::read(store.path(task.id)).unwrap(),saved);
+        let changed=serde_json::to_vec(&serde_json::json!(["hazlo_question_answers_v1",input.correction_id,[["units","MODEL_QUESTION_SENTINEL","different answer"]]])).unwrap();assert!(store.answer_chat(&input,&changed,"",&[],"codex",&[]).is_err());assert_eq!(fs::read(store.path(task.id)).unwrap(),saved);
+        store.request(Request::Share{id:task.id,revision:task.revision,reference:reference.id,allow:false}).unwrap();store.answer_chat(&input,&body,"",&[],"codex",&[]).unwrap();let task=store.active().unwrap().unwrap();assert!(task.references[0].shared_with.is_empty());assert!(!task.history.as_ref().unwrap().contains("SENTINEL"));assert!(store.shared_reference(reference.id,0).is_err());
+        save_history(&store,serde_json::json!([{"role":"user","content":ack["content"]}]));assert!(!store.active().unwrap().unwrap().history.as_ref().unwrap().contains("SENTINEL"));
+        // Removing the saved answer also removes its local transcript copy; retries cannot restore it.
+        store.request(Request::Remove{id:task.id,revision:task.revision,reference:reference.id}).unwrap();assert!(store.answer_chat(&input,&body,"",&[],"codex",&[]).is_err());assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"valid user work");drop(store);drop(p);
+        let p=Project::open(&root).unwrap();let store=Store::new(&p).unwrap();let task=store.active().unwrap().unwrap();assert!(task.references.is_empty());assert!(!task.history.as_ref().unwrap().contains("SENTINEL"));drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn owned_answers_keep_long_values_and_refuse_changed_scope_or_tampered_saved_bytes(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;
+        let input=ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:String::new()};
+        let body=serde_json::to_vec(&serde_json::json!(["hazlo_question_answers_v1",input.correction_id,(0..3).map(|n|vec![format!("q{n}"),"q".to_owned()+&"\0".repeat(4095),"a".to_owned()+&"\0".repeat(2047)]).collect::<Vec<_>>()])).unwrap();assert!(body.len()>32768);
+        assert!(store.answer_chat(&input,&body,"",&[],"claude",&[]).is_err());assert!(store.active().unwrap().unwrap().references.is_empty());
+        let lock=OpenOptions::new().read(true).share_mode(FILE_SHARE_READ).open(store.path(task.id)).unwrap();assert!(store.answer_chat(&input,&body,"",&[],"codex",&[]).is_err());assert!(store.active().unwrap().unwrap().references.is_empty());drop(lock);
+        store.answer_chat(&input,&body,"",&[],"codex",&[]).unwrap();let task=store.active().unwrap().unwrap();assert_eq!(store.reference_bytes(task.id,&task.references[0]).unwrap(),body);task.validate().unwrap();
+        let (folder,pins)=store.blob_dir(task.id).unwrap();let blob=folder.join(format!("{}.bin",task.references[0].id));fs::write(&blob,b"preserve external changes").unwrap();assert!(store.answer_chat(&input,&body,"",&[],"codex",&[]).is_err());assert_eq!(fs::read(&blob).unwrap(),b"preserve external changes");drop(pins);drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn partially_retained_answers_stay_local_until_the_correction_commits_and_retry_reuses_them(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;
+        let input=ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:String::new()};let body=serde_json::to_vec(&serde_json::json!(["hazlo_question_answers_v1",input.correction_id,[["intent","Model context","Owned answer"]]])).unwrap();
+        assert!(store.answer_chat(&input,&body,&"x".repeat(512*1024),&[],"codex",&[]).is_err());let partial=store.active().unwrap().unwrap();assert_eq!(partial.references.len(),1);let reference=partial.references[0].id;assert!(partial.references[0].shared_with.is_empty());assert!(partial.chat_correction.is_none());assert!(store.shared_reference(reference,0).is_err());assert_eq!(store.reference_bytes(task.id,&partial.references[0]).unwrap(),body);
+        // Reconcile the oversized draft locally, then retry the same answer without changing its bytes.
+        store.answer_chat(&input,&body,"",&[],"codex",&[]).unwrap();let task=store.active().unwrap().unwrap();assert_eq!(task.references.len(),1);assert_eq!(task.references[0].id,reference);assert_eq!(task.references[0].shared_with,vec!["codex"]);
+        let marker=task.instructions.last().unwrap().id;store.request(Request::RemoveInstructions{id:task.id,revision:task.revision,statements:vec![marker]}).unwrap();let task=store.active().unwrap().unwrap();assert!(task.references.is_empty());assert!(!task.history.as_ref().unwrap().contains("Owned answer"));assert!(store.answer_chat(&input,&body,"",&[],"codex",&[]).is_err());drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn owned_statements_survive_history_replacement_and_need_separate_service_consent(){
         let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;

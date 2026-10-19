@@ -212,10 +212,11 @@ pub struct Dispatch {
 
 impl Workflow {
     pub fn correct_chat(&self,scope:&ConversationScope,input:&crate::tasks::ChatCorrectionInput,draft:&str)->Result<(),String>{
-        self.interrupt_chat(scope,Some(input),input.chat_id,draft)
+        self.interrupt_chat(scope,Some(input),input.chat_id,draft,None)
     }
-    pub fn stop_chat(&self,scope:&ConversationScope,chat_id:Uuid,draft:&str)->Result<(),String>{self.interrupt_chat(scope,None,chat_id,draft)}
-    fn interrupt_chat(&self,scope:&ConversationScope,input:Option<&crate::tasks::ChatCorrectionInput>,chat_id:Uuid,draft:&str)->Result<(),String>{
+    pub fn answer_chat(&self,scope:&ConversationScope,input:&crate::tasks::ChatCorrectionInput,body:&[u8],draft:&str)->Result<(),String>{self.interrupt_chat(scope,Some(input),input.chat_id,draft,Some(body))}
+    pub fn stop_chat(&self,scope:&ConversationScope,chat_id:Uuid,draft:&str)->Result<(),String>{self.interrupt_chat(scope,None,chat_id,draft,None)}
+    fn interrupt_chat(&self,scope:&ConversationScope,input:Option<&crate::tasks::ChatCorrectionInput>,chat_id:Uuid,draft:&str,answer:Option<&[u8]>)->Result<(),String>{
         let mut state=self.state.lock().map_err(|_|"No se pudo comprobar la tarea.")?;inference_idle(&state)?;
         let task_id=scope.task.as_ref().map(|task|task.id).filter(|id|input.is_none_or(|input|input.id==*id)).ok_or("La conversación cambió; no se detuvo otra tarea.")?;
         let project=state.project.clone().filter(|p|(p.id,p.root.clone())==scope.project).ok_or("La conversación cambió; no se detuvo otra tarea.")?;
@@ -223,7 +224,7 @@ impl Workflow {
         let revision=scope.task.as_ref().unwrap().revision;
         state.tool_pauses.entry((scope.project.0,scope.project.1.clone(),task_id)).and_modify(|saved|*saved=(*saved).max(revision)).or_insert(revision);
         let store=crate::tasks::Store::new(&project).map_err(|_|"No se pudo comprobar la corrección guardada.")?;
-        let save=||match input{Some(input)=>store.correct_chat(input,draft,&scope.references,scope.provider.as_deref().unwrap_or("")),None=>store.stop_chat(task_id,chat_id,draft,&scope.references,scope.provider.as_deref().unwrap_or(""))};
+        let save=||match (input,answer){(Some(input),Some(body))=>store.answer_chat(input,body,draft,&scope.references,scope.provider.as_deref().unwrap_or(""),&scope.instruction_sources),(Some(input),None)=>store.correct_chat(input,draft,&scope.references,scope.provider.as_deref().unwrap_or("")),(None,_)=>store.stop_chat(task_id,chat_id,draft,&scope.references,scope.provider.as_deref().unwrap_or(""))};
         if store.active().ok().flatten().is_some_and(|task|task.id==task_id && match input{Some(input)=>task.chat_correction.as_ref().is_some_and(|saved|saved.id==input.correction_id),None=>task.chat_stop.as_ref().is_some_and(|stop|stop.chat_id==chat_id)}){return save().map_err(|_|"La pausa o corrección guardada no coincide; se conservó la tarea.".into());}
         let gate=state.job.as_ref().filter(|job|job.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==task_id)).map(|job|job.dispatch_gate.clone());
         let permit=gate.as_ref().map(|gate|gate.lock().map_err(|_|"No se pudo confirmar la pausa nativa.")).transpose()?;
@@ -3412,6 +3413,20 @@ mod tests {
         workflow.task_request(scope.project.clone(),crate::tasks::Request::Message{id:request.id,revision:task.revision,text:"Keep my manual label".into(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":"UNFINISHED_LOCAL_SENTINEL"},{"role":"user","content":"Keep my manual label"}]}).to_string(),correction_of:None}).unwrap();let (prompt,_)=workflow.task_prompt("codex",String::new(),Some("Continue".into()),None).unwrap();assert!(!prompt.contains("UNFINISHED_LOCAL_SENTINEL") && prompt.contains("Keep my manual label"));
         with_tool_scope(scope.project.clone(),Some(binding),||{assert!(workflow.propose(dimensions()).is_err());with_tool_scope(scope.project.clone(),None,||assert!(workflow.propose(dimensions()).is_err()));});
         let fresh=workflow.propose(dimensions()).unwrap();workflow.correct_chat(&scope,&request,"late body").unwrap();assert!(workflow.begin(fresh.approval_id.unwrap()).is_ok(),"A duplicate correction paused newer work");
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn owned_question_answers_fence_old_producers_and_only_expose_authorized_reference_reads(){
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let scope=workflow.conversation_scope().unwrap().unwrap();let pending=workflow.propose(dimensions()).unwrap();
+        let request=crate::tasks::ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:String::new()};
+        let body=serde_json::to_vec(&serde_json::json!(["hazlo_question_answers_v1",request.correction_id,[["intent","MODEL_QUESTION_SENTINEL","PRIVATE_ANSWER_SENTINEL"]]])).unwrap();
+        workflow.answer_chat(&scope,&request,&body,"UNFINISHED_LOCAL_SENTINEL").unwrap();assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+        with_tool_scope(scope.project.clone(),scope.task.clone(),||assert!(workflow.propose(dimensions()).is_err()));
+        let task=workflow.task_state().unwrap().unwrap().active;let reference=task.references[0].id;assert!(task.revision>request.revision);assert_eq!(task.chat_correction.as_ref().unwrap().id,request.correction_id);
+        let (prompt,_)=workflow.task_prompt("codex",String::new(),Some(task.chat_correction.as_ref().unwrap().text.clone()),None).unwrap();assert!(prompt.contains(&reference.to_string()));for sentinel in ["MODEL_QUESTION_SENTINEL","PRIVATE_ANSWER_SENTINEL","UNFINISHED_LOCAL_SENTINEL"]{assert!(!prompt.contains(sentinel));}
+        let project=workflow.state.lock().unwrap().project.clone().unwrap();let store=crate::tasks::Store::new(&project).unwrap();assert!(store.shared_reference(reference,0).unwrap().to_string().contains("PRIVATE_ANSWER_SENTINEL"));drop(store);drop(project);
+        workflow.task_request(scope.project.clone(),crate::tasks::Request::Provider{id:task.id,revision:task.revision,provider:"claude".into()}).unwrap();let project=workflow.state.lock().unwrap().project.clone().unwrap();assert!(crate::tasks::Store::new(&project).unwrap().shared_reference(reference,0).is_err());drop(project);
+        let (prompt,_)=workflow.task_prompt("claude",String::new(),Some("Continue".into()),None).unwrap();assert!(!prompt.contains("PRIVATE_ANSWER_SENTINEL"));assert!(workflow.answer_chat(&scope,&request,&body,"old draft").is_err());
         drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[test]

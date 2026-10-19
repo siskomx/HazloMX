@@ -9,13 +9,16 @@ pub(crate) fn answer_codex_question(
     question_id: Uuid,
     answers: std::collections::BTreeMap<String, String>,
 ) -> Result<ChatView, String> {
-    let project = state.workflow.view()?.project.map(|project| project.0);
+    answer_owned_question(&state,id,question_id,answers)
+}
+pub(crate) fn answer_owned_question(state:&AppState,id:Uuid,question_id:Uuid,answers:std::collections::BTreeMap<String,String>)->Result<ChatView,String>{
+    let scope=state.workflow.conversation_scope()?.ok_or("Abre una conversación antes de responder.")?;
     let mut current = state.chat.lock().map_err(|e| e.to_string())?;
     let turn = current
         .as_mut()
         .filter(|turn| {
             turn.view.id == id
-                && Some(turn.view.project_id) == project
+                && turn.scope.project==scope.project && turn.scope.task.as_ref().map(|task|task.id)==scope.task.as_ref().map(|task|task.id) && scope.provider.as_deref()==Some("codex") && turn.view.provider=="codex"
                 && turn.view.busy
                 && !turn.view.cancelled
                 && turn
@@ -25,19 +28,22 @@ pub(crate) fn answer_codex_question(
                     .is_some_and(|question| question.id == question_id)
         })
         .ok_or("Esta pregunta ya no está activa.")?;
-    turn.question
+    let body=turn.question
         .as_ref()
         .ok_or("Esta pregunta ya no está activa.")?
         .request
-        .answer(answers.clone())?;
-    let pending = turn.question.take().unwrap();
+        .retained_answers(question_id,&answers)?;
+    let task=turn.scope.task.as_ref().ok_or("La conversación cambió; no se respondió otra pregunta.")?;
+    let input=hazlomexa::tasks::ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:id,correction_id:question_id,text:String::new()};
+    state.workflow.answer_chat(&turn.scope,&input,&body,&turn.view.text)?;
+    // A fresh turn uses the durable answers; the old tool bridge keeps its superseded scope.
+    turn.cancel.store(true,Ordering::SeqCst);turn.view.cancelled=true;turn.question=None;
     turn.view.question = None;
     turn.view.sequence += 1;
-    pending
-        .answer
-        .send(answers)
-        .map_err(|_| "Codex cerró esta pregunta.")?;
-    Ok(turn.view.clone())
+    let view=turn.view.clone();drop(current);
+    *state.codex_session.lock().map_err(|_|"No se pudo invalidar el contexto anterior.")?=None;
+    *state.chat_session.lock().map_err(|_|"No se pudo invalidar el contexto anterior.")?=None;
+    Ok(view)
 }
 use hazlomexa::{claude, codex, tool_bridge::ToolBridge};
 use serde::Serialize;
@@ -395,7 +401,7 @@ pub(crate) async fn start_codex_chat(
                                     id: Uuid::new_v4(),
                                     questions: request.questions.clone(),
                                 });
-                                turn.question = Some(PendingQuestion { request, answer });
+                                turn.question = Some(PendingQuestion { request, _answer:answer });
                                 turn.view.sequence += 1;
                                 events
                                     .send(turn.view.clone())

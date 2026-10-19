@@ -57,7 +57,7 @@ struct ChatQuestion {
 }
 struct PendingQuestion {
     request: codex::QuestionRequest,
-    answer: tokio::sync::oneshot::Sender<std::collections::BTreeMap<String, String>>,
+    _answer: tokio::sync::oneshot::Sender<std::collections::BTreeMap<String, String>>,
 }
 struct ChatTurn {
     scope:hazlomexa::jobs::ConversationScope,
@@ -1492,6 +1492,24 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn owned_question_submission_saves_before_cancelling_and_never_reuses_the_native_reply_channel(){
+        use std::os::windows::fs::OpenOptionsExt;
+        use std::sync::atomic::Ordering;
+        let root=std::env::temp_dir().join(format!("hazlo-owned-question-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let project=Project::create(&root).unwrap();let freecad=root.join("FreeCADCmd.exe");let workflow=Arc::new(Workflow::new(freecad.clone(),root.join("profiles")).unwrap());workflow.select_project(project).unwrap();workflow.task_state().unwrap();
+        let state=AppState{tools:Arc::new(HostTools::new(workflow.clone())),workflow,freecad:Mutex::new(freecad),bridge:Mutex::new(None),claude:Mutex::new(None),codex:Mutex::new(None),codex_login:Arc::new(Mutex::new(None)),codex_session:Mutex::new(None),chat:Arc::new(Mutex::new(None)),chat_session:Mutex::new(None)};
+        let scope=state.workflow.conversation_scope().unwrap().unwrap();let id=Uuid::new_v4();let question_id=Uuid::new_v4();let cancel=Arc::new(std::sync::atomic::AtomicBool::new(false));let (send,mut receive)=tokio::sync::oneshot::channel();
+        let request=codex::QuestionRequest{request_id:serde_json::json!("PRIVATE_NATIVE_REQUEST"),questions:vec![codex::Question{id:"intent".into(),header:"Intent".into(),question:"MODEL_QUESTION_SENTINEL".into(),options:None,is_other:true,is_secret:false}]};
+        *state.chat.lock().unwrap()=Some(ChatTurn{scope:scope.clone(),view:ChatView{provider:"codex",id,project_id:scope.project.0,sequence:1,busy:true,cancelled:false,text:String::new(),error:None,question:Some(ChatQuestion{id:question_id,questions:request.questions.clone()})},cancel:cancel.clone(),question:Some(PendingQuestion{request,_answer:send})});
+        let answers=std::collections::BTreeMap::from([("intent".into(),"USER_ANSWER_SENTINEL".into())]);
+        assert!(desktop_codex::answer_owned_question(&state,id,Uuid::new_v4(),answers.clone()).is_err());assert!(!cancel.load(Ordering::SeqCst));
+        let task=scope.task.as_ref().unwrap();let path=root.join(".hazlomexa/tasks").join(format!("{}.json",task.id));let lock=std::fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(path).unwrap();
+        assert!(desktop_codex::answer_owned_question(&state,id,question_id,answers.clone()).is_err());assert!(!cancel.load(Ordering::SeqCst));assert!(state.chat.lock().unwrap().as_ref().unwrap().question.is_some());assert!(matches!(receive.try_recv(),Err(tokio::sync::oneshot::error::TryRecvError::Empty)));drop(lock);
+        *state.codex_session.lock().unwrap()=Some((scope.clone(),id,Some("native-thread".into())));*state.chat_session.lock().unwrap()=Some((scope.clone(),id,true));
+        let view=desktop_codex::answer_owned_question(&state,id,question_id,answers.clone()).unwrap();assert!(view.cancelled && view.question.is_none());assert!(cancel.load(Ordering::SeqCst));assert!(matches!(receive.try_recv(),Err(tokio::sync::oneshot::error::TryRecvError::Closed)));assert!(state.codex_session.lock().unwrap().is_none() && state.chat_session.lock().unwrap().is_none());
+        let task=state.workflow.task_state().unwrap().unwrap().active;assert_eq!(task.references.len(),1);assert_eq!(task.references[0].shared_with,vec!["codex"]);let history=state.workflow.task_request(scope.project.clone(),hazlomexa::tasks::Request::History{id:task.id,revision:task.revision,value:None}).unwrap();assert!(history.as_str().unwrap().contains("USER_ANSWER_SENTINEL"));assert!(!state.workflow.read_task_instructions(0).unwrap().to_string().contains("SENTINEL"));assert!(desktop_codex::answer_owned_question(&state,id,question_id,answers).is_err());assert_eq!(state.workflow.task_state().unwrap().unwrap().active.revision,task.revision);
+        drop(state);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn conversation_readiness_requires_success_in_the_selected_project() {
         let root = std::env::temp_dir().join(format!("hazlomexa-chat-ready-{}", Uuid::new_v4()));

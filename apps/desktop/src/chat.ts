@@ -5,6 +5,7 @@ import { readConversation, writeConversation } from "./chat-storage";
 import { taskRequest, referenceData } from "./task-storage";
 import type {TaskState, TaskReference} from "./contracts";
 import { proposalFacts } from "./proposal-review";
+import { questionAnswers } from "./question-answers";
 import type { DiscoveredLiveDrawing, ChatView, CodexLoginView, DesktopSnapshot, DiscoveredCadDocument, DiscoveredDrawing, DiscoveredLivePcb, DiscoveredPcb, DiscoveredSchematic, DiscoveredSlice, Job, Snapshot } from "./contracts";
 import {prepareImageReference, type ImageReference} from "./image-reference";
 import "./chat.css";
@@ -29,7 +30,7 @@ document.querySelector("#app")!.innerHTML = `
   <section class="panel" aria-labelledby="chat-heading"><h2 id="chat-heading">¿Qué quieres hacer?</h2><p id="task-title" class="fine"></p><details id="task-history" hidden><summary>Conversaciones guardadas</summary><label for="saved-task">Conversación</label><select id="saved-task"></select><button id="open-task" class="secondary">Abrir conversación</button></details><p id="connection-status" class="fine"></p><div id="conversation" role="log" aria-label="Conversación" aria-live="polite"></div><p id="chat-progress" class="status fine" aria-live="polite"></p>
     <section id="provider-offer" hidden><p id="provider-offer-text"></p><button id="approve-provider">Cambiar IA y compartir el contexto indicado</button><button id="keep-provider" class="secondary">Seguir con la IA actual</button></section>
     <div id="task-references"></div><section id="reference-offer" hidden><p id="reference-offer-text"></p><button id="approve-reference">Permitir compartir con esta IA</button><button id="keep-reference-local" class="secondary">Mantener local</button></section>
-    <form id="question-form" hidden><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
+    <form id="question-form" hidden><p class="fine">Al responder, guardamos esta pregunta y tus respuestas con la tarea y permites enviarlas a Codex para continuar. Esto no aprueba cambios, instalaciones ni compartir otros archivos.</p><div id="question-fields"></div><button id="answer-question">Continuar con mis respuestas</button></form>
     <p id="error" role="alert" hidden></p>
     <form id="chat-form"><div class="actions"><button id="attach-image" type="button" class="secondary">Adjuntar imagen…</button><button id="attach-file" type="button" class="secondary" hidden>Adjuntar archivo…</button><button id="remove-image" type="button" class="secondary" hidden>Quitar imagen</button></div><input id="image-reference" type="file" accept="image/png,image/jpeg" hidden><input id="file-reference" type="file" hidden><img id="reference-preview" alt="Imagen de referencia adjunta" hidden><p id="image-status" class="fine">Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.</p><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
@@ -164,7 +165,7 @@ function renderTasks(busy:boolean){
   if(tasks?.active.references.some(r=>r.parents?.length)){const p=document.createElement("p");p.className="fine";p.textContent="Quitar una referencia también retira sus copias de evidencia derivadas. Revocar su permiso lo revoca para esas copias en esta IA y retira las respuestas vinculadas del contexto. Los archivos de diseño del proyecto se conservan.";rows.append(p);}
   for(const ref of tasks?.active.references??[]){
     const row=document.createElement("p"),label=document.createElement("span");const shared=ref.shared_with.includes(provider);
-    label.textContent=`${ref.name} · ${Math.ceil(ref.bytes/1024)} KiB · ${shared?"compartir permitido con "+providerNames[provider]:"solo local"}${ref.parents?.length?" · copia derivada":""} `;row.append(label);
+    label.textContent=`${/^question-[0-9a-f-]{36}\.json$/i.test(ref.name)?"Respuestas guardadas de la conversación":ref.name} · ${Math.ceil(ref.bytes/1024)} KiB · ${shared?"compartir permitido con "+providerNames[provider]:"solo local"}${ref.parents?.length?" · copia derivada":""} `;row.append(label);
     const button=(text:string,handler:()=>void)=>{const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent=text;b.disabled=busy;b.onclick=handler;row.append(b);};
     button("Ver localmente",()=>void action(()=>previewReference(ref)));
     button(shared?"Revocar permiso":"Compartir con esta IA…",()=>{if(shared)void action(async()=>{clearReport();const {scope}=scopedTask();await taskCommand({action:"share",...scope,reference:ref.id,allow:false},true);clearImage();taskImage=undefined;});else{pendingReference=ref;render();}});
@@ -429,7 +430,8 @@ function renderQuestion() {
   const chat = state.chat?.provider === provider ? state.chat : null;
   const question = chat?.busy && !chat.cancelled ? chat.question : null;
   $("question-form").hidden = !question;
-  $<HTMLButtonElement>("answer-question").disabled = commandBusy;
+  $<HTMLButtonElement>("answer-question").disabled = commandBusy || correctionBusy || cancellationBusy;
+  for(const input of document.querySelectorAll<HTMLInputElement|HTMLSelectElement>("#question-fields input,#question-fields select"))input.disabled=commandBusy || correctionBusy || cancellationBusy;
   if (!question) { questionId = undefined; $("question-fields").replaceChildren(); return; }
   if (question.id === questionId) return;
   questionId = question.id; $("question-fields").replaceChildren();
@@ -788,6 +790,7 @@ $("question-form").onsubmit = event => {
   event.preventDefault(); const chat = state.chat, question = chat?.question;
   if (!chat?.busy || chat.cancelled || !question || commandBusy) return;
   const answers = Object.fromEntries(new FormData($<HTMLFormElement>("question-form")).entries());
+  if(state.tasks){void answerOwnedQuestion(chat,question,answers);return;}
   void action(async () => {
     const token = revision;
     turns.push({ role: "user", content: question.questions.map(item => `${item.question}\n${item.isSecret ? "Respuesta privada enviada." : answers[item.id]}`).join("\n\n") }); persist();
@@ -796,6 +799,19 @@ $("question-form").onsubmit = event => {
     apply({ ...state, chat: reply });
   });
 };
+async function answerOwnedQuestion(chat:ChatView,question:NonNullable<ChatView["question"]>,values:Record<string,FormDataEntryValue>){
+  if(correctionBusy || cancellationBusy)return;correctionBusy=true;resultReview=undefined;render();
+  const epoch=continuationEpoch,originalProvider=provider,originalProject=JSON.stringify(state.project),taskId=state.tasks?.active.id;let failure:unknown;
+  try{
+    const submitted=await questionAnswers(question,values);if(epoch!==continuationEpoch || state.chat?.id!==chat.id || state.chat.cancelled)return;
+    try{await invoke<ChatView>("answer_codex_question",{id:chat.id,questionId:question.id,answers:submitted.answers});}catch(e){failure=e;}
+    const next=await invoke<DesktopSnapshot>("get_snapshot").catch(()=>invoke<DesktopSnapshot>("get_snapshot"));newSession=true;revision++;storageKey="";durableReady=false;apply(next);await taskReady;
+    const task=state.tasks?.active,receipt=task?.references.find(ref=>ref.name===`question-${question.id}.json` && ref.sha256===submitted.hash);
+    if(!task || task.id!==taskId || JSON.stringify(state.project)!==originalProject || provider!==originalProvider || task.chat_correction?.id!==question.id || !receipt?.shared_with.includes(provider))throw failure??Error("No se confirmó el guardado de estas respuestas. Conserva el texto y revisa la copia local antes de continuar.");
+    if(epoch===continuationEpoch && (task.chat_stop?.revision??0)<task.chat_correction.revision){queuedCorrection={id:question.id,text:task.chat_correction.text,task:task.id,project:originalProject,provider};inspectionNotice="Respuestas guardadas. Cerramos el turno anterior y continuaremos con ellas sin repetir ediciones.";}
+    else inspectionNotice="Respuestas guardadas; la continuación quedó detenida. El trabajo se conserva.";
+  }catch(e){queuedCorrection=undefined;error(e);}finally{correctionBusy=false;render();resumeChatCorrection();}
+}
 $("approve").onclick = () => void action(async () => {
   if (state.job?.snapshot.phase !== "awaiting_approval" || !state.job.approval_id) return;
   const token = revision, jobId = state.job.snapshot.input.job_id, events = new Channel<Job>();

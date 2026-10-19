@@ -482,6 +482,12 @@ pub struct QuestionRequest {
     pub questions: Vec<Question>,
 }
 impl QuestionRequest {
+    pub fn retained_answers(&self,id:uuid::Uuid,answers:&BTreeMap<String,String>)->Result<Vec<u8>,String>{
+        self.answer(answers.clone())?;
+        if id.is_nil() || self.questions.is_empty() || self.questions.len()>3 || self.questions.iter().any(|q|q.is_secret || q.question.len()>4096 || q.id.len()>64) || answers.values().any(|value|value.len()>2048){return Err("Usa preguntas admitidas y respuestas de hasta 2 KiB. Las preguntas marcadas como secretas no se guardan; gestiona las credenciales en el cliente oficial.".into());}
+        let rows=self.questions.iter().map(|q|vec![q.id.clone(),q.question.clone(),answers[&q.id].clone()]).collect::<Vec<_>>();
+        serde_json::to_vec(&serde_json::json!(["hazlo_question_answers_v1",id,rows])).map_err(|_|"No se pudieron preparar las respuestas locales.".into())
+    }
     pub fn answer(&self, answers: BTreeMap<String, String>) -> Result<Value, String> {
         if answers.len() != self.questions.len() {
             return Err("Responde cada pregunta antes de continuar.".into());
@@ -992,6 +998,19 @@ impl TurnDecoder {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn retained_question_answers_are_exact_bounded_context_without_secret_or_request_ids(){
+        let id=uuid::Uuid::parse_str("11111111-1111-4111-8111-111111111111").unwrap();
+        let mut request=super::QuestionRequest{request_id:serde_json::json!("PRIVATE_SERVER_REQUEST"),questions:vec![super::Question{id:"units".into(),header:"not retained".into(),question:"¿Medida? \"μ\"\n".into(),options:None,is_other:true,is_secret:false}]};
+        let answers=std::collections::BTreeMap::from([("units".into(),"sí 🧰\\mm".into())]);
+        let body=request.retained_answers(id,&answers).unwrap();
+        assert_eq!(String::from_utf8(body).unwrap(),r#"["hazlo_question_answers_v1","11111111-1111-4111-8111-111111111111",[["units","¿Medida? \"μ\"\n","sí 🧰\\mm"]]]"#);
+        request.questions[0].is_secret=true;assert!(request.retained_answers(id,&answers).is_err());request.questions[0].is_secret=false;
+        assert!(request.retained_answers(uuid::Uuid::nil(),&answers).is_err());
+        assert!(request.retained_answers(id,&std::collections::BTreeMap::from([("units".into(),"é".repeat(1025))])).is_err());
+        request.questions=(0..3).map(|n|super::Question{id:format!("q{n}"),question:"q".repeat(4096),..request.questions[0].clone()}).collect();
+        let large=request.questions.iter().map(|q|(q.id.clone(),"a".repeat(2048))).collect();assert!(request.retained_answers(id,&large).unwrap().len()>16000);
+    }
     #[test]
     fn selected_model_and_actual_bridge_catalog_are_required() {
         use serde_json::json;
