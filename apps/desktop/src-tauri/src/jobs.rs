@@ -309,13 +309,14 @@ impl Workflow {
         }else{
         if let OperationInput::LiveCad(input)=&snapshot.input{crate::cadpilot_live::recover_recorded_result(&directory,input)?;}
         if let OperationInput::LiveDrawing(input)=&snapshot.input{crate::cadcraft_live::recover_recorded_result(&directory,input)?;}
+        let agent_recovered=if let OperationInput::LiveAgent(input)=&snapshot.input{crate::agent_editor::recover_recorded_result(&directory,input)?}else{false};
         let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
         if record.outcome==crate::native_journal::Outcome::Pending{return Err("La llamada no fue admitida; prepara una nueva propuesta con el estado actual.".into());}
         if record.refusal_sha256.is_some() || matches!(&snapshot.input,OperationInput::LiveDrawing(input) if crate::cadcraft_live::refusal_proof(input,&directory).unwrap_or(false)){
             crate::live_dispatch::recover_refused(&directory,&snapshot.input)?;
             return Ok(serde_json::json!({"job_id":job_id,"recovered":true,"published":false,"native_operation_rejected":true,"edit_repeated":false,"guidance":"The original native receipt proves that the edit did not start. Preserve current work and inspect fresh state before a new proposal; this is not task completion."}));
         }
-        if record.outcome!=crate::native_journal::Outcome::Acknowledged{
+        if record.outcome!=crate::native_journal::Outcome::Acknowledged && !agent_recovered{
             let recovered=match &snapshot.input{
                 OperationInput::LiveCad(input)=>crate::cadpilot_live::recover_result(input,&directory,&cancel)?,
                 OperationInput::LiveAgent(input)=>{
@@ -3724,6 +3725,13 @@ mod tests {
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn retained_agent_completion_recovers_after_restart_without_an_editor_connection(){
+        for saving in [false,true]{
+            let(root,workflow)=setup();let selected=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();let mut input=crate::agent_editor::tests::job_fixture();input.native_completion_version=Some(1);input.save=saving;if saving{input.source=input.before.source.clone();}let report=crate::agent_editor::tests::report_fixture(&input);let id=input.job_id;let pending=workflow.propose_live_agent(selected.clone(),input.clone(),crate::agent_editor::tests::connection_fixture(&input)).unwrap();let mut dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);dispatch.project.save(&dispatch.snapshot).unwrap();let stage=dispatch.project.reserve_stage(id).unwrap();let fence=crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone()).unwrap();drop(fence.enter().unwrap());fence.retain_agent_completion(&input,&report).unwrap();drop(fence);drop(stage);workflow.finish(dispatch,Err("report interrupted after confirmed native reply".into())).unwrap();let summary=workflow.native_recovery().unwrap();assert_eq!(summary[0].acknowledged,1);assert_eq!(summary[0].uncertain,0);drop(workflow);
+            let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(Project::open(&root).unwrap()).unwrap();let result=workflow.recover_native_result(selected.clone(),id,Arc::new(AtomicBool::new(false))).unwrap();assert_eq!(result["published"],true);assert_eq!(result["edit_repeated"],false);assert!(!workflow.native_recovery().unwrap()[0].needs_review);let text=workflow.artifact(id,ArtifactFormat::LiveAgentReport).unwrap().read_text().unwrap();assert_eq!(serde_json::from_str::<serde_json::Value>(&text).unwrap(),report);assert_eq!(workflow.recover_native_result(selected,id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);assert!(workflow.begin(pending.approval_id.unwrap()).is_err());drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
     #[test]
     fn retained_drawing_completion_recovers_after_restart_without_a_live_connection(){
         let (root,workflow)=setup();let selected=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();let (input,proof)=crate::cadcraft_live::tests::recorded_fixture();let id=input.job_id;

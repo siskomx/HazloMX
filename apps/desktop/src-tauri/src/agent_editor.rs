@@ -1,6 +1,6 @@
 //! Arduino Agent's native editor companion with revision-bound, human-approved edits.
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json,Value};
 use sha2::{Digest, Sha256};
 use std::{
     path::{Path, PathBuf},
@@ -321,12 +321,15 @@ pub struct Input {
     pub receipt_sha256: Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub agreement:Option<crate::native_tools::Agreement>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub native_completion_version:Option<u32>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
         if let Some(agreement)=&self.agreement{agreement.validate()?;}
         self.before.validate().map_err(|error| error.message())?;
         if self.schema_version != 1
+            || self.native_completion_version.is_some_and(|version|version!=1)
             || self.live_agent_version != 1
             || self.job_id.is_nil()
             || (!self.save && self.before.version >= 9007199254740991)
@@ -391,9 +394,11 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,cancel:&
             cancel,
             dispatch,
         )) }.map_err(|error| error.message())?;
-    retain_report(input,receipt,stage,false)
+    let report=normalized_report(input,receipt)?;
+    dispatch.ok_or("Falta el envío original del editor.")?.retain_agent_completion(input,&report)?;
+    retain_report(&report,stage,false)
 }
-fn retain_report(input:&Input,receipt:Receipt,stage:&Path,recovery:bool)->Result<(),String>{
+fn normalized_report(input:&Input,receipt:Receipt)->Result<Value,String>{
     receipt.validate_operation(input.job_id,&input.before,&input.source,input.save).map_err(|error|error.message())?;
     let mut report = serde_json::to_value(receipt).map_err(|_| Failure::Uncertain.message())?;
     report["after"]
@@ -401,23 +406,65 @@ fn retain_report(input:&Input,receipt:Receipt,stage:&Path,recovery:bool)->Result
         .ok_or(Failure::Uncertain.message())?
         .remove("source");
     validate_report(input, &report)?;
+    Ok(report)
+}
+fn retain_report(report:&Value,stage:&Path,recovery:bool)->Result<(),String>{
     if recovery && stage.join("result.json").try_exists().map_err(|_|"No se pudo comprobar el resultado local.")?{
         let saved:serde_json::Value=crate::project::read_json(&stage.join("result.json")).map_err(|_|"El informe local cambió; se conserva sin reemplazarlo.")?;
-        return if saved==report{Ok(())}else{Err("El informe local no coincide con el recibo nativo. Se conserva el trabajo y la pausa.".into())};
+        return if &saved==report{Ok(())}else{Err("El informe local no coincide con el recibo nativo. Se conserva el trabajo y la pausa.".into())};
     }
     let bytes = serde_json::to_vec_pretty(&report).map_err(|_| Failure::Uncertain.message())?;
     crate::kicad_project::write_new(&stage.join("result.json"), &bytes)
         .map_err(|_| Failure::Uncertain.message().to_string())
 }
 pub(crate) fn recover_result(input:&Input,connection:&Connection,stage:&Path,cancel:&AtomicBool)->Result<bool,String>{
-    input.validate()?;connection.validate_for(&input.before).map_err(|error|error.message())?;
+    input.validate()?;
+    if recover_recorded_result(stage,input)?{return Ok(true);}
+    let record=crate::live_dispatch::read(stage,&crate::project::OperationInput::LiveAgent(input.clone()))?;
+    if record.as_ref().is_some_and(|record|record.outcome==crate::native_journal::Outcome::Pending) || input.native_completion_version==Some(1) && record.is_none(){return Err("Falta el envío original admitido del editor; no se adoptó otro resultado.".into());}
+    connection.validate_for(&input.before).map_err(|error|error.message())?;
     let mut original=json!({"action":if input.save{"save"}else{"apply"},"job_id":input.job_id,"instance_id":input.before.instance_id,"document_token":input.before.document_token,"version":input.before.version,"state_sha256":input.before.state_sha256});
     if !input.save{original["source"]=json!(input.source);}
     let runtime=tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_|"No se pudo iniciar la recuperación nativa.")?;
     let value:serde_json::Value=runtime.block_on(exchange(connection,json!({"action":"recover","original":original}),false,cancel,Duration::from_secs(15))).map_err(|_|"El editor no conserva un resultado comprobado de esa operación. Se conserva el trabajo y la pausa; no repitas la edición.")?;
     if value==json!({"editor_recovery_version":1,"status":"running"}){return Ok(false);}
     let receipt:Receipt=serde_json::from_value(value).map_err(|_|"El recibo nativo no es compatible; se conserva la pausa.")?;
-    retain_report(input,receipt,stage,true)?;Ok(true)
+    let report=normalized_report(input,receipt)?;
+    if record.is_some(){crate::live_dispatch::retain_agent_completion(stage,input,&report)?;}
+    retain_report(&report,stage,true)?;Ok(true)
+}
+
+fn completion_identity(input:&Input)->Result<String,String>{let mut input=input.clone();input.receipt_sha256=None;Ok(crate::kicad_project::digest(&serde_json::to_vec(&input).map_err(|_|"Entrada del editor no válida.")?))}
+#[derive(Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Completion{version:u32,input_sha256:String,result:Value}
+pub(crate) fn write_native_completion(directory:&Path,input:&Input,report:&Value)->Result<String,String>{
+    validate_report(input,report)?;
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el recibo local del editor.")?;
+    let bytes=serde_json::to_vec(&Completion{version:1,input_sha256:completion_identity(input)?,result:report.clone()}).map_err(|_|"No se pudo conservar el recibo del editor.")?;
+    if bytes.len()>65536{return Err("El recibo del editor supera el límite local; no repitas la edición.".into());}
+    let path=directory.join("agent-completion.json");
+    if path.try_exists().map_err(|_|"No se pudo comprobar el recibo del editor.")?{if crate::kicad_project::read_regular(&path,65536)?!=bytes{return Err("El recibo original del editor cambió; se conserva sin reemplazarlo.".into());}}
+    else{crate::kicad_project::write_new(&path,&bytes).map_err(|_|"La respuesta del editor no pudo conservarse; no repitas la edición.")?;}
+    Ok(crate::kicad_project::digest(&bytes))
+}
+pub(crate) fn confirmed_completion(directory:&Path,input:&Input,hash:&str)->Result<Value,String>{
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el recibo del editor.")?;
+    let _pin=crate::kicad_project::open_regular(&directory.join("agent-completion.json"),65536)?;
+    let bytes=crate::kicad_project::read_regular(&directory.join("agent-completion.json"),65536)?;
+    if !crate::kicad_project::valid_hash(hash) || crate::kicad_project::digest(&bytes)!=hash{return Err("El recibo del editor cambió; se conserva la pausa sin repetir la operación.".into());}
+    let proof:Completion=serde_json::from_slice(&bytes).map_err(|_|"Recibo del editor no compatible.")?;
+    if proof.version!=1 || proof.input_sha256!=completion_identity(input)?{return Err("El recibo no pertenece a la operación aprobada del editor.".into());}
+    validate_report(input,&proof.result)?;Ok(proof.result)
+}
+pub(crate) fn recover_recorded_result(directory:&Path,input:&Input)->Result<bool,String>{
+    let Some(record)=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveAgent(input.clone()))? else{return Ok(false);};
+    let Some(hash)=record.agent_completion_sha256 else{return Ok(false);};
+    let report=confirmed_completion(directory,input,&hash)?;
+    let bytes=serde_json::to_vec_pretty(&report).map_err(|_|"Recibo del editor no compatible.")?;
+    let path=directory.join("result.json");
+    if path.try_exists().map_err(|_|"No se pudo comprobar el informe del editor.")?{if crate::kicad_project::read_regular(&path,65536)?!=bytes{return Err("El informe del editor cambió; se conserva sin reemplazarlo.".into());}}
+    else{crate::project::atomic_json(&path,&report,false).map_err(|_|"El recibo sigue local; no se pudo recuperar su informe. No repitas la edición.")?;}Ok(true)
 }
 impl Receipt {
     pub fn validate(&self, job: Uuid, before: &Observation, source: &str) -> Result<(), Failure> {
@@ -799,7 +846,7 @@ pub(crate) mod tests {
 
     pub(crate) fn job_fixture() -> Input {
         let before = observation(Uuid::new_v4());
-        Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
+        Input {native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_agent_version: 1,
             job_id: Uuid::new_v4(),
@@ -941,6 +988,25 @@ pub(crate) mod tests {
                 Err(Failure::Uncertain)
             );
         }
+    }
+    #[tokio::test]
+    async fn confirmed_edit_and_save_survive_report_failure_after_the_pipe_closes(){
+        use std::{fs,sync::{Mutex,atomic::AtomicUsize}};
+        for saving in [false,true]{
+            let root=std::env::temp_dir().join(format!("hazlo-agent-completion-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let(connection,mut server)=fixture();let mut input=job_fixture();input.native_completion_version=Some(1);input.before=observation(connection.instance_id);input.save=saving;input.source=if saving{input.before.source.clone()}else{input.before.source.replace("1000","500")+"// PRIVATE_NATIVE_SOURCE_SENTINEL\n"};let mut reply=report_fixture(&input);reply["after"]["source"]=json!(input.source);let expected=input.clone();let writes=Arc::new(AtomicUsize::new(0));let count=writes.clone();
+            let native=tokio::spawn(async move{let message=receive(&mut server).await;assert_eq!(message["request"]["action"],if saving{"save"}else{"apply"});assert_eq!(message["request"]["job_id"],json!(expected.job_id));count.fetch_add(1,Ordering::SeqCst);server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":reply})).unwrap()).await.unwrap();});
+            let operation=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();fs::write(root.join("result.json"),b"preserve occupied report").unwrap();let directory=root.clone();let checked=input.clone();let connected=connection.clone();let dispatch=fence.clone();let result=tokio::task::spawn_blocking(move||run_gated(&checked,&connected,&directory,&AtomicBool::new(false),&dispatch)).await.unwrap();native.await.unwrap();assert!(result.is_err());assert_eq!(writes.load(Ordering::SeqCst),1);assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert_eq!(record.summary(&operation).acknowledged,1);assert_eq!(record.summary(&operation).uncertain,0);assert!(record.summary(&operation).needs_review);assert!(fence.enter().is_err());
+            let proof=fs::read_to_string(root.join("agent-completion.json")).unwrap();assert!(!proof.contains("PRIVATE_NATIVE_SOURCE_SENTINEL")&&!proof.contains(&connection.token));fs::rename(root.join("result.json"),root.join("preserved.native")).unwrap();let mut disconnected=connection;disconnected.editor_version=0;assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false)).unwrap());assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false)).unwrap());assert_eq!(writes.load(Ordering::SeqCst),1);let report:Value=crate::project::read_json(&root.join("result.json")).unwrap();validate_report(&input,&report).unwrap();assert_eq!(fs::read(root.join("preserved.native")).unwrap(),b"preserve occupied report");drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn completion_scope_preserves_legacy_inputs_and_requires_original_admission(){
+        use std::{fs,sync::Mutex};
+        use std::os::windows::fs::OpenOptionsExt;
+        let mut input=job_fixture();let legacy=serde_json::to_value(&input).unwrap();assert!(legacy.get("native_completion_version").is_none());assert_eq!(serde_json::to_value(serde_json::from_value::<Input>(legacy.clone()).unwrap()).unwrap(),legacy);let old=completion_identity(&input).unwrap();input.native_completion_version=Some(1);input.validate().unwrap();assert_ne!(completion_identity(&input).unwrap(),old);let mut changed=input.clone();changed.native_completion_version=Some(2);assert!(changed.validate().is_err());
+        let root=std::env::temp_dir().join(format!("hazlo-agent-anchor-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let report=report_fixture(&input);let original=crate::project::OperationInput::LiveAgent(input.clone());let hash=write_native_completion(&root,&input,&report).unwrap();assert!(!recover_recorded_result(&root,&input).unwrap());assert!(crate::live_dispatch::retain_agent_completion(&root,&input,&report).is_err());let fence=crate::live_dispatch::Dispatch::start(&root,&original,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();assert!(fence.retain_agent_completion(&input,&report).is_err());drop(fence.enter().unwrap());
+        let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join("live-dispatch.json")).unwrap();assert!(fence.retain_agent_completion(&input,&report).is_err());assert!(crate::live_dispatch::read(&root,&original).unwrap().unwrap().agent_completion_sha256.is_none());assert_eq!(crate::kicad_project::digest(&fs::read(root.join("agent-completion.json")).unwrap()),hash);drop(lock);
+        fence.retain_agent_completion(&input,&report).unwrap();fence.retain_agent_completion(&input,&report).unwrap();assert_eq!(crate::live_dispatch::read(&root,&original).unwrap().unwrap().agent_completion_sha256.as_deref(),Some(hash.as_str()));changed=input.clone();changed.agreement.as_mut().unwrap().outcome.push_str(" changed");assert!(crate::live_dispatch::read(&root,&crate::project::OperationInput::LiveAgent(changed)).is_err());assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[tokio::test]
     async fn recovery_pipe_looks_up_exact_native_attempts_and_preserves_local_reports(){

@@ -934,6 +934,8 @@ impl Project {
             return crate::cadcraft_live::validate_artifacts(directory,input,&report).map_err(io::Error::other);
         }
         if let OperationInput::LiveAgent(input) = input {
+            let record=crate::live_dispatch::read(directory,&OperationInput::LiveAgent(input.clone())).map_err(io::Error::other)?;
+            if input.native_completion_version==Some(1) && record.as_ref().is_none_or(|record|record.agent_completion_sha256.is_none()){return Err(error("Falta el recibo original del editor; el resultado sigue pendiente."));}
             let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),65536).map_err(io::Error::other)?;
             if input.receipt_sha256.as_deref()!=Some(&crate::kicad_project::digest(&bytes)) {
                 return Err(error("El informe de la edición del sketch cambió."));
@@ -1064,9 +1066,9 @@ impl Project {
                 let id=snapshot.input.job_id();let staged=stage_exists(self,id)?;
                 let directory=if staged {self.store("staging").join(id.to_string())}else{self.artifact_directory(id)};
                 if directory.try_exists()? {if let Some(record)=crate::live_dispatch::read(&directory,&snapshot.input).map_err(io::Error::other)? {summaries.push(record.summary(&snapshot.input));continue;}}
-                let finished=snapshot.input.receipt_sha256().is_some() && (snapshot.phase==Phase::Completed || directory.try_exists()? && self.validate_outputs(&directory,&snapshot.input).is_ok());
+                let finished=snapshot.input.receipt_sha256().is_some() && directory.try_exists()? && self.validate_outputs(&directory,&snapshot.input).is_ok();
                 if finished {summaries.push(crate::native_journal::Summary{job_id:id,program:snapshot.input.native_program(),kind:"live_adapter",acknowledged:1,uncertain:0,not_dispatched:0,finished:true,needs_review:false,outcome_checked:false});}
-                else if native_may_have_run(&snapshot) {summaries.push(unresolved_native(id,snapshot.input.native_program(),"live_adapter"));}
+                else if native_may_have_run(&snapshot) || snapshot.phase==Phase::Completed {summaries.push(unresolved_native(id,snapshot.input.native_program(),"live_adapter"));}
             }
         }
         Ok(summaries)
@@ -1083,6 +1085,12 @@ impl Project {
             if let OperationInput::LiveCad(input)=&snapshot.input{
                 let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
                 if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::cadpilot_live::recover_recorded_result(&directory,input),Ok(true)){
+                    let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;if self.validate_outputs(&directory,&checked).is_ok(){crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}}
+                }}
+            }
+            if let OperationInput::LiveAgent(input)=&snapshot.input{
+                let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
+                if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::agent_editor::recover_recorded_result(&directory,input),Ok(true)){
                     let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;if self.validate_outputs(&directory,&checked).is_ok(){crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}}
                 }}
             }
@@ -1231,6 +1239,28 @@ pub(crate) mod tests {
             if matches!(scenario,"changed_copy"|"changed_proof"){assert!(project.recover().is_err());assert!(path.join("native-completion.json").is_file());}
             else{let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,if scenario=="checked"{Phase::Completed}else{Phase::Interrupted});if scenario=="checked"{assert!(recovered[0].audit.as_ref().unwrap().files_verified);assert_eq!(fs::read(project.artifact_directory(id).join("NativeVersion/verification.json")).unwrap(),proof);}else{assert!(path.join("result.json").is_file());let summary=project.native_recovery(None).unwrap();assert_eq!(summary[0].acknowledged,1);assert_eq!(summary[0].uncertain,0);assert_eq!(summary[0].needs_review,scenario=="unbound");}}
             assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"preserve later manual work");drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn agent_completion_recovers_offline_and_preserves_manual_and_unbound_work(){
+        use std::sync::{Arc,Mutex,atomic::AtomicBool};
+        for scenario in ["missing_report","acknowledged_missing","unbound","changed_report","changed_proof","missing_record","occupied"]{
+            let root=root();let project=Project::create(&root).unwrap();let mut input=crate::agent_editor::tests::job_fixture();input.native_completion_version=Some(1);let report=crate::agent_editor::tests::report_fixture(&input);let id=input.job_id;let operation=OperationInput::LiveAgent(input.clone());let mut snapshot=project.snapshot(operation.clone(),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();let stage=project.reserve_stage(id).unwrap();let path=stage.path.clone();let fence=crate::live_dispatch::Dispatch::start(&path,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());
+            crate::agent_editor::write_native_completion(&path,&input,&report).unwrap();if scenario!="unbound"{fence.retain_agent_completion(&input,&report).unwrap();}
+            if scenario=="acknowledged_missing"{fs::write(path.join("result.json"),serde_json::to_vec_pretty(&report).unwrap()).unwrap();let mut checked=operation.clone();checked.retain_receipt(&path).unwrap();fence.complete(&checked).unwrap();snapshot.input=checked;project.save(&snapshot).unwrap();fs::remove_file(path.join("result.json")).unwrap();}
+            drop(fence);drop(stage);fs::write(root.join("manual.ino"),b"preserve later user changes").unwrap();
+            if scenario=="changed_report"{fs::write(path.join("result.json"),b"preserve changed report").unwrap();}
+            if scenario=="changed_proof"{fs::write(path.join("agent-completion.json"),b"preserve changed native proof").unwrap();}
+            if scenario=="missing_record"{fs::remove_file(path.join("live-dispatch.json")).unwrap();fs::write(path.join("result.json"),serde_json::to_vec_pretty(&report).unwrap()).unwrap();let mut claimed=snapshot.clone();claimed.phase=Phase::Completed;claimed.audit.as_mut().unwrap().files_verified=true;claimed.audit.as_mut().unwrap().native_attempted=None;claimed.input.retain_receipt(&path).unwrap();project.save(&claimed).unwrap();let summary=project.native_recovery(None).unwrap();assert!(summary[0].needs_review);assert_eq!(summary[0].uncertain,1);project.save(&snapshot).unwrap();}
+            if scenario=="occupied"{fs::create_dir(project.artifact_directory(id)).unwrap();fs::write(project.artifact_directory(id).join("manual.ino"),b"preserve occupied output").unwrap();}
+            if scenario=="changed_proof"{assert!(project.recover().is_err());}else{
+                let recovered=project.recover().unwrap();let complete=matches!(scenario,"missing_report"|"acknowledged_missing");assert_eq!(recovered[0].phase,if complete{Phase::Completed}else{Phase::Interrupted},"{scenario}");let summary=project.native_recovery(None).unwrap();assert_eq!(summary[0].uncertain,usize::from(matches!(scenario,"unbound"|"missing_record")));assert_eq!(summary[0].acknowledged,usize::from(!matches!(scenario,"unbound"|"missing_record")));
+                if complete{let published=project.artifact_directory(id);assert_eq!(fs::read(published.join("result.json")).unwrap(),serde_json::to_vec_pretty(&report).unwrap());fs::remove_file(published.join("result.json")).unwrap();assert_eq!(project.recover().unwrap()[0].phase,Phase::Completed);assert!(published.join("result.json").exists());}
+                if scenario=="changed_report"{assert_eq!(fs::read(path.join("result.json")).unwrap(),b"preserve changed report");assert!(summary[0].needs_review);}
+                if scenario=="unbound"{assert!(!path.join("result.json").exists());}
+                if scenario=="occupied"{assert_eq!(fs::read(project.artifact_directory(id).join("manual.ino")).unwrap(),b"preserve occupied output");assert!(path.join("result.json").exists());}
+            }
+            assert_eq!(fs::read(root.join("manual.ino")).unwrap(),b"preserve later user changes");drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
         }
     }
     #[test]

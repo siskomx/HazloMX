@@ -36,6 +36,8 @@ pub(crate) struct Record {
     pub drawing_copy_capture_sha256:Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub drawing_copy_check_sha256:Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub agent_completion_sha256:Option<String>,
 }
 fn digest(input: &OperationInput) -> Result<String, String> {
     if !matches!(
@@ -60,7 +62,7 @@ impl Record {
     pub fn summary(&self, input: &OperationInput) -> Summary {
         let finished = self.outcome == Outcome::Acknowledged;
         let refused=self.refusal_sha256.is_some();
-        let observed=self.native_completion_sha256.is_some() || self.drawing_completion_sha256.is_some();
+        let observed=self.native_completion_sha256.is_some() || self.drawing_completion_sha256.is_some() || self.agent_completion_sha256.is_some();
         Summary {
             job_id: self.job_id,
             program: input.native_program(),
@@ -98,6 +100,13 @@ pub(crate) fn read(directory: &Path, input: &OperationInput) -> Result<Option<Re
         return Err("El registro no coincide con la operación aprobada. No se repetirá.".into());
     }
     let mut retained_result=None;
+    if matches!(input,OperationInput::LiveAgent(agent) if agent.native_completion_version==Some(1)) && record.outcome==Outcome::Acknowledged && record.agent_completion_sha256.is_none(){return Err("Falta el recibo original del editor; se conserva la pausa.".into());}
+    if let Some(hash)=&record.agent_completion_sha256{
+        let OperationInput::LiveAgent(agent)=input else{return Err("El recibo del editor no pertenece a esta operación.".into());};
+        if record.outcome==Outcome::Pending || record.refusal_sha256.is_some(){return Err("El recibo del editor no pertenece a una llamada admitida.".into());}
+        let report=crate::agent_editor::confirmed_completion(directory,agent,hash)?;let expected=crate::kicad_project::digest(&serde_json::to_vec_pretty(&report).map_err(|_|"Informe del editor no válido.")?);
+        if record.receipt_sha256.as_ref().is_some_and(|hash|hash!=&expected) || input.receipt_sha256().is_some_and(|hash|hash!=expected){return Err("El informe del editor no coincide con su resultado original.".into());}retained_result=Some(expected);
+    }
     if matches!(input,OperationInput::LiveDrawing(drawing) if drawing.native_completion_version==Some(1)) && !record.drawing_completion_required{return Err("La operación exige finalización nativa; no se puede degradar su registro.".into());}
     if record.drawing_completion_required && (!matches!(input,OperationInput::LiveDrawing(_)) || record.outcome==Outcome::Acknowledged && record.drawing_completion_sha256.is_none()){return Err("Falta el vínculo original de finalización CADCraft; se conserva la pausa.".into());}
     if let Some(hash)=&record.drawing_completion_sha256{
@@ -145,6 +154,13 @@ pub(crate) fn retain_native_completion(directory:&Path,input:&crate::cadpilot_li
     if record.native_completion_sha256.is_none(){record.native_completion_sha256=Some(hash.clone());atomic_json(&directory.join("live-dispatch.json"),&record,true).map_err(|_|"La respuesta sigue local, pero no se confirmó su vínculo al envío. No repitas la edición.".to_string())?;}
     Ok(hash)
 }
+pub(crate) fn retain_agent_completion(directory:&Path,input:&crate::agent_editor::Input,report:&serde_json::Value)->Result<String,String>{
+    let mut record=read(directory,&OperationInput::LiveAgent(input.clone()))?.ok_or("Falta el envío original del editor.")?;
+    if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || record.refusal_sha256.is_some(){return Err("El editor no tiene una llamada admitida para otro resultado.".into());}
+    let hash=crate::agent_editor::write_native_completion(directory,input,report)?;
+    if record.agent_completion_sha256.as_ref().is_some_and(|old|old!=&hash){return Err("El recibo del editor ya tiene otro contenido; no se reemplazó.".into());}
+    if record.agent_completion_sha256.is_none(){record.agent_completion_sha256=Some(hash.clone());atomic_json(&directory.join("live-dispatch.json"),&record,true).map_err(|_|"El recibo sigue local, pero falta vincularlo al envío. No repitas la edición.".to_string())?;}Ok(hash)
+}
 pub(crate) fn retain_working_version(directory:&Path,input:&crate::cadpilot_live::Input,hash:&str)->Result<String,String>{
     let operation=OperationInput::LiveCad(input.clone());let mut record=read(directory,&operation)?.ok_or("Falta el envío original de captura.")?;
     if input.working_version.is_none() || !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || !crate::kicad_project::valid_hash(hash){return Err("La comprobación no corresponde a una captura admitida.".into());}
@@ -171,6 +187,7 @@ pub(crate) fn recover_refused(directory:&Path,input:&OperationInput)->Result<(),
 }
 pub(crate) fn recover_checked(directory:&Path,checked:&OperationInput)->Result<(),String>{
     let mut record=read(directory,checked)?.ok_or("Falta el registro de la llamada; no se adoptó el resultado.")?;
+    if matches!(checked,OperationInput::LiveAgent(input) if input.native_completion_version==Some(1)) && record.agent_completion_sha256.is_none(){return Err("Falta el vínculo original del editor; no se adoptó otro resultado.".into());}
     if matches!(checked,OperationInput::LiveDrawing(input) if input.native_working_version.is_some()) && record.drawing_copy_check_sha256.is_none(){return Err("La edición se conserva, pero su nueva versión sigue pendiente de comprobar.".into());}
     if record.drawing_completion_required && record.drawing_completion_sha256.is_none(){return Err("Falta el vínculo original CADCraft; no se adoptó otro resultado.".into());}
     if record.refusal_sha256.is_some(){return Err("La edición no inició; no se adoptó otro resultado como completado.".into());}
@@ -208,6 +225,7 @@ impl Dispatch {
             drawing_completion_sha256:None,
             drawing_copy_capture_sha256:None,
             drawing_copy_check_sha256:None,
+            agent_completion_sha256:None,
         };
         let path = directory.join("live-dispatch.json");
         atomic_json(&path,&record,false).map_err(|_|"La operación ya tiene un registro o no se pudo reservar. No se enviaron nuevas llamadas.")?;
@@ -246,6 +264,10 @@ impl Dispatch {
     pub(crate) fn retain_working_version(&self,input:&crate::cadpilot_live::Input,hash:&str)->Result<(),String>{
         let mut record=self.record.lock().map_err(|_|"No se pudo vincular la comprobación de copia.")?;record.working_version_sha256=Some(retain_working_version(self.path.parent().ok_or("Falta el registro nativo.")?,input,hash)?);Ok(())
     }
+    pub(crate) fn retain_agent_completion(&self,input:&crate::agent_editor::Input,result:&serde_json::Value)->Result<(),String>{
+        let mut current=self.record.lock().map_err(|_|"No se pudo conservar el resultado del editor.")?;
+        current.agent_completion_sha256=Some(retain_agent_completion(self.path.parent().ok_or("Falta el registro del editor.")?,input,result)?);Ok(())
+    }
     pub(crate) fn retain_drawing_completion(&self,input:&crate::cadcraft_live::Input,result:&serde_json::Value)->Result<(),String>{
         let mut current=self.record.lock().map_err(|_|"No se pudo conservar el resultado CADCraft.")?;let directory=self.path.parent().ok_or("Falta el registro nativo.")?;let operation=OperationInput::LiveDrawing(input.clone());let mut saved=read(directory,&operation)?.ok_or("Falta el envío original CADCraft.")?;
         if !matches!(saved.outcome,Outcome::Dispatched|Outcome::Uncertain) || saved.refusal_sha256.is_some(){return Err("La llamada CADCraft no fue admitida para otro resultado.".into());}
@@ -273,6 +295,7 @@ impl Dispatch {
         *current=read(directory,&OperationInput::LiveDrawing(input.clone()))?.ok_or("Falta el envío original CADCraft.")?;Ok(())
     }
     pub fn complete(&self, checked: &OperationInput) -> Result<(), String> {
+        if matches!(checked,OperationInput::LiveAgent(input) if input.native_completion_version==Some(1)) && read(self.path.parent().ok_or("Falta el registro del editor.")?,checked)?.is_none_or(|record|record.agent_completion_sha256.is_none()){return Err("Falta el vínculo original del editor; se conserva la pausa.".into());}
         if matches!(checked,OperationInput::LiveDrawing(input) if input.native_working_version.is_some()) && read(self.path.parent().ok_or("Falta el registro CADCraft.")?,checked)?.is_none_or(|record|record.drawing_copy_check_sha256.is_none()){return Err("La edición se conserva; su nueva versión todavía no está comprobada.".into());}
         if read(self.path.parent().ok_or("Falta el registro nativo.")?,checked)?.is_some_and(|record|record.drawing_completion_required && record.drawing_completion_sha256.is_none()){return Err("Falta el vínculo original CADCraft; se conserva la pausa.".into());}
         if read(self.path.parent().ok_or("Falta el registro nativo.")?,checked)?.is_some_and(|record|record.refusal_sha256.is_some()){return Err("La edición no inició; no se marcará como completada.".into());}
