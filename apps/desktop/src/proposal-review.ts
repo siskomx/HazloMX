@@ -42,6 +42,15 @@ export function proposalFacts(run: Snapshot): string[] {
   }
   if(run.audit?.task) facts.push("Esta aprobación solo permite el cambio mostrado en esta conversación. Cambiar la tarea, sus mensajes o referencias invalida la propuesta; no permite instalar herramientas, compartir nuevas referencias ni controlar hardware.");
   if(input.native_tools_version){
+    const agreement=input.agreement;
+    if(agreement){
+      facts.push(agreement.kind==="provisional_draft"?"Preparar un borrador provisional con las condiciones indicadas.":"Realizar este lote de software con las condiciones indicadas.","Resultado propuesto: "+agreement.outcome);
+      for(const value of agreement.assumptions)facts.push("Supuesto propuesto, no medición: "+value);
+      for(const value of agreement.constraints)facts.push("Límite que debe conservarse: "+value);
+      for(const value of agreement.losses)facts.push("Pérdida que aceptarías con este lote: "+value);
+      facts.push("Cómo se propone comprobarlo: "+agreement.verification,"Aprobar acepta estas condiciones para este lote. No convierte supuestos ni planes de comprobación en hechos verificados.");
+    }else facts.push("Propuesta anterior sin resultado y supuestos estructurados; pide a Hazlo que la prepare de nuevo antes de continuar.");
+    if(!input.guard?.checks?.some(check=>check.role==="outcome"))facts.push("No hay comprobaciones automáticas del resultado acordado. Una respuesta del programa no demostrará que la tarea esté terminada.");
     for(const check of input.guard?.checks??[])facts.push(check.role==="identity"?`Mantener la identidad de ${check.label}.`:`Comprobar ${check.label}: ${JSON.stringify(check.expected)}.`);
     facts.push("Usar las herramientas nativas de " + input.program + ".", "Objetivo: " + input.description,
       "El programa ejecutará las llamadas del catálogo conectado; puedes revisar sus argumentos en los detalles.",

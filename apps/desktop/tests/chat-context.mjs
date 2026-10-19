@@ -40,6 +40,7 @@ assert.match(native.instruction,/Los cambios siempre requieren propose_native_to
 assert.match(native.instruction,/usa exactamente desktop_context.project_directory/);
 assert.match(native.instruction,/no la confundas con la carpeta del documento original/);
 assert.match(native.instruction,/pregunta antes de preparar el guardado/);
+assert.match(native.instruction,/propose_native_tool_calls requiere agreement/);assert.match(native.instruction,/nunca mediciones ni permiso previo/);
 const hugeReply=JSON.parse(agentPrompt(request,[{role:"assistant",content:"á".repeat(10000)}],current));
 assert.equal(hugeReply.omitted_conversation_turns,1);
 assert.deepEqual(hugeReply.recovered_conversation,[]);

@@ -91,8 +91,30 @@ pub struct Input {
     pub readback: Call,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub guard: Option<Guard>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub agreement:Option<Agreement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receipt_sha256: Option<String>,
+}
+#[derive(Debug,Clone,Serialize,Deserialize,PartialEq)]
+#[serde(rename_all="snake_case")]
+pub enum WorkKind{ProvisionalDraft,SoftwareOperation}
+#[derive(Debug,Clone,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Agreement{
+    pub kind:WorkKind,
+    pub outcome:String,
+    pub assumptions:Vec<String>,
+    pub constraints:Vec<String>,
+    pub losses:Vec<String>,
+    pub verification:String,
+}
+impl Agreement{
+    pub fn validate(&self)->Result<(),String>{
+        let text=|value:&str,max:usize|!value.trim().is_empty() && value.len()<=max && !value.chars().any(char::is_control);
+        if !text(&self.outcome,512) || !text(&self.verification,512) || [&self.assumptions,&self.constraints,&self.losses].iter().any(|items|items.len()>8 || items.iter().any(|value|!text(value,256))){return Err("Explica brevemente el resultado, cómo se comprobará y hasta ocho supuestos, límites y pérdidas por categoría. Son condiciones propuestas, no hechos verificados.".into());}Ok(())
+    }
+    pub fn schema()->Value{json!({"type":"object","properties":{"kind":{"enum":["provisional_draft","software_operation"]},"outcome":{"type":"string","minLength":1,"maxLength":512},"verification":{"type":"string","minLength":1,"maxLength":512},"assumptions":{"type":"array","maxItems":8,"items":{"type":"string","minLength":1,"maxLength":256}},"constraints":{"type":"array","maxItems":8,"items":{"type":"string","minLength":1,"maxLength":256}},"losses":{"type":"array","maxItems":8,"items":{"type":"string","minLength":1,"maxLength":256}}},"required":["kind","outcome","verification","assumptions","constraints","losses"],"additionalProperties":false})}
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -105,6 +127,7 @@ pub struct Guard {
 
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(agreement)=&self.agreement{agreement.validate()?;}
         if let Some(guard)=&self.guard {
             crate::native_checks::validate(&guard.checks,self.calls.len())?;
             if !guard.checks.is_empty() && (self.calls.is_empty() || guard.call!=self.readback){return Err("Las comprobaciones necesitan la misma consulta nativa antes y después de las ediciones.".into());}
@@ -1148,9 +1171,16 @@ pub(crate) fn recover_recorded_result(directory:&Path,input:&Input)->Result<Inpu
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    pub(crate) fn agreement_fixture()->Agreement{Agreement{kind:WorkKind::ProvisionalDraft,outcome:"Prepare the requested native draft".into(),assumptions:vec!["Physical fit has not been measured".into()],constraints:vec!["Preserve the original and manual edits".into()],losses:Vec::new(),verification:"Inspect the native response; saved-version reopen remains unverified".into()}}
+    #[test]
+    fn native_agreements_are_bounded_plans_and_bound_to_original_dispatches(){
+        let agreement=agreement_fixture();agreement.validate().unwrap();for field in ["outcome","verification"]{let mut value=serde_json::to_value(&agreement).unwrap();value[field]=json!("x".repeat(513));assert!(serde_json::from_value::<Agreement>(value).unwrap().validate().is_err());}
+        for field in ["assumptions","constraints","losses"]{for values in [json!([" "]),json!(["bad\ncontrol"]),json!(["x".repeat(257)]),json!(vec!["bounded";9])]{let mut value=serde_json::to_value(&agreement).unwrap();value[field]=values;assert!(serde_json::from_value::<Agreement>(value).unwrap().validate().is_err());}}
+        let(root,mut input,_)=recorded_fixture("all_acknowledged");let old=serde_json::to_value(&input).unwrap();assert!(old.get("agreement").is_none());assert!(crate::native_journal::read(&root,&input).unwrap().is_some());input.agreement=Some(agreement);assert!(crate::native_journal::read(&root,&input).is_err(),"Intent cannot be retrofitted after native work");let next=root.join("next");std::fs::create_dir(&next).unwrap();let _batch=crate::native_journal::Batch::start(&next,&input).unwrap();assert!(crate::native_journal::read(&next,&input).unwrap().is_some());input.agreement.as_mut().unwrap().assumptions[0]="Changed assumption".into();assert!(crate::native_journal::read(&next,&input).is_err());let restored:Input=serde_json::from_value(old.clone()).unwrap();assert_eq!(serde_json::to_value(restored).unwrap(),old);std::fs::remove_dir_all(root).unwrap();
+    }
     pub(crate) fn recorded_fixture(mode:&str)->(std::path::PathBuf,Input,Value){
         let root=std::env::temp_dir().join(format!("hazlo-recorded-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let id=Uuid::new_v4();let query=Call{tool:"read_document".into(),arguments:Default::default()};let before=json!({"structuredContent":{"document_id":id,"width_mm":10,"manual_label":"PRIVATE_NATIVE_SENTINEL"}});let after=json!({"structuredContent":{"document_id":id,"width_mm":20,"manual_label":"PRIVATE_NATIVE_SENTINEL"}});
-        let mut input=Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned recorded batch".into(),calls:vec![Call{tool:"edit_parameter".into(),arguments:serde_json::from_value(json!({"width_mm":20})).unwrap()}],readback:query.clone(),guard:Some(Guard{call:query,result_sha256:crate::kicad_project::digest(&serde_json::to_vec(&before).unwrap()),checks:vec![crate::native_checks::Check{role:crate::native_checks::Role::Identity,label:"Native document".into(),pointer:"/document_id".into(),expected:json!(id),step:None},crate::native_checks::Check{role:crate::native_checks::Role::Outcome,label:"Agreed width".into(),pointer:"/width_mm".into(),expected:json!(20),step:Some(0)}]}),receipt_sha256:None};input.validate().unwrap();
+        let mut input=Input{schema_version:1,native_tools_version:1,agreement:None,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned recorded batch".into(),calls:vec![Call{tool:"edit_parameter".into(),arguments:serde_json::from_value(json!({"width_mm":20})).unwrap()}],readback:query.clone(),guard:Some(Guard{call:query,result_sha256:crate::kicad_project::digest(&serde_json::to_vec(&before).unwrap()),checks:vec![crate::native_checks::Check{role:crate::native_checks::Role::Identity,label:"Native document".into(),pointer:"/document_id".into(),expected:json!(id),step:None},crate::native_checks::Check{role:crate::native_checks::Role::Outcome,label:"Agreed width".into(),pointer:"/width_mm".into(),expected:json!(20),step:Some(0)}]}),receipt_sha256:None};input.validate().unwrap();
         let mut batch=crate::native_journal::Batch::start(&root,&input).unwrap();batch.dispatch(0).unwrap();let mut actual_before=before;if mode=="wrong_guard"{actual_before["structuredContent"]["width_mm"]=json!(11);}batch.observe(0,&Ok(actual_before)).unwrap();batch.dispatch(1).unwrap();
         if mode=="uncertain"{batch.observe(1,&Err("PRIVATE_NATIVE_SENTINEL".into())).unwrap();return (root,input,after);}
         batch.observe(1,&Ok(if mode=="native_error"{json!({"isError":true})}else{json!({"acknowledged":true})})).unwrap();if mode=="pending"{return (root,input,after);}batch.dispatch(2).unwrap();let mut actual_after=after.clone();if mode=="wrong_outcome"{actual_after["structuredContent"]["width_mm"]=json!(21);}batch.observe(2,&Ok(actual_after)).unwrap();
@@ -1217,6 +1247,7 @@ pub(crate) mod tests {
         Input {
             schema_version: 1,
             native_tools_version: 1,
+            agreement:None,
             job_id: Uuid::new_v4(),
             connection_id: catalog.connection_id,
             program: catalog.program,

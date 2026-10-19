@@ -1199,7 +1199,7 @@ pub(crate) mod tests {
         let root=root();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
         let project=Project::create(&root).unwrap();
         let call=crate::native_tools::Call{tool:"state".into(),arguments:Default::default()};
-        let input=crate::native_tools::Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:crate::host_tools::Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned missing-journal recovery".into(),calls:vec![crate::native_tools::Call{tool:"edit".into(),arguments:Default::default()}],readback:call.clone(),guard:Some(crate::native_tools::Guard{call,result_sha256:"b".repeat(64),checks:Vec::new()}),receipt_sha256:None};
+        let input=crate::native_tools::Input{schema_version:1,native_tools_version:1,agreement:None,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:crate::host_tools::Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned missing-journal recovery".into(),calls:vec![crate::native_tools::Call{tool:"edit".into(),arguments:Default::default()}],readback:call.clone(),guard:Some(crate::native_tools::Guard{call,result_sha256:"b".repeat(64),checks:Vec::new()}),receipt_sha256:None};
         let mut snapshot=project.snapshot(OperationInput::NativeTools(input),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;
         project.save(&snapshot).unwrap();assert!(project.native_recovery(None).unwrap().is_empty());
         snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();

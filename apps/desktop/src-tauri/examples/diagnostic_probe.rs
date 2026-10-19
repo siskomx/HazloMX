@@ -107,7 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Program::Usbpcap => json!({"tool":"cli","arguments":{"args":["--extcap-version"]}}),
             _ => json!({"tool":"list_ports","arguments":{}}),
         };
-        let request = json!({"connection_id":catalog.connection_id,"catalog_sha256":catalog.catalog_sha256,"description":"Inspect owned diagnostic evidence","calls":[],"readback":readback});
+        let request = json!({"connection_id":catalog.connection_id,"catalog_sha256":catalog.catalog_sha256,"description":"Inspect owned diagnostic evidence","agreement":{"kind":"software_operation","outcome":"Inspect only the owned diagnostic evidence","assumptions":[],"constraints":["No device commands or live capture"],"losses":[],"verification":"Check the native diagnostic response; this does not establish physical function"},"calls":[],"readback":readback});
         host.call("propose_native_tool_calls", request.clone())?;
         let job = workflow.view()?.job.unwrap();
         assert_eq!(job.snapshot.phase, Phase::AwaitingApproval);
@@ -139,6 +139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if program == Program::Tshark {
             let name = format!("copy-{}.pcapng", uuid::Uuid::new_v4());
             let mut save = request.clone();
+            save["agreement"]["outcome"]=json!("Create a new owned capture copy without replacing the original");
             save["readback"] =
                 json!({"tool":"cli","arguments":{"args":["-r","owned.pcap","-w",name]}});
             host.call("propose_native_tool_calls", save.clone())?;

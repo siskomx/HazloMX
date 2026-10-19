@@ -421,6 +421,7 @@ mod tests {
         Input {
             schema_version: 1,
             native_tools_version: 1,
+            agreement:None,
             job_id: Uuid::new_v4(),
             connection_id: Uuid::new_v4(),
             program: Program::Freecad,

@@ -36,7 +36,7 @@ document.querySelector("#app")!.innerHTML = `
     <p id="recovery-status" class="status fine"></p><p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
   <details id="past-chats" class="panel" hidden><summary>Conversaciones de la versión anterior</summary><p class="fine">Puedes leerlas sin enviarlas a una IA. Para continuar con sus mensajes, empieza una conversación vacía y elige la IA con la que seguirás. Solo se enviarán cuando pulses Enviar. No se restauran documentos, medidas ni aprobaciones; inspeccionaremos de nuevo la selección actual.</p><div id="past-chat-list"></div></details>
-  <details id="results" class="panel"><summary>Resultados e historial verificados</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
+  <details id="results" class="panel"><summary>Resultados e historial</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
   <dialog id="report"><h2 id="report-heading">Resultado guardado · solo lectura</h2><p id="report-note" class="fine"></p><img id="report-image" alt="Referencia local" hidden><pre id="report-text"></pre><div class="actions"><button id="report-first" hidden>Volver al inicio</button><button id="report-next" hidden>Página siguiente</button></div><form method="dialog"><button>Cerrar</button></form></dialog>
   <dialog id="instruction-review" aria-labelledby="instruction-heading"><h2 id="instruction-heading">Lo que has pedido</h2><p id="instruction-destination"></p><p class="fine">Son copias exactas de tus mensajes. Compartir permite enviar solo el texto seleccionado para continuar esta tarea. Los archivos y las herramientas tienen sus propios permisos. Retirar acceso conserva el texto local y retira las respuestas y evidencias vinculadas del contexto de esta IA. Quitar también borra el texto guardado, sus coincidencias exactas del historial y del objetivo, y las copias de evidencia derivadas que administra Hazlo. Conservamos el trabajo nativo y los archivos originales adjuntos. No elimina copias ya enviadas a un servicio.</p><div id="instruction-entries"></div><p id="instruction-error" role="alert"></p><div class="actions"><button id="share-instructions">Compartir texto seleccionado</button><button id="revoke-instructions" class="secondary">Retirar acceso al seleccionado</button><button id="remove-instructions" class="secondary">Quitar texto seleccionado</button></div><form method="dialog"><button>Cerrar</button></form></dialog>`;
 for (const [value, label] of Object.entries(programs)) $("program").append(new Option(label, value));
@@ -365,7 +365,7 @@ function summary(run: Snapshot): string {
 function changeDetails(run: Snapshot): string {
   const input = run.input;
   if(input.public_document_version)return JSON.stringify({url:input.url,purpose:input.purpose,response_stays_local:true},null,2);
-  if (input.native_tools_version) return JSON.stringify({guard:input.guard,calls:input.calls,readback:input.readback},null,2);
+  if (input.native_tools_version) return JSON.stringify({agreement:input.agreement,guard:input.guard,calls:input.calls,readback:input.readback},null,2);
   if (input.live_agent_version && input.save) return "Código actual que guardará Arduino Agent:\n" + input.before.source;
   if (input.live_agent_version) return "Código actual en Arduino Agent:\n" + input.before.source + "\nCódigo propuesto:\n" + input.source;
   if (input.live_drawing_version) return JSON.stringify({document:input.before.title,native_units:input.before.insunits,current_entities:input.before.entities,operation:input.operation,requested_units:input.units},null,2);
@@ -403,6 +403,10 @@ function renderHistory() {
   if (state.job) runs.set(state.job.snapshot.input.job_id, state.job.snapshot);
   for (const run of [...runs.values()].sort((a, b) => (b.audit?.created_unix_ms ?? 0) - (a.audit?.created_unix_ms ?? 0) || a.input.job_id.localeCompare(b.input.job_id))) {
     const row = document.createElement("article"), title = document.createElement("p"); title.textContent = `${summary(run)} · ${run.audit?.approval_invalidated ? "Propuesta conservada; necesita nueva revisión" : phases[run.phase]}`; row.append(title);
+    if(run.input.native_tools_version && run.input.agreement){
+      const button=document.createElement("button");button.className="secondary";button.textContent="Ver condiciones del lote";button.disabled=commandBusy;
+      button.onclick=()=>{clearReport();$("report-text").textContent="Condiciones guardadas de este lote. Conservan la propuesta original; no son una aprobación reutilizable ni prueba de que la tarea esté terminada. Esta vista es local.\n\n"+proposalFacts(run).join("\n");$<HTMLDialogElement>("report").showModal();};row.append(button);
+    }
     if(run.audit?.approval_invalidated){
       const button=document.createElement("button");button.className="secondary";button.textContent="Ver propuesta conservada";button.disabled=commandBusy;
       button.onclick=()=>void action(async()=>{clearReport();$("report-text").textContent="Propuesta conservada sin ejecutar. Su aprobación anterior venció; revisa las entradas actuales antes de preparar otra. Esta vista es local.\n\n"+changeDetails(run);$<HTMLDialogElement>("report").showModal();});
