@@ -263,6 +263,7 @@ pub(crate) async fn start_codex_chat(
     new_session: bool,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
+    let scope=state.workflow.conversation_scope()?.ok_or("Abre una conversación antes de iniciar la IA.")?;
     let (prompt,isolated)=state.workflow.task_prompt("codex",prompt,task_user_request,image.as_ref())?;
     let new_session=new_session || isolated;
     if prompt.trim().is_empty() || prompt.len() > 8192 {
@@ -275,6 +276,7 @@ pub(crate) async fn start_codex_chat(
     }
     let selected_project = view.project.ok_or("Selecciona un proyecto.")?;
     let project = selected_project.0;
+    if scope.project!=selected_project || state.workflow.conversation_scope()?.as_ref()!=Some(&scope){return Err("La conversación cambió antes de iniciar la IA.".into());}
     let runtime = state
         .codex
         .lock()
@@ -294,8 +296,8 @@ pub(crate) async fn start_codex_chat(
     }
     let (session, resume) = {
         let mut saved = state.codex_session.lock().map_err(|e| e.to_string())?;
-        if new_session || saved.as_ref().is_none_or(|saved| saved.0 != project) {
-            *saved = Some((project, Uuid::new_v4(), None));
+        if new_session || saved.as_ref().is_none_or(|saved| saved.0 != scope) {
+            *saved = Some((scope.clone(), Uuid::new_v4(), None));
         }
         let (_, id, thread) = saved.as_ref().unwrap();
         (*id, thread.clone())
@@ -307,6 +309,7 @@ pub(crate) async fn start_codex_chat(
         .map_err(|e| e.to_string())?
         .with_file_name("hazlomexa-tools.exe");
     *current = Some(ChatTurn {
+        scope:scope.clone(),
         view: ChatView {
             provider: "codex",
             id,
@@ -337,6 +340,7 @@ pub(crate) async fn start_codex_chat(
             {
                 return Err("Codex cambió. Selecciónalo de nuevo.".into());
             }
+            if workflow.conversation_scope()?.as_ref()!=Some(&scope){return Err("La conversación cambió; no se inició otra sesión de IA.".into());}
             let bridge = ToolBridge::start_chat(tools, &helper, selected_project, Some(program), "codex")?;
             let configuration = home.join("config.toml");
             let response = async {

@@ -37,6 +37,7 @@ pub(crate) async fn start_ollama_chat(
     {
         return Err("Detén la conversación o conexión actual antes de enviar.".into());
     }
+    let scope=state.workflow.conversation_scope()?.filter(|scope|scope.project==project).ok_or("La conversación cambió antes de iniciar la IA.")?;
     let client = profile.client()?;
     let id = Uuid::new_v4();
     let provider = match profile {
@@ -46,6 +47,7 @@ pub(crate) async fn start_ollama_chat(
     let (prompt,_)=state.workflow.task_prompt(provider,prompt,task_user_request,image.as_ref())?;
     let cancelled = Arc::new(AtomicBool::new(false));
     *current = Some(ChatTurn {
+        scope:scope.clone(),
         view: ChatView {
             provider,
             id,
@@ -66,6 +68,7 @@ pub(crate) async fn start_ollama_chat(
     let workflow = state.workflow.clone();
     tauri::async_runtime::spawn(async move {
         let result = async {
+        if workflow.conversation_scope()?.as_ref()!=Some(&scope){return Err("La conversación cambió; no se inició otra sesión de IA.".into());}
         let tools = hazlomexa::host_tools::McpTools::for_chat(host, project.clone(), Some(program), provider)?;
         ollama::chat::run_scoped(
             client,

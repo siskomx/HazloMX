@@ -48,6 +48,11 @@ pub struct WorkflowView {
     pub inference: Option<InferenceView>,
     pub history: Vec<Snapshot>,
 }
+#[derive(Clone,PartialEq,Eq)]
+pub struct ConversationScope {
+    pub project:(Uuid,PathBuf),
+    pub task:Option<crate::tasks::Binding>,
+}
 
 #[derive(Debug, Clone, Copy, serde::Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -156,6 +161,10 @@ pub struct ArduinoRuntime {
 #[derive(Clone, Serialize)]
 pub struct AgentSource {
     pub project_id: Uuid,
+    #[serde(skip)]
+    project_root:PathBuf,
+    #[serde(skip)]
+    task_id:Option<Uuid>,
     pub source_name: String,
     pub source: String,
 }
@@ -180,6 +189,19 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    pub fn conversation_scope(&self)->Result<Option<ConversationScope>,String>{
+        let state=self.state.lock().map_err(|_|"No se pudo comprobar la conversación.")?;
+        state.project.as_ref().map(|p|{
+            let task=crate::tasks::Store::new(p).and_then(|s|s.binding()).map_err(|_|"No se pudo comprobar la conversación.")?;
+            Ok(ConversationScope{project:(p.id,p.root.clone()),task})
+        }).transpose()
+    }
+    fn source_scope(state:&State)->Result<Option<(Uuid,PathBuf,Option<Uuid>)>,String>{
+        state.project.as_ref().map(|project|{
+            let task=crate::tasks::Store::new(project).and_then(|s|s.active()).map_err(|_|"No se pudo comprobar la conversación del sketch; el original se conserva.")?;
+            Ok((project.id,project.root.clone(),task.map(|t|t.id)))
+        }).transpose()
+    }
     fn reconcile_pending_approval(state:&mut State)->Result<(),String>{
         let Some(project)=state.project.clone() else{return Ok(());};
         let Some(job)=state.job.as_mut().filter(|j|!j.view.busy && j.view.snapshot.phase==Phase::AwaitingApproval) else{return Ok(());};
@@ -426,16 +448,14 @@ impl Workflow {
     }
     pub fn agent_source(&self) -> Result<Option<AgentSource>, String> {
         let state = self.state.lock().map_err(|e| e.to_string())?;
+        let scope=Self::source_scope(&state)?;
         Ok(self
             .agent_source
             .lock()
             .map_err(|e| e.to_string())?
             .clone()
             .filter(|source| {
-                state
-                    .project
-                    .as_ref()
-                    .is_some_and(|project| project.id == source.project_id)
+                scope.as_ref().is_some_and(|(id,root,task)|*id==source.project_id && *root==source.project_root && *task==source.task_id)
             }))
     }
     pub fn set_agent(&self, connection: agent::Connection) -> Result<(), String> {
@@ -482,9 +502,11 @@ impl Workflow {
         {
             return Err("Cancele o termine la propuesta antes de seleccionar otro sketch.".into());
         }
-        let project_id = state.project.as_ref().ok_or("Seleccione un proyecto.")?.id;
+        let (project_id,project_root,task_id)=Self::source_scope(&state)?.ok_or("Seleccione un proyecto.")?;
         *self.agent_source.lock().map_err(|e| e.to_string())? = Some(AgentSource {
             project_id,
+            project_root,
+            task_id,
             source_name: name,
             source,
         });
@@ -513,6 +535,7 @@ impl Workflow {
     ) -> Result<JobView, String> {
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
+        let scope=Self::source_scope(&state)?;
         let original = if let Some((id, _, _, Some(job))) = &inspected {
             let project = state
                 .project
@@ -524,6 +547,8 @@ impl Workflow {
                 .iter()
                 .find(|run| run.input.job_id() == *job && run.phase == Phase::Completed)
                 .ok_or("Selecciona un sketch publicado y verificado en este proyecto.")?;
+            let task=crate::tasks::Store::new(project).and_then(|s|s.active()).map_err(|_|"No se pudo comprobar la conversación del resultado.")?;
+            if task.as_ref().is_some_and(|t|run.audit.as_ref().and_then(|a|a.task.as_ref()).map_or(!t.legacy,|binding|binding.id!=t.id)){return Err("El sketch verificado pertenece a otra conversación; vuelve a ella antes de usarlo.".into());}
             let name = match &run.input {
                 OperationInput::Agent(input) => input.source_name.clone(),
                 OperationInput::Arduino(_) => "Sketch.ino".into(),
@@ -535,6 +560,8 @@ impl Workflow {
                 .map_err(|e| e.to_string())?;
             AgentSource {
                 project_id: project.id,
+                project_root:project.root.clone(),
+                task_id:task.map(|t|t.id),
                 source_name: name,
                 source,
             }
@@ -544,10 +571,7 @@ impl Workflow {
                 .map_err(|e| e.to_string())?
                 .clone()
                 .filter(|original| {
-                    state
-                        .project
-                        .as_ref()
-                        .is_some_and(|project| project.id == original.project_id)
+                    scope.as_ref().is_some_and(|(id,root,task)|*id==original.project_id && *root==original.project_root && *task==original.task_id)
                 })
                 .ok_or("Seleccione un sketch original en este proyecto.")?
         };
@@ -3088,15 +3112,48 @@ mod tests {
         drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[test]
-    fn lost_task_reply_retires_the_old_approval_after_reading_committed_state(){
+    fn sketch_selection_follows_task_identity_after_failed_creation_and_recovery(){
+        use std::os::windows::fs::OpenOptionsExt;
+        let (root,workflow)=setup();let original=workflow.task_state().unwrap().unwrap().active;let project=workflow.view().unwrap().project.unwrap();
+        let source="void setup() {} void loop() {}";workflow.set_agent_source("Original.ino".into(),source.into()).unwrap();
+        let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join(".hazlomexa/tasks/index.json")).unwrap();
+        assert!(workflow.task_request(project.clone(),crate::tasks::Request::New).is_err());assert!(workflow.agent_source().is_err());drop(lock);
+        assert!(workflow.agent_source().unwrap().is_none());assert_ne!(workflow.task_state().unwrap().unwrap().active.id,original.id);
+        assert!(workflow.propose_agent(source.into()).unwrap_err().contains("original en este proyecto"));
+        // Simulate reading a committed switch after its original reply was lost; the original remains scoped.
+        {let state=workflow.state.lock().unwrap();crate::tasks::Store::new(state.project.as_ref().unwrap()).unwrap().request(crate::tasks::Request::Open{id:original.id}).unwrap();}
+        assert_eq!(workflow.agent_source().unwrap().unwrap().source,source);
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn sketch_selection_cannot_cross_a_copied_project_with_the_same_uuid(){
+        let (root,workflow)=setup();let source="void setup() {} void loop() {}";workflow.set_agent_source("Original.ino".into(),source.into()).unwrap();
+        let copied=root.join("copied");fs::create_dir(&copied).unwrap();drop(Project::create(&copied).unwrap());fs::copy(root.join("hazlomx.json"),copied.join("hazlomx.json")).unwrap();
+        let original_id=workflow.view().unwrap().project.unwrap().0;workflow.select_project(Project::open(&copied).unwrap()).unwrap();assert_eq!(workflow.view().unwrap().project.unwrap().0,original_id);
+        assert!(workflow.agent_source().unwrap().is_none());assert!(workflow.propose_agent(source.into()).unwrap_err().contains("original en este proyecto"));
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn foreign_sketch_followup_is_refused_before_artifact_access(){
+        let (root,workflow)=setup();let old=workflow.task_state().unwrap().unwrap().active;let project=workflow.view().unwrap().project.unwrap();let source="void setup() {} void loop() {}";
+        let id=Uuid::new_v4();
+        {let state=workflow.state.lock().unwrap();let p=state.project.as_ref().unwrap();let snapshot=p.snapshot(OperationInput::Agent(agent::EditInput{schema_version:1,job_id:id,agent_version:agent::VERSION.into(),source_name:"Owned.ino".into(),original_source:source.into(),source:source.into()}),Phase::Completed).unwrap();assert_eq!(snapshot.audit.as_ref().unwrap().task.as_ref().unwrap().id,old.id);p.save(&snapshot).unwrap();}
+        workflow.task_request(project.clone(),crate::tasks::Request::New).unwrap();
+        let error=workflow.propose_tool_agent(project.0,"Owned.ino".into(),crate::kicad_project::digest(source.as_bytes()),Some(id),source.into()).unwrap_err();
+        assert!(error.contains("otra conversación"));assert!(!root.join(".hazlomexa/artifacts").join(id.to_string()).exists());
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn locked_title_index_does_not_fail_a_committed_task_message(){
         use std::os::windows::fs::OpenOptionsExt;
         let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let project=workflow.view().unwrap().project.unwrap();
         let pending=workflow.propose(dimensions()).unwrap();
         let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join(".hazlomexa/tasks/index.json")).unwrap();
         let history=r#"{"version":1,"turns":[{"role":"user","content":"Preserve my manual edits"}]}"#;
-        assert!(workflow.task_request(project,crate::tasks::Request::Message{id:task.id,revision:task.revision,text:"Preserve my manual edits".into(),history:history.into(),correction_of:None}).is_err());
-        // The primary task write committed before the locked title-index update failed.
+        assert!(workflow.task_request(project,crate::tasks::Request::Message{id:task.id,revision:task.revision,text:"Preserve my manual edits".into(),history:history.into(),correction_of:None}).is_ok());
+        // Task data is authoritative; updating a title no longer requires an index write.
         let state=workflow.task_state().unwrap().unwrap().active;assert_eq!(state.revision,task.revision+1);assert_eq!(state.goal,"Preserve my manual edits");
+        assert_eq!(workflow.task_state().unwrap().unwrap().tasks[0].title,"Preserve my manual edits");
         assert!(workflow.begin(pending.approval_id.unwrap()).is_err());assert_eq!(workflow.current().unwrap().unwrap().snapshot.phase,Phase::Cancelled);
         drop(lock);
         let state=workflow.task_state().unwrap().unwrap().active;assert_eq!(state.revision,task.revision+1);

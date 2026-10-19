@@ -1940,10 +1940,11 @@ impl McpTools {
         Ok(scoped)
     }
     pub(crate) fn check_scope(&self) -> Result<(), String> {
-        if self.0.workflow.view()?.project != self.1 {
+        let metadata_error=|_|"No se pudo comprobar el contexto local de la conversación. El contenido permanece local.".to_string();
+        if self.0.workflow.view().map_err(metadata_error)?.project != self.1 {
             return Err("El proyecto cambió. Conecta el agente de nuevo.".into());
         }
-        if self.0.workflow.task_binding()?!=self.3{return Err("La tarea cambió. Conecta la conversación de nuevo.".into());}
+        if self.0.workflow.task_binding().map_err(metadata_error)?!=self.3{return Err("La tarea cambió. Conecta la conversación de nuevo.".into());}
         if let Some(provider)=&self.4 {if self.0.workflow.task_recipient(provider).as_ref().ok()!=self.3.as_ref(){return Err("Cambió el destinatario de la conversación. No se compartió contenido.".into());}}
         Ok(())
     }
@@ -2203,6 +2204,21 @@ mod tests {
     use crate::project::Project;
     use rmcp::ServiceExt;
     use std::fs;
+    #[tokio::test]
+    async fn scope_metadata_failures_never_echo_local_content_to_tool_clients(){
+        for journal in [true,false]{
+            let (root,workflow,host,_)=setup();let scope=chat_program(host.clone(),workflow.view().unwrap().project.unwrap(),Program::Planning).unwrap();
+            let project=workflow.view().unwrap().project.unwrap().1;
+            let path=if journal{project.join(".hazlomexa/tasks/creation.json")}else{project.join(".hazlomexa/runs").join(format!("{}.json",Uuid::new_v4()))};
+            let bytes=br#"{"PRIVATE_SCOPE_METADATA_SENTINEL":"Keep this local"}"#;fs::write(&path,bytes).unwrap();
+            for name in ["get_workflow_status","get_design_capabilities"]{
+                let error=scope.call_in_project(name.into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap_err();
+                assert!(!error.contains("PRIVATE_SCOPE_METADATA_SENTINEL"));assert!(error.contains("permanece local"));
+            }
+            assert_eq!(fs::read(&path).unwrap(),bytes);fs::remove_file(&path).unwrap();
+            drop(scope);drop(host);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
     #[tokio::test]
     async fn exported_connections_cannot_inherit_owned_chat_evidence_permissions(){
         let (root,workflow,host,_)=setup();let project=workflow.view().unwrap().project.unwrap();

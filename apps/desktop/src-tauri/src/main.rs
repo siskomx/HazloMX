@@ -34,9 +34,9 @@ struct AppState {
     codex: Mutex<Option<codex::Runtime>>,
     codex_login: Arc<Mutex<Option<desktop_codex::Login>>>,
     // shortcut: native thread IDs last one run; persist only after account-bound restart resume passes.
-    codex_session: Mutex<Option<(Uuid, Uuid, Option<String>)>>,
+    codex_session: Mutex<Option<(hazlomexa::jobs::ConversationScope, Uuid, Option<String>)>>,
     chat: Arc<Mutex<Option<ChatTurn>>>,
-    chat_session: Mutex<Option<(Uuid, Uuid, bool)>>,
+    chat_session: Mutex<Option<(hazlomexa::jobs::ConversationScope, Uuid, bool)>>,
 }
 #[derive(Clone, Serialize)]
 struct ChatView {
@@ -60,6 +60,7 @@ struct PendingQuestion {
     answer: tokio::sync::oneshot::Sender<std::collections::BTreeMap<String, String>>,
 }
 struct ChatTurn {
+    scope:hazlomexa::jobs::ConversationScope,
     view: ChatView,
     cancel: Arc<std::sync::atomic::AtomicBool>,
     question: Option<PendingQuestion>,
@@ -94,25 +95,26 @@ struct DesktopSnapshot {
 }
 
 fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
+    let tasks=state.workflow.task_state()?;
     let view = state.workflow.view()?;
+    let scope=state.workflow.conversation_scope()?;
     let freecad = state.freecad.lock().map_err(|e| e.to_string())?.clone();
-    let project_id = view.project.as_ref().map(|project| project.0);
     let claude_conversation_ready = state
         .chat_session
         .lock()
         .map_err(|e| e.to_string())?
         .as_ref()
-        .is_some_and(|session| Some(session.0) == project_id && session.2);
+        .is_some_and(|session| Some(&session.0) == scope.as_ref() && session.2);
     let codex_conversation_ready = state
         .codex_session
         .lock()
         .map_err(|e| e.to_string())?
         .as_ref()
-        .is_some_and(|session| Some(session.0) == project_id && session.2.is_some());
+        .is_some_and(|session| Some(&session.0) == scope.as_ref() && session.2.is_some());
     Ok(DesktopSnapshot {
         native_recovery: state.workflow.native_recovery()?,
         task_support: true,
-        tasks: state.workflow.task_state()?,
+        tasks,
         claude_conversation_ready,
         codex_conversation_ready,
         project: view.project,
@@ -142,6 +144,7 @@ fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
             .lock()
             .map_err(|e| e.to_string())?
             .as_ref()
+            .filter(|turn|scope.as_ref().is_some_and(|scope|turn.scope.project==scope.project && turn.scope.task.as_ref().map(|t|t.id)==scope.task.as_ref().map(|t|t.id)))
             .map(|turn| turn.view.clone()),
         agent_tools_enabled: state
             .bridge
@@ -345,6 +348,7 @@ async fn start_claude_chat(
     new_session: bool,
     events: Channel<ChatView>,
 ) -> Result<DesktopSnapshot, String> {
+    let scope=state.workflow.conversation_scope()?.ok_or("Abre una conversación antes de iniciar la IA.")?;
     let (prompt,isolated)=state.workflow.task_prompt("claude",prompt,task_user_request,image.as_ref())?;
     let new_session=new_session || isolated;
     if prompt.trim().is_empty() || prompt.len() > 8192 {
@@ -357,6 +361,7 @@ async fn start_claude_chat(
     if image.is_some() { return Err("Esta conexión a Claude Code no admite imágenes. Elige un proveedor con visión.".into()); }
     let selected_project = view.project.ok_or("Selecciona un proyecto.")?;
     let project = selected_project.0;
+    if scope.project!=selected_project || state.workflow.conversation_scope()?.as_ref()!=Some(&scope){return Err("La conversación cambió antes de iniciar la IA.".into());}
     let runtime = state
         .claude
         .lock()
@@ -376,8 +381,8 @@ async fn start_claude_chat(
     }
     let (session, resume) = {
         let mut saved = state.chat_session.lock().map_err(|e| e.to_string())?;
-        if new_session || saved.as_ref().is_none_or(|s| s.0 != project) {
-            *saved = Some((project, Uuid::new_v4(), false));
+        if new_session || saved.as_ref().is_none_or(|s| s.0 != scope) {
+            *saved = Some((scope.clone(), Uuid::new_v4(), false));
         }
         let (_, id, used) = saved.as_ref().unwrap();
         (*id, *used)
@@ -395,6 +400,7 @@ async fn start_claude_chat(
         .map_err(|e| e.to_string())?
         .with_file_name("hazlomexa-tools.exe");
     *current = Some(ChatTurn {
+        scope:scope.clone(),
         view: ChatView {
             provider: "claude",
             id,
@@ -418,6 +424,7 @@ async fn start_claude_chat(
         let result=async {
             let executable=runtime.executable.clone();let expected=runtime.sha256.clone();
             if tauri::async_runtime::spawn_blocking(move||claude::fingerprint(&executable)).await.map_err(|e|e.to_string())??!=expected{return Err("Claude cambió. Selecciónalo de nuevo.".into());}
+            if workflow.conversation_scope()?.as_ref()!=Some(&scope){return Err("La conversación cambió; no se inició otra sesión de IA.".into());}
             let bridge=ToolBridge::start_chat(tools,&helper,selected_project,Some(program),"claude")?;let config=bridge.config()?;let configuration=directory.join("mcp.json");
             std::fs::write(&configuration,serde_json::to_vec(&serde_json::json!({"mcpServers":{"hazlomexa":{"type":"stdio","command":config.command,"env":config.env}}})).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?;
             let response=claude::run(claude::TurnRequest{executable:runtime.executable,sha256:runtime.sha256,directory,configuration:configuration.clone(),session,resume,prompt,environment:claude::environment(),cancelled:cancelled.clone()},|update|{
@@ -1455,7 +1462,6 @@ mod tests {
         let root = std::env::temp_dir().join(format!("hazlomexa-chat-ready-{}", Uuid::new_v4()));
         std::fs::create_dir(&root).unwrap();
         let project = Project::create(&root).unwrap();
-        let project_id = project.id;
         let freecad = root.join("FreeCADCmd.exe");
         let workflow = Arc::new(Workflow::new(freecad.clone(), root.join("profiles")).unwrap());
         workflow.select_project(project).unwrap();
@@ -1473,14 +1479,30 @@ mod tests {
         };
         let initial = snapshot(&state).unwrap();
         assert!(!initial.claude_conversation_ready && !initial.codex_conversation_ready);
-        *state.chat_session.lock().unwrap() = Some((project_id, Uuid::new_v4(), false));
-        *state.codex_session.lock().unwrap() = Some((project_id, Uuid::new_v4(), None));
+        *state.chat_session.lock().unwrap() = Some((state.workflow.conversation_scope().unwrap().unwrap(), Uuid::new_v4(), false));
+        *state.codex_session.lock().unwrap() = Some((state.workflow.conversation_scope().unwrap().unwrap(), Uuid::new_v4(), None));
         let pending = snapshot(&state).unwrap();
         assert!(!pending.claude_conversation_ready && !pending.codex_conversation_ready);
         state.chat_session.lock().unwrap().as_mut().unwrap().2 = true;
         state.codex_session.lock().unwrap().as_mut().unwrap().2 = Some("native-thread".into());
         let completed = snapshot(&state).unwrap();
         assert!(completed.claude_conversation_ready && completed.codex_conversation_ready);
+        let original_scope=state.workflow.conversation_scope().unwrap().unwrap();
+        *state.chat.lock().unwrap()=Some(ChatTurn{scope:original_scope.clone(),view:ChatView{provider:"codex",id:Uuid::new_v4(),project_id:original_scope.project.0,sequence:1,busy:false,cancelled:false,text:"OLD_TASK_CONTEXT_SENTINEL".into(),error:None,question:None},cancel:Arc::new(std::sync::atomic::AtomicBool::new(false)),question:None});
+        // The task changes without the desktop session-reset command running, as after a lost reply.
+        state.workflow.task_request(original_scope.project.clone(),hazlomexa::tasks::Request::New).unwrap();
+        let changed=snapshot(&state).unwrap();
+        assert!(!changed.claude_conversation_ready && !changed.codex_conversation_ready);assert!(changed.chat.is_none());assert!(!serde_json::to_string(&changed).unwrap().contains("OLD_TASK_CONTEXT_SENTINEL"));
+        assert!(state.chat_session.lock().unwrap().is_some() && state.codex_session.lock().unwrap().is_some());
+        let current_scope=state.workflow.conversation_scope().unwrap().unwrap();
+        *state.chat_session.lock().unwrap()=Some((current_scope.clone(),Uuid::new_v4(),true));*state.codex_session.lock().unwrap()=Some((current_scope.clone(),Uuid::new_v4(),Some("new-native-thread".into())));
+        assert!(snapshot(&state).unwrap().codex_conversation_ready);
+        let task=state.workflow.task_state().unwrap().unwrap().active;
+        state.workflow.task_request(current_scope.project.clone(),hazlomexa::tasks::Request::Message{id:task.id,revision:task.revision,text:"Use the revised task scope".into(),history:"{\"version\":1,\"turns\":[]}".into(),correction_of:None}).unwrap();
+        let revised=snapshot(&state).unwrap();assert!(!revised.claude_conversation_ready && !revised.codex_conversation_ready);
+        let mut copied_scope=state.workflow.conversation_scope().unwrap().unwrap();copied_scope.project.1=root.join("copied-folder");
+        *state.chat_session.lock().unwrap()=Some((copied_scope.clone(),Uuid::new_v4(),true));*state.codex_session.lock().unwrap()=Some((copied_scope,Uuid::new_v4(),Some("copied-native-thread".into())));
+        let copied=snapshot(&state).unwrap();assert!(!copied.claude_conversation_ready && !copied.codex_conversation_ready);
         let other = root.join("other");
         std::fs::create_dir(&other).unwrap();
         state
@@ -1489,5 +1511,6 @@ mod tests {
             .unwrap();
         let foreign = snapshot(&state).unwrap();
         assert!(!foreign.claude_conversation_ready && !foreign.codex_conversation_ready);
+        drop(state);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
     }
 }
