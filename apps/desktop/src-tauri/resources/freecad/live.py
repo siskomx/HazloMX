@@ -120,10 +120,32 @@ def _export_step(doc, operation, before):
     return after, saved
 
 
+def _request_identity(request):
+    return _digest({key: request[key] for key in ("job_id", "document_token", "state_sha256", "operations")})
+
+
+def _completed_result(registry, request, result):
+    if len(json.dumps(result, ensure_ascii=False).encode()) > 60000:
+        raise ValueError("model_limit")
+    registry["results"][request["job_id"]] = {"request_sha256": _request_identity(request), "result": result}
+    return result
+
+
 def _run(request):
     if not hasattr(rpc, "_hazlomexa_live"):
         rpc._hazlomexa_live = {"documents": {}, "receipts": {}}
     registry = rpc._hazlomexa_live
+    registry.setdefault("results", {})
+    if request["action"] == "recover":
+        retained = registry["results"].get(request["job_id"])
+        if retained is None:
+            entry = registry["receipts"].get(request["job_id"], {})
+            if entry.get("document_token") == request["document_token"] and entry.get("status") == "running":
+                return {"recovery_status": "running"}
+            raise ValueError("native_result_unavailable")
+        if retained["request_sha256"] != _request_identity(request):
+            raise ValueError("native_result_mismatch")
+        return retained["result"]
     documents = registry["documents"]
     opened = App.listDocuments()
     # Retain wrappers to distinguish a close/reopen even when FreeCAD reuses the document name.
@@ -182,7 +204,7 @@ def _run(request):
             if after["modified"] or before["objects"] != after["objects"]:
                 raise ValueError("native_save_uncertain")
             receipts[job] = {"status": "completed", "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after_sha256": after["state_sha256"], "saved_document": saved}
-            return {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": [{"action": "save_as", "success": True}], "undo_available": False, "saved_document": saved}
+            return _completed_result(registry, request, {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": [{"action": "save_as", "success": True}], "undo_available": False, "saved_document": saved})
         except BaseException:
             if receipts[job]["status"] == "running":
                 receipts[job]["status"] = "uncertain"
@@ -191,7 +213,7 @@ def _run(request):
         try:
             after, exported = _export_step(doc, request["operations"][0], before)
             receipts[job] = {"status": "completed", "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after_sha256": after["state_sha256"], "exported_document": exported}
-            return {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": [{"action": "export_step", "success": True}], "undo_available": False, "exported_document": exported}
+            return _completed_result(registry, request, {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": [{"action": "export_step", "success": True}], "undo_available": False, "exported_document": exported})
         except BaseException as error:
             receipts[job]["status"] = "not_completed" if str(error) in {"native_export_not_completed", "native_export_destination_exists", "native_export_unsupported", "changed_document"} else "uncertain"
             raise
@@ -219,7 +241,7 @@ def _run(request):
     view = Gui.getDocument(doc.Name).activeView()
     view.fitAll()
     view.redraw()
-    return {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": results, "undo_available": undo_available}
+    return _completed_result(registry, request, {"job_id": job, "document_token": request["document_token"], "before_sha256": before["state_sha256"], "after": after, "operations": results, "undo_available": undo_available})
 
 
 def _dispatch():
@@ -228,6 +250,7 @@ def _dispatch():
     except Exception as error:
         # Do not forward native tracebacks, paths or document contents in failures.
         safe = {"model_limit", "closed_document", "document_limit", "stale_document", "changed_document", "native_undo_unavailable", "document_not_visible", "expired_request", "already_attempted", "receipt_limit", "native_operation_rolled_back", "rollback_uncertain", "native_save_not_completed", "native_save_uncertain", "native_operation_pending", "native_export_unsupported", "native_export_not_completed", "native_export_destination_exists", "native_export_uncertain"}
+        safe.update({"native_result_unavailable", "native_result_mismatch"})
         return {"ok": False, "error": str(error) if str(error) in safe else "native_operation_uncertain"}
 
 

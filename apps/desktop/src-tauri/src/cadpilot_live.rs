@@ -535,6 +535,8 @@ async fn native_request(
                             Some("native_save_uncertain") => "FreeCAD pudo guardar el documento, pero no confirmó la verificación. Relee su estado y comprueba el archivo antes de continuar.",
                             Some("native_operation_pending") => "Hay una operación nativa pendiente en este documento. Termina o cancela el diálogo en FreeCAD y vuelve a leerlo.",
                             Some("native_operation_rolled_back") => "FreeCAD rechazó la operación y verificó que se revirtió la transacción completa.",
+                            Some("native_result_unavailable") => "FreeCAD no conserva el resultado completo de ese intento. El trabajo y la pausa se mantienen; no repitas la edición. Hace falta una revisión nativa o una copia de trabajo verificada.",
+                            Some("native_result_mismatch") => "El recibo nativo no corresponde a la operación aprobada. Se conserva el trabajo y la pausa; no se repitió la edición.",
                             _ => "FreeCAD no confirmó un resultado válido. Puede haber cambios; vuelve a leer el documento y sus intentos recientes antes de continuar.",
                         };
                         return Err(message.into());
@@ -614,11 +616,37 @@ fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispat
             .map_err(|_| INVALID)?;
         submit_native(client,"http://127.0.0.1:9875".into(),request,dispatch).await
     })?;
+    retain_result(input,directory,&mut result)
+}
+fn retain_result(input:&Input,directory:&std::path::Path,result:&mut Value)->Result<(),String>{
+    normalize_result(input,result)?;
+    crate::project::atomic_json(&directory.join("result.json"),result,false)
+        .map_err(|_| "El cambio nativo pudo completarse, pero no se guardó su informe. Relee el documento antes de continuar.".into())
+}
+fn normalize_result(input:&Input,result:&mut Value)->Result<(),String>{
     result["after"]["objects"] = geometry(&result["after"]["objects"])?;
     result["live_cad_version"] = json!(1);
-    validate_result(input, &result)?;
-    std::fs::write(directory.join("result.json"), serde_json::to_vec_pretty(&result).map_err(|_| INVALID)?)
-        .map_err(|_| "El cambio nativo pudo completarse, pero no se guardó su informe. Relee el documento antes de continuar.".into())
+    validate_result(input, result)
+}
+pub(crate) fn recover_result(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool)->Result<bool,String>{
+    recover_result_at(input,directory,cancelled,"http://127.0.0.1:9875")
+}
+fn recover_result_at(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,endpoint:&str)->Result<bool,String>{
+    input.validate()?;
+    let path=directory.join("result.json");
+    let request=json!({"action":"recover","job_id":input.job_id,"document_token":input.document_token,"state_sha256":input.state_sha256,"operations":input.operations});
+    let mut result=wait(cancelled,async {
+        let client=reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none()).timeout(Duration::from_secs(15)).build().map_err(|_|INVALID)?;
+        native_request(&client,endpoint,request).await
+    })?;
+    if result==json!({"recovery_status":"running"}){return Ok(false);}
+    if path.try_exists().map_err(|_|"No se pudo comprobar el resultado local.")?{
+        normalize_result(input,&mut result)?;
+        let saved:Value=crate::project::read_json(&path).map_err(|_|"El resultado local no es válido; se conservó sin reemplazarlo.")?;
+        if saved!=result{return Err("El informe local cambió frente al recibo nativo; se conservó sin reemplazarlo ni liberar la pausa.".into());}
+        return Ok(true);
+    }
+    retain_result(input,directory,&mut result)?;Ok(true)
 }
 
 pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
@@ -1008,5 +1036,34 @@ mod tests {
         assert!(inspect(None, &AtomicBool::new(true))
             .unwrap_err()
             .contains("cancelada"));
+    }
+    #[test]
+    fn native_recovery_uses_only_the_original_receipt_and_preserves_changed_local_reports(){
+        use std::{io::{Read,Write},net::TcpListener};
+        let root=std::env::temp_dir().join(format!("hazlo-native-recovery-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        let input=Input{schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Change the approved part".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None};
+        let result=json!({"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
+        let listener=TcpListener::bind("127.0.0.1:0").unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());let expected=input.clone();let native=result.clone();
+        let server=std::thread::spawn(move||{
+            for pass in 0..5 {
+                for method in ["execute_code_async","get_task_result"]{
+                    let (mut stream,_)=listener.accept().unwrap();stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();let mut request=Vec::new();
+                    loop {let mut chunk=[0;4096];let count=stream.read(&mut chunk).unwrap();assert!(count>0 && request.len()+count<1_000_000);request.extend_from_slice(&chunk[..count]);if request.windows(13).any(|w|w==b"</methodCall>"){break;}}
+                    let request=String::from_utf8(request).unwrap();assert!(request.contains(&format!("<methodName>{method}</methodName>")));
+                    let value=if method=="execute_code_async"{
+                        let code=quick_xml::escape::unescape(request.split("<string>").nth(1).unwrap().split("</string>").next().unwrap()).unwrap();
+                        let encoded=code.lines().nth(1).unwrap().strip_prefix("HAZLO_REQUEST = json.loads(").unwrap().strip_suffix(')').unwrap();let data:String=serde_json::from_str(encoded).unwrap();let query:Value=serde_json::from_str(&data).unwrap();
+                        assert_eq!(query,json!({"action":"recover","job_id":expected.job_id,"document_token":expected.document_token,"state_sha256":expected.state_sha256,"operations":expected.operations}));json!({"success":true,"task_id":"faceb00c"})
+                    }else{let response=if pass==0{json!({"recovery_status":"running"})}else if pass==4{let mut wrong=native.clone();wrong["job_id"]=json!(uuid::Uuid::new_v4());wrong}else{native.clone()};json!({"success":true,"task_id":"faceb00c","status":"done","output":json!({"ok":true,"result":response}).to_string()})};
+                    let body=format!("<methodResponse><params><param>{}</param></params></methodResponse>",xml(&value));stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/xml\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}",body.len()).as_bytes()).unwrap();
+                }
+            }
+        });
+        let cancel=AtomicBool::new(false);assert!(!recover_result_at(&input,&root,&cancel,&endpoint).unwrap());assert!(!root.join("result.json").exists());
+        assert!(recover_result_at(&input,&root,&cancel,&endpoint).unwrap());let bytes=std::fs::read(root.join("result.json")).unwrap();
+        assert!(recover_result_at(&input,&root,&cancel,&endpoint).unwrap());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),bytes);
+        let mut changed:Value=serde_json::from_slice(&bytes).unwrap();changed["after"]["state_sha256"]=json!("c".repeat(64));let manual=serde_json::to_vec_pretty(&changed).unwrap();std::fs::write(root.join("result.json"),&manual).unwrap();
+        assert!(recover_result_at(&input,&root,&cancel,&endpoint).is_err());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),manual);
+        let other=root.join("wrong-reply");std::fs::create_dir(&other).unwrap();assert!(recover_result_at(&input,&other,&cancel,&endpoint).is_err());assert!(!other.join("result.json").exists());server.join().unwrap();std::fs::remove_dir_all(root).unwrap();
     }
 }

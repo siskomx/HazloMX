@@ -206,7 +206,7 @@ mod tests {
         let programs = [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice, Program::Rea,Program::Tshark,Program::Usbpcap,Program::Serial];
         for tool in crate::host_tools::catalog() {
             let count = programs.iter().filter(|program| program.allows(&tool.name)).count();
-            assert_eq!(count, if matches!(tool.name.as_ref(), "propose_public_document_read" | "reconcile_native_batch" | "read_task_reference" | "select_program" | "get_design_capabilities" | "get_workflow_status" | "read_verified_result" | "inspect_native_tools" | "read_native_tool" | "propose_native_tool_calls") { 11 } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
+            assert_eq!(count, if matches!(tool.name.as_ref(), "propose_public_document_read" | "reconcile_native_batch" | "recover_native_result" | "read_task_reference" | "select_program" | "get_design_capabilities" | "get_workflow_status" | "read_verified_result" | "inspect_native_tools" | "read_native_tool" | "propose_native_tool_calls") { 11 } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
         }
         assert!(serde_json::from_str::<Program>("\"unknown\"").is_err());
         for program in programs {
@@ -242,7 +242,8 @@ mod tests {
             if program == Program::Planning {
                 assert_eq!(capabilities["kicad"]["open_document"]["document_type"], "pcb_only");
                 assert_eq!(capabilities["kicad"]["open_document"]["schematic_live_editing"], false);
-                assert_eq!(actual.len(), 10);
+                assert_eq!(actual.len(), 11);
+                assert!(actual.iter().any(|tool|tool.name=="recover_native_result"));
                 for tool in crate::host_tools::catalog().into_iter().filter(|t| !Program::Planning.allows(&t.name)) {
                     let result = client.call_tool(CallToolRequestParams::new(tool.name)).await.unwrap();
                     assert_eq!(result.is_error, Some(true));

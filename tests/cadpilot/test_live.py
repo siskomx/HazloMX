@@ -114,6 +114,34 @@ class LiveTests(unittest.TestCase):
         self.assertTrue(result["ok"], result)
         return result["result"]
 
+    def test_recovery_returns_original_completion_without_repeating_or_reverting_manual_edits(self):
+        request = self.request(self.inspect())
+        completed = self.call(request)
+        self.assertTrue(completed["ok"], completed)
+        self.doc.Objects[0].length = 99.0
+        query = {**request, "action": "recover"}
+        recovered = self.call(query)
+        self.assertEqual(recovered, completed)
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.doc.Objects[0].length, 99.0)
+        self.assertEqual(self.view_events, ["fit", "redraw"])
+        self.opened.clear()
+        self.assertEqual(self.call(query), completed)
+        for changed in [dict(query, document_token=str(uuid.uuid4())), dict(query, state_sha256="a" * 64), dict(query, operations=[]), dict(query, job_id=str(uuid.uuid4()))]:
+            self.assertFalse(self.call(changed)["ok"])
+        del self.rpc._hazlomexa_live
+        self.assertFalse(self.call(query)["ok"])
+        self.assertEqual(len(self.calls), 1)
+
+    def test_recovery_never_treats_pending_or_old_metadata_as_completion(self):
+        request = self.request(self.inspect())
+        self.rpc._hazlomexa_live["receipts"][request["job_id"]] = {"status": "running", "document_token": request["document_token"]}
+        query = {**request, "action": "recover"}
+        self.assertEqual(self.call(query), {"ok": True, "result": {"recovery_status": "running"}})
+        self.rpc._hazlomexa_live["receipts"][request["job_id"]]["status"] = "completed"
+        self.assertFalse(self.call(query)["ok"])
+        self.assertEqual(self.calls, [])
+
     def request(self, observation, length=30.4):
         return {"action": "apply", "document_token": observation["document_token"], "state_sha256": observation["state_sha256"], "job_id": str(uuid.uuid4()), "expires_at": time.time() + 30, "operations": [{"action": "edit_object", "obj_name": "Box", "obj_properties": {"Length": length}}]}
 
@@ -165,6 +193,8 @@ class LiveTests(unittest.TestCase):
         self.assertNotIn(str(self.export_path),json.dumps(report))
         self.assertEqual(self.view_events,[])
         self.assertEqual(self.call(request)["error"],"already_attempted")
+        self.assertEqual(self.call({**request,"action":"recover"}),result)
+        self.assertEqual(len(self.exported_paths),1)
 
     def test_step_cancel_existing_destination_and_changed_document_do_not_export(self):
         request = self.export_fixture()
@@ -218,6 +248,8 @@ class LiveTests(unittest.TestCase):
         self.assertNotIn(str(self.saved_path), json.dumps(result))
         self.assertEqual(self.view_events, [])
         self.assertEqual(self.call(request)["error"], "changed_document")
+        self.assertEqual(self.call({**request,"action":"recover"}),result)
+        self.assertEqual(self.save_calls,1)
 
     def test_save_as_cancel_and_uncertain_failure_do_not_claim_a_completed_save(self):
         request = self.request(self.inspect())

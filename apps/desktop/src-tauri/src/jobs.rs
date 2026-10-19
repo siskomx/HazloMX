@@ -252,6 +252,32 @@ impl Workflow {
         let state=self.state.lock().map_err(|e|e.to_string())?;let Some(project)=&state.project else{return Ok(Vec::new());};
         project.native_recovery(None).map_err(|e|e.to_string())
     }
+    pub(crate) fn recover_native_result(&self,expected:(Uuid,PathBuf),job_id:Uuid,cancel:Arc<AtomicBool>)->Result<serde_json::Value,String>{
+        let project={let state=self.state.lock().map_err(|_|"No se pudo comprobar el trabajo local.")?;inference_idle(&state)?;
+            if state.job.as_ref().is_some_and(|job|job.view.busy || job.view.snapshot.phase==Phase::AwaitingApproval){return Err("Termina o cancela la propuesta actual antes de recuperar el resultado anterior.".into());}
+            state.project.clone().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió; no se consultó otro trabajo.")?};
+        let snapshot=project.history().map_err(|_|"No se pudo leer el registro local.")?.into_iter().find(|s|s.input.job_id()==job_id).ok_or("No se encontró la operación en este proyecto.")?;
+        if !self.task_allows_snapshot(&snapshot)?{return Err("Vuelve a la conversación de la operación para recuperar su resultado.".into());}
+        let OperationInput::LiveCad(input)=&snapshot.input else{return Err("Este programa todavía necesita su revisión nativa específica. No se repitió ninguna operación.".into());};
+        let stage=project.store("staging").join(job_id.to_string());let directory=if stage.try_exists().map_err(|_|"No se pudo comprobar el trabajo local.")?{stage}else{project.artifact_directory(job_id)};
+        let _pins=crate::project::pin_lineage(&directory).map_err(|_|"No se pudo fijar el resultado local para recuperación.")?;
+        let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
+        if record.outcome==crate::native_journal::Outcome::Pending{return Err("La llamada no fue admitida; prepara una nueva propuesta con el estado actual.".into());}
+        if record.outcome!=crate::native_journal::Outcome::Acknowledged && !crate::cadpilot_live::recover_result(input,&directory,&cancel)?{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
+        let mut checked=snapshot.input.clone();checked.retain_receipt(&directory).map_err(|_|"El resultado sigue local, pero no se pudo conservar su recibo.")?;
+        project.validate_outputs(&directory,&checked).map_err(|_|"El resultado nativo no pasó sus comprobaciones; se conserva la pausa.")?;
+        crate::live_dispatch::recover_checked(&directory,&checked)?;
+        drop(_pins);
+        let recovered=project.recover().map_err(|_|"El resultado se conservó, pero su publicación local sigue pendiente. No repitas la operación.")?;
+        let saved=recovered.into_iter().find(|s|s.input.job_id()==job_id).ok_or("El resultado sigue local; vuelve a comprobar su publicación.")?;let published=saved.phase==Phase::Completed;
+        let mut state=self.state.lock().map_err(|_|"El resultado se conservó; vuelve a leer el estado local.")?;
+        if state.project.as_ref().is_some_and(|p|p.id==project.id && p.root==project.root){
+            if let Some(job)=state.job.as_mut().filter(|job|job.view.snapshot.input.job_id()==job_id && !job.view.busy){
+                job.view.snapshot=saved;job.view.advance();
+            }
+        }
+        Ok(serde_json::json!({"job_id":job_id,"recovered":true,"published":published,"edit_repeated":false,"guidance":"The original native result was recovered, not the current document state. Read the verified result locally or with its separate evidence consent, then inspect fresh native state before proposing further changes."}))
+    }
     pub fn retain_tool_evidence(&self,expected:&crate::tasks::Binding,tool:&str,result:&Result<serde_json::Value,String>)->Result<Uuid,String>{
         let mut state=self.state.lock().map_err(|_|"No se pudo conservar evidencia local.")?;
         let project=state.project.clone().ok_or("No hay proyecto activo.")?;
@@ -3354,6 +3380,26 @@ mod tests {
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn recovered_native_receipts_publish_without_replay_and_preserve_occupied_outputs(){
+        for blocked in [false,true]{
+            let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();
+            let input=crate::cadpilot_live::Input{schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Keep the approved change".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};let id=input.job_id;
+            let pending=workflow.propose_live_cad(project.clone(),input.clone()).unwrap();let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();let stage=dispatch.project.reserve_stage(id).unwrap();
+            let fence=crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone()).unwrap();drop(fence.enter().unwrap());
+            let report=serde_json::json!({"live_cad_version":1,"job_id":id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});fs::write(stage.path.join("result.json"),serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+            let mut checked=dispatch.snapshot.input.clone();checked.retain_receipt(&stage.path).unwrap();dispatch.project.validate_outputs(&stage.path,&checked).unwrap();crate::live_dispatch::recover_checked(&stage.path,&checked).unwrap();
+            let destination=dispatch.project.artifact_directory(id);if blocked{fs::create_dir(&destination).unwrap();fs::write(destination.join("manual.native"),b"preserve manual output").unwrap();}
+            drop(stage);drop(fence);workflow.finish(dispatch,Err("lost native reply".into())).unwrap();
+            let mut foreign=project.clone();foreign.1=root.join("copied-project");assert!(workflow.recover_native_result(foreign,id,Arc::new(AtomicBool::new(false))).is_err());
+            let recovered=workflow.recover_native_result(project.clone(),id,Arc::new(AtomicBool::new(false))).unwrap();assert_eq!(recovered["recovered"],true);assert_eq!(recovered["published"],!blocked);assert!(!workflow.native_recovery().unwrap()[0].needs_review);
+            if blocked{assert_eq!(fs::read(destination.join("manual.native")).unwrap(),b"preserve manual output");fs::remove_file(destination.join("manual.native")).unwrap();fs::remove_dir(&destination).unwrap();assert_eq!(workflow.recover_native_result(project.clone(),id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);}
+            let t=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::Message{id:t.id,revision:t.revision,text:"Preserve my latest intent".into(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":"Preserve my latest intent"}]}).to_string(),correction_of:None}).unwrap();let revised=workflow.task_state().unwrap().unwrap().active;
+            assert_eq!(workflow.recover_native_result(project.clone(),id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);let retained=workflow.task_state().unwrap().unwrap().active;assert_eq!(retained.revision,revised.revision);assert_eq!(retained.goal,revised.goal);
+            assert!(workflow.begin(pending.approval_id.unwrap()).is_err());let t=workflow.task_state().unwrap().unwrap().active;workflow.task_request(project.clone(),crate::tasks::Request::New).unwrap();assert_ne!(workflow.task_state().unwrap().unwrap().active.id,t.id);assert!(workflow.recover_native_result(project,id,Arc::new(AtomicBool::new(false))).is_err());
+            drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
     #[test]
     fn checked_live_result_survives_stop_and_publication_failure_without_replay() {
         for blocked in [false,true] {

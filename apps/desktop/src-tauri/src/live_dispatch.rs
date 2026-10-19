@@ -91,6 +91,14 @@ pub(crate) fn read(directory: &Path, input: &OperationInput) -> Result<Option<Re
     }
     Ok(Some(record))
 }
+pub(crate) fn recover_checked(directory:&Path,checked:&OperationInput)->Result<(),String>{
+    let mut record=read(directory,checked)?.ok_or("Falta el registro de la llamada; no se adoptó el resultado.")?;
+    let hash=checked.receipt_sha256().ok_or("Falta el recibo del resultado comprobado.")?;
+    if record.outcome==Outcome::Acknowledged{return Ok(());}
+    if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain){return Err("La llamada no fue admitida; no se adoptó un resultado ajeno.".into());}
+    record.receipt_sha256=Some(hash.into());record.outcome=Outcome::Acknowledged;
+    atomic_json(&directory.join("live-dispatch.json"),&record,true).map_err(|_|"El resultado sigue local, pero no se confirmó la recuperación. No repitas la operación.".into())
+}
 pub(crate) struct Dispatch {
     path: PathBuf,
     record: Mutex<Record>,
@@ -163,6 +171,17 @@ impl Dispatch {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recovered_acknowledgment_survives_locks_and_rejects_changed_evidence(){
+        use std::os::windows::fs::OpenOptionsExt;
+        let root=std::env::temp_dir().join(format!("hazlo-recovered-ack-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        let input=crate::agent_editor::tests::job_fixture();let original=OperationInput::LiveAgent(input.clone());let fence=Dispatch::start(&root,&original,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
+        std::fs::write(root.join("result.json"),serde_json::to_vec_pretty(&crate::agent_editor::tests::report_fixture(&input)).unwrap()).unwrap();let mut checked=original.clone();checked.retain_receipt(&root).unwrap();assert!(recover_checked(&root,&checked).is_err());drop(fence.enter().unwrap());drop(fence);
+        let journal=root.join("live-dispatch.json");let before=std::fs::read(&journal).unwrap();let lock=std::fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(&journal).unwrap();
+        assert!(recover_checked(&root,&checked).is_err());assert_eq!(std::fs::read(&journal).unwrap(),before);assert!(read(&root,&original).unwrap().unwrap().summary(&original).needs_review);drop(lock);
+        recover_checked(&root,&checked).unwrap();let after=std::fs::read(&journal).unwrap();recover_checked(&root,&checked).unwrap();assert_eq!(std::fs::read(&journal).unwrap(),after);assert!(!read(&root,&original).unwrap().unwrap().summary(&original).needs_review);
+        std::fs::write(root.join("result.json"),b"changed native report").unwrap();assert!(read(&root,&original).is_err());assert!(recover_checked(&root,&checked).is_err());assert_eq!(std::fs::read(&journal).unwrap(),after);std::fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn durable_fence_distinguishes_unsent_and_admitted_calls_without_replay() {
         let root = std::env::temp_dir().join(format!("hazlo-live-fence-{}", Uuid::new_v4()));
