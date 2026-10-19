@@ -24,6 +24,8 @@ pub(crate) struct Record {
     pub receipt_sha256: Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub refusal_sha256:Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub native_completion_sha256:Option<String>,
 }
 fn digest(input: &OperationInput) -> Result<String, String> {
     if !matches!(
@@ -48,12 +50,13 @@ impl Record {
     pub fn summary(&self, input: &OperationInput) -> Summary {
         let finished = self.outcome == Outcome::Acknowledged;
         let refused=self.refusal_sha256.is_some();
+        let observed=self.native_completion_sha256.is_some();
         Summary {
             job_id: self.job_id,
             program: input.native_program(),
             kind: "live_adapter",
-            acknowledged: usize::from(finished),
-            uncertain: usize::from(!refused && matches!(
+            acknowledged: usize::from(finished || observed),
+            uncertain: usize::from(!refused && !observed && matches!(
                 self.outcome,
                 Outcome::Dispatched | Outcome::Uncertain
             )),
@@ -84,19 +87,32 @@ pub(crate) fn read(directory: &Path, input: &OperationInput) -> Result<Option<Re
     {
         return Err("El registro no coincide con la operación aprobada. No se repetirá.".into());
     }
+    let mut retained_result=None;
+    if let Some(hash)=&record.native_completion_sha256{
+        let OperationInput::LiveCad(cad)=input else{return Err("Recibo nativo incompatible; se conserva la pausa.".into());};
+        if !crate::kicad_project::valid_hash(hash) || matches!(record.outcome,Outcome::Pending) || record.refusal_sha256.is_some(){return Err("El recibo nativo cambió; se conserva la pausa sin repetir la edición.".into());}
+        let native=crate::cadpilot_live::read_native_completion(directory,cad,hash)?.ok_or("Falta el recibo nativo original.")?;
+        let expected=crate::kicad_project::digest(&serde_json::to_vec_pretty(&native).map_err(|_|"Recibo nativo no válido.")?);if record.receipt_sha256.as_ref().is_some_and(|hash|hash!=&expected){return Err("El informe final no coincide con la respuesta nativa original.".into());}
+        retained_result=Some(expected);
+    }
     if let Some(hash) = &record.receipt_sha256 {
-        let bytes = crate::kicad_project::read_regular(&directory.join("result.json"), 65536)?;
-        if crate::kicad_project::digest(&bytes) != *hash
-            || input.receipt_sha256().is_some_and(|h| h != hash)
-        {
-            return Err("El resultado nativo cambió; se conserva la pausa.".into());
-        }
+        let path=directory.join("result.json");
+        let matches=if path.try_exists().map_err(|_|"No se pudo comprobar el informe nativo.")?{crate::kicad_project::digest(&crate::kicad_project::read_regular(&path,65536)?)==*hash}else{retained_result.as_ref()==Some(hash)};
+        if !matches || input.receipt_sha256().is_some_and(|h|h!=hash){return Err("El resultado nativo cambió; se conserva la pausa.".into());}
     }
     if let Some(hash)=&record.refusal_sha256{
         let OperationInput::LiveDrawing(drawing)=input else{return Err("Prueba de rechazo incompatible; se conserva la pausa.".into());};
         if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || !crate::kicad_project::valid_hash(hash) || crate::kicad_project::digest(&crate::kicad_project::read_regular(&directory.join("drawing-completion.json"),256*1024)?)!=*hash || !crate::cadcraft_live::refusal_proof(drawing,directory)?{return Err("La prueba de rechazo cambió; se conserva la pausa.".into());}
     }
     Ok(Some(record))
+}
+pub(crate) fn retain_native_completion(directory:&Path,input:&crate::cadpilot_live::Input,result:&serde_json::Value)->Result<String,String>{
+    let operation=OperationInput::LiveCad(input.clone());let mut record=read(directory,&operation)?.ok_or("Falta el registro original; no se adoptó un resultado ajeno.")?;
+    if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || record.refusal_sha256.is_some(){return Err("La llamada no está admitida para conservar otro resultado.".into());}
+    let hash=crate::cadpilot_live::write_native_completion(directory,input,result)?;
+    if record.native_completion_sha256.as_ref().is_some_and(|saved|saved!=&hash){return Err("El recibo original ya tiene otro contenido; se conserva sin reemplazarlo.".into());}
+    if record.native_completion_sha256.is_none(){record.native_completion_sha256=Some(hash.clone());atomic_json(&directory.join("live-dispatch.json"),&record,true).map_err(|_|"La respuesta sigue local, pero no se confirmó su vínculo al envío. No repitas la edición.".to_string())?;}
+    Ok(hash)
 }
 pub(crate) fn recover_refused(directory:&Path,input:&OperationInput)->Result<(),String>{
     let mut record=read(directory,input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
@@ -137,6 +153,7 @@ impl Dispatch {
             outcome: Outcome::Pending,
             receipt_sha256: None,
             refusal_sha256:None,
+            native_completion_sha256:None,
         };
         let path = directory.join("live-dispatch.json");
         atomic_json(&path,&record,false).map_err(|_|"La operación ya tiene un registro o no se pudo reservar. No se enviaron nuevas llamadas.")?;
@@ -167,6 +184,10 @@ impl Dispatch {
         self.record
             .lock()
             .map_or(true, |r| r.outcome != Outcome::Pending)
+    }
+    pub(crate) fn retain_native_completion(&self,input:&crate::cadpilot_live::Input,result:&serde_json::Value)->Result<(),String>{
+        let mut record=self.record.lock().map_err(|_|"No se pudo conservar el resultado nativo.")?;
+        record.native_completion_sha256=Some(retain_native_completion(self.path.parent().ok_or("Falta el registro nativo.")?,input,result)?);Ok(())
     }
     pub fn complete(&self, checked: &OperationInput) -> Result<(), String> {
         if read(self.path.parent().ok_or("Falta el registro nativo.")?,checked)?.is_some_and(|record|record.refusal_sha256.is_some()){return Err("La edición no inició; no se marcará como completada.".into());}

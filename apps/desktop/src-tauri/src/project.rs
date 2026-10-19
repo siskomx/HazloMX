@@ -1073,6 +1073,12 @@ impl Project {
                 let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
                 if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if let Ok(checked)=crate::native_tools::recover_recorded_result(&directory,input){snapshot.input=OperationInput::NativeTools(checked);self.save(&snapshot)?;}}
             }}
+            if let OperationInput::LiveCad(input)=&snapshot.input{
+                let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
+                if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::cadpilot_live::recover_recorded_result(&directory,input),Ok(true)){
+                    let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;self.validate_outputs(&directory,&checked)?;crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}
+                }}
+            }
             if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) && snapshot.input.receipt_sha256().is_none() {
                 let stage=self.store("staging").join(snapshot.input.job_id().to_string());
                 let directory=if stage.try_exists()?{stage}else{published.clone()};
@@ -1194,6 +1200,23 @@ pub(crate) mod tests {
             if mode!="tampered" {let before=serde_json::to_value(project.history().unwrap()).unwrap();assert_eq!(serde_json::to_value(project.recover().unwrap()).unwrap(),before);}
             drop(project);fs::remove_dir_all(root).unwrap();
         }}
+    }
+    #[test]
+    fn native_completion_survives_a_missing_final_report_and_publishes_without_the_native_runtime(){
+        use std::sync::{Arc,Mutex,atomic::AtomicBool};
+        for scenario in ["missing_report","occupied_destination","changed_report"]{
+            let root=root();let project=Project::create(&root).unwrap();let(input,result)=crate::cadpilot_live::tests::completed_fixture();let id=input.job_id;let operation=OperationInput::LiveCad(input.clone());let mut snapshot=project.snapshot(operation.clone(),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;project.save(&snapshot).unwrap();
+            let stage=project.reserve_stage(id).unwrap();let fence=crate::live_dispatch::Dispatch::start(&stage.path,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());fence.retain_native_completion(&input,&result).unwrap();
+            let receipt=fs::read(stage.path.join("native-completion.json")).unwrap();let directory=stage.path.clone();drop(fence);drop(stage);
+            if scenario=="occupied_destination"{fs::create_dir(project.artifact_directory(id)).unwrap();fs::write(project.artifact_directory(id).join("manual.native"),b"preserve occupied output").unwrap();}
+            if scenario=="changed_report"{fs::write(directory.join("result.json"),b"preserve changed final report").unwrap();}
+            fs::write(root.join("user.native"),b"preserve later user edits").unwrap();drop(project);
+            let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();let saved=recovered.iter().find(|job|job.input.job_id()==id).unwrap();
+            if scenario=="missing_report"{assert_eq!(saved.phase,Phase::Completed);assert!(saved.audit.as_ref().unwrap().files_verified);let path=project.artifact_directory(id);assert_eq!(fs::read(path.join("native-completion.json")).unwrap(),receipt);assert_eq!(read_json::<serde_json::Value>(&path.join("result.json")).unwrap(),result);assert!(!project.native_recovery(None).unwrap()[0].needs_review);let final_bytes=fs::read(path.join("result.json")).unwrap();fs::remove_file(path.join("result.json")).unwrap();assert_eq!(project.recover().unwrap()[0].phase,Phase::Completed);assert_eq!(fs::read(path.join("result.json")).unwrap(),final_bytes);}
+            else if scenario=="occupied_destination"{assert_eq!(saved.phase,Phase::Interrupted);assert_eq!(fs::read(project.artifact_directory(id).join("manual.native")).unwrap(),b"preserve occupied output");assert_eq!(fs::read(directory.join("native-completion.json")).unwrap(),receipt);assert!(directory.join("result.json").exists());assert!(saved.input.receipt_sha256().is_some());}
+            else{assert_eq!(saved.phase,Phase::Interrupted);assert_eq!(fs::read(directory.join("result.json")).unwrap(),b"preserve changed final report");assert!(saved.input.receipt_sha256().is_none());let recovery=project.native_recovery(None).unwrap();assert_eq!(recovery[0].acknowledged,1);assert_eq!(recovery[0].uncertain,0);assert!(recovery[0].needs_review);}
+            assert_eq!(fs::read(root.join("user.native")).unwrap(),b"preserve later user edits");drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
     }
     #[test]
     fn missing_dispatch_records_do_not_clear_an_attempted_mutation_or_legacy_uncertainty() {

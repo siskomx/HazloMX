@@ -12,6 +12,37 @@ const LIMIT: usize = 2 * 1024 * 1024;
 const STEP_POLICY: &str = include_str!("../resources/freecad/cadpilot_policy.py");
 const SCRIPT: &str = include_str!("../resources/freecad/live.py");
 
+#[derive(Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeCompletion{version:u32,job_id:uuid::Uuid,input_sha256:String,result_sha256:String,result:Value}
+fn completion_input(input:&Input)->Result<String,String>{
+    let mut value=serde_json::to_value(input).map_err(|_|INVALID)?;value.as_object_mut().ok_or(INVALID)?.remove("receipt_sha256");Ok(crate::kicad_project::digest(&serde_json::to_vec(&value).map_err(|_|INVALID)?))
+}
+pub(crate) fn read_native_completion(directory:&std::path::Path,input:&Input,expected_hash:&str)->Result<Option<Value>,String>{
+    let path=directory.join("native-completion.json");if !path.try_exists().map_err(|_|"No se pudo comprobar el recibo nativo local.")?{return Ok(None);}
+    let bytes=crate::kicad_project::read_regular(&path,256*1024)?;if crate::kicad_project::digest(&bytes)!=expected_hash{return Err("El recibo original cambió; no se adoptó otro contenido.".into());}let saved:NativeCompletion=serde_json::from_slice(&bytes).map_err(|_|"El recibo local no es válido; no se reemplazó.".to_string())?;
+    validate_result(input,&saved.result)?;let result=serde_json::to_vec_pretty(&saved.result).map_err(|_|INVALID)?;
+    if saved.version!=1 || saved.job_id!=input.job_id || saved.input_sha256!=completion_input(input)? || saved.result_sha256!=crate::kicad_project::digest(&result) || input.receipt_sha256.as_ref().is_some_and(|hash|hash!=&saved.result_sha256) || result.len()>65536{return Err("El recibo no coincide con la entrada y respuesta originales; se conserva la pausa.".into());}Ok(Some(saved.result))
+}
+pub(crate) fn write_native_completion(directory:&std::path::Path,input:&Input,result:&Value)->Result<String,String>{
+    validate_result(input,result)?;let bytes=serde_json::to_vec_pretty(result).map_err(|_|INVALID)?;if bytes.len()>65536{return Err("El resultado nativo supera el límite; sigue local y no se repetirá la edición.".into());}
+    let path=directory.join("native-completion.json");
+    let saved=NativeCompletion{version:1,job_id:input.job_id,input_sha256:completion_input(input)?,result_sha256:crate::kicad_project::digest(&bytes),result:result.clone()};let expected=serde_json::to_vec_pretty(&saved).map_err(|_|INVALID)?;
+    if path.try_exists().map_err(|_|"No se pudo comprobar el recibo local.")?{if crate::kicad_project::read_regular(&path,256*1024)?!=expected{return Err("El recibo original cambió; no se reemplazó ni se repitió la edición.".into());}}
+    else{crate::project::atomic_json(&path,&saved,false).map_err(|_|"La edición pudo terminar, pero no se pudo conservar su recibo local. No la repitas.".to_string())?;}
+    if crate::kicad_project::read_regular(&path,256*1024)?!=expected{return Err("El recibo cambió antes de vincularse; no se adoptó otro contenido.".into());}Ok(crate::kicad_project::digest(&expected))
+}
+pub(crate) fn recover_recorded_result(directory:&std::path::Path,input:&Input)->Result<bool,String>{
+    let operation=crate::project::OperationInput::LiveCad(input.clone());let Some(record)=crate::live_dispatch::read(directory,&operation)? else{return Ok(false);};
+    let Some(hash)=record.native_completion_sha256.as_deref() else{return Ok(false);};
+    let result=read_native_completion(directory,input,hash)?.ok_or("Falta el recibo nativo original.")?;
+    let bytes=serde_json::to_vec_pretty(&result).map_err(|_|INVALID)?;let hash=crate::kicad_project::digest(&bytes);
+    if input.receipt_sha256.as_ref().is_some_and(|expected|expected!=&hash) || record.receipt_sha256.as_ref().is_some_and(|expected|expected!=&hash){return Err("El informe esperado no coincide; no se reconstruyó otro resultado.".into());}
+    let path=directory.join("result.json");if path.try_exists().map_err(|_|"No se pudo comprobar el informe local.")?{if crate::kicad_project::read_regular(&path,65536)?!=bytes{return Err("El informe local cambió; se conserva sin reemplazarlo.".into());}}
+    else{crate::project::atomic_json(&path,&result,false).map_err(|_|"El recibo sigue local, pero no se pudo guardar el informe. No repitas la edición.".to_string())?;}
+    Ok(true)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Input {
@@ -588,7 +619,7 @@ pub fn run(
     directory: &std::path::Path,
     cancelled: &AtomicBool,
 ) -> Result<(), String> {
-    run_impl(input,directory,cancelled,None)
+    run_impl(input,directory,cancelled,None,"http://127.0.0.1:9875")
 }
 async fn submit_native(client:reqwest::Client,endpoint:String,request:Value,dispatch:Option<&std::sync::Arc<crate::live_dispatch::Dispatch>>)->Result<Value,String>{
     let mut tasks=tokio::task::JoinSet::new();
@@ -599,9 +630,9 @@ async fn submit_native(client:reqwest::Client,endpoint:String,request:Value,disp
     tasks.join_next().await.ok_or(INVALID)?.map_err(|_|INVALID)?
 }
 pub(crate) fn run_gated(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispatch:&std::sync::Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
-    run_impl(input,directory,cancelled,Some(dispatch))
+    run_impl(input,directory,cancelled,Some(dispatch),"http://127.0.0.1:9875")
 }
-fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispatch:Option<&std::sync::Arc<crate::live_dispatch::Dispatch>>)->Result<(),String>{
+fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispatch:Option<&std::sync::Arc<crate::live_dispatch::Dispatch>>,endpoint:&str)->Result<(),String>{
     input.validate_for_dispatch()?;
     let expires = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -617,14 +648,20 @@ fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispat
             .timeout(Duration::from_secs(if input.uses_file_dialog() { 600 } else { 15 }))
             .build()
             .map_err(|_| INVALID)?;
-        submit_native(client,"http://127.0.0.1:9875".into(),request,dispatch).await
+        submit_native(client,endpoint.into(),request,dispatch).await
     })?;
-    retain_result(input,directory,&mut result)
+    normalize_result(input,&mut result)?;
+    if let Some(dispatch)=dispatch{dispatch.retain_native_completion(input,&result)?;}
+    write_checked_result(input,directory,&result)
 }
 fn retain_result(input:&Input,directory:&std::path::Path,result:&mut Value)->Result<(),String>{
     normalize_result(input,result)?;
+    write_checked_result(input,directory,result)
+}
+fn write_checked_result(input:&Input,directory:&std::path::Path,result:&Value)->Result<(),String>{
+    validate_result(input,result)?;
     crate::project::atomic_json(&directory.join("result.json"),result,false)
-        .map_err(|_| "El cambio nativo pudo completarse, pero no se guardó su informe. Relee el documento antes de continuar.".into())
+        .map_err(|_| "FreeCAD confirmó la operación, pero Hazlo no pudo guardar su informe. Conserva los cambios y recupera el recibo local sin repetir la edición.".into())
 }
 fn normalize_result(input:&Input,result:&mut Value)->Result<(),String>{
     result["after"]["objects"] = geometry(&result["after"]["objects"])?;
@@ -636,6 +673,7 @@ pub(crate) fn recover_result(input:&Input,directory:&std::path::Path,cancelled:&
 }
 fn recover_result_at(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,endpoint:&str)->Result<bool,String>{
     input.validate()?;
+    if recover_recorded_result(directory,input)?{return Ok(true);}
     let path=directory.join("result.json");
     let request=json!({"action":"recover","job_id":input.job_id,"document_token":input.document_token,"state_sha256":input.state_sha256,"operations":input.operations});
     let mut result=wait(cancelled,async {
@@ -706,8 +744,57 @@ pub fn validate_result(input: &Input, result: &Value) -> Result<(), String> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+    pub(crate) fn completed_fixture()->(Input,Value){
+        let input=Input{schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Preserve the native edit".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None,agreement:Some(crate::native_tools::tests::agreement_fixture())};
+        let result=json!({"live_cad_version":1,"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[{"name":"Box","label":"Preserved user label","properties":{"Length":"12 mm"}}]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});(input,result)
+    }
+    #[test]
+    fn original_native_completion_recovers_offline_and_never_replaces_changed_work(){
+        use std::sync::{Arc,Mutex};use crate::{live_dispatch::Dispatch,project::OperationInput};
+        for scenario in ["missing_report","acknowledged_missing_report","same_report","changed_report","changed_completion","rehashed_completion","changed_report_with_receipt","changed_agreement","not_admitted","unbound_copy","changed_expected_hash"]{
+            let root=std::env::temp_dir().join(format!("hazlo-native-completion-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let (mut input,result)=completed_fixture();let operation=OperationInput::LiveCad(input.clone());let fence=Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
+            if scenario!="not_admitted"{drop(fence.enter().unwrap());}else{assert!(fence.retain_native_completion(&input,&result).is_err());}
+            if scenario=="unbound_copy" || scenario=="not_admitted"{write_native_completion(&root,&input,&result).unwrap();assert!(!recover_recorded_result(&root,&input).unwrap());assert!(!root.join("result.json").exists());drop(fence);std::fs::remove_dir_all(root).unwrap();continue;}
+            fence.retain_native_completion(&input,&result).unwrap();fence.retain_native_completion(&input,&result).unwrap();let summary=crate::live_dispatch::read(&root,&operation).unwrap().unwrap().summary(&operation);assert_eq!(summary.acknowledged,1);assert_eq!(summary.uncertain,0);assert!(summary.needs_review && !summary.finished);assert!(fence.enter().is_err());
+            if scenario=="acknowledged_missing_report"{assert!(recover_recorded_result(&root,&input).unwrap());let mut checked=operation.clone();checked.retain_receipt(&root).unwrap();fence.complete(&checked).unwrap();input.receipt_sha256=checked.receipt_sha256().map(str::to_owned);std::fs::remove_file(root.join("result.json")).unwrap();}
+            std::fs::write(root.join("manual.native"),b"preserve later manual edits").unwrap();
+            if scenario=="same_report"{crate::project::atomic_json(&root.join("result.json"),&result,false).unwrap();}
+            if scenario=="changed_report"{std::fs::write(root.join("result.json"),b"preserve changed report").unwrap();}
+            if scenario=="changed_completion"{std::fs::write(root.join("native-completion.json"),b"preserve changed receipt").unwrap();}
+            if scenario=="rehashed_completion"{let path=root.join("native-completion.json");let mut changed:NativeCompletion=crate::project::read_json(&path).unwrap();changed.result["after"]["state_sha256"]=json!("c".repeat(64));changed.result_sha256=crate::kicad_project::digest(&serde_json::to_vec_pretty(&changed.result).unwrap());crate::project::atomic_json(&path,&changed,true).unwrap();}
+            if scenario=="changed_report_with_receipt"{let mut changed=result.clone();changed["after"]["state_sha256"]=json!("c".repeat(64));crate::project::atomic_json(&root.join("result.json"),&changed,false).unwrap();input.receipt_sha256=Some(crate::kicad_project::digest(&std::fs::read(root.join("result.json")).unwrap()));}
+            if scenario=="changed_agreement"{input.agreement.as_mut().unwrap().outcome="Different outcome".into();}
+            if scenario=="changed_expected_hash"{input.receipt_sha256=Some("c".repeat(64));}
+            let journal=std::fs::read(root.join("live-dispatch.json")).unwrap();let recovered=recover_result_at(&input,&root,&AtomicBool::new(false),"http://127.0.0.1:9");
+            if matches!(scenario,"missing_report"|"acknowledged_missing_report"|"same_report"){
+                assert!(recovered.unwrap());let bytes=std::fs::read(root.join("result.json")).unwrap();assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap(),result);assert!(recover_recorded_result(&root,&input).unwrap());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),bytes);
+            }else{assert!(recovered.is_err());if scenario=="changed_report"{assert_eq!(std::fs::read(root.join("result.json")).unwrap(),b"preserve changed report");}else if scenario=="changed_report_with_receipt"{assert_eq!(crate::project::read_json::<Value>(&root.join("result.json")).unwrap()["after"]["state_sha256"],"c".repeat(64));}else{assert!(!root.join("result.json").exists());}}
+            assert_eq!(std::fs::read(root.join("live-dispatch.json")).unwrap(),journal);assert_eq!(std::fs::read(root.join("manual.native")).unwrap(),b"preserve later manual edits");drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn failed_native_completion_anchor_preserves_local_evidence_and_retries_only_bookkeeping(){
+        use std::{os::windows::fs::OpenOptionsExt,sync::{Arc,Mutex}};use crate::{live_dispatch::Dispatch,project::OperationInput};
+        let root=std::env::temp_dir().join(format!("hazlo-native-anchor-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let(input,result)=completed_fixture();let operation=OperationInput::LiveCad(input.clone());let fence=Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());let path=root.join("live-dispatch.json");let before=std::fs::read(&path).unwrap();
+        let lock=std::fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(&path).unwrap();assert!(fence.retain_native_completion(&input,&result).is_err());let receipt=std::fs::read(root.join("native-completion.json")).unwrap();assert_eq!(std::fs::read(&path).unwrap(),before);assert!(!recover_recorded_result(&root,&input).unwrap());assert!(!root.join("result.json").exists());assert!(fence.enter().is_err());drop(lock);
+        fence.retain_native_completion(&input,&result).unwrap();assert_eq!(std::fs::read(root.join("native-completion.json")).unwrap(),receipt);assert!(recover_result_at(&input,&root,&AtomicBool::new(false),"http://127.0.0.1:9").unwrap());assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn admitted_native_reply_is_retained_before_an_occupied_final_report_can_fail(){
+        use std::{io::{Read,Write},net::TcpListener,sync::{Arc,Mutex,atomic::AtomicUsize}};use crate::{live_dispatch::Dispatch,project::OperationInput};
+        let root=std::env::temp_dir().join(format!("hazlo-native-final-write-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let(input,mut native)=completed_fixture();native["after"]["objects"]=json!([{"Name":"Box","Label":"Preserved user label","TypeId":"Part::Box","Properties":{"Length":"12 mm"}}]);let mut expected=native.clone();normalize_result(&input,&mut expected).unwrap();let operation=OperationInput::LiveCad(input.clone());let fence=Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();std::fs::write(root.join("result.json"),b"preserve the occupied report").unwrap();
+        let listener=TcpListener::bind("127.0.0.1:0").unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());let calls=Arc::new(AtomicUsize::new(0));let count=calls.clone();let server=std::thread::spawn(move||{
+            for method in ["execute_code_async","get_task_result"]{
+                let(mut stream,_)=listener.accept().unwrap();stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();let mut request=Vec::new();loop{let mut chunk=[0;4096];let size=stream.read(&mut chunk).unwrap();assert!(size>0 && request.len()+size<1_000_000);request.extend_from_slice(&chunk[..size]);if request.windows(13).any(|bytes|bytes==b"</methodCall>"){break;}}
+                let request=String::from_utf8(request).unwrap();assert!(request.contains(&format!("<methodName>{method}</methodName>")));let value=if method=="execute_code_async"{count.fetch_add(1,Ordering::SeqCst);json!({"success":true,"task_id":"faceb00c"})}else{json!({"success":true,"task_id":"faceb00c","status":"done","output":json!({"ok":true,"result":native}).to_string()})};let body=format!("<methodResponse><params><param>{}</param></params></methodResponse>",xml(&value));stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/xml\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}",body.len()).as_bytes()).unwrap();
+            }
+        });
+        let error=run_impl(&input,&root,&AtomicBool::new(false),Some(&fence),&endpoint).unwrap_err();assert!(error.contains("confirmó la operación"));server.join().unwrap();assert_eq!(calls.load(Ordering::SeqCst),1);assert_eq!(std::fs::read(root.join("result.json")).unwrap(),b"preserve the occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert_eq!(read_native_completion(&root,&input,record.native_completion_sha256.as_ref().unwrap()).unwrap().unwrap(),expected);assert!(recover_result_at(&input,&root,&AtomicBool::new(false),&endpoint).is_err());
+        // Resolve only the fixture's file clash; recovering afterward must not contact its closed server.
+        std::fs::rename(root.join("result.json"),root.join("preserved-report.txt")).unwrap();assert!(recover_result_at(&input,&root,&AtomicBool::new(false),&endpoint).unwrap());assert_eq!(std::fs::read(root.join("preserved-report.txt")).unwrap(),b"preserve the occupied report");assert_eq!(calls.load(Ordering::SeqCst),1);assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn primitive_creation_requires_explicit_sizes_without_changing_history_validation() {

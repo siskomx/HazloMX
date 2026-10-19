@@ -306,6 +306,7 @@ impl Workflow {
             checked=OperationInput::NativeTools(crate::native_tools::recover_recorded_result(&directory,input)?);
             let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|_|"El resultado sigue local; no se pudo registrar su recibo recuperado.")?;
         }else{
+        if let OperationInput::LiveCad(input)=&snapshot.input{crate::cadpilot_live::recover_recorded_result(&directory,input)?;}
         let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
         if record.outcome==crate::native_journal::Outcome::Pending{return Err("La llamada no fue admitida; prepara una nueva propuesta con el estado actual.".into());}
         if record.refusal_sha256.is_some() || matches!(&snapshot.input,OperationInput::LiveDrawing(input) if crate::cadcraft_live::refusal_proof(input,&directory).unwrap_or(false)){
