@@ -1903,7 +1903,7 @@ pub fn catalog() -> Vec<Tool> {
 }
 
 #[derive(Clone)]
-pub struct McpTools(pub Arc<HostTools>, Option<(Uuid, PathBuf)>, Arc<Mutex<Option<Program>>>, Option<crate::tasks::Binding>);
+pub struct McpTools(pub Arc<HostTools>, Option<(Uuid, PathBuf)>, Arc<Mutex<Option<Program>>>, Option<crate::tasks::Binding>, Option<String>);
 impl McpTools {
     pub fn for_project(host: Arc<HostTools>, project: Uuid) -> Result<Self, String> {
         let selected = host
@@ -1913,7 +1913,7 @@ impl McpTools {
             .filter(|selected| selected.0 == project)
             .ok_or("El proyecto cambió. Conecta el agente de nuevo.")?;
         let task=host.workflow.task_binding()?;
-        Ok(Self(host, Some(selected), Arc::new(Mutex::new(None)),task))
+        Ok(Self(host, Some(selected), Arc::new(Mutex::new(None)),task,None))
     }
     pub fn for_program(host: Arc<HostTools>, project: (Uuid, PathBuf), program: Program) -> Result<Self, String> {
         let scoped = Self::for_project(host, project.0)?;
@@ -1924,18 +1924,33 @@ impl McpTools {
     pub fn new(host: Arc<HostTools>) -> Result<Self, String> {
         let project = host.workflow.view()?.project;
         let task=host.workflow.task_binding()?;
-        Ok(Self(host, project, Arc::new(Mutex::new(None)),task))
+        Ok(Self(host, project, Arc::new(Mutex::new(None)),task,None))
+    }
+    pub fn for_chat(host:Arc<HostTools>,project:(Uuid,PathBuf),program:Option<Program>,provider:&str)->Result<Self,String>{
+        let mut scoped=Self::for_project(host,project.0)?;
+        if scoped.1.as_ref()!=Some(&project){return Err("El proyecto cambió. Conecta la conversación de nuevo.".into());}
+        let binding=scoped.0.workflow.task_recipient(provider)?;
+        if scoped.3.as_ref()!=Some(&binding){return Err("La tarea cambió. Conecta la conversación de nuevo.".into());}
+        *scoped.2.lock().map_err(|_|"No se pudo fijar el programa.")?=program;scoped.4=Some(provider.into());
+        Ok(scoped)
     }
     pub(crate) fn check_scope(&self) -> Result<(), String> {
         if self.0.workflow.view()?.project != self.1 {
             return Err("El proyecto cambió. Conecta el agente de nuevo.".into());
         }
         if self.0.workflow.task_binding()?!=self.3{return Err("La tarea cambió. Conecta la conversación de nuevo.".into());}
+        if let Some(provider)=&self.4 {if self.0.workflow.task_recipient(provider).as_ref().ok()!=self.3.as_ref(){return Err("Cambió el destinatario de la conversación. No se compartió contenido.".into());}}
         Ok(())
     }
     pub(crate) fn project(&self) -> Option<(Uuid, PathBuf)> { self.1.clone() }
+    pub(crate) fn require_recipient(&self,provider:&str)->Result<(),String>{
+        self.check_scope()?;
+        if self.4.as_deref()!=Some(provider) || self.3.is_none(){return Err("La conexión no está vinculada a esta IA y conversación. El contenido permanece local.".into());}
+        Ok(())
+    }
     fn program(&self) -> Option<Program> { self.2.lock().map(|program|*program).unwrap_or(Some(Program::Planning)) }
     pub fn catalog(&self) -> Vec<Tool> {
+        if self.3.is_none() || self.4.is_none(){return catalog().into_iter().filter(|t|matches!(t.name.as_ref(),"get_design_capabilities"|"get_workflow_status")).map(|mut t|{t.description=Some("Read public connection metadata only. Start the selected AI chat in Hazlo to obtain its task-bound native tools; this exported connection inherits no evidence permissions.".into());t.input_schema=Arc::new(json!({"type":"object","properties":{},"additionalProperties":false}).as_object().unwrap().clone());t}).collect();}
         let routed=self.0.program_route().ok().flatten().is_some_and(|route|self.program()==Some(route.program));
         if routed || self.0.native_connection().is_ok_and(|selected|self.program().is_none_or(|p|p==selected.program)) {
             return catalog().into_iter().filter(|tool|matches!(tool.name.as_ref(),"propose_public_document_read"|"reconcile_native_batch"|"read_task_reference"|"select_program"|"get_design_capabilities"|"get_workflow_status"|"read_verified_result"|"inspect_native_tools"|"read_native_tool"|"propose_native_tool_calls")).collect();
@@ -1944,9 +1959,28 @@ impl McpTools {
     }
     fn check_tool(&self, name: &str) -> Result<(), String> {
         if !self.catalog().iter().any(|tool|tool.name==name) {
-            return Err("Esta herramienta pertenece a otro programa. Usa select_program y descubre sus herramientas nativas antes de solicitar el cambio.".into());
+            return Err(if self.4.is_none(){"Esta conexión solo ofrece metadatos. Abre la conversación con la IA elegida en Hazlo para usar sus herramientas y permisos."}else{"Esta herramienta pertenece a otro programa. Usa select_program y descubre sus herramientas nativas antes de solicitar el cambio."}.into());
         }
         Ok(())
+    }
+    fn unbound_metadata(&self,name:&str,arguments:Value)->Result<Value,String>{
+        let _:NoArguments=serde_json::from_value(arguments).map_err(|_|"La consulta de metadatos no acepta esos argumentos.")?;
+        let mut value=json!({"connection_scope":"metadata_only","owned_chat_required":true,"content_withheld":true,
+            "next_action":"Open the conversation with the selected AI in Hazlo. Hazlo creates its task-bound tool connection automatically; this exported connection does not inherit reference-sharing permission."});
+        if name=="get_design_capabilities" {value["available_programs"]=crate::program_tools::available_programs();}
+        Ok(value)
+    }
+    fn check_arguments(&self,name:&str,arguments:&Value)->Result<(),String>{
+        let tool=catalog().into_iter().find(|tool|tool.name==name).ok_or("Herramienta no disponible.")?;
+        let schema=Value::Object((*tool.input_schema).clone());
+        let mut compiler=boon::Compiler::new();
+        compiler.set_default_draft(boon::Draft::V2020_12);
+        compiler.use_loader(Box::new(boon::SchemeUrlLoader::new()));
+        let url="https://hazlomexa.invalid/owned-tool-schema";
+        compiler.add_resource(url,schema.clone()).map_err(|_|"No se pudo validar la herramienta.")?;
+        let mut schemas=boon::Schemas::new();
+        let index=compiler.compile(url,&mut schemas).map_err(|_|"No se pudo validar la herramienta.")?;
+        schemas.validate(arguments,index).map_err(|_|format!("Los argumentos no coinciden con la herramienta. Corrige la llamada según este esquema JSON; conserva los valores y unidades confirmados por el usuario y pregunta si faltan: {schema}"))
     }
     fn check_native_scope(&self,name:&str)->Result<(),String> {
         if matches!(name,"inspect_native_tools"|"read_native_tool"|"propose_native_tool_calls"|"reconcile_native_batch") {
@@ -1963,6 +1997,7 @@ impl McpTools {
         Ok(())
     }
     fn scope_result(&self, name: &str, result: Result<Value, String>) -> Result<Value, String> {
+        if self.3.is_none() || self.4.is_none(){return Err("No hay un destinatario de conversación autorizado; el contenido permanece local.".into());}
         if let Some(binding)=&self.3 {
             if name=="get_workflow_status" && result.is_ok() {
                 let view=self.0.workflow.view()?;
@@ -2040,9 +2075,12 @@ impl McpTools {
         Ok(value)
     }
     pub(crate) async fn call_in_project(&self, name: String, arguments: Value, cancelled: Arc<AtomicBool>) -> Result<Value, String> {
+        if cancelled.load(Ordering::SeqCst){return Err("Solicitud cancelada.".into());}
         self.check_scope()?;
-        if self.0.workflow.task_restricted()? && !matches!(name.as_str(),"propose_public_document_read"|"select_program"|"get_design_capabilities"|"inspect_native_tools"|"propose_native_tool_calls"|"read_task_reference"|"read_native_tool"|"read_verified_result"|"get_workflow_status"|"reconcile_native_batch") {return Err("La evidencia y los resultados de esta tarea permanecen locales. Falta autorización explícita para compartirlos con esta IA.".into());}
         self.check_tool(&name)?;
+        if self.3.is_none() || self.4.is_none(){return self.unbound_metadata(&name,arguments);}
+        self.check_arguments(&name,&arguments)?;
+        if self.0.workflow.task_restricted()? && !matches!(name.as_str(),"propose_public_document_read"|"select_program"|"get_design_capabilities"|"inspect_native_tools"|"propose_native_tool_calls"|"read_task_reference"|"read_native_tool"|"read_verified_result"|"get_workflow_status"|"reconcile_native_batch") {return Err("La evidencia y los resultados de esta tarea permanecen locales. Falta autorización explícita para compartirlos con esta IA.".into());}
         self.check_native_scope(&name)?;
         self.check_capability_scope(&name,&arguments)?;
         let result = self.0.clone().call_in_project(self.1.clone().ok_or("Selecciona un proyecto.")?, name.clone(), arguments, cancelled).await;
@@ -2086,6 +2124,7 @@ impl ServerHandler for McpTools {
         if let Err(error) = self.check_tool(&request.name) {
             return Ok(CallToolResult::error(vec![ContentBlock::text(error)]).into());
         }
+        if self.3.is_none() || self.4.is_none(){return Ok(match self.unbound_metadata(&request.name,Value::Object(request.arguments.unwrap_or_default())) {Ok(value)=>CallToolResult::structured(value),Err(_)=>CallToolResult::error(vec![ContentBlock::text("La consulta de metadatos no es válida.")])}.into());}
         if context.ct.is_cancelled() {
             return Ok(
                 CallToolResult::error(vec![ContentBlock::text("Solicitud cancelada.")]).into(),
@@ -2095,6 +2134,7 @@ impl ServerHandler for McpTools {
         let host = self.0.clone();
         let name = request.name.into_owned();
         let arguments = Value::Object(request.arguments.unwrap_or_default());
+        if let Err(error)=self.check_arguments(&name,&arguments){return Ok(CallToolResult::error(vec![ContentBlock::text(error)]).into());}
         if let Err(error)=self.check_capability_scope(&name,&arguments) {
             return Ok(CallToolResult::error(vec![ContentBlock::text(error)]).into());
         }
@@ -2143,15 +2183,65 @@ impl ServerHandler for McpTools {
 
 #[cfg(test)]
 mod tests {
+    fn chat_program(host:Arc<HostTools>,project:(Uuid,PathBuf),program:Program)->Result<McpTools,String>{
+        host.workflow.task_state()?;
+        McpTools::for_chat(host,project,Some(program),"codex")
+    }
+
     use super::*;
     use crate::project::Project;
     use rmcp::ServiceExt;
     use std::fs;
+    #[tokio::test]
+    async fn exported_connections_cannot_inherit_owned_chat_evidence_permissions(){
+        let (root,workflow,host,_)=setup();let project=workflow.view().unwrap().project.unwrap();
+        let owned=McpTools::for_chat(host.clone(),project.clone(),None,"codex").unwrap();
+        assert!(McpTools::for_chat(host.clone(),project.clone(),None,"claude").is_err());
+        let held=owned.scope_result("read_native_tool",Ok(json!({"raw":"UNBOUND_PRIVATE_SENTINEL"}))).unwrap();
+        let reference=serde_json::from_value(held["reference_id"].clone()).unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(project.clone(),crate::tasks::Request::Share{id:task.id,revision:task.revision,reference,allow:true}).unwrap();
+        assert!(workflow.shared_task_reference(reference,0).unwrap().to_string().contains("UNBOUND_PRIVATE_SENTINEL"));
+        for exported in [McpTools::new(host.clone()).unwrap(),McpTools::for_project(host.clone(),project.0).unwrap(),McpTools::for_program(host.clone(),project.clone(),Program::Rea).unwrap()] {
+            assert_eq!(exported.catalog().len(),2);
+            for result in [Ok(json!({"raw":"UNBOUND_PRIVATE_SENTINEL"})),Err("UNBOUND_PRIVATE_SENTINEL".into())] {
+                assert!(!exported.scope_result("read_native_tool",result).unwrap_err().contains("UNBOUND_PRIVATE_SENTINEL"));
+            }
+            for name in ["get_workflow_status","get_design_capabilities"] {
+                let result=exported.call_in_project(name.into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
+                assert_eq!(result["connection_scope"],"metadata_only");
+                assert!(result.get("project_id").is_none() && result.get("selections").is_none());
+                assert!(!result.to_string().contains("UNBOUND_PRIVATE_SENTINEL"));
+                assert!(exported.call_in_project(name.into(),json!({"provider":"codex"}),Arc::new(AtomicBool::new(false))).await.is_err());
+            }
+            for (name,args) in [("read_task_reference",json!({"reference":reference})),("read_native_tool",json!({})),("propose_native_tool_calls",json!({}))] {
+                assert!(exported.call_in_project(name.into(),args,Arc::new(AtomicBool::new(false))).await.is_err());
+            }
+        }
+        assert!(workflow.view().unwrap().job.is_none());
+        drop(owned);drop(host);drop(workflow);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn owned_chat_requires_an_existing_task_and_exact_recipient(){
+        let root=std::env::temp_dir().join(format!("hazlo-unbound-{}",Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();let project=Project::create(&root).unwrap();
+        let workflow=Arc::new(Workflow::new(root.join("unused.exe"),root.join("profiles")).unwrap());workflow.select_project(project).unwrap();
+        let host=Arc::new(HostTools::new(workflow.clone()));let project=workflow.view().unwrap().project.unwrap();
+        assert!(McpTools::for_chat(host.clone(),project.clone(),None,"codex").is_err());
+        let exported=McpTools::new(host.clone()).unwrap();assert_eq!(exported.catalog().len(),2);
+        workflow.task_state().unwrap();assert!(exported.check_scope().is_err());
+        let owned=McpTools::for_chat(host.clone(),project.clone(),None,"codex").unwrap();
+        assert!(owned.require_recipient("ollama_local").is_err());assert!(owned.require_recipient("codex").is_ok());
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(project,crate::tasks::Request::Provider{id:task.id,revision:task.revision,provider:"claude".into()}).unwrap();
+        assert!(owned.check_scope().is_err());
+        drop(owned);drop(exported);drop(host);drop(workflow);fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn native_content_and_errors_stay_local_until_the_exact_reference_is_shared(){
         let (root,workflow,host,selection)=setup();let project=workflow.view().unwrap().project.unwrap();
         workflow.task_state().unwrap();
-        let scope=McpTools::new(host.clone()).unwrap();
+        let scope=McpTools::for_chat(host.clone(),workflow.view().unwrap().project.unwrap(),None,"codex").unwrap();
         let status=scope.scope_result("get_workflow_status",Ok(json!({"raw":"PRIVATE_STATUS_SENTINEL"}))).unwrap();
         assert_eq!(status["selections"]["schematic"]["selection"],selection.id.to_string());assert!(!status.to_string().contains("PRIVATE_STATUS_SENTINEL"));
         let held=scope.scope_result("read_native_tool",Ok(json!({"device_log":"PRIVATE_RAW_SENTINEL"}))).unwrap();
@@ -2161,10 +2251,10 @@ mod tests {
         let task=workflow.task_state().unwrap().unwrap().active;
         workflow.task_request(project.clone(),crate::tasks::Request::Share{id:task.id,revision:task.revision,reference,allow:true}).unwrap();
         assert!(workflow.shared_task_reference(reference,0).unwrap()["content"].as_str().unwrap().contains("PRIVATE_RAW_SENTINEL"));
-        let scope2=McpTools::new(host.clone()).unwrap();
+        let scope2=McpTools::for_chat(host.clone(),workflow.view().unwrap().project.unwrap(),None,"codex").unwrap();
         let held=scope2.scope_result("propose_native_tool_calls",Err("RAW_ERROR_SENTINEL".into())).unwrap();
         assert!(!held.to_string().contains("RAW_ERROR_SENTINEL"));
-        let scope3=McpTools::new(host.clone()).unwrap();
+        let scope3=McpTools::for_chat(host.clone(),workflow.view().unwrap().project.unwrap(),None,"codex").unwrap();
         let held=scope3.scope_result("reconcile_native_batch",Ok(json!({"native_observation":"PRIVATE_RECONCILIATION_SENTINEL","review":{"outcome_checked":true}}))).unwrap();
         assert!(held["local_evidence_pending"]==true && !held.to_string().contains("PRIVATE_RECONCILIATION_SENTINEL"));
         let task=workflow.task_state().unwrap().unwrap().active;
@@ -2192,7 +2282,7 @@ mod tests {
         let (root,workflow,host,_)=setup();
         let project=workflow.view().unwrap().project.unwrap();
         host.configure_native_discovery(root.clone(),root.join("data")).unwrap();
-        let tools=McpTools::for_program(host.clone(),project.clone(),Program::Planning).unwrap();
+        let tools=chat_program(host.clone(),project.clone(),Program::Planning).unwrap();
         let capabilities=tools.call_in_project("get_design_capabilities".into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
         assert_eq!(capabilities["available_programs"].as_object().unwrap().len(),10);
         assert_eq!(capabilities["program_selection"]["manual_dropdown_required"],false);
@@ -2238,7 +2328,7 @@ mod tests {
                 fs::write(&path,serde_json::to_vec(&json!({"executable":executable,"args":[],"env":{}})).unwrap()).unwrap();
                 crate::native_setup::remember(&owned.join("data/program-locations"),program,"mcp_config",&path,&project.1).unwrap();
             }
-            let scoped=McpTools::for_program(host.clone(),project.clone(),Program::Planning).unwrap();
+            let scoped=chat_program(host.clone(),project.clone(),Program::Planning).unwrap();
             let cloned=scoped.clone();
             let route=scoped.call_in_project("select_program".into(),json!({"program":program}),Arc::new(AtomicBool::new(false))).await.unwrap();
             assert_eq!(route["status"],"connected");assert_eq!(cloned.program(),Some(program));
@@ -2247,7 +2337,7 @@ mod tests {
             assert!(host.refresh_native_tools(program,Arc::new(AtomicBool::new(true))).is_err());
             assert_eq!(scoped.catalog().len(),10);assert!(!scoped.catalog().iter().any(|t|t.name=="propose_rectangular_solid"));
             let wrong=if program==Program::Freecad {Program::Drawing}else{Program::Freecad};
-            let other=McpTools::for_program(host.clone(),project.clone(),wrong).unwrap();
+            let other=chat_program(host.clone(),project.clone(),wrong).unwrap();
             assert!(other.call_in_project("inspect_native_tools".into(),json!({}),Arc::new(AtomicBool::new(false))).await.is_err());
             let read=|tool:&str|json!({"tool":tool,"arguments":{}});
             let discovered=scoped.call_in_project("inspect_native_tools".into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
@@ -2328,7 +2418,7 @@ mod tests {
         let project=workflow.view().unwrap().project.unwrap();
         for (program,sources) in [(Program::Planning,14),(Program::Rea,1),(Program::Freecad,2),(Program::Drawing,1),
             (Program::Arduino,1),(Program::Agent,1),(Program::Kicad,2),(Program::Slice,3),(Program::Tshark,1),(Program::Usbpcap,1),(Program::Serial,1)] {
-            let scoped=McpTools::for_program(host.clone(),project.clone(),program).unwrap();
+            let scoped=chat_program(host.clone(),project.clone(),program).unwrap();
             let value=scoped.call_in_project("get_design_capabilities".into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
             assert_eq!(value["software"].as_object().unwrap().len(),sources);
             assert_eq!(value["tool_catalog"]["tools"],json!(scoped.catalog().iter().map(|t|t.name.as_ref()).collect::<Vec<_>>()));
@@ -4047,6 +4137,7 @@ mod tests {
         let project = Project::create(&root.join("project")).unwrap();
         let id = project.id;
         workflow.select_project(project).unwrap();
+        workflow.task_state().unwrap();
         let entry = root.join("source/test.kicad_sch");
         fs::write(&entry,br#"(kicad_sch (symbol (lib_id "Device:R") (property "Reference" "R1") (property "Value" "10k")))"#).unwrap();
         let host = Arc::new(HostTools::new(workflow.clone()));
@@ -4056,12 +4147,12 @@ mod tests {
         (root, workflow, host, selection)
     }
     #[tokio::test]
-    async fn workflow_status_exposes_only_the_current_project_directory() {
+    async fn workflow_status_withholds_directories_and_rejects_project_changes() {
         let (root, workflow, host, _) = setup();
         let project = workflow.view().unwrap().project.unwrap();
-        let scoped = McpTools::for_program(host.clone(), project.clone(), Program::Drawing).unwrap();
+        let scoped = chat_program(host.clone(), project.clone(), Program::Drawing).unwrap();
         let status = scoped.call_in_project("get_workflow_status".into(), json!({}), Arc::new(AtomicBool::new(false))).await.unwrap();
-        assert_eq!(status["project_directory"], json!(project.1));
+        assert!(status.get("project_directory").is_none());
         assert!(!status.to_string().contains(&root.join("source").to_string_lossy().replace('\\', "\\\\")));
         fs::create_dir(root.join("other-project")).unwrap();
         workflow.select_project(Project::create(&root.join("other-project")).unwrap()).unwrap();
@@ -4787,27 +4878,28 @@ mod tests {
         let args=json!({"selection":Uuid::new_v4(),"instance_sha256":"a".repeat(64),"document_sha256":"b".repeat(64),
             "state_sha256":"c".repeat(64),"component":Uuid::new_v4(),"units":"mils","x":100.,"y":200.,"description":"Move the chosen part"});
         for program in [Program::Freecad,Program::Drawing,Program::Arduino,Program::Agent,Program::Slice] {
-            let scoped=McpTools::for_program(host.clone(),project.clone(),program).unwrap();
+            let scoped=chat_program(host.clone(),project.clone(),program).unwrap();
             assert!(!scoped.catalog().iter().any(|t|t.name=="propose_selected_live_pcb_move"));
             assert!(scoped.call_in_project("propose_selected_live_pcb_move".into(),args.clone(),Arc::new(AtomicBool::new(false))).await.is_err());
         }
-        let scoped=McpTools::for_program(host.clone(),project,Program::Kicad).unwrap();
+        let scoped=chat_program(host.clone(),project,Program::Kicad).unwrap();
         assert!(scoped.catalog().iter().any(|t|t.name=="propose_selected_live_pcb_move"));
-        assert!(scoped.call_in_project("propose_selected_live_pcb_move".into(),args.clone(),Arc::new(AtomicBool::new(false))).await
-            .unwrap_err().contains("Conecta y selecciona"));
+        assert!(host.call("propose_selected_live_pcb_move",args.clone()).unwrap_err().contains("Conecta y selecciona"));
+        let held=scoped.call_in_project("propose_selected_live_pcb_move".into(),args.clone(),Arc::new(AtomicBool::new(false))).await.unwrap();
+        assert_eq!(held["local_evidence_pending"],true);
         let mut paths=args.clone();paths["board_path"]=json!("C:/private/board.kicad_pcb");
-        assert!(host.call("propose_selected_live_pcb_move",paths).unwrap_err().contains("esquema JSON"));
+        assert!(scoped.check_arguments("propose_selected_live_pcb_move",&paths).unwrap_err().contains("esquema JSON"));
         let mut unknown=args.clone();unknown["units"]=json!("unknown");
-        assert!(host.call("propose_selected_live_pcb_move",unknown).unwrap_err().contains("esquema JSON"));
+        assert!(scoped.check_arguments("propose_selected_live_pcb_move",&unknown).unwrap_err().contains("esquema JSON"));
         assert!(scoped.call_in_project("propose_selected_live_pcb_move".into(),args,Arc::new(AtomicBool::new(true))).await.is_err());
         assert!(workflow.view().unwrap().job.is_none());
         assert!(workflow.view().unwrap().history.is_empty());
     }
     #[tokio::test]
     async fn external_capabilities_include_native_agent_without_expanding_program_scopes() {
-        let (root,workflow,host,selection)=setup();
+        let (root,workflow,host,_selection)=setup();
         let project=workflow.view().unwrap().project.unwrap();
-        let all=McpTools::for_project(host.clone(),selection.project_id).unwrap();
+        let all=McpTools::for_chat(host.clone(),project.clone(),None,"codex").unwrap();
         let capabilities=all.call_in_project("get_design_capabilities".into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
         assert_eq!(capabilities["agent"]["open_document_inspection"]["tool"],"inspect_open_agent_documents");
         assert_eq!(capabilities["agent"]["open_document_inspection"]["save_tool"],"propose_open_agent_save");
@@ -4816,7 +4908,7 @@ mod tests {
         assert_eq!(capabilities["agent"]["hardware_control"],false);
         assert!(all.catalog().iter().any(|t|t.name=="propose_open_agent_save"));
         for program in [Program::Planning,Program::Freecad,Program::Drawing,Program::Arduino,Program::Agent,Program::Kicad,Program::Slice] {
-            let scoped=McpTools::for_program(host.clone(),project.clone(),program).unwrap();
+            let scoped=chat_program(host.clone(),project.clone(),program).unwrap();
             let capabilities=scoped.call_in_project("get_design_capabilities".into(),json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
             assert_eq!(capabilities.get("agent").is_some(),matches!(program,Program::Planning|Program::Agent));
             assert_eq!(scoped.catalog().iter().any(|t|t.name=="propose_open_agent_save"),program==Program::Agent);
@@ -4878,7 +4970,7 @@ mod tests {
         let (server_io, client_io) = tokio::io::duplex(65536);
         let server =
             tokio::spawn(
-                async move { McpTools::new(host).unwrap().serve(server_io).await.unwrap() },
+                async move { McpTools::for_chat(host.clone(),host.workflow.view().unwrap().project.unwrap(),None,"codex").unwrap().serve(server_io).await.unwrap() },
             );
         let client = ().serve(client_io).await.unwrap();
         let server = server.await.unwrap();
@@ -4906,10 +4998,9 @@ mod tests {
             )
             .await
             .unwrap();
-        assert_eq!(
-            result.structured_content.unwrap()["components"][0]["value"],
-            "10k"
-        );
+        let held=result.structured_content.unwrap();
+        assert_eq!(held["local_evidence_pending"],true);
+        assert!(!held.to_string().contains("10k"));
         let bad = client
             .call_tool(
                 CallToolRequestParams::new("inspect_selected_schematic").with_arguments(

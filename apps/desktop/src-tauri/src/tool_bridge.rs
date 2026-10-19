@@ -22,6 +22,7 @@ pub struct ToolBridge {
     task: tokio::task::JoinHandle<()>,
 }
 impl ToolBridge {
+    /// Exported connections expose public metadata only; task evidence is not inherited.
     pub fn start(host: Arc<HostTools>, helper: &Path) -> Result<Self, String> {
         let handler = McpTools::new(host)?;
         Self::start_handler(handler, helper)
@@ -35,6 +36,10 @@ impl ToolBridge {
     }
     pub fn start_program(host: Arc<HostTools>, helper: &Path, project: (Uuid, std::path::PathBuf), program: Program) -> Result<Self, String> {
         Self::start_handler(McpTools::for_program(host, project, program)?, helper)
+    }
+    /// For the host-owned chat after its selected service and task have been checked.
+    pub fn start_chat(host:Arc<HostTools>,helper:&Path,project:(Uuid,std::path::PathBuf),program:Option<Program>,provider:&str)->Result<Self,String>{
+        Self::start_handler(McpTools::for_chat(host,project,program,provider)?,helper)
     }
     fn start_handler(handler: McpTools, helper: &Path) -> Result<Self, String> {
         if !helper.is_absolute() || !helper.is_file() {
@@ -212,7 +217,8 @@ mod tests {
             let workflow = Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("profiles")).unwrap());
             workflow.select_project(project).unwrap();
             let host = Arc::new(HostTools::new(workflow.clone()));
-            let bridge = ToolBridge::start_program(host, &std::env::current_exe().unwrap(), workflow.view().unwrap().project.unwrap(), program).unwrap();
+            workflow.task_state().unwrap();
+            let bridge = ToolBridge::start_chat(host, &std::env::current_exe().unwrap(), workflow.view().unwrap().project.unwrap(), Some(program),"codex").unwrap();
             let config = bridge.config().unwrap();
             let client = ().serve(connect(&config.env["HAZLOMEXA_PIPE"], &config.env["HAZLOMEXA_TOKEN"]).await.unwrap()).await.unwrap();
             let actual = client.list_all_tools().await.unwrap();
@@ -284,8 +290,12 @@ mod tests {
         let client = ().serve(connection).await.unwrap();
         assert_eq!(
             client.list_all_tools().await.unwrap().len(),
-            crate::host_tools::catalog().len()
+            2
         );
+        for name in ["read_task_reference","read_native_tool","propose_native_tool_calls"] {
+            let denied=client.call_tool(CallToolRequestParams::new(name)).await.unwrap();
+            assert_eq!(denied.is_error,Some(true));assert!(denied.structured_content.is_none());
+        }
         assert!(client
             .call_tool(CallToolRequestParams::new("get_workflow_status"))
             .await
@@ -346,7 +356,7 @@ mod tests {
         let pid = transport.id().unwrap();
         let client = ().serve(transport).await.unwrap();
         let actual = client.list_all_tools().await.unwrap();
-        let expected = crate::host_tools::catalog();
+        let expected = crate::host_tools::catalog().into_iter().filter(|t|matches!(t.name.as_ref(),"get_design_capabilities"|"get_workflow_status")).collect::<Vec<_>>();
         assert_eq!(
             actual.iter().map(|tool| tool.name.as_ref()).collect::<std::collections::BTreeSet<_>>(),
             expected.iter().map(|tool| tool.name.as_ref()).collect::<std::collections::BTreeSet<_>>()

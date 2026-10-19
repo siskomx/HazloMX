@@ -218,6 +218,13 @@ impl Workflow {
         let state=self.state.lock().map_err(|e|e.to_string())?;
         state.project.as_ref().map(|p|crate::tasks::Store::new(p).and_then(|s|s.binding()).map_err(|e|e.to_string())).transpose().map(Option::flatten)
     }
+    pub fn task_recipient(&self,provider:&str)->Result<crate::tasks::Binding,String>{
+        let state=self.state.lock().map_err(|_|"No se pudo comprobar la conversación.")?;
+        let project=state.project.as_ref().ok_or("Abre una conversación en Hazlo antes de conectar su IA.")?;
+        let task=crate::tasks::Store::new(project).and_then(|s|s.active()).map_err(|_|"No se pudo comprobar la conversación.")?.ok_or("Abre una conversación en Hazlo antes de conectar su IA.")?;
+        if task.provider!=provider {return Err("La IA conectada no coincide con el destinatario aprobado de esta conversación.".into());}
+        Ok(task.binding())
+    }
     pub fn task_allows_snapshot(&self,snapshot:&Snapshot)->Result<bool,String>{
         let state=self.state.lock().map_err(|e|e.to_string())?;
         let Some(project)=&state.project else{return Ok(false);};
@@ -2863,7 +2870,7 @@ mod tests {
         let bytes=serde_json::to_vec(&serde_json::json!({"job_id":id,"source_url":"https://example.org/start","target_url":target})).unwrap();
         std::fs::write(stage.path.join("redirect.json"),&bytes).unwrap();
         workflow.finish(dispatch,Err("El sitio pide otra dirección. Hazlo no la siguió: prepara esa dirección para una nueva revisión.".into())).unwrap();
-        let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_program(host.clone(),selected.clone(),Program::Planning).unwrap();
+        let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_chat(host.clone(),selected.clone(),Some(Program::Planning),"codex").unwrap();
         let status=tools.call_in_project("get_workflow_status".into(),serde_json::json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
         assert_eq!(status["job"]["public_document_status"]["kind"],"redirect_needs_approval");assert!(!status.to_string().contains("PRIVATE_REDIRECT_SENTINEL"));
         let prepared=tools.call_in_project("propose_public_document_read".into(),serde_json::json!({"redirect_from_job_id":id,"purpose":"Read the public manual at its new address"}),Arc::new(AtomicBool::new(false))).await.unwrap();
@@ -2890,7 +2897,7 @@ mod tests {
         let task=workflow.task_state().unwrap().unwrap().active;
         workflow.task_request(selected.clone(),Request::AddReference{id:task.id,revision:task.revision,name:"capture.bin".into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,b"RAW_PRIVATE_CAPTURE_SENTINEL"),preview:None}).unwrap();
         let pending={
-            let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_program(host,selected.clone(),Program::Planning).unwrap();
+            let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_chat(host,selected.clone(),Some(Program::Planning),"codex").unwrap();
             let prepared=tools.call_in_project("propose_public_document_read".into(),serde_json::json!({"url":"https://example.invalid/manual","purpose":"Read an official manual"}),Arc::new(AtomicBool::new(false))).await.unwrap();
             assert_eq!(prepared["human_approval_required"],true);workflow.current().unwrap().unwrap()
         };
@@ -2908,7 +2915,7 @@ mod tests {
         drop(stage);drop(dispatch);drop(project);drop(workflow);
         let workflow=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap());workflow.select_project(Project::open(&root).unwrap()).unwrap();
         assert_eq!(workflow.view().unwrap().history.iter().find(|s|s.input.job_id()==id).unwrap().phase,Phase::Completed);
-        let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_program(host.clone(),selected.clone(),Program::Planning).unwrap();
+        let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_chat(host.clone(),selected.clone(),Some(Program::Planning),"codex").unwrap();
         let held=tools.call_in_project("read_verified_result".into(),serde_json::json!({"job_id":id}),Arc::new(AtomicBool::new(false))).await.unwrap();
         assert_eq!(held["local_evidence_pending"],true);assert!(!held.to_string().contains("PUBLIC_DOCUMENT_SENTINEL"));
         let task=workflow.task_state().unwrap().unwrap().active;let reference=task.references.last().unwrap().id;

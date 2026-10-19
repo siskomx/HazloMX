@@ -66,7 +66,7 @@ pub(crate) async fn start_ollama_chat(
     let workflow = state.workflow.clone();
     tauri::async_runtime::spawn(async move {
         let result = async {
-        let tools = hazlomexa::host_tools::McpTools::for_program(host, project.clone(), program)?;
+        let tools = hazlomexa::host_tools::McpTools::for_chat(host, project.clone(), Some(program), provider)?;
         ollama::chat::run_scoped(
             client,
             workflow.clone(),

@@ -180,6 +180,16 @@ The regular suite passes 260 tests with 68 environment cases skipped; desktop Cl
 
 These are host storage, transport and IPC-fixture checks. They do not establish whole-program native concurrency guarantees, real GUI editing behavior or physical function. An admitted call with no checked result still needs native completion/serialization evidence or a faithful verified working-copy recovery path; closing a transport or observing matching properties is insufficient. Corrections during an active AI stream, durable constraints/progress/review, saved native versions/dependencies/safe reopen, comprehensive recipient/egress/cache boundaries, setup/hardware scopes and final native-window/Windows release acceptance remain unfinished. The installer and installed app are unchanged, and the full goal remains active. No model was downloaded.
 
+### Bind tool access to the owned chat recipient
+
+The desktop's Codex, Claude and Ollama chat paths now create an explicit tool connection bound to the current project folder, durable task revision and selected AI service. A missing task or a different service cannot obtain that connection. Switching task, project, service or sharing scope invalidates the old connection. Ollama also verifies the connection recipient before model metadata, prompt or image requests and on each subsequent round; a local recipient cannot be reused for the cloud route.
+
+Unbound/exported MCP connections now expose only public connection metadata and compiled program names. They cannot read references, discover native document contents, invoke native tools or inherit an owned chat's sharing approvals, even when the current task has explicitly shared a reference with its selected service. This closes the former no-task raw-result fallback. The normal simple-chat path creates its binding automatically. Older external protocol harnesses that relied on an exported connection's full catalog must be migrated to an explicitly owned chat fixture before counting them as native acceptance.
+
+Built-in tool arguments are validated locally against Hazlo's compiled schemas before dispatch. Invalid requests return only the public schema, without retaining a native error or changing evidence scope, so a model can correct malformed arguments. Native replies and operational errors continue through the local evidence broker; this distinction does not authorize sharing their contents. Cancellation detected before a call creates no evidence record and dispatches nothing.
+
+The regular suite passes 263 tests with 68 environment cases skipped. Coverage includes absent tasks, wrong recipients, provider changes, exported connections with already-shared sentinel evidence, the authenticated pipe's metadata-only catalog and rejected native calls, and refusal before any Ollama network connection. Desktop unit tests, desktop Clippy and frontend build pass. These checks do not establish account-specific or purpose-specific consent, complete native-catalog/report/cache lineage, real-provider/native-window behavior, forward recovery of an admitted uncertain write or installer acceptance. Those remain required by the active full goal. The installer and installed app are unchanged; no model was downloaded.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

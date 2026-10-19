@@ -92,7 +92,7 @@ pub async fn run(
     cancelled: Arc<AtomicBool>,
     emit: impl FnMut(String),
 ) -> Result<String, String> {
-    let tools = McpTools::for_project(host, project.0)?;
+    let tools = McpTools::for_chat(host, project.clone(), None, if client.remote_model.is_some(){"ollama_cloud"}else{"ollama_local"})?;
     if tools.project() != Some(project) {
         return Err("El proyecto cambió o la conversación se detuvo.".into());
     }
@@ -110,11 +110,13 @@ pub async fn run_scoped(
     if prompt.trim().is_empty() || prompt.len() > 8192 {
         return Err("Escribe una solicitud de hasta 8 KiB.".into());
     }
+    let recipient=if client.remote_model.is_some(){"ollama_cloud"}else{"ollama_local"};
+    tools.require_recipient(recipient)?;
     let check = || -> Result<(), String> {
         if cancelled.load(Ordering::SeqCst) || tools.check_scope().is_err() {
             return Err("El proyecto cambió o la conversación se detuvo.".into());
         }
-        Ok(())
+        tools.require_recipient(recipient)
     };
     check()?;
     if let Some(image) = &image { image.validate()?; }
@@ -260,6 +262,8 @@ mod tests {
         let workflow =
             Arc::new(Workflow::new(root.join("FreeCADCmd.exe"), root.join("profiles")).unwrap());
         workflow.select_project(project).unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(identity.clone(),crate::tasks::Request::Provider{id:task.id,revision:task.revision,provider:"ollama_local".into()}).unwrap();
         let host = Arc::new(HostTools::new(workflow.clone()));
         (root, workflow, host, identity)
     }
@@ -290,11 +294,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn wrong_or_unbound_recipient_is_refused_before_any_model_connection(){
+        let (root,workflow,host,project)=setup();
+        let listener=std::net::TcpListener::bind("127.0.0.1:0").unwrap();listener.set_nonblocking(true).unwrap();
+        let port=listener.local_addr().unwrap().port();
+        for tools in [McpTools::for_program(host.clone(),project.clone(),crate::host_tools::Program::Planning).unwrap(),McpTools::for_chat(host.clone(),project.clone(),Some(crate::host_tools::Program::Planning),"ollama_local").unwrap()] {
+            let client=OllamaClient::cloud(port,"fixture:cloud",DIGEST).unwrap();
+            assert!(run_scoped(client,workflow.clone(),tools,"PRIVATE_RECIPIENT_SENTINEL".into(),None,Arc::new(AtomicBool::new(false)),|_|{}).await.unwrap_err().contains("permanece local"));
+            assert_eq!(listener.accept().unwrap_err().kind(),std::io::ErrorKind::WouldBlock);
+        }
+        drop(host);drop(workflow);fs::remove_dir_all(root).unwrap();
+    }
+    #[tokio::test]
     async fn image_is_sent_only_after_the_model_advertises_vision() {
         use base64::Engine;
         for vision in [false,true] {
             let (root,workflow,host,project)=setup();
-            let tools=McpTools::for_program(host,project,crate::host_tools::Program::Planning).unwrap();
+            let tools=McpTools::for_chat(host,project,Some(crate::host_tools::Program::Planning),"ollama_local").unwrap();
             let image=crate::image_input::ImageInput{media_type:"image/jpeg".into(),data:base64::engine::general_purpose::STANDARD.encode([255,216,255,192,0,8,8,0,1,0,1,0,255,217])};
             let data=image.data.clone();
             let mut replies=metadata();
@@ -325,7 +341,7 @@ mod tests {
         use crate::host_tools::Program;
         for program in [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice, Program::Rea,Program::Tshark,Program::Usbpcap,Program::Serial] {
             let (root, workflow, host, project) = setup();
-            let tools = McpTools::for_program(host, project.clone(), program).unwrap();
+            let tools = McpTools::for_chat(host, project.clone(), Some(program),"ollama_local").unwrap();
             let wrong = if program == Program::Freecad {
                 call("propose_arduino_compile", json!({"project_id":project.0,"fqbn":"arduino:avr:uno","source":"void setup() {}\nvoid loop() {}"}))
             } else { proposal(project.0) };
@@ -619,6 +635,8 @@ mod tests {
     #[tokio::test]
     async fn explicit_cloud_chat_keeps_the_pinned_route_and_shared_tool_catalog() {
         let (root, workflow, host, project) = setup();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(project.clone(),crate::tasks::Request::Provider{id:task.id,revision:task.revision,provider:"ollama_cloud".into()}).unwrap();
         let replies = vec![
             reply(r#"{"version":"0.40.5"}"#, "application/json"),
             reply(&json!({"models":[{"name":"fixture:cloud","digest":DIGEST,"size":0,"remote_model":"fixture","remote_host":"https://ollama.com:443"}]}).to_string(), "application/json"),

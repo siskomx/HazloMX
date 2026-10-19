@@ -337,7 +337,7 @@ pub(crate) async fn start_codex_chat(
             {
                 return Err("Codex cambió. Selecciónalo de nuevo.".into());
             }
-            let bridge = ToolBridge::start_program(tools, &helper, selected_project, program)?;
+            let bridge = ToolBridge::start_chat(tools, &helper, selected_project, Some(program), "codex")?;
             let configuration = home.join("config.toml");
             let response = async {
                 std::fs::write(&configuration, codex::configuration(&bridge.config()?)?)
