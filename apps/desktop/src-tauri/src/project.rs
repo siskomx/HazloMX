@@ -71,6 +71,7 @@ pub enum OperationInput {
     LiveAgent(crate::agent_editor::Input),
     LiveDrawing(crate::cadcraft_live::Input),
     NativeTools(crate::native_tools::Input),
+    PublicDocument(crate::public_document::Input),
     Konnect(KonnectInput),
     KonnectPcb(crate::konnect_pcb::Input),
 }
@@ -105,6 +106,7 @@ impl OperationInput {
             Self::LiveAgent(_) => "arduino_agent_live",
             Self::LiveDrawing(_) => "cadcraft_live",
             Self::NativeTools(_) => "native_tools",
+            Self::PublicDocument(_) => "public_document",
             Self::Konnect(_) => "konnect",
             Self::KonnectPcb(_) => "konnect_pcb",
         }
@@ -123,6 +125,7 @@ impl OperationInput {
             Self::LiveAgent(input) => input.job_id,
             Self::LiveDrawing(input) => input.job_id,
             Self::NativeTools(input) => input.job_id,
+            Self::PublicDocument(input) => input.job_id,
             Self::Konnect(input) => input.job_id,
             Self::KonnectPcb(input) => input.job_id,
         }
@@ -141,6 +144,7 @@ impl OperationInput {
             Self::LiveAgent(input) => input.validate(),
             Self::LiveDrawing(input) => input.validate(),
             Self::NativeTools(input) => input.validate(),
+            Self::PublicDocument(input) => input.validate(),
             Self::Konnect(input) => input.validate(),
             Self::KonnectPcb(input) => input.validate(),
         }
@@ -240,6 +244,7 @@ pub enum ArtifactFormat {
     LiveAgentReport,
     LiveDrawingReport,
     NativeToolsReport,
+    PublicDocumentReport,
     KonnectOriginal,
     KonnectEdited,
     KonnectReport,
@@ -643,6 +648,7 @@ impl Project {
             (OperationInput::LiveDrawing(crate::cadcraft_live::Input {operation:crate::cadcraft_live::Operation::ExportDxf {},..}), ArtifactFormat::Drawing) => "Drawing.dxf".into(),
             (OperationInput::LiveDrawing(_), ArtifactFormat::LiveDrawingReport) => "result.json".into(),
             (OperationInput::NativeTools(_), ArtifactFormat::NativeToolsReport) => "result.json".into(),
+            (OperationInput::PublicDocument(_), ArtifactFormat::PublicDocumentReport) => "result.json".into(),
             (OperationInput::KonnectPcb(input), ArtifactFormat::KonnectOriginal) => {
                 format!("Original/{}", input.source.entry)
             }
@@ -713,6 +719,7 @@ impl Project {
                 OperationInput::LiveAgent(_) => 15,
                 OperationInput::LiveDrawing(_) => 16,
                 OperationInput::NativeTools(_) => 17,
+                OperationInput::PublicDocument(_) => 18,
                 OperationInput::Konnect(_) => 9,
                 OperationInput::KonnectPcb(_) => 11,
             },
@@ -746,7 +753,7 @@ impl Project {
             ));
         }
         if (snapshot.schema_version == 10
-            && matches!(snapshot.input, OperationInput::KonnectPcb(_) | OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_) | OperationInput::NativeTools(_)))
+            && matches!(snapshot.input, OperationInput::KonnectPcb(_) | OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_) | OperationInput::NativeTools(_) | OperationInput::PublicDocument(_)))
             || !matches!(
                 (&snapshot.input, snapshot.schema_version),
                 (OperationInput::Freecad(_), 1 | 2)
@@ -761,6 +768,7 @@ impl Project {
                     | (OperationInput::LiveAgent(_), 15)
                     | (OperationInput::LiveDrawing(_), 16)
                     | (OperationInput::NativeTools(_), 17)
+                    | (OperationInput::PublicDocument(_), 18)
                     | (OperationInput::Konnect(_), 9)
                     | (OperationInput::KonnectPcb(_), 11 | 12)
                     | (_, 10)
@@ -774,12 +782,12 @@ impl Project {
         }
         match (snapshot.schema_version, &snapshot.audit) {
             (1, None) => (),
-            (2..=17, Some(audit)) => {
+            (2..=18, Some(audit)) => {
                 if audit.task.as_ref().is_some_and(|task|task.id.is_nil() || task.revision==0) {
                     return Err(error("La identidad de tarea de la ejecución no es válida."));
                 }
                 if matches!(audit.source, RunSource::Mcp)
-                    != matches!(snapshot.schema_version, 10 | 12 | 13 | 14 | 15 | 16 | 17)
+                    != matches!(snapshot.schema_version, 10 | 12 | 13 | 14 | 15 | 16 | 17 | 18)
                 {
                     return Err(error(
                         "Origen de herramienta no compatible con la versión del estado.",
@@ -838,6 +846,9 @@ impl Project {
     }
 
     fn validate_outputs(&self, directory: &Path, input: &OperationInput) -> io::Result<()> {
+        if let OperationInput::PublicDocument(input)=input {
+            return crate::public_document::validate_artifacts(directory,input).map_err(io::Error::other);
+        }
         if let OperationInput::KonnectPcb(input) = input {
             let result: crate::konnect_pcb::ResultDocument =
                 read_json(&directory.join("result.json"))?;
@@ -1004,13 +1015,13 @@ impl Project {
                         }
                     }
                 }
-            } else if matches!(&snapshot.input,OperationInput::NativeTools(input) if input.receipt_sha256.is_some())
+            } else if (matches!(&snapshot.input,OperationInput::NativeTools(input) if input.receipt_sha256.is_some()) || matches!(&snapshot.input,OperationInput::PublicDocument(input) if input.receipt_sha256.is_some()))
                 && self.store("staging").join(snapshot.input.job_id().to_string()).try_exists()?
             {
                 let path=self.store("staging").join(snapshot.input.job_id().to_string());
-                let input=match &snapshot.input {OperationInput::NativeTools(input)=>input,_=>unreachable!()};
+                let finished=match &snapshot.input {OperationInput::NativeTools(input)=>crate::native_journal::read(&path,input)?.is_some_and(|j|j.finished),OperationInput::PublicDocument(_)=>true,_=>false};
                 // Publish only an already checked, finished report. Never invoke a native call in recovery.
-                if crate::native_journal::read(&path,input)?.is_some_and(|j|j.finished) && self.validate_outputs(&path,&snapshot.input).is_ok() {
+                if finished && self.validate_outputs(&path,&snapshot.input).is_ok() {
                     let mut running=snapshot.clone();running.phase=Phase::Running;
                     match self.publish(Stage{directory:pin_directory(&path,false)?,path},&running) {
                         Ok(_)=>snapshot.phase=Phase::Completed,

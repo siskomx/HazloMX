@@ -200,9 +200,10 @@ impl Workflow {
         let project=state.project.as_ref().ok_or("No hay proyecto activo.")?;
         let store=crate::tasks::Store::new(project).map_err(|_|"No se pudo conservar evidencia local.")?;
         if store.binding().map_err(|_|"No se pudo comprobar la tarea.")?.as_ref()!=Some(expected){return Err("La tarea cambió; no se compartió la respuesta nativa.".into());}
+        let reference_name=if tool=="read_verified_result" && result.as_ref().is_ok_and(|v|v["format"]=="public_document_report"){"Documento público.json"}else{"Observación nativa.json"};
         let value=match result {Ok(value)=>serde_json::json!({"tool":tool,"result":value}),Err(error)=>serde_json::json!({"tool":tool,"error":error})};
         let bytes=serde_json::to_vec(&value).map_err(|_|"No se pudo conservar evidencia local.")?;
-        store.request(crate::tasks::Request::AddReference{id:expected.id,revision:expected.revision,name:"Observación nativa.json".into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,bytes),preview:None}).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.")?;
+        store.request(crate::tasks::Request::AddReference{id:expected.id,revision:expected.revision,name:reference_name.into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,bytes),preview:None}).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.")?;
         let task=store.active().map_err(|_|"No se pudo comprobar la evidencia local.")?.ok_or("No hay tarea activa.")?;
         task.references.last().map(|r|r.id).ok_or("No se pudo comprobar la evidencia local.".into())
     }
@@ -2176,7 +2177,9 @@ impl Workflow {
             .map_err(|e| e.to_string())?;
         snapshot.audit.as_mut().unwrap().source = source;
         if matches!(snapshot.audit.as_ref().unwrap().source, RunSource::Mcp) {
-            snapshot.schema_version = if matches!(snapshot.input, OperationInput::NativeTools(_)) {
+            snapshot.schema_version = if matches!(snapshot.input,OperationInput::PublicDocument(_)) {
+                18
+            } else if matches!(snapshot.input, OperationInput::NativeTools(_)) {
                 17
             } else if matches!(snapshot.input, OperationInput::LiveCad(_)) {
                 13
@@ -2313,6 +2316,30 @@ impl Workflow {
         let view=Self::propose_operation_locked(&mut state,OperationInput::NativeTools(input),RunSource::Mcp)?;
         state.job.as_mut().unwrap().native_tools=Some(connection);
         Ok(view)
+    }
+    pub(crate) fn propose_public_document(&self,url:String,purpose:String)->Result<JobView,String>{
+        let mut state=self.state.lock().map_err(|e|e.to_string())?;inference_idle(&state)?;
+        Self::propose_public_document_locked(&mut state,url,purpose)
+    }
+    pub(crate) fn propose_public_redirect(&self,job_id:Uuid,purpose:String)->Result<JobView,String>{
+        let mut state=self.state.lock().map_err(|e|e.to_string())?;inference_idle(&state)?;
+        let project=state.project.as_ref().ok_or("No hay tarea activa.")?;
+        let task=crate::tasks::Store::new(project).and_then(|s|s.binding()).map_err(|e|e.to_string())?.ok_or("No hay tarea activa.")?;
+        let snapshot=project.history().map_err(|e|e.to_string())?.into_iter().find(|s|s.input.job_id()==job_id && s.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==task.id)).ok_or("La redirección no pertenece a esta tarea.")?;
+        let OperationInput::PublicDocument(input)=&snapshot.input else{return Err("El resultado no es una consulta pública.".into());};
+        let url=crate::public_document::redirect_target(&project.store("staging").join(job_id.to_string()),input)?;
+        Self::propose_public_document_locked(&mut state,url,purpose)
+    }
+    fn propose_public_document_locked(state:&mut State,url:String,purpose:String)->Result<JobView,String>{
+        let url=crate::public_document::address(&url)?.to_string();
+        let project=state.project.as_ref().ok_or("Abre una tarea antes de investigar.")?;
+        let task=crate::tasks::Store::new(project).and_then(|s|s.active()).map_err(|e|e.to_string())?.ok_or("Crea una conversación antes de preparar la consulta pública.")?;
+        let attempts=project.history().map_err(|e|e.to_string())?.into_iter().filter(|s|s.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|b|b.id==task.id && b.revision>=task.last_user_revision)).filter_map(|s|match s.input {OperationInput::PublicDocument(input)=>Some((input,s.phase)),_=>None}).collect::<Vec<_>>();
+        let mut contacted=Vec::new();
+        for (input,phase) in attempts {if phase==Phase::Completed || project.store("staging").join(input.job_id.to_string()).try_exists().map_err(|e|e.to_string())? {contacted.push(input.url);}}
+        if contacted.iter().any(|previous|previous==&url){return Err("Esta dirección ya se consultó en esta investigación. Conserva la respuesta local; no repitas la petición. Si cambió el sitio o necesitas otra lectura, pide una continuación explícita en el chat.".into());}
+        if contacted.len()>=8 {return Err("Esta investigación llegó a ocho documentos. Conserva los hallazgos y ofrece una continuación acotada en el chat antes de pedir más consultas.".into());}
+        Self::propose_operation_locked(state,OperationInput::PublicDocument(crate::public_document::Input{schema_version:1,public_document_version:1,job_id:Uuid::new_v4(),url,purpose,receipt_sha256:None,redirect_sha256:None}),RunSource::Mcp)
     }
 
     pub fn begin(&self, approval_id: Uuid) -> Result<Dispatch, String> {
@@ -2562,6 +2589,9 @@ impl Workflow {
                 OperationInput::NativeTools(input) => {
                     crate::native_tools::run_gated(input,dispatch.native_tools.as_ref().ok_or("La conexión nativa venció.")?,&stage.path,dispatch.cancelled.clone(),&dispatch.dispatch_gate,&dispatch.dispatch_paused)?;
                 }
+                OperationInput::PublicDocument(input)=>{
+                    crate::public_document::run(input,&stage.path,dispatch.cancelled.clone())?;
+                }
                 OperationInput::LiveDrawing(input) => {
                     crate::cadcraft_live::run(input,dispatch.live_drawing.as_ref().ok_or("La conexión CADCraft venció.")?,
                         &stage.path,&profile,dispatch.cancelled.clone())?;
@@ -2693,7 +2723,19 @@ impl Workflow {
     }
 
     fn finish(&self, mut dispatch: Dispatch, result: Result<Stage, String>) -> Result<JobView, String> {
+        let result=(||{
+            if let OperationInput::PublicDocument(input)=&mut dispatch.snapshot.input {
+                let directory=dispatch.project.store("staging").join(input.job_id.to_string());
+                if let Some(receipt)=crate::public_document::redirect_receipt(&directory,input)? {input.redirect_sha256=Some(receipt);dispatch.project.save(&dispatch.snapshot).map_err(|e|e.to_string())?;}
+            }
+            result
+        })();
         let result = result.and_then(|stage| {
+            if let OperationInput::PublicDocument(input)=&mut dispatch.snapshot.input {
+                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),crate::public_document::REPORT_LIMIT)?;
+                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
+                dispatch.project.save(&dispatch.snapshot).map_err(|e|e.to_string())?;
+            }
             if let OperationInput::LiveCad(input) = &mut dispatch.snapshot.input {
                 let bytes = crate::kicad_project::read_regular(&stage.path.join("result.json"), 65536)?;
                 input.receipt_sha256 = Some(crate::kicad_project::digest(&bytes));
@@ -2739,6 +2781,7 @@ impl Workflow {
             return Err(warning.unwrap_or("El proyecto activo cambió; los archivos no se publicaron.").into());
         }
         let job = state.job.as_mut().unwrap();
+        if matches!(&dispatch.snapshot.input,OperationInput::PublicDocument(input) if input.receipt_sha256.is_some() || input.redirect_sha256.is_some()) {job.view.snapshot.input=dispatch.snapshot.input.clone();}
         if dispatch.dispatch_paused.load(Ordering::SeqCst) {
             // A correction during final readback must not discard a completed local receipt.
             job.view.snapshot.input=dispatch.snapshot.input.clone();
@@ -2774,7 +2817,7 @@ impl Workflow {
         } else {
             match result {
                 Ok(stage) => {
-                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_) | OperationInput::NativeTools(_)) {
+                    if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_) | OperationInput::NativeTools(_) | OperationInput::PublicDocument(_)) {
                         job.view.snapshot.input = dispatch.snapshot.input.clone();
                     }
                     if let Some(audit) = &mut job.view.snapshot.audit {
@@ -2810,6 +2853,92 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn redirect_preparation_reuses_local_identity_without_exposing_or_requesting_the_target(){
+        use crate::{tasks::Request,host_tools::{HostTools,McpTools,Program}};
+        let (root,workflow)=setup();let workflow=Arc::new(workflow);let task=workflow.task_state().unwrap().unwrap().active;
+        let selected=workflow.view().unwrap().project.unwrap();
+        let pending=workflow.propose_public_document("https://example.org/start".into(),"Read the official manual".into()).unwrap();let id=pending.snapshot.input.job_id();
+        let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();
+        let stage=dispatch.project.reserve_stage(id).unwrap();
+        let target="https://example.org/manual?q=PRIVATE_REDIRECT_SENTINEL";
+        let bytes=serde_json::to_vec(&serde_json::json!({"job_id":id,"source_url":"https://example.org/start","target_url":target})).unwrap();
+        std::fs::write(stage.path.join("redirect.json"),&bytes).unwrap();
+        workflow.finish(dispatch,Err("El sitio pide otra dirección. Hazlo no la siguió: prepara esa dirección para una nueva revisión.".into())).unwrap();
+        let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_program(host.clone(),selected.clone(),Program::Planning).unwrap();
+        let status=tools.call_in_project("get_workflow_status".into(),serde_json::json!({}),Arc::new(AtomicBool::new(false))).await.unwrap();
+        assert_eq!(status["job"]["public_document_status"]["kind"],"redirect_needs_approval");assert!(!status.to_string().contains("PRIVATE_REDIRECT_SENTINEL"));
+        let prepared=tools.call_in_project("propose_public_document_read".into(),serde_json::json!({"redirect_from_job_id":id,"purpose":"Read the public manual at its new address"}),Arc::new(AtomicBool::new(false))).await.unwrap();
+        assert!(!prepared.to_string().contains("PRIVATE_REDIRECT_SENTINEL"));
+        let pending=workflow.current().unwrap().unwrap();let OperationInput::PublicDocument(input)=&pending.snapshot.input else{panic!("Wrong input");};assert_eq!(input.url,target);
+        assert!(!workflow.state.lock().unwrap().project.as_ref().unwrap().store("staging").join(input.job_id.to_string()).exists());
+        workflow.cancel(input.job_id).unwrap();
+        std::fs::write(stage.path.join("redirect.json"),b"forged").unwrap();assert!(workflow.propose_public_redirect(id,"Retry redirect".into()).is_err());
+        workflow.task_request(selected,Request::New).unwrap();assert!(workflow.propose_public_redirect(id,"Other task".into()).is_err());
+        assert_ne!(workflow.task_state().unwrap().unwrap().active.id,task.id);
+        drop(stage);drop(tools);drop(host);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
+    #[tokio::test]
+    async fn public_documents_bind_approval_recover_locally_and_require_response_sharing(){
+        use crate::{tasks::Request,host_tools::{HostTools,McpTools,Program}};
+        let (root,workflow)=setup();let workflow=Arc::new(workflow);let selected=workflow.view().unwrap().project.unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(selected.clone(),Request::Message{id:task.id,revision:task.revision,text:"Investigate public documentation".into(),history:"{\"version\":1,\"turns\":[]}".into(),correction_of:None}).unwrap();
+        let pending=workflow.propose_public_document("https://example.invalid/manual".into(),"Read an official manual".into()).unwrap();
+        let old_approval=pending.approval_id.unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(selected.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve local evidence".into(),history:"{\"version\":1,\"turns\":[]}".into(),correction_of:None}).unwrap();
+        assert!(workflow.begin(old_approval).is_err());
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(selected.clone(),Request::AddReference{id:task.id,revision:task.revision,name:"capture.bin".into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,b"RAW_PRIVATE_CAPTURE_SENTINEL"),preview:None}).unwrap();
+        let pending={
+            let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_program(host,selected.clone(),Program::Planning).unwrap();
+            let prepared=tools.call_in_project("propose_public_document_read".into(),serde_json::json!({"url":"https://example.invalid/manual","purpose":"Read an official manual"}),Arc::new(AtomicBool::new(false))).await.unwrap();
+            assert_eq!(prepared["human_approval_required"],true);workflow.current().unwrap().unwrap()
+        };
+        let project=workflow.state.lock().unwrap().project.clone().unwrap();
+        assert!(!project.store("staging").join(pending.snapshot.input.job_id().to_string()).exists());
+        let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();
+        assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+        let mut snapshot=dispatch.snapshot.clone();let id=snapshot.input.job_id();
+        let stage=project.reserve_stage(id).unwrap();
+        let content="PUBLIC_DOCUMENT_SENTINEL <script>never execute</script> ".repeat(2500);
+        let OperationInput::PublicDocument(input)=&mut snapshot.input else{panic!("Wrong input");};
+        let report=serde_json::json!({"public_document_version":1,"job_id":id,"url":input.url,"purpose":input.purpose,"media_type":"text/plain","bytes":content.len(),"sha256":crate::kicad_project::digest(content.as_bytes()),"content":content,"source_is_untrusted_data":true});
+        let bytes=serde_json::to_vec(&report).unwrap();std::fs::write(stage.path.join("result.json"),&bytes).unwrap();input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));project.save(&snapshot).unwrap();
+        // Recovery must publish the complete receipt, never fetch this deliberately nonexistent site.
+        drop(stage);drop(dispatch);drop(project);drop(workflow);
+        let workflow=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap());workflow.select_project(Project::open(&root).unwrap()).unwrap();
+        assert_eq!(workflow.view().unwrap().history.iter().find(|s|s.input.job_id()==id).unwrap().phase,Phase::Completed);
+        let host=Arc::new(HostTools::new(workflow.clone()));let tools=McpTools::for_program(host.clone(),selected.clone(),Program::Planning).unwrap();
+        let held=tools.call_in_project("read_verified_result".into(),serde_json::json!({"job_id":id}),Arc::new(AtomicBool::new(false))).await.unwrap();
+        assert_eq!(held["local_evidence_pending"],true);assert!(!held.to_string().contains("PUBLIC_DOCUMENT_SENTINEL"));
+        let task=workflow.task_state().unwrap().unwrap().active;let reference=task.references.last().unwrap().id;
+        assert_eq!(task.references.last().unwrap().name,"Documento público.json");
+        assert!(task.references.last().unwrap().bytes>65536);assert!(workflow.shared_task_reference(reference,0).is_err());
+        assert!(workflow.propose_public_document("https://example.invalid/manual".into(),"Read again".into()).is_err());
+        workflow.task_request(selected.clone(),Request::Share{id:task.id,revision:task.revision,reference,allow:true}).unwrap();
+        let page=workflow.shared_task_reference(reference,0).unwrap();assert!(page["content"].as_str().unwrap().contains("PUBLIC_DOCUMENT_SENTINEL"));assert!(!page.to_string().contains("RAW_PRIVATE_CAPTURE_SENTINEL"));
+        assert!(workflow.propose_public_document("https://example.invalid/manual".into(),"Read again".into()).is_err());
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(selected.clone(),Request::Message{id:task.id,revision:task.revision,text:"The site changed; allow a fresh check".into(),history:"{\"version\":1,\"turns\":[]}".into(),correction_of:None}).unwrap();
+        let fresh=workflow.propose_public_document("https://example.invalid/manual".into(),"A newly requested check".into()).unwrap();workflow.cancel(fresh.snapshot.input.job_id()).unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(selected,Request::Provider{id:task.id,revision:task.revision,provider:"claude".into()}).unwrap();assert!(workflow.shared_task_reference(reference,0).is_err());
+        drop(tools);drop(host);drop(workflow);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    #[ignore="Explicit public HTTPS request to official Rust documentation; no credentials or device data"]
+    fn real_public_document_fetch_through_owned_approval(){
+        let (root,workflow)=setup();workflow.task_state().unwrap();
+        let job=workflow.propose_public_document("https://doc.rust-lang.org/std/net/struct.Ipv4Addr.html".into(),"Owned public documentation acceptance".into()).unwrap();
+        let dispatch=workflow.begin(job.approval_id.unwrap()).unwrap();let result=workflow.execute(dispatch).unwrap();
+        assert_eq!(result.snapshot.phase,Phase::Completed,"{:?}",result.error);
+        let artifact=workflow.artifact(result.snapshot.input.job_id(),ArtifactFormat::PublicDocumentReport).unwrap();let text=artifact.read_text_bounded(crate::public_document::REPORT_LIMIT).unwrap();
+        assert!(text.contains("Ipv4Addr"));assert!(text.contains("source_is_untrusted_data"));
+        drop(artifact);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     #[ignore = "Explicit disposable MCP fixture; tests correction during a real in-flight call"]
     fn native_correction_preserves_inflight_effect_and_survives_restart(){

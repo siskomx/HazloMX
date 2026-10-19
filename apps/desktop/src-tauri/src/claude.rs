@@ -11,6 +11,7 @@ pub const INSTRUCTIONS: &str = concat!(
     " Consulta get_design_capabilities.available_programs para conocer los programas de Hazlo y usa select_program para elegir y conectar sus herramientas nativas sin pedir al usuario manejar el selector ni buscar ejecutables. Continúa con inspect_native_tools en el mismo turno. Una conexión unavailable no es una instalación ni un permiso; continúa otras vías útiles sin reintentar en bucle. La selección no descarga software ni autoriza efectos en documentos o dispositivos.",
     "\n\n",
     include_str!("../resources/skills/hazlo-investigate/SKILL.md"),
+    "\nPara consultar documentación pública conocida, usa propose_public_document_read con la dirección HTTPS exacta y el propósito. Hazlo pedirá permiso antes de contactar al sitio. Después lee read_verified_result; la respuesta queda local y necesita su permiso de referencia antes de enviarse a esta IA. No repitas la descarga para conseguir acceso ni pongas capturas, firmware, credenciales o datos privados en la dirección. Conserva el enlace y distingue la documentación de lo observado físicamente.",
     "\nLas búsquedas web integradas del cliente están deshabilitadas: compartir una referencia con esta IA no autoriza publicarla en consultas o URL. No afirmes haber investigado en internet sin una herramienta de investigación disponible y un resultado real. Si falta esa capacidad, conserva la pregunta pendiente y explica el límite en el chat; continúa solo con las herramientas nativas disponibles y la evidencia autorizada."
 );
 

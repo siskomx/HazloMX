@@ -42,13 +42,15 @@ try {
     persist();return structuredClone(state());
    }
    else if(command.startsWith("start_") && command.endsWith("_chat")){
+    if(window.publicEvidenceOnNext){window.publicEvidenceOnNext=false;task().revision++;task().references.push({id:crypto.randomUUID(),name:"Documento público.json",bytes:100,sha256:"c".repeat(64),image:false,shared_with:[],data:btoa("PUBLIC_RESPONSE_SENTINEL <script>never execute</script>")});}
     if(window.nativeOnNext){task().revision++;task().references.push({id:crypto.randomUUID(),name:"Observación nativa.json",bytes:100,sha256:"e".repeat(64),image:false,shared_with:[]});window.nativeOnNext=false;}
     snapshot.chat={provider:task().provider,id:crypto.randomUUID(),project_id:db.project[0],sequence:1,busy:false,cancelled:false,text:"La tarea sigue guardada; podemos continuar.",error:null};
     if(window.startBatchOnNext){window.startBatchOnNext=false;snapshot.job={snapshot:{schema_version:17,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,native_tools_version:1,job_id:crypto.randomUUID(),connection_id:crypto.randomUUID(),program:"drawing",catalog_sha256:"a".repeat(64),description:"Owned correction batch",calls:[{tool:"native_edit",arguments:{value:7}},{tool:"native_edit",arguments:{value:99}}],readback:{tool:"native_state",arguments:{}},guard:{call:{tool:"native_state",arguments:{}},result_sha256:"b".repeat(64)}},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
+    if(window.startPublicOnNext){window.startPublicOnNext=false;snapshot.job={snapshot:{schema_version:18,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,public_document_version:1,job_id:crypto.randomUUID(),url:"https://example.org/manual?language=en",purpose:"Check the official public manual"},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
    }
    else if(command==="approve_operation"){
     snapshot.job.busy=true;snapshot.job.snapshot.phase="running";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));
-    return await new Promise(resolve=>{window.finishOwnedBatch=()=>{snapshot.job.busy=false;snapshot.job.snapshot.phase="cancelled";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));persist();resolve(structuredClone(snapshot.job));};});
+    return await new Promise(resolve=>{window.finishOwnedBatch=()=>{snapshot.job.busy=false;snapshot.job.snapshot.phase=snapshot.job.snapshot.input.public_document_version?"completed":"cancelled";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));persist();resolve(structuredClone(snapshot.job));};});
    }
    else if(command==="cancel_job"){snapshot.job.snapshot.phase="cancelled";snapshot.job.sequence++;return structuredClone(snapshot.job);}
    else if(!["get_snapshot","detect_clients"].includes(command))throw Error(command);
@@ -121,6 +123,18 @@ try {
  await page.waitForFunction(()=>JSON.parse(localStorage.getItem("owned-task-fixture")).records[JSON.parse(localStorage.getItem("owned-task-fixture")).active].latest_correction);
  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),chatsBeforeCorrection);
  await page.evaluate(()=>window.finishOwnedBatch());await page.locator("#new-chat:enabled").waitFor();
+ await page.evaluate(()=>window.startPublicOnNext=true);
+ await page.locator("#prompt").fill("Read the official public manual");await page.locator("#send").click();
+ await page.getByRole("button",{name:"Permitir esta consulta pública",exact:true}).waitFor();
+ assert.match(await page.locator("#change-facts").innerText(),/https:\/\/example.org\/manual\?language=en/);
+ assert.match(await page.locator("#change-facts").innerText(),/permiso posterior/);
+ assert(!await page.locator("#task-references").innerText().then(t=>t.includes("Documento público.json")));
+ await page.locator("#approve").click();await page.locator("#cancel-running:enabled").waitFor();
+ await page.evaluate(()=>{window.publicEvidenceOnNext=true;window.finishOwnedBatch();});
+ await page.getByText("Documento público.json",{exact:false}).waitFor();
+ assert.match(await page.locator("#task-references").innerText(),/solo local/);
+ const publicRead=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).at(-1));
+ assert(!JSON.stringify(publicRead).includes("PUBLIC_RESPONSE_SENTINEL"));
  assert.match(await page.locator("#conversation").innerText(),/make the next part smaller/);
  await page.reload();await page.locator("#send:enabled").waitFor();
  assert.match(await page.locator("#conversation").innerText(),/make the next part smaller/);

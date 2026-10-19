@@ -1319,7 +1319,7 @@ fn open_artifact(
     format: ArtifactFormat,
 ) -> Result<Option<String>, String> {
     let artifact = state.workflow.artifact(job_id, format)?;
-    if matches!(format, ArtifactFormat::NativeToolsReport) {
+    if matches!(format, ArtifactFormat::NativeToolsReport | ArtifactFormat::PublicDocumentReport) {
         let page = state.tools.call("read_verified_result", serde_json::json!({"job_id":job_id}))?;
         let mut text = page["content"].as_str().ok_or("Informe nativo no válido.")?.to_owned();
         if !page["next_offset"].is_null() { text.push_str("\n\nVista parcial: el informe completo se conserva en el proyecto. Puedes pedir al chat que consulte las páginas restantes."); }

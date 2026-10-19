@@ -37,6 +37,9 @@ function doubledLength(value: unknown): string | undefined {
 export function proposalFacts(run: Snapshot): string[] {
   const input = run.input;
   const facts: string[] = [];
+  if(input.public_document_version){
+    return ["Permitir el envío de esta dirección por internet; esta autorización es distinta de editar un programa y solo vale para esta tarea y sus entradas actuales.","Dirección completa que recibirá el sitio: "+input.url,"Para qué: "+input.purpose,"El sitio recibirá también la ruta y todos los valores de la consulta. Pueden revelar información de la tarea: esta dirección es el contenido concreto que autorizas enviar.","No se adjuntan archivos ni se envían cookies, credenciales de sesión o el resto del historial. Eso no garantiza que la dirección esté libre de datos privados.","Una lectura de texto UTF-8 de hasta 512 KiB y 20 segundos. Hazlo no sigue redirecciones, ejecuta scripts ni reintenta automáticamente.","La respuesta queda local con la tarea. Compartirla con una IA requiere un permiso posterior; esta consulta no comparte otras referencias."];
+  }
   if(run.audit?.task) facts.push("Esta aprobación solo permite el cambio mostrado en esta conversación. Cambiar la tarea, sus mensajes o referencias invalida la propuesta; no permite instalar herramientas, compartir nuevas referencias ni controlar hardware.");
   if(input.native_tools_version){
     for(const check of input.guard?.checks??[])facts.push(check.role==="identity"?`Mantener la identidad de ${check.label}.`:`Comprobar ${check.label}: ${JSON.stringify(check.expected)}.`);

@@ -75,6 +75,8 @@ pub struct Task {
     pub id: Uuid,
     pub revision: u64,
     pub title: String,
+    #[serde(default)]
+    pub last_user_revision: u64,
     pub goal: String,
     pub provider: String,
     pub references: Vec<Reference>,
@@ -117,6 +119,7 @@ impl Task {
         }
         if self.id.is_nil()
             || self.revision == 0
+            || self.last_user_revision > self.revision
             || !provider(&self.provider)
             || self.title.len() > 256
             || self.goal.len() > 4096
@@ -382,6 +385,7 @@ impl<'a> Store<'a> {
             id: Uuid::new_v4(),
             revision: 1,
             title: "Nueva conversación".into(),
+            last_user_revision: 0,
             goal: String::new(),
             provider: provider.into(),
             references: Vec::new(),
@@ -564,6 +568,7 @@ impl<'a> Store<'a> {
                         text: text.clone(),
                     });
                 }
+                task.last_user_revision = task.revision;
                 if task.goal.is_empty() {
                     task.goal = text;
                     task.title = task.goal.chars().take(60).collect();
