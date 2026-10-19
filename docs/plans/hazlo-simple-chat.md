@@ -302,6 +302,18 @@ Validation: 303 regular Rust tests pass with 70 environment cases skipped, plus 
 
 The full goal remains active. Ordinary chat Stop still needs its complete durable stop/dispatch treatment beyond cancellation and the corrected-turn continuation gate. Native effect/concurrency envelopes and other admitted-call recovery, structured durable constraints/progress/review, verified native working versions/dependencies/reopen, remaining evidence/cache/account/purpose controls, simple-chat setup/hardware scopes and final Windows release acceptance remain required. The installed application and installer are unchanged.
 
+### Persist ordinary chat Stop and fence delayed producers
+
+Ordinary Stop now cancels the owned client, drops its unanswered question and native client resume caches, and saves an authoritative task pause revision. It preserves the goal, valid history and interrupted draft without inventing another user message. The existing composer remains the way to continue explicitly. Reload shows the saved pause and draft without starting a provider request; Stop also supersedes a queued correction continuation and automatic result review. Stable stopped-chat identities adopt a committed pause after a lost reply without appending the draft again or pausing newer work.
+
+The workflow pauses matching dispatch and invalidates unstarted approvals before acknowledging storage. Captured tool handlers are fenced under the workflow lock even if saving fails before any job exists. A failed save preserves prior bytes and reports an unconfirmed durable pause; it does not restart the AI. A fresh explicit request advances the human revision and can prepare newly reviewed work. Already admitted native calls may still finish and require their existing readback/recovery path; Stop does not undo them or prove quiescence.
+
+A reply completion racing Stop or correction cannot restore interrupted context: existing receipts for that exact chat are revoked, their complete-body fingerprints remain local, and late receipts from before the newer human revision are refused even when no draft had streamed. A genuinely fresh completed reply retains its separate host-owned provenance path. This closes the ordinary Stop gap recorded above; transformed excerpts and broader account/purpose/cache lineage remain unfinished.
+
+Validation: 309 regular Rust tests pass, with 70 environment cases skipped; the desktop unit check, desktop Clippy, frontend production build, chat-context checks, durable-task browser fixture and broader chat IPC fixture pass. The disposable native MCP/bridge fixture also passes. Cases cover delayed producers with and without a pending job, locked task storage, idempotent retry, newer explicit work, completion-proof races, all four UI provider routes, lost Stop replies, reload, failed saves and queued corrections. These are storage/protocol/browser fixtures, not actual provider, native-window or installed-package acceptance.
+
+The full goal remains active. Native effect/concurrency envelopes and other admitted-call recovery, structured durable constraints/progress/review, verified native working versions/dependencies/reopen, remaining evidence/cache/account/purpose controls, simple-chat setup/hardware scopes and final Windows release acceptance remain required. The installed application and installer are unchanged; no model was downloaded. KiCad 10 live schematics remain explicitly pending.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

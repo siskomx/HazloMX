@@ -50,6 +50,7 @@ function canCorrectChat(){return !!state.tasks && !!state.chat?.busy && !state.c
 function canCorrect(){return canCorrectChat() || !!state.tasks && !!state.job?.busy && correctableInput(state.job.snapshot.input) && !state.chat?.busy && !historyLoading && !correctionBusy && !cancellationBusy;}
 let queuedCorrection:{id:string;text:string;task:string;project:string;provider:Provider}|undefined;
 let continuationEpoch=0;
+function interruptionSaved(id:string){return state.tasks?.active.chat_correction?.chat_id===id || state.tasks?.active.chat_stop?.chat_id===id;}
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
 let historyLoading = false, durableReady = false, storageVersion = 0;
@@ -131,6 +132,7 @@ function renderTasks(busy:boolean){
   for(const id of ["approve-provider","keep-provider","approve-reference","keep-reference-local"]) $<HTMLButtonElement>(id).disabled=busy;
   const rows=$("task-references");rows.replaceChildren();
   if(tasks?.active.latest_correction || tasks?.active.chat_correction){const p=document.createElement("p");p.className="fine";p.textContent="La última corrección queda guardada con la tarea. Las llamadas ya enviadas se revisan antes de nuevos cambios; cancelar no las deshace.";rows.append(p);}
+  if(tasks?.active.chat_stop && (tasks.active.last_user_revision??tasks.active.revision)<=tasks.active.chat_stop.revision){const p=document.createElement("p");p.className="fine";p.textContent="La pausa queda guardada. El trabajo se conserva; puedes pedir continuar cuando quieras, después de revisar cualquier llamada enviada.";rows.append(p);}
   if(tasks?.active.pending_removals?.length){const p=document.createElement("p");p.className="fine";p.textContent="Hay copias locales retiradas pendientes de borrar porque no están disponibles. Su acceso y permisos ya están revocados. Hazlo reintentará borrar sus copias al volver a esta conversación; el trabajo del proyecto se conserva.";rows.append(p);}
   if(tasks?.active.references.some(r=>r.parents?.length)){const p=document.createElement("p");p.className="fine";p.textContent="Quitar una referencia también retira sus copias de evidencia derivadas. Revocar su permiso lo revoca para esas copias en esta IA y retira las respuestas vinculadas del contexto. Los archivos de diseño del proyecto se conservan.";rows.append(p);}
   for(const ref of tasks?.active.references??[]){
@@ -248,7 +250,7 @@ function renderLegacy() {
 function apply(next: DesktopSnapshot) {
   const projectChanged = JSON.stringify(next.project) !== JSON.stringify(state.project);
   if(!projectChanged && next.tasks?.active.id===state.tasks?.active.id && next.tasks && state.tasks && next.tasks.active.revision<state.tasks.active.revision)next.tasks=state.tasks;
-  if(!projectChanged && next.tasks?.active.chat_correction?.id && next.tasks.active.chat_correction.id!==state.tasks?.active.chat_correction?.id){storageKey="";newSession=true;resultReview=undefined;}
+  if(!projectChanged && ((next.tasks?.active.chat_correction?.id && next.tasks.active.chat_correction.id!==state.tasks?.active.chat_correction?.id) || (next.tasks?.active.chat_stop?.revision && next.tasks.active.chat_stop.revision!==state.tasks?.active.chat_stop?.revision))){storageKey="";newSession=true;resultReview=undefined;}
   if (projectChanged) { appliedProgramRoute=undefined; clearImage();clearReport(); revision++; sourceContext = {}; sourceNames = {}; sourcePreviousJobs = {}; inspectionNotice = ""; }
   if (next.chat && state.chat?.id === next.chat.id && state.chat.sequence > next.chat.sequence) next.chat = state.chat;
   if (next.job && state.job?.snapshot.input.job_id === next.job.snapshot.input.job_id && state.job.sequence > next.job.sequence) next.job = state.job;
@@ -270,10 +272,10 @@ function apply(next: DesktopSnapshot) {
   // A chat view carries a project UUID, not its folder; copied projects can share that UUID.
   if (projectChanged && chat) answeredChat = chat.id;
   if (!historyLoading && chat && chat.provider === provider && !chat.busy && chat.id !== answeredChat && chat.project_id === state.project?.[0]) {
-    if (chat.text && state.tasks?.active.chat_correction?.chat_id!==chat.id) turns.push({ role: "assistant", content: chat.text, reply_id:chat.id,...(chat.cancelled?{interrupted:true}:{}) });
-    else if (chat.cancelled && state.tasks?.active.chat_correction?.chat_id!==chat.id) turns.push({ role: "assistant", content: "Conversación detenida." });
+    if (chat.text && !interruptionSaved(chat.id)) turns.push({ role: "assistant", content: chat.text, reply_id:chat.id,...(chat.cancelled?{interrupted:true}:{}) });
+    else if (chat.cancelled && !interruptionSaved(chat.id)) turns.push({ role: "assistant", content: "Conversación detenida." });
     if (chat.error) error(chat.error);
-    answeredChat = chat.id; if(state.tasks?.active.chat_correction?.chat_id!==chat.id)persist();
+    answeredChat = chat.id; if(!interruptionSaved(chat.id))persist();
   }
   render();
   reviewFinishedOperation();
@@ -705,6 +707,7 @@ function resumeChatCorrection(){
   const pending=queuedCorrection;if(!pending || correctionBusy || historyLoading || commandBusy || state.chat?.busy || state.job?.busy || state.job?.snapshot.phase==="awaiting_approval")return;
   queuedCorrection=undefined;
   if(state.tasks?.active.id!==pending.task || state.tasks.active.chat_correction?.id!==pending.id || JSON.stringify(state.project)!==pending.project || provider!==pending.provider)return;
+  if((state.tasks.active.chat_stop?.revision??0)>state.tasks.active.chat_correction.revision)return;
   void action(()=>send(pending.text,true,true));
 }
 async function correctChat(content:string){
@@ -718,7 +721,7 @@ async function correctChat(content:string){
     if(state.tasks?.active.chat_correction?.id!==correctionId)throw failure??Error("No se confirmó el guardado de la corrección; el texto se conserva.");
     if(provider!==originalProvider)throw Error("La corrección está guardada, pero cambió la IA. Revisa el servicio antes de continuar; no se envió otra solicitud.");
     if($<HTMLTextAreaElement>("prompt").value.trim()===content)$<HTMLTextAreaElement>("prompt").value="";
-    if(epoch===continuationEpoch){queuedCorrection={id:correctionId,text:content,task:state.tasks.active.id,project:JSON.stringify(state.project),provider};inspectionNotice="Corrección guardada. Esperamos el cierre de la respuesta anterior y revisaremos el estado antes de continuar. Las ediciones enviadas no se repiten.";}
+    if(epoch===continuationEpoch && (state.tasks.active.chat_stop?.revision??0)<state.tasks.active.chat_correction.revision){queuedCorrection={id:correctionId,text:content,task:state.tasks.active.id,project:JSON.stringify(state.project),provider};inspectionNotice="Corrección guardada. Esperamos el cierre de la respuesta anterior y revisaremos el estado antes de continuar. Las ediciones enviadas no se repiten.";}
     else inspectionNotice="Corrección guardada; la continuación quedó detenida. El trabajo enviado se conserva para revisión.";
   }catch(e){queuedCorrection=undefined;error(e);}finally{correctionBusy=false;render();resumeChatCorrection();}
 }
@@ -728,8 +731,8 @@ $("new-chat").onclick = () => {
   if (state.chat?.busy || commandBusy) return; clearImage(); revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render();
 };
 $("stop").onclick = () => {
-  continuationEpoch++;
-  if(queuedCorrection){queuedCorrection=undefined;inspectionNotice="Continuación detenida. La corrección queda guardada; el trabajo enviado sigue sujeto a revisión.";render();return;}
+  continuationEpoch++;resultReview=undefined;
+  if(queuedCorrection){queuedCorrection=undefined;inspectionNotice="Continuación detenida. La corrección queda guardada; el trabajo enviado sigue sujeto a revisión.";render();}
   const pending = inspection;
   if (pending) {
     if (!pending.id || pending.cancelled || pending.stopping) return;
@@ -737,7 +740,17 @@ $("stop").onclick = () => {
     pending.stop = invoke<boolean>("cancel_source_inspection",{id:pending.id}).then(accepted=>{pending.cancelled=accepted;}).catch(error).finally(()=>{pending.stopping=false;render();});
     render(); return;
   }
-  void action(async () => { if (state.chat) apply({ ...state, chat: await invoke<ChatView>("cancel_chat", { id: state.chat.id }) }); });
+  void action(async () => {
+    const chat=state.chat;if(!chat)return;let stopped:ChatView|undefined,failure:unknown;
+    try{stopped=await invoke<ChatView>("cancel_chat",{id:chat.id});}catch(e){failure=e;}
+    if(state.task_support){
+      const next=await invoke<DesktopSnapshot>("get_snapshot");newSession=true;revision++;
+      if(next.tasks?.active.chat_stop?.chat_id===chat.id){storageKey="";durableReady=false;}
+      apply(next);await taskReady;
+      if(state.tasks?.active.chat_stop?.chat_id!==chat.id)throw failure??Error("No se confirmó la pausa guardada. Revisa la tarea antes de continuar.");
+      inspectionNotice="Conversación detenida y pausa guardada. El trabajo se conserva; las llamadas enviadas pueden terminar y necesitan revisión.";
+    }else{if(failure)throw failure;if(stopped)apply({...state,chat:stopped});}
+  });
 };
 $("question-form").onsubmit = event => {
   event.preventDefault(); const chat = state.chat, question = chat?.question;

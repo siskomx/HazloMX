@@ -80,6 +80,9 @@ pub struct ChatCorrectionInput {pub id:Uuid,pub revision:u64,pub chat_id:Uuid,pu
 #[derive(Clone,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChatCorrection {pub id:Uuid,pub chat_id:Uuid,pub revision:u64,pub text:String}
+#[derive(Clone,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChatStop {pub chat_id:Uuid,pub revision:u64}
 #[derive(Clone,PartialEq,Eq,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReplySource {
@@ -134,6 +137,8 @@ pub struct Task {
     pub reply_receipts:Vec<ReplyReceipt>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub chat_correction:Option<ChatCorrection>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub chat_stop:Option<ChatStop>,
     #[serde(default,skip_serializing_if="std::collections::BTreeSet::is_empty")]
     pub interrupted_replies:std::collections::BTreeSet<String>,
     #[serde(default)]
@@ -177,6 +182,7 @@ impl Task {
                 .any(|r| !r.shared_with.contains(&self.provider))
     }
     fn validate(&self) -> io::Result<()> {
+        if self.chat_stop.as_ref().is_some_and(|stop|stop.chat_id.is_nil() || stop.revision==0 || stop.revision>self.revision){return Err(error("Pausa de conversación no válida; se conservó la tarea."));}
         if self.chat_correction.as_ref().is_some_and(|c|c.id.is_nil() || c.chat_id.is_nil() || c.revision==0 || c.revision>self.revision || c.text.trim().is_empty() || c.text.len()>4096){return Err(error("Corrección de conversación no válida; se conservó la tarea."));}
         if self.latest_correction.as_ref().is_some_and(|c| {
             c.job_id.is_nil()
@@ -466,6 +472,15 @@ fn remember_interrupted(task:&mut Task)->io::Result<()>{
     for turn in history["turns"].as_array().into_iter().flatten().filter(|turn|turn["role"]=="assistant" && turn["interrupted"]==true){if let Some(content)=turn["content"].as_str().filter(|content|*content!=WITHDRAWN_REPLY){task.interrupted_replies.insert(crate::kicad_project::digest(content.as_bytes()));}}
     Ok(())
 }
+fn interrupt_reply(task:&mut Task,chat_id:Uuid){
+    for receipt in task.reply_receipts.iter_mut().filter(|receipt|receipt.id==chat_id){receipt.revoked=true;task.interrupted_replies.insert(receipt.content_sha256.clone());}
+}
+fn interrupted_history(task:&Task,draft:&str,sources:&[ReplySource],provider:&str)->io::Result<serde_json::Value>{
+    let mut value:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
+    let turns=value["turns"].as_array_mut().ok_or_else(||error("Historial no válido; se conservó la tarea."))?;
+    if !draft.is_empty(){let allowed=task.provider==provider && sources.iter().all(|s|task.reply_source_allowed(s,provider)) && !task.reply_is_withdrawn(draft);turns.push(serde_json::json!({"role":"assistant","content":if allowed{draft}else{WITHDRAWN_REPLY},"interrupted":true,"reference_ids":sources.iter().map(|s|s.id).collect::<Vec<_>>()}));}
+    Ok(value)
+}
 impl<'a> Store<'a> {
     pub fn new(project: &'a Project) -> io::Result<Self> {
         let root = project.store("tasks");
@@ -524,7 +539,7 @@ impl<'a> Store<'a> {
     }
     pub(crate) fn record_reply(&self,receipt:ReplyReceipt)->io::Result<bool>{
         let mut task=self.active()?.ok_or_else(||error("No hay conversación activa."))?;
-        if receipt.task.id!=task.id || receipt.task.revision>task.revision || !task.receipt_authorized(&receipt){return Ok(false);}
+        if receipt.task.id!=task.id || receipt.task.revision>task.revision || receipt.task.revision<task.last_user_revision || !task.receipt_authorized(&receipt){return Ok(false);}
         if let Some(previous)=task.reply_receipts.iter().find(|r|r.id==receipt.id){
             return if serde_json::to_value(previous).map_err(io::Error::other)?==serde_json::to_value(&receipt).map_err(io::Error::other)?{Ok(!previous.revoked)}else{Err(error("La identidad de respuesta ya tiene otra proveniencia; no se reemplazó."))};
         }
@@ -537,17 +552,22 @@ impl<'a> Store<'a> {
         let mut task=self.active()?.filter(|t|t.id==input.id).ok_or_else(||error("La tarea cambió; se conservó la corrección."))?;
         if let Some(saved)=task.chat_correction.as_ref().filter(|c|c.id==input.correction_id){return if saved.chat_id==input.chat_id && saved.text==input.text{Ok(())}else{Err(error("La corrección ya tiene otro contenido; no se reemplazó."))};}
         if input.revision>task.revision || (task.revision!=input.revision && task.last_user_revision>input.revision){return Err(error("La tarea cambió; vuelve a leerla antes de corregir."));}
-        let mut value:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
-        let turns=value["turns"].as_array_mut().ok_or_else(||error("Historial no válido; se conservó la tarea."))?;
-        if !draft.is_empty(){
-            let allowed=task.provider==provider && sources.iter().all(|s|task.reply_source_allowed(s,provider)) && !task.reply_is_withdrawn(draft);
-            turns.push(serde_json::json!({"role":"assistant","content":if allowed{draft}else{WITHDRAWN_REPLY},"interrupted":true,"reference_ids":sources.iter().map(|s|s.id).collect::<Vec<_>>()}));
-        }
-        turns.push(serde_json::json!({"role":"user","content":input.text}));
+        interrupt_reply(&mut task,input.chat_id);
+        let mut value=interrupted_history(&task,draft,sources,provider)?;
+        value["turns"].as_array_mut().unwrap().push(serde_json::json!({"role":"user","content":input.text}));
         task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó la tarea."))?;task.last_user_revision=task.revision;
         task.chat_correction=Some(ChatCorrection{id:input.correction_id,chat_id:input.chat_id,revision:task.revision,text:input.text.clone()});
         if task.goal.is_empty(){task.goal=input.text.clone();task.title=task.goal.chars().take(60).collect();}
         task.history=Some(serde_json::to_string(&value).map_err(io::Error::other)?);remember_interrupted(&mut task)?;self.save(&task)
+    }
+    pub(crate) fn stop_chat(&self,id:Uuid,chat_id:Uuid,draft:&str,sources:&[ReplySource],provider:&str)->io::Result<()>{
+        if chat_id.is_nil(){return Err(error("No se pudo identificar la conversación detenida."));}
+        let mut task=self.active()?.filter(|task|task.id==id).ok_or_else(||error("La tarea cambió; no se detuvo otra conversación."))?;
+        if task.chat_stop.as_ref().is_some_and(|stop|stop.chat_id==chat_id){return Ok(());}
+        interrupt_reply(&mut task,chat_id);
+        if task.chat_correction.as_ref().is_none_or(|correction|correction.chat_id!=chat_id){let value=interrupted_history(&task,draft,sources,provider)?;task.history=Some(serde_json::to_string(&value).map_err(io::Error::other)?);remember_interrupted(&mut task)?;}
+        task.revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó la tarea."))?;task.last_user_revision=task.revision;
+        task.chat_stop=Some(ChatStop{chat_id,revision:task.revision});self.save(&task)
     }
     pub fn binding(&self) -> io::Result<Option<Binding>> {
         Ok(self.active()?.map(|t| t.binding()))
@@ -620,6 +640,7 @@ impl<'a> Store<'a> {
             withdrawn_replies:Default::default(),
             reply_receipts:Vec::new(),
             chat_correction:None,
+            chat_stop:None,
             interrupted_replies:std::collections::BTreeSet::new(),
             legacy: false,
             history: Some("{\"version\":1,\"turns\":[]}".into()),
@@ -1090,6 +1111,29 @@ fn printable_text(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn interrupted_turns_fence_existing_and_late_completion_proofs(){
+        for mode in ["stop","correction"]{for timing in ["before","after"]{
+            let (root,p)=setup();let store=Store::new(&p).unwrap();let task=store.state().unwrap().active;let old=receipt(&task,"OLD_COMPLETE_REPLY_SENTINEL");
+            if timing=="before"{assert!(store.record_reply(old.clone()).unwrap());}
+            if mode=="stop"{store.stop_chat(task.id,old.id,if timing=="before"{"short streamed prefix"}else{""},&[],"codex").unwrap();}else{store.correct_chat(&ChatCorrectionInput{id:task.id,revision:task.revision,chat_id:old.id,correction_id:Uuid::new_v4(),text:"Use the corrected idea".into()},"short streamed prefix",&[],"codex").unwrap();}
+            if timing=="after"{assert!(!store.record_reply(old.clone()).unwrap());}let stopped=store.active().unwrap().unwrap();assert!(!stopped.reply_receipt_allows(old.id,"OLD_COMPLETE_REPLY_SENTINEL"));
+            if timing=="before"{assert!(stopped.reply_is_interrupted("OLD_COMPLETE_REPLY_SENTINEL"));}
+            let t=store.active().unwrap().unwrap();store.request(Request::Message{id:t.id,revision:t.revision,text:"Continue with fresh context".into(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":"Continue with fresh context"}]}).to_string(),correction_of:None}).unwrap();let fresh=receipt(&store.active().unwrap().unwrap(),"OLD_COMPLETE_REPLY_SENTINEL");assert!(store.record_reply(fresh.clone()).unwrap());assert!(store.active().unwrap().unwrap().reply_receipt_allows(fresh.id,"OLD_COMPLETE_REPLY_SENTINEL"));
+            drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+        }}
+    }
+    #[test]
+    fn chat_stop_keeps_owned_history_and_draft_without_inventing_a_user_message(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;store.request(Request::Message{id:t.id,revision:t.revision,text:"Preserve the original enclosure".into(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":"Preserve the original enclosure"}]}).to_string(),correction_of:None}).unwrap();let t=store.active().unwrap().unwrap();let chat=Uuid::new_v4();
+        store.stop_chat(t.id,chat,"STOPPED_DRAFT_SENTINEL",&[],"codex").unwrap();let stopped=store.active().unwrap().unwrap();assert_eq!(stopped.goal,t.goal);assert_eq!(stopped.chat_stop.as_ref().unwrap().chat_id,chat);assert_eq!(stopped.last_user_revision,stopped.revision);assert_eq!(stopped.revision,t.revision+1);let history:serde_json::Value=serde_json::from_str(stopped.history.as_deref().unwrap()).unwrap();assert_eq!(history["turns"].as_array().unwrap().len(),2);assert_eq!(history["turns"][1]["interrupted"],true);assert!(stopped.reply_is_interrupted("STOPPED_DRAFT_SENTINEL"));let before=fs::read(store.path(t.id)).unwrap();store.stop_chat(t.id,chat,"later stream body",&[],"codex").unwrap();assert_eq!(fs::read(store.path(t.id)).unwrap(),before);
+        drop(store);drop(p);let p=Project::open(&root).unwrap();let store=Store::new(&p).unwrap();assert_eq!(store.active().unwrap().unwrap().chat_stop.unwrap().chat_id,chat);drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn chat_stop_after_correction_preserves_one_draft_and_recovers_a_locked_save(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;let input=ChatCorrectionInput{id:t.id,revision:t.revision,chat_id:Uuid::new_v4(),correction_id:Uuid::new_v4(),text:"Preserve my change".into()};store.correct_chat(&input,"ONE_LOCAL_DRAFT",&[],"codex").unwrap();let before=fs::read(store.path(t.id)).unwrap();let lock=OpenOptions::new().read(true).share_mode(FILE_SHARE_READ).open(store.path(t.id)).unwrap();assert!(store.stop_chat(t.id,input.chat_id,"ONE_LOCAL_DRAFT",&[],"codex").is_err());assert_eq!(fs::read(store.path(t.id)).unwrap(),before);drop(lock);store.stop_chat(t.id,input.chat_id,"ONE_LOCAL_DRAFT",&[],"codex").unwrap();let t=store.active().unwrap().unwrap();let history:serde_json::Value=serde_json::from_str(t.history.as_deref().unwrap()).unwrap();assert_eq!(history["turns"].as_array().unwrap().len(),2);assert!(t.chat_stop.unwrap().revision>t.chat_correction.unwrap().revision);
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn chat_correction_preserves_owned_history_and_draft_without_duplicate_retries(){
         let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;

@@ -331,17 +331,23 @@ async fn select_claude(
 }
 #[tauri::command]
 fn cancel_chat(state: State<AppState>, id: Uuid) -> Result<ChatView, String> {
-    let mut chat = state.chat.lock().map_err(|e| e.to_string())?;
+    cancel_owned_chat(&state,id)
+}
+fn cancel_owned_chat(state:&AppState,id:Uuid)->Result<ChatView,String>{
+    let (result,view)={let mut chat = state.chat.lock().map_err(|e| e.to_string())?;
     let turn = chat
         .as_mut()
-        .filter(|t| t.view.id == id)
+        .filter(|t| t.view.id == id && (t.view.busy || t.view.cancelled))
         .ok_or("La conversación cambió.")?;
     turn.cancel.store(true, std::sync::atomic::Ordering::SeqCst);
     turn.view.cancelled = true;
     turn.view.question = None;
     turn.question = None;
     turn.view.sequence += 1;
-    Ok(turn.view.clone())
+    (state.workflow.stop_chat(&turn.scope,id,&turn.view.text),turn.view.clone())};
+    *state.codex_session.lock().map_err(|_|"No se pudo invalidar el contexto anterior.")?=None;
+    *state.chat_session.lock().map_err(|_|"No se pudo invalidar el contexto anterior.")?=None;
+    result?;Ok(view)
 }
 #[tauri::command]
 fn correct_chat(state:State<AppState>,project_id:Uuid,project_directory:PathBuf,request:hazlomexa::tasks::ChatCorrectionInput)->Result<DesktopSnapshot,String>{
@@ -1563,6 +1569,7 @@ mod tests {
         assert!(correct_owned_chat(&state,scope.project.0,root.join("wrong-folder"),request.clone()).is_err());assert!(!cancel.load(std::sync::atomic::Ordering::SeqCst));
         let corrected=correct_owned_chat(&state,scope.project.0,root.clone(),request.clone()).unwrap();assert!(cancel.load(std::sync::atomic::Ordering::SeqCst));assert!(corrected.chat.unwrap().cancelled);assert_eq!(corrected.tasks.unwrap().active.chat_correction.unwrap().id,request.correction_id);assert!(state.chat_session.lock().unwrap().is_none() && state.codex_session.lock().unwrap().is_none());
         let revision=state.workflow.task_state().unwrap().unwrap().active.revision;correct_owned_chat(&state,scope.project.0,root.clone(),request).unwrap();assert_eq!(state.workflow.task_state().unwrap().unwrap().active.revision,revision);state.chat.lock().unwrap().as_mut().unwrap().view.busy=false;
+        assert!(cancel_owned_chat(&state,Uuid::new_v4()).is_err());cancel_owned_chat(&state,chat_id).unwrap();let stopped=state.workflow.task_state().unwrap().unwrap().active;assert_eq!(stopped.chat_stop.as_ref().unwrap().chat_id,chat_id);assert!(stopped.chat_stop.as_ref().unwrap().revision>stopped.chat_correction.as_ref().unwrap().revision);cancel_owned_chat(&state,chat_id).unwrap();assert_eq!(state.workflow.task_state().unwrap().unwrap().active.revision,stopped.revision);
         let other = root.join("other");
         std::fs::create_dir(&other).unwrap();
         state
