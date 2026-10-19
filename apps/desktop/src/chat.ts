@@ -33,7 +33,7 @@ document.querySelector("#app")!.innerHTML = `
     <p id="error" role="alert" hidden></p>
     <form id="chat-form"><div class="actions"><button id="attach-image" type="button" class="secondary">Adjuntar imagen…</button><button id="attach-file" type="button" class="secondary" hidden>Adjuntar archivo…</button><button id="remove-image" type="button" class="secondary" hidden>Quitar imagen</button></div><input id="image-reference" type="file" accept="image/png,image/jpeg" hidden><input id="file-reference" type="file" hidden><img id="reference-preview" alt="Imagen de referencia adjunta" hidden><p id="image-status" class="fine">Puedes adjuntar una foto para identificar o recrear una pieza. Requiere una IA con visión.</p><label for="prompt">Tu mensaje</label><textarea id="prompt" maxlength="4096" rows="3" placeholder="Quiero modificar este diseño, pero todavía no sé sus medidas…" required></textarea><div class="actions"><button id="send">Enviar</button><button id="stop" type="button" class="secondary" disabled>Detener</button><button id="new-chat" type="button" class="secondary">Nueva conversación</button></div></form><p id="storage-status" class="fine"></p><p id="context-status" class="fine" role="status"></p>
     <section id="approval" class="panel" hidden aria-labelledby="approval-heading"><h2 id="approval-heading">Revisa el cambio</h2><p id="change-summary"></p><ul id="change-facts"></ul><details><summary>Detalles del cambio</summary><pre id="change-details"></pre></details><div class="actions"><button id="approve">Aprobar cambio</button><button id="cancel-job" class="secondary">Cancelar</button></div></section>
-    <p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
+    <p id="recovery-status" class="status fine"></p><p id="job-status" class="status" aria-live="polite"></p><button id="cancel-running" class="secondary" hidden>Detener operación</button>
   </section>
   <details id="past-chats" class="panel" hidden><summary>Conversaciones de la versión anterior</summary><p class="fine">Puedes leerlas sin enviarlas a una IA. Para continuar con sus mensajes, empieza una conversación vacía y elige la IA con la que seguirás. Solo se enviarán cuando pulses Enviar. No se restauran documentos, medidas ni aprobaciones; inspeccionaremos de nuevo la selección actual.</p><div id="past-chat-list"></div></details>
   <details id="results" class="panel"><summary>Resultados e historial verificados</summary><p id="opening-status" class="fine" aria-live="polite"></p><div id="history"></div></details>
@@ -359,6 +359,8 @@ function render() {
   $<HTMLSelectElement>("program").value=program;
   const busy = historyLoading || commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
   renderTasks(busy);
+  const recovery=state.native_recovery?.filter(r=>r.needs_review)??[];
+  $("recovery-status").textContent=recovery.length?`Trabajo conservado: ${recovery.reduce((n,r)=>n+r.acknowledged,0)} llamadas reconocidas por el programa, ${recovery.reduce((n,r)=>n+r.uncertain,0)} con resultado incierto. Hazlo no repetirá el lote. Falta reconciliar el estado antes de nuevas ediciones.`:"";
   $("context-status").textContent = contextNotice;
   $<HTMLButtonElement>("attach-image").disabled = busy || (!state.project && !state.task_support);
   $<HTMLButtonElement>("remove-image").disabled = busy;
@@ -584,15 +586,19 @@ async function send(content: string, userInitiated = true) {
   const ref=state.tasks?.active.references.find(r=>r.id===taskImage);
   const image = userInitiated && (!state.tasks || ref?.shared_with.includes(provider)) ? referenceImage : undefined;
   const task=state.tasks?.active;
-  const prompt = agentPrompt(content, startNew && !restrictedTask() ? turns : [], {...context(), project_directory:state.project?.[1], reference_image_attached:!!image,...(task?{task:{id:task.id,revision:task.revision,goal:task.goal,local_reference_count:task.references.length,native_evidence_withheld:restrictedTask()}}:{})});
+  const prompt = agentPrompt(content, startNew && !restrictedTask() ? turns : [], {...context(), project_directory:state.project?.[1], reference_image_attached:!!image,...(task?{task:{id:task.id,revision:task.revision,goal:task.goal,local_reference_count:task.references.length,authorized_references:task.references.filter(r=>r.shared_with.includes(provider)).map(r=>({reference_id:r.id,name:r.name,bytes:r.bytes})),native_evidence_withheld:restrictedTask()}}:{})});
   contextNotice = JSON.parse(prompt).omitted_conversation_turns ? "Se envió solo parte del historial a la IA. Los mensajes completos siguen visibles; revisaremos el documento y confirmaremos cualquier dato que falte." : "";
   const events = new Channel<ChatView>();
   events.onmessage = chat => {
     if (token !== revision || chat.project_id !== state.project?.[0] || chat.provider !== provider) return;
-    apply({ ...state, chat });
-    if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
+    if (!chat.busy && state.task_support) {
+      void invoke<DesktopSnapshot>("get_snapshot").then(next=>{if(token===revision)apply(next);}).catch(error);
+    } else {
+      apply({ ...state, chat });
+      if (!chat.busy) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
+    }
   };
-  if (userInitiated) { turns.push({ role: "user", content: content + (image && !state.tasks ? "\n[Imagen de referencia adjunta; no se guarda en el historial de Hazlo.]" : "") }); persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
+  if (userInitiated) { turns.push({ role: "user", content: content + (image && !state.tasks ? "\n[Imagen de referencia adjunta; no se guarda en el historial de Hazlo.]" : "") }); if(!state.tasks)persist(); $<HTMLTextAreaElement>("prompt").value = ""; }
   render();
   const next = await invoke<DesktopSnapshot>(provider === "codex" ? "start_codex_chat" : provider === "claude" ? "start_claude_chat" : "start_ollama_chat", { prompt, program, newSession: startNew, events, ...(image ? {image} : {}), ...(state.tasks && userInitiated?{taskUserRequest:content}:{}), ...(provider.startsWith("ollama_") ? {profile:provider === "ollama_local" ? "local_experimental" : "cloud"} : {}) });
   if (token === revision) { newSession = false; apply(next); }

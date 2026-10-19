@@ -67,6 +67,7 @@ struct ChatTurn {
 
 #[derive(Serialize)]
 struct DesktopSnapshot {
+    native_recovery: Vec<hazlomexa::native_journal::Summary>,
     task_support: bool,
     tasks: Option<hazlomexa::tasks::State>,
     project: Option<(Uuid, PathBuf)>,
@@ -109,6 +110,7 @@ fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
         .as_ref()
         .is_some_and(|session| Some(session.0) == project_id && session.2.is_some());
     Ok(DesktopSnapshot {
+        native_recovery: state.workflow.native_recovery()?,
         task_support: true,
         tasks: state.workflow.task_state()?,
         claude_conversation_ready,

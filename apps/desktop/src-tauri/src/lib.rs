@@ -5,6 +5,8 @@ pub mod image_input;
 
 #[cfg(windows)]
 pub mod tasks;
+#[cfg(windows)]
+pub mod native_journal;
 
 #[cfg(windows)]
 pub mod process;

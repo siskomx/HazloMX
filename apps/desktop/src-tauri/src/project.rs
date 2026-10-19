@@ -975,6 +975,18 @@ impl Project {
         Ok(results)
     }
 
+    pub fn native_recovery(&self,task:Option<&crate::tasks::Binding>) -> io::Result<Vec<crate::native_journal::Summary>> {
+        let mut summaries=Vec::new();
+        for snapshot in self.history()? {
+            if task.is_some_and(|task|snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_none_or(|bound|bound.id!=task.id)){continue;}
+            if let OperationInput::NativeTools(input)=&snapshot.input {
+                let stage=self.store("staging").join(input.job_id.to_string());
+                let directory=if stage.try_exists()?{stage}else{self.artifact_directory(input.job_id)};
+                if directory.try_exists()? {if let Some(journal)=crate::native_journal::read(&directory,input)? {summaries.push(journal.summary());}}
+            }
+        }
+        Ok(summaries)
+    }
     pub fn recover(&self) -> io::Result<Vec<Snapshot>> {
         let mut results = Vec::new();
         for mut snapshot in self.history()? {
@@ -992,6 +1004,20 @@ impl Project {
                         }
                     }
                 }
+            } else if matches!(&snapshot.input,OperationInput::NativeTools(input) if input.receipt_sha256.is_some())
+                && self.store("staging").join(snapshot.input.job_id().to_string()).try_exists()?
+            {
+                let path=self.store("staging").join(snapshot.input.job_id().to_string());
+                let input=match &snapshot.input {OperationInput::NativeTools(input)=>input,_=>unreachable!()};
+                // Publish only an already checked, finished report. Never invoke a native call in recovery.
+                if crate::native_journal::read(&path,input)?.is_some_and(|j|j.finished) && self.validate_outputs(&path,&snapshot.input).is_ok() {
+                    let mut running=snapshot.clone();running.phase=Phase::Running;
+                    match self.publish(Stage{directory:pin_directory(&path,false)?,path},&running) {
+                        Ok(_)=>snapshot.phase=Phase::Completed,
+                        Err(_)=>{snapshot.phase=Phase::Interrupted;if let Some(audit)=&mut snapshot.audit {audit.error=Some("El informe nativo terminado se conserva en el área local de trabajo. Su publicación sigue pendiente; no repitas las llamadas.".into());}}
+                    }
+                } else if snapshot.phase==Phase::Completed {return Err(error("Faltan los artefactos publicados de una ejecución terminada."));}
+                else if matches!(snapshot.phase,Phase::Running|Phase::AwaitingApproval) {snapshot.phase=Phase::Interrupted;}
             } else if snapshot.phase == Phase::Completed {
                 return Err(error("Faltan los artefactos de una ejecución terminada."));
             } else if matches!(snapshot.phase, Phase::Running | Phase::AwaitingApproval) {

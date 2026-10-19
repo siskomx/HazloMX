@@ -967,8 +967,14 @@ pub fn run(
             return Err("La herramienta ya no pertenece al catálogo conectado.".into());
         }
     }
+    let mut journal=crate::native_journal::Batch::start(directory,input)?;
+    let offset=usize::from(input.guard.is_some());
     if let Some(guard) = &input.guard {
-        let observed = connection.call(&guard.call, cancel.clone())?;
+        if cancel.load(Ordering::SeqCst){return Err(UNCERTAIN.into());}
+        journal.dispatch(0)?;
+        let result=connection.call(&guard.call,cancel.clone());
+        journal.observe(0,&result)?;
+        let observed = result.map_err(|_|"La comprobación previa falló; su respuesta queda local. No se enviaron las ediciones del lote.")?;
         if crate::kicad_project::digest(
             &serde_json::to_vec(&observed).map_err(|_| "Lectura no válida.")?,
         ) != guard.result_sha256
@@ -979,13 +985,20 @@ pub fn run(
         }
     }
     let mut results = Vec::new();
-    for call in &input.calls {
+    for (index,call) in input.calls.iter().enumerate() {
         if cancel.load(Ordering::SeqCst) {
             return Err(UNCERTAIN.into());
         }
-        results.push(connection.call(call, cancel.clone())?);
+        journal.dispatch(offset+index)?;
+        let result=connection.call(call,cancel.clone());
+        journal.observe(offset+index,&result)?;
+        results.push(result.map_err(|_|"Una llamada nativa falló o tiene efectos inciertos. Su respuesta queda local; conserva los pasos confirmados y revisa el programa antes de continuar.")?);
     }
-    let readback = connection.call(&input.readback, cancel.clone())?;
+    if cancel.load(Ordering::SeqCst){return Err(UNCERTAIN.into());}
+    journal.dispatch(offset+input.calls.len())?;
+    let result=connection.call(&input.readback,cancel.clone());
+    journal.observe(offset+input.calls.len(),&result)?;
+    let readback = result.map_err(|_|"La lectura final falló o quedó incierta. Las respuestas anteriores quedan locales; no repitas las ediciones.")?;
     let readback_sha256 = crate::kicad_project::digest(
         &serde_json::to_vec(&readback).map_err(|_| "Lectura no válida.")?,
     );
@@ -1010,9 +1023,11 @@ pub fn run(
     use std::io::Write;
     file.write_all(&bytes)
         .and_then(|_| file.sync_all())
-        .map_err(|_| "No se pudo conservar el informe nativo.".into())
+        .map_err(|_| "No se pudo conservar el informe nativo.")?;
+    journal.complete()
 }
 pub fn validate_artifacts(directory: &Path, input: &Input) -> Result<(), String> {
+    crate::native_journal::validate_observations(directory,input)?;
     let bytes = crate::kicad_project::read_regular(&directory.join("result.json"), REPORT_LIMIT)?;
     if input.receipt_sha256.as_deref() != Some(&crate::kicad_project::digest(&bytes)) {
         return Err("El informe nativo cambió.".into());

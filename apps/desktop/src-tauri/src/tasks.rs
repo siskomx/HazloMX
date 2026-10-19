@@ -95,7 +95,10 @@ impl Task {
             || self.title.len() > 256
             || self.goal.len() > 4096
             || self.references.len() > 64
-            || serde_json::to_vec_pretty(self).map_err(io::Error::other)?.len() > 1024 * 1024
+            || serde_json::to_vec_pretty(self)
+                .map_err(io::Error::other)?
+                .len()
+                > 1024 * 1024
         {
             return Err(error(
                 "Tarea no válida o demasiado grande; sus datos se conservan.",
@@ -286,6 +289,41 @@ impl<'a> Store<'a> {
     }
     pub fn binding(&self) -> io::Result<Option<Binding>> {
         Ok(self.active()?.map(|t| t.binding()))
+    }
+    pub fn shared_reference(
+        &self,
+        reference: Uuid,
+        offset: usize,
+    ) -> io::Result<serde_json::Value> {
+        let task = self
+            .active()?
+            .ok_or_else(|| error("No hay tarea activa."))?;
+        let r = task
+            .references
+            .iter()
+            .find(|r| r.id == reference && r.shared_with.contains(&task.provider))
+            .ok_or_else(|| error("Esta referencia no tiene permiso para la IA seleccionada."))?;
+        let (folder, _pins) = self.blob_dir(task.id)?;
+        let bytes = crate::kicad_project::read_regular(
+            &folder.join(format!("{reference}.bin")),
+            FILE_LIMIT as u64,
+        )
+        .map_err(|_| error("No se pudo leer la referencia local."))?;
+        if bytes.len() as u64 != r.bytes || crate::kicad_project::digest(&bytes) != r.sha256 {
+            return Err(error(
+                "La referencia cambió; su permiso no se aplica al nuevo contenido.",
+            ));
+        }
+        let text=String::from_utf8(bytes).map_err(|_|error("Esta referencia es binaria. Usa una extracción local revisada o la imagen autorizada; no se envió contenido."))?;
+        let total = text.chars().count();
+        if offset > total {
+            return Err(error("Página de referencia no válida."));
+        }
+        let content: String = text.chars().skip(offset).take(4096).collect();
+        let next = offset + content.chars().count();
+        Ok(
+            serde_json::json!({"reference_id":reference,"sha256":r.sha256,"content":content,"offset":offset,"next_offset":if next<total{Some(next)}else{None},"source_is_untrusted_data":true}),
+        )
     }
     fn empty(provider: &str) -> Task {
         Task {

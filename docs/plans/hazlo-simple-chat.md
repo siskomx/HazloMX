@@ -1,6 +1,6 @@
 # Hazlo: simple chat that owns the task
 
-Plan updated 2026-10-18 after the user grill and Clef boundary review. This is a proposed implementation plan, not approval to change application code or a claim that the behavior is implemented.
+Plan clarified 2026-10-18 after the user grill and Clef boundary review; implementation authorized by the user and continued as an active goal on 2026-10-19. This document defines the intended behavior. Implementation remains incomplete; the status below distinguishes completed slices from remaining work.
 
 ## Product contract
 
@@ -10,7 +10,7 @@ Preserve originals, valid work and manual edits. Permit clearly labeled provisio
 
 ## Ten clarified boundaries
 
-These operational clarifications refine the user-agreed behavior. Clef classified all ten as ready for planning in one bounded review; it did not inspect the code or establish native compatibility. Implementation still requires user sign-off and the acceptance checks below.
+These operational clarifications refine the user-agreed behavior. Clef classified all ten as ready for planning in one bounded review; it did not inspect the code or establish native compatibility. The user has authorized implementation; the acceptance checks below still apply.
 
 ### 1. Completion means the agreed outcome is checked
 
@@ -64,7 +64,7 @@ Classify raw captures, firmware, private logs and revealing derivatives as local
 
 Missing native facilities must produce an honest scope limit, faithful working-copy alternative or specific blocker. Do not build another editor or a general workflow framework to hide those limits. Native transactions do not automatically guarantee concurrency isolation. CLI help and repository release metadata do not prove installed compatibility; use real runtime catalogs and required capability probes.
 
-## Implementation status: durable-task foundation
+## Implementation status
 
 The first slice adds separate, reopenable conversations in a local workspace, including an automatic default workspace reopened on app startup. Existing provider histories are imported as separate tasks without changing the original histories. A task retains its first request, transcript, selected provider and immutable local reference copies; new conversations preserve prior ones. Files and image previews stay local until explicit sharing consent for the selected provider. Switching providers is a separate explicit chat action and does not transfer reference grants. No model download is added.
 
@@ -73,6 +73,16 @@ Native proposals record task identity and revision. New messages, task switches 
 Until reviewed local extraction and full evidence lineage exist, any unshared reference causes native results and prior prompt/history content to be withheld from the model. Public research and explicitly typed requests can continue in a fresh provider session. Removing a reference deletes its managed original/preview and linked assistant context while retaining user messages. Native reports remain local after removal of a previously shared reference because their per-reference lineage is not yet available. Copies already sent to a provider or embedded in native deliverables are not erased by this action. Native tools are not sandboxed from arbitrary filesystem access; this slice does not establish complete cross-tool egress isolation.
 
 Remaining work includes durable constraints/progress and correction barriers, forward recovery of uncertain writes, reviewed local extraction and comprehensive derivative/cache cleanup, full per-call egress enforcement, effect-bound approvals and the separate hardware boundary. Real native-window and installer/restart lifecycle checks remain necessary after these source-level and browser-fixture checks. The currently installed release is unchanged by this slice.
+
+### Recovery and evidence-sharing slice, 2026-10-19
+
+Native catalog batches now keep an atomic dispatch journal before each guard, operation and readback. The journal stores identities, observation hashes and pending/dispatched/acknowledged/uncertain states; content-bearing replies and errors are retained in separate local observations. Acknowledgment is not proof of the intended outcome. Reusing the same journal refuses dispatch. Interrupted batches preserve earlier observations and block new catalog batches and typed live edits across conversations in that project. Declared local read-only queries remain available through the evidence gate. On reopen, a finished staged report with its saved receipt and validated outputs can be published without invoking the native program again; blocked publication preserves the stage.
+
+Task-scoped agent tool replies and errors are retained as immutable local references before external delivery. The agent receives a non-content notice and reference identity, then can read bounded UTF-8 pages only after sharing consent for the selected AI. Hash checks reject changed originals; binary files require an approved image route or later reviewed local extraction. Catalog metadata and projected approval/status/selection identities remain available for routing. Owned task prompts exclude raw selected sources and automatic error interpolation, drawing authorized conversation context from the task store instead. Native evidence arriving during a conversation no longer races a redundant human-message save.
+
+This is a conservative checkpoint, not complete recovery or complete egress isolation. There is not yet a validated generic reconciliation path that re-enables an uncertain batch; a fresh read alone must not clear uncertainty. Per-step journals do not yet cover every older typed live adapter. Native atomic preconditions, recovery after manual changes, provider account binding, local safe extraction, derivative/cache removal and native process filesystem/network boundaries remain unfinished. The installed application and installer have not been updated for this slice. The goal remains active until the full plan and applicable release checks are implemented.
+
+Source checks cover partial dispatch/restart, refusal to restart a batch, project-wide mutation pauses including a new conversation, recovery publication without native calls, raw reply/error sentinels, reference consent and service changes, and prompt error/source withholding. Browser checks use IPC fixtures, including newly retained evidence during a reply; they are not real provider or native-window tests. The current regular Rust suite has 231 passing tests and 64 environment-dependent tests skipped; desktop command, frontend build, Clippy and browser fixtures are checked separately.
 
 ## Boundary acceptance cases
 

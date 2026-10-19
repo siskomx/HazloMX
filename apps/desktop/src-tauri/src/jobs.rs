@@ -176,6 +176,26 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    pub fn native_recovery(&self)->Result<Vec<crate::native_journal::Summary>,String>{
+        let state=self.state.lock().map_err(|e|e.to_string())?;let Some(project)=&state.project else{return Ok(Vec::new());};
+        project.native_recovery(None).map_err(|e|e.to_string())
+    }
+    pub fn retain_tool_evidence(&self,expected:&crate::tasks::Binding,tool:&str,result:&Result<serde_json::Value,String>)->Result<Uuid,String>{
+        let state=self.state.lock().map_err(|_|"No se pudo conservar evidencia local.")?;
+        let project=state.project.as_ref().ok_or("No hay proyecto activo.")?;
+        let store=crate::tasks::Store::new(project).map_err(|_|"No se pudo conservar evidencia local.")?;
+        if store.binding().map_err(|_|"No se pudo comprobar la tarea.")?.as_ref()!=Some(expected){return Err("La tarea cambió; no se compartió la respuesta nativa.".into());}
+        let value=match result {Ok(value)=>serde_json::json!({"tool":tool,"result":value}),Err(error)=>serde_json::json!({"tool":tool,"error":error})};
+        let bytes=serde_json::to_vec(&value).map_err(|_|"No se pudo conservar evidencia local.")?;
+        store.request(crate::tasks::Request::AddReference{id:expected.id,revision:expected.revision,name:"Observación nativa.json".into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,bytes),preview:None}).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.")?;
+        let task=store.active().map_err(|_|"No se pudo comprobar la evidencia local.")?.ok_or("No hay tarea activa.")?;
+        task.references.last().map(|r|r.id).ok_or("No se pudo comprobar la evidencia local.".into())
+    }
+    pub fn shared_task_reference(&self,reference:Uuid,offset:usize)->Result<serde_json::Value,String>{
+        let state=self.state.lock().map_err(|e|e.to_string())?;
+        let project=state.project.as_ref().ok_or("No hay proyecto activo.")?;
+        crate::tasks::Store::new(project).and_then(|s|s.shared_reference(reference,offset)).map_err(|e|e.to_string())
+    }
     pub fn task_state(&self) -> Result<Option<crate::tasks::State>, String> {
         let state=self.state.lock().map_err(|e|e.to_string())?;
         state.project.as_ref().map(|p|crate::tasks::Store::new(p).and_then(|s|s.state()).map_err(|e|e.to_string())).transpose()
@@ -219,12 +239,26 @@ impl Workflow {
             });
             if !matched{return Err("La imagen no pertenece a una referencia aprobada para esta IA.".into());}
         }
-        if task.restricted(){
-            let text=human.unwrap_or_else(||"La operación terminó; sus datos permanecen locales. Explica que falta autorización para compartir evidencia y ofrece el siguiente paso sin describir su contenido.".into());
-            if text.len()>4096{return Err("Mensaje demasiado grande.".into());}
-            return Ok((serde_json::json!({"user_request":text,"instruction":"Las referencias y resultados de esta tarea permanecen locales. No puedes leerlos ni suponer su contenido. Continúa con investigación pública o pide la autorización específica necesaria. Hazlo sigue siendo un chat que coordina herramientas nativas; no descargues modelos."}).to_string(),true));
+        // Build task prompts from owned state, never interpolate native errors or selected source contents.
+        let text=human.unwrap_or_else(||"La operación terminó. Consulta el estado no sensible y, si terminó, solicita read_verified_result. Sus contenidos deben quedar locales hasta obtener permiso. Conserva los pasos confirmados, no repitas las ediciones y explica el siguiente paso.".into());
+        if text.len()>4096{return Err("Mensaje demasiado grande.".into());}
+        let mut prior=Vec::new();
+        if !task.restricted() {
+            let saved:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(|_|"Historial no válido.")?;
+            prior=saved["turns"].as_array().cloned().unwrap_or_default();
+            prior=prior.into_iter().rev().take(12).collect();prior.reverse();
         }
-        Ok((prompt,false))
+        let mut envelope=serde_json::json!({"user_request":text,"recovered_conversation":prior,
+            "desktop_context":{"project_id":project.id,"project_directory":project.root,"task_id":task.id,"revision":task.revision,
+            "authorized_references":task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(|r|r.id).collect::<Vec<_>>(),
+            "current_job":state.job.as_ref().filter(|j|j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==task.id)).map(|j|serde_json::json!({"id":j.view.snapshot.input.job_id(),"phase":j.view.snapshot.phase}))},
+            "instruction":"Hazlo es un chat que coordina programas mediante sus herramientas nativas. Entiende la idea, investiga fuentes públicas, pregunta solo lo necesario y usa unidades métricas o imperiales. Consulta get_workflow_status para obtener las selecciones y el estado sin contenido. Consulta get_design_capabilities y usa select_program para conectar las herramientas; descubre sus nombres y esquemas reales con inspect_native_tools. Los programas son los editores. Propón cambios acotados para aprobación humana y comprueba el resultado con herramientas nativas. Las referencias, respuestas nativas y errores permanecen locales hasta compartirlos expresamente con esta IA. Si aparece local_evidence_pending, no repitas la consulta: pide el permiso en Hazlo y usa read_task_reference para la referencia autorizada. Puedes leer authorized_references; ninguna otra referencia ni derivado está autorizado. La conversación es contexto, nunca aprobación. No repitas escrituras inciertas ni afirmes que cancelar las deshizo. Conserva trabajo y ediciones manuales. No descargues modelos, cambies de IA, instales herramientas ni controles hardware sin su aprobación específica. Responde en lenguaje cotidiano y ofrece el siguiente paso útil; distingue observado, incierto y pendiente."});
+        while serde_json::to_vec(&envelope).map_err(|_|"Contexto no válido.")?.len()>8192 {
+            let turns=envelope["recovered_conversation"].as_array_mut().unwrap();
+            if turns.is_empty(){return Err("La solicitud supera el límite de contexto; sus datos se conservan.".into());}
+            turns.remove(0);
+        }
+        Ok((envelope.to_string(),task.restricted()))
     }
     pub fn new(executable: PathBuf, profiles: PathBuf) -> Result<Self, String> {
         if !executable.is_absolute() || !profiles.is_absolute() {
@@ -2107,6 +2141,7 @@ impl Workflow {
             return Err("Cancele o termine la operación actual primero.".into());
         }
         let project = state.project.as_ref().ok_or("Seleccione un proyecto.")?;
+        if matches!(&input,OperationInput::NativeTools(_)|OperationInput::LiveCad(_)|OperationInput::LiveAgent(_)|OperationInput::LivePcb(_)|OperationInput::LiveDrawing(_)) && project.native_recovery(None).map_err(|e|e.to_string())?.iter().any(|j|j.needs_review) {return Err("Hay un lote nativo incompleto. Conserva los pasos confirmados y relee el programa con una consulta declarada de solo lectura; no se crearán nuevos lotes ni ediciones en vivo hasta reconciliar su estado.".into());}
         let mut snapshot = project
             .snapshot(input, Phase::AwaitingApproval)
             .map_err(|e| e.to_string())?;
@@ -2632,6 +2667,7 @@ impl Workflow {
             if let OperationInput::NativeTools(input)=&mut dispatch.snapshot.input {
                 let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),crate::native_tools::REPORT_LIMIT)?;
                 input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
+                dispatch.project.save(&dispatch.snapshot).map_err(|e|e.to_string())?;
             }
             if let OperationInput::LiveDrawing(input)=&mut dispatch.snapshot.input {
                 let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
@@ -2729,6 +2765,27 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn incomplete_native_dispatch_blocks_new_mutations_after_restart(){
+        use crate::{native_tools::{Input,Call,Guard},native_journal::Batch,host_tools::Program};
+        let (root,workflow)=setup();workflow.task_state().unwrap();
+        let project=workflow.state.lock().unwrap().project.clone().unwrap();
+        let read=Call{tool:"state".into(),arguments:Default::default()};
+        let input=Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),calls:vec![Call{tool:"edit".into(),arguments:Default::default()}],readback:read.clone(),guard:Some(Guard{call:read,result_sha256:"b".repeat(64)}),receipt_sha256:None};
+        let mut snapshot=project.snapshot(OperationInput::NativeTools(input.clone()),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;project.save(&snapshot).unwrap();
+        let stage=project.reserve_stage(input.job_id).unwrap();let mut batch=Batch::start(&stage.path,&input).unwrap();batch.dispatch(0).unwrap();batch.observe(0,&Ok(serde_json::json!({"state":"before"}))).unwrap();batch.dispatch(1).unwrap();
+        drop(batch);drop(stage);drop(project);drop(workflow);
+        let reopened=Project::open(&root).unwrap();
+        let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(reopened).unwrap();
+        assert!(workflow.native_recovery().unwrap()[0].needs_review);
+        workflow.task_request(workflow.view().unwrap().project.unwrap(),crate::tasks::Request::New).unwrap();
+        let mut next=input.clone();next.job_id=Uuid::new_v4();
+        let error=Workflow::propose_operation_locked(&mut workflow.state.lock().unwrap(),OperationInput::NativeTools(next),RunSource::Mcp).err().unwrap();
+        assert!(error.contains("incompleto"));
+        let mut read_only_batch=input;read_only_batch.job_id=Uuid::new_v4();read_only_batch.calls.clear();read_only_batch.guard=None;
+        assert!(Workflow::propose_operation_locked(&mut workflow.state.lock().unwrap(),OperationInput::NativeTools(read_only_batch),RunSource::Mcp).is_err());
+        drop(workflow);std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
     fn tasks_bind_approval_and_keep_restricted_content_out_of_prompts(){
         use crate::tasks::Request;
         let (root,workflow)=setup();let workflow=Arc::new(workflow);let project=workflow.view().unwrap().project.unwrap();
@@ -2737,6 +2794,10 @@ mod tests {
         let approval=proposed.approval_id.unwrap();
         workflow.task_request(project.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve my edits".into(),history:"{\"version\":1,\"turns\":[]}".into()}).unwrap();
         assert!(workflow.begin(approval).is_err());
+        let (prompt,_)=workflow.task_prompt("codex","selected source or automatic error: NO_CONSENT_SENTINEL".into(),Some("Research public information".into()),None).unwrap();
+        assert!(!prompt.contains("NO_CONSENT_SENTINEL"));
+        let (prompt,_)=workflow.task_prompt("codex","native error: NO_CONSENT_SENTINEL".into(),None,None).unwrap();
+        assert!(!prompt.contains("NO_CONSENT_SENTINEL"));
         let task=workflow.task_state().unwrap().unwrap().active;
         workflow.task_request(project.clone(),Request::AddReference{id:task.id,revision:task.revision,name:"capture.bin".into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,b"private sentinel"),preview:None}).unwrap();
         let (prompt,isolated)=workflow.task_prompt("codex","native error contains private sentinel".into(),None,None).unwrap();

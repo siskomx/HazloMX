@@ -41,6 +41,7 @@ try {
     persist();return structuredClone(state());
    }
    else if(command.startsWith("start_") && command.endsWith("_chat")){
+    if(window.nativeOnNext){task().revision++;task().references.push({id:crypto.randomUUID(),name:"Observación nativa.json",bytes:100,sha256:"e".repeat(64),image:false,shared_with:[]});window.nativeOnNext=false;}
     snapshot.chat={provider:task().provider,id:crypto.randomUUID(),project_id:db.project[0],sequence:1,busy:false,cancelled:false,text:"La tarea sigue guardada; podemos continuar.",error:null};
    }
    else if(!["get_snapshot","detect_clients"].includes(command))throw Error(command);
@@ -76,5 +77,12 @@ try {
  await page.locator("#keep-reference-local").click();
  assert.match(await page.locator("#task-references").innerText(),/solo local/);
  assert(!await page.evaluate(()=>window.calls.some(c=>/pull|download|install/.test(c.command))));
+ await page.evaluate(()=>window.nativeOnNext=true);
+ await page.locator("#prompt").fill("Explain the non-content native status");await page.locator("#send").click();await page.locator("#send:enabled").waitFor();
+ assert.match(await page.locator("#task-references").innerText(),/Observación nativa.json/);
+ assert.equal(await page.locator("#error").isVisible(),false);
+ await page.reload();await page.locator("#send:enabled").waitFor();
+ assert.match(await page.locator("#conversation").innerText(),/non-content native status/);
+ assert.match(await page.locator("#task-references").innerText(),/Observación nativa.json/);
  console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch and withheld raw input. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}
