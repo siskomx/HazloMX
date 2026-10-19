@@ -58,6 +58,12 @@ pub struct Reference {
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct PendingRemoval {
+    pub id: Uuid,
+    pub bytes: u64,
+}
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Task {
     pub id: Uuid,
     pub revision: u64,
@@ -65,6 +71,8 @@ pub struct Task {
     pub goal: String,
     pub provider: String,
     pub references: Vec<Reference>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pending_removals: Vec<PendingRemoval>,
     #[serde(default)]
     pub restricted_results: bool,
     #[serde(default)]
@@ -92,7 +100,7 @@ impl Task {
             || !provider(&self.provider)
             || self.title.len() > 256
             || self.goal.len() > 4096
-            || self.references.len() > 64
+            || self.references.len() + self.pending_removals.len() > 64
             || serde_json::to_vec_pretty(self)
                 .map_err(io::Error::other)?
                 .len()
@@ -118,6 +126,14 @@ impl Task {
                 || r.shared_with.iter().any(|p| !provider(p))
             {
                 return Err(error("Referencia de tarea no válida."));
+            }
+            total += r.bytes;
+        }
+        for r in &self.pending_removals {
+            if r.id.is_nil() || !ids.insert(r.id) || r.bytes == 0 || r.bytes > FILE_LIMIT as u64 {
+                return Err(error(
+                    "Retirada de referencia no válida; sus datos se conservan.",
+                ));
             }
             total += r.bytes;
         }
@@ -347,6 +363,7 @@ impl<'a> Store<'a> {
             goal: String::new(),
             provider: provider.into(),
             references: Vec::new(),
+            pending_removals: Vec::new(),
             restricted_results: false,
             legacy: false,
             history: Some("{\"version\":1,\"turns\":[]}".into()),
@@ -391,6 +408,7 @@ impl<'a> Store<'a> {
         self.ensure()?;
         let index = self.index()?.unwrap();
         let mut active = self.read(index.active)?;
+        self.cleanup_references(&mut active)?;
         active.history = None;
         let tasks = index
             .ids
@@ -415,7 +433,7 @@ impl<'a> Store<'a> {
         Ok((path, pins))
     }
     fn scoped(&self, id: Uuid, revision: u64) -> io::Result<Task> {
-        let task = self
+        let mut task = self
             .active()?
             .ok_or_else(|| error("No hay una tarea activa."))?;
         if task.binding() != (Binding { id, revision }) {
@@ -423,7 +441,32 @@ impl<'a> Store<'a> {
                 "La tarea cambió. Vuelve a leerla antes de continuar.",
             ));
         }
+        self.cleanup_references(&mut task)?;
         Ok(task)
+    }
+    fn cleanup_references(&self, task: &mut Task) -> io::Result<()> {
+        if task.pending_removals.is_empty() {
+            return Ok(());
+        }
+        let (folder, _pins) = self.blob_dir(task.id)?;
+        let before = task.pending_removals.len();
+        task.pending_removals.retain(|r| {
+            let mut pending = false;
+            for suffix in ["bin", "preview.json"] {
+                let path = folder.join(format!("{}.{suffix}", r.id));
+                match fs::remove_file(path) {
+                    Ok(()) => {}
+                    Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+                    Err(_) => pending = true,
+                }
+            }
+            pending
+        });
+        if before != task.pending_removals.len() {
+            // A restart can safely repeat deletion of these exact UUID-owned files.
+            self.save(task)?;
+        }
+        Ok(())
     }
     fn save(&self, task: &Task) -> io::Result<()> {
         task.validate()?;
@@ -526,8 +569,10 @@ impl<'a> Store<'a> {
                 let mut task = self.scoped(id, revision)?;
                 if bytes.is_empty()
                     || bytes.len() > FILE_LIMIT
-                    || task.references.len() >= 64
-                    || task.references.iter().map(|r| r.bytes).sum::<u64>() + bytes.len() as u64
+                    || task.references.len() + task.pending_removals.len() >= 64
+                    || task.references.iter().map(|r| r.bytes).sum::<u64>()
+                        + task.pending_removals.iter().map(|r| r.bytes).sum::<u64>()
+                        + bytes.len() as u64
                         > TASK_LIMIT
                 {
                     return Err(error(
@@ -606,9 +651,12 @@ impl<'a> Store<'a> {
                 reference,
             } => {
                 let mut task = self.scoped(id, revision)?;
-                if !task.references.iter().any(|r| r.id == reference) {
-                    return Err(error("Referencia no disponible."));
-                }
+                let bytes = task
+                    .references
+                    .iter()
+                    .find(|r| r.id == reference)
+                    .ok_or_else(|| error("Referencia no disponible."))?
+                    .bytes;
                 // Revoke access before deleting bytes; a failed deletion must never restore sharing.
                 // shortcut: old native reports have no per-reference lineage; keep them local after removal.
                 task.restricted_results |= task
@@ -616,6 +664,10 @@ impl<'a> Store<'a> {
                     .iter()
                     .any(|r| r.id == reference && !r.shared_with.is_empty());
                 task.references.retain(|r| r.id != reference);
+                task.pending_removals.push(PendingRemoval {
+                    id: reference,
+                    bytes,
+                });
                 let mut value: serde_json::Value =
                     serde_json::from_str(task.history.as_deref().unwrap_or("{}"))
                         .map_err(io::Error::other)?;
@@ -632,13 +684,6 @@ impl<'a> Store<'a> {
                 task.history = Some(serde_json::to_string(&value).map_err(io::Error::other)?);
                 task.revision += 1;
                 self.save(&task)?;
-                let (folder, _pins) = self.blob_dir(id)?;
-                for suffix in ["bin", "preview.json"] {
-                    let p = folder.join(format!("{reference}.{suffix}"));
-                    if p.try_exists()? {
-                        fs::remove_file(p)?;
-                    }
-                }
             }
             Request::PreviewReference {
                 id,
@@ -864,6 +909,126 @@ mod tests {
         assert!(store.shared_reference(reference, 0).is_err());
         drop(store);
         drop(p);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn locked_reference_removal_recovers_forward_after_restart_without_restoring_access() {
+        let (root, p) = setup();
+        let store = Store::new(&p).unwrap();
+        let t = store.state().unwrap().active;
+        let image = ImageInput {
+            media_type: "image/jpeg".into(),
+            data: STANDARD.encode([255, 216, 255, 192, 0, 8, 8, 0, 1, 0, 1, 0, 255, 217]),
+        };
+        store
+            .request(Request::AddReference {
+                id: t.id,
+                revision: t.revision,
+                name: "private.jpg".into(),
+                data: image.data.clone(),
+                preview: Some(image),
+            })
+            .unwrap();
+        let t = store.state().unwrap().active;
+        let reference = t.references[0].id;
+        store
+            .request(Request::Share {
+                id: t.id,
+                revision: t.revision,
+                reference,
+                allow: true,
+            })
+            .unwrap();
+        let t = store.state().unwrap().active;
+        let blob = store
+            .root
+            .join(t.id.to_string())
+            .join(format!("{reference}.bin"));
+        let lock = OpenOptions::new()
+            .read(true)
+            .share_mode(FILE_SHARE_READ)
+            .open(&blob)
+            .unwrap();
+        let design = root.join("valid-work.native");
+        fs::write(&design, b"preserved manual work").unwrap();
+        store
+            .request(Request::Remove {
+                id: t.id,
+                revision: t.revision,
+                reference,
+            })
+            .unwrap();
+        let removed = store.state().unwrap().active;
+        assert_eq!(removed.revision, t.revision + 1);
+        assert!(removed.references.is_empty());
+        assert!(removed.restricted_results);
+        assert_eq!(removed.pending_removals.len(), 1);
+        assert!(blob.exists());
+        assert!(!blob.with_extension("preview.json").exists());
+        assert!(store.shared_reference(reference, 0).is_err());
+        assert!(store
+            .request(Request::Share {
+                id: t.id,
+                revision: removed.revision,
+                reference,
+                allow: true
+            })
+            .is_err());
+        assert!(store
+            .request(Request::PreviewReference {
+                id: t.id,
+                revision: removed.revision,
+                reference,
+                offset: 0
+            })
+            .is_err());
+        store.request(Request::New).unwrap();
+        store.request(Request::Open { id: t.id }).unwrap();
+        assert_eq!(store.state().unwrap().active.pending_removals.len(), 1);
+        drop(store);
+        drop(p);
+        let p = Project::open(&root).unwrap();
+        let store = Store::new(&p).unwrap();
+        assert_eq!(store.state().unwrap().active.pending_removals.len(), 1);
+        drop(lock);
+        // If bytes are removed but committing cleanup is interrupted, keep the tombstone.
+        let metadata_lock = OpenOptions::new()
+            .read(true)
+            .share_mode(FILE_SHARE_READ)
+            .open(store.path(t.id))
+            .unwrap();
+        assert!(store.state().is_err());
+        assert!(!blob.exists());
+        assert_eq!(store.active().unwrap().unwrap().pending_removals.len(), 1);
+        drop(metadata_lock);
+        drop(store);
+        drop(p);
+        let p = Project::open(&root).unwrap();
+        let store = Store::new(&p).unwrap();
+        let recovered = store.state().unwrap().active;
+        assert!(recovered.pending_removals.is_empty());
+        assert_eq!(recovered.revision, removed.revision);
+        assert!(recovered.restricted_results);
+        assert_eq!(fs::read(&design).unwrap(), b"preserved manual work");
+        let mut full = recovered.clone();
+        full.pending_removals = (0..8)
+            .map(|_| PendingRemoval {
+                id: Uuid::new_v4(),
+                bytes: FILE_LIMIT as u64,
+            })
+            .collect();
+        full.validate().unwrap();
+        full.pending_removals.push(PendingRemoval {
+            id: Uuid::new_v4(),
+            bytes: 1,
+        });
+        assert!(full.validate().is_err());
+        full.pending_removals.pop();
+        full.pending_removals[1].id = full.pending_removals[0].id;
+        assert!(full.validate().is_err());
+        drop(store);
+        drop(p);
+        fs::remove_file(&design).unwrap();
         fs::remove_dir_all(root).unwrap();
     }
     fn setup() -> (PathBuf, Project) {

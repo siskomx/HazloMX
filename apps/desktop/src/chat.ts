@@ -116,6 +116,7 @@ function renderTasks(busy:boolean){
   $("reference-offer-text").textContent=pendingReference?`¿Permites que ${providerNames[provider]} reciba el contenido de «${pendingReference.name}» y los resultados de su análisis para esta tarea? Puede enviarse a su servicio externo. Puedes revocar el permiso; no borra lo ya enviado.`:"";
   for(const id of ["approve-provider","keep-provider","approve-reference","keep-reference-local"]) $<HTMLButtonElement>(id).disabled=busy;
   const rows=$("task-references");rows.replaceChildren();
+  if(tasks?.active.pending_removals?.length){const p=document.createElement("p");p.className="fine";p.textContent="Hay copias locales retiradas pendientes de borrar porque no están disponibles. Su acceso y permisos ya están revocados. Hazlo reintentará borrar sus copias al volver a esta conversación; el trabajo del proyecto se conserva.";rows.append(p);}
   for(const ref of tasks?.active.references??[]){
     const row=document.createElement("p"),label=document.createElement("span");const shared=ref.shared_with.includes(provider);
     label.textContent=`${ref.name} · ${Math.ceil(ref.bytes/1024)} KiB · ${shared?"compartir permitido con "+providerNames[provider]:"solo local"} `;row.append(label);

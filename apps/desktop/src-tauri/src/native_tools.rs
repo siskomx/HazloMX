@@ -191,6 +191,37 @@ pub struct Catalog {
     pub tools: Vec<Tool>,
     pub scope: &'static str,
 }
+impl Catalog {
+    pub(crate) fn validate_calls(&self, input: &Input) -> Result<(), String> {
+        for call in input.calls.iter().chain([&input.readback]).chain(input.guard.iter().map(|g| &g.call)) {
+            self.validate_arguments(call)?;
+        }
+        Ok(())
+    }
+    fn validate_arguments(&self, call: &Call) -> Result<(), String> {
+        validate_call(call)?;
+        let tool = self.tools.iter().find(|t| t.name == call.tool)
+            .ok_or("La herramienta no pertenece al catálogo nativo conectado.")?;
+        let schema = Value::Object((*tool.input_schema).clone());
+        if serde_json::to_vec(&schema).map_err(|_| "Esquema nativo no válido.")?.len() > LIMIT {
+            return Err("El esquema nativo supera el límite de validación local.".into());
+        }
+        // Native schemas must not turn validation into file reads or network requests.
+        let mut compiler = boon::Compiler::new();
+        compiler.set_default_draft(boon::Draft::V2020_12);
+        compiler.use_loader(Box::new(boon::SchemeUrlLoader::new()));
+        let location = "https://hazlomexa.invalid/native-schema";
+        compiler.add_resource(location, schema)
+            .map_err(|_| "El esquema nativo no puede validarse localmente. No se envió la llamada.")?;
+        let mut schemas = boon::Schemas::new();
+        let compiled = compiler.compile(location, &mut schemas)
+            .map_err(|_| "El esquema nativo no puede validarse localmente. No se envió la llamada.")?;
+        if schemas.validate(&Value::Object(call.arguments.clone()), compiled).is_err() {
+            return Err("Los argumentos no cumplen el esquema del programa. Revisa la propuesta antes de enviarla; no se ejecutó esta llamada.".into());
+        }
+        Ok(())
+    }
+}
 
 enum Request {
     Close,
@@ -744,6 +775,7 @@ impl Connection {
         if catalog.catalog_sha256 != expected {
             return Err("El catálogo cambió. Descubre de nuevo sus herramientas.".into());
         }
+        catalog.validate_arguments(call)?;
         let tool = catalog
             .tools
             .iter()
@@ -963,16 +995,7 @@ pub fn run(
             "El catálogo nativo cambió. Descubre sus herramientas y prepara otra propuesta.".into(),
         );
     }
-    for call in input
-        .calls
-        .iter()
-        .chain([&input.readback])
-        .chain(input.guard.iter().map(|g| &g.call))
-    {
-        if !catalog.tools.iter().any(|t| t.name == call.tool) {
-            return Err("La herramienta ya no pertenece al catálogo conectado.".into());
-        }
-    }
+    catalog.validate_calls(input)?;
     let mut journal=crate::native_journal::Batch::start(directory,input)?;
     let offset=usize::from(input.guard.is_some());
     if let Some(guard) = &input.guard {
@@ -1116,6 +1139,65 @@ mod tests {
             guard: None,
             receipt_sha256: None,
         }
+    }
+    #[test]
+    fn schema_preflight_checks_all_arguments_without_fetching_references() {
+        let schema=json!({"type":"object","$defs":{"size":{"type":"integer","minimum":1,"maximum":20}},"properties":{"size":{"$ref":"#/$defs/size"},"units":{"enum":["mm","in"]},"points":{"type":"array","minItems":1,"items":{"type":"array","minItems":2,"maxItems":2,"items":{"type":"number"}}}},"required":["size","units","points"],"additionalProperties":false});
+        let tool:Tool=serde_json::from_value(json!({"name":"native_edit","inputSchema":schema})).unwrap();
+        let mut catalog=catalog(Uuid::new_v4(),Program::Drawing,"mcp",json!({"name":"owned"}),vec![tool]).unwrap();
+        let good=call("native_edit",json!({"size":3,"units":"in","points":[[1.5,2]]}));
+        catalog.validate_arguments(&good).unwrap();
+        for args in [json!({"size":0,"units":"mm","points":[[1,2]]}),json!({"size":3,"units":"cm","points":[[1,2]]}),json!({"size":3,"units":"mm","points":[[1]]}),json!({"size":3,"units":"mm"}),json!({"size":"RAW_PRIVATE_SENTINEL","units":"mm","points":[[1,2]]}),json!({"size":3,"units":"mm","points":[[1,2]],"extra":true})] {
+            let error=catalog.validate_arguments(&call("native_edit",args)).unwrap_err();
+            assert!(!error.contains("RAW_PRIVATE_SENTINEL"));
+        }
+        let mut batch=input(&catalog);
+        batch.calls=vec![good.clone(),call("native_edit",json!({}))];
+        batch.readback=good.clone();
+        assert!(catalog.validate_calls(&batch).is_err());
+        batch.calls.pop();catalog.validate_calls(&batch).unwrap();
+        batch.guard=Some(Guard{call:call("native_edit",json!({})),result_sha256:"a".repeat(64),checks:vec![]});
+        assert!(catalog.validate_calls(&batch).is_err());
+        for schema in [json!({"$ref":"https://example.invalid/RAW_PRIVATE_SENTINEL"}),json!({"$ref":"file:///C:/private/RAW_PRIVATE_SENTINEL.json"}),json!({"type":"not-a-type"})] {
+            catalog.tools[0]=serde_json::from_value(json!({"name":"native_edit","inputSchema":schema})).unwrap();
+            assert!(catalog.validate_arguments(&good).is_err());
+        }
+        let file=std::env::temp_dir().join(format!("hazlo-schema-{}.json",Uuid::new_v4()));
+        std::fs::write(&file,b"{\"type\":\"object\"}").unwrap();
+        let url=format!("file:///{}",file.to_string_lossy().replace('\\',"/"));
+        catalog.tools[0]=serde_json::from_value(json!({"name":"native_edit","inputSchema":{"$ref":url}})).unwrap();
+        assert!(catalog.validate_arguments(&good).is_err());
+        assert_eq!(std::fs::read(&file).unwrap(),b"{\"type\":\"object\"}");
+        std::fs::remove_file(file).unwrap();
+    }
+    #[test]
+    #[ignore = "Explicit disposable native MCP fixture; counts real dispatched writes"]
+    fn native_schema_preflight_refuses_later_invalid_steps_before_any_dispatch() {
+        let executable=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_FIXTURE").expect("Set owned fixture"));
+        let root=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_TEST_ROOT").expect("Set owned root"));
+        let cancel=||Arc::new(AtomicBool::new(false));
+        let (connection,catalog)=Connection::mcp(Program::Drawing,McpConfig{executable,args:vec![],env:BTreeMap::new(),url:None,authorization:None},root.clone(),cancel()).unwrap();
+        let query=call("observe_native_state",json!({}));
+        let before=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();
+        for scenario in ["later_step","readback","guard"] {
+            let mut batch=input(&catalog);
+            batch.calls=vec![call("program_owned_parameter_edit",json!({"value":7})),call("program_owned_parameter_edit",json!({"value":8}))];
+            batch.guard=Some(Guard{call:query.clone(),result_sha256:before["readback_sha256"].as_str().unwrap().into(),checks:vec![]});
+            let invalid=call("observe_native_state",json!({"value":"RAW_PRIVATE_SENTINEL"}));
+            match scenario {
+                "later_step"=>batch.calls[1]=call("program_owned_parameter_edit",json!({"value":"RAW_PRIVATE_SENTINEL"})),
+                "readback"=>batch.readback=invalid,
+                _=>batch.guard.as_mut().unwrap().call=invalid,
+            }
+            let folder=root.join(Uuid::new_v4().to_string());std::fs::create_dir(&folder).unwrap();
+            assert!(!run(&batch,&connection,&folder,cancel()).unwrap_err().contains("RAW_PRIVATE_SENTINEL"));
+            assert_eq!(std::fs::read_dir(&folder).unwrap().count(),0);
+            let actual=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();
+            assert_eq!(actual["readback"]["structuredContent"]["native_value"],0);
+            assert_eq!(actual["readback"]["structuredContent"]["native_writes"],0);
+        }
+        assert!(connection.read(&catalog.catalog_sha256,&call("observe_native_state",json!({"unknown":true})),cancel()).is_err());
+        connection.close();
     }
     #[test]
     fn proposals_preserve_native_arguments_and_require_fresh_state_before_edits() {

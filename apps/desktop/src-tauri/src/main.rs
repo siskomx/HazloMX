@@ -1284,11 +1284,12 @@ fn task_action(state:State<AppState>,project_id:Uuid,project_directory:PathBuf,r
     let changes=request.changes_scope();
     let switches=matches!(request,hazlomexa::tasks::Request::New|hazlomexa::tasks::Request::Open{..});
     if changes && desktop_codex::agent_busy(&state)? {return Err("Detén la conversación antes de cambiar la tarea o sus referencias.".into());}
-    let result=state.workflow.task_request((project_id,project_directory),request)?;
     if changes {
+        // A storage error can follow a committed revocation; never resume its old AI context.
         *state.codex_session.lock().map_err(|e|e.to_string())?=None;
         *state.chat_session.lock().map_err(|e|e.to_string())?=None;
     }
+    let result=state.workflow.task_request((project_id,project_directory),request)?;
     if switches {state.tools.clear_task_context()?;*state.chat.lock().map_err(|e|e.to_string())?=None;}
     Ok(result)
 }

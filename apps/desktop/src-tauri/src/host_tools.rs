@@ -1463,9 +1463,7 @@ impl HostTools {
                 let input=crate::native_tools::Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:request.connection_id,
                     program:selected.program,catalog_sha256:request.catalog_sha256,description:request.description,calls:request.calls,readback:request.readback,guard:request.guard,receipt_sha256:None};
                 input.validate()?;
-                for call in input.calls.iter().chain([&input.readback]).chain(input.guard.iter().map(|g|&g.call)) {
-                    if !catalog.tools.iter().any(|t|t.name==call.tool){return Err("La llamada no pertenece al catálogo nativo conectado.".into());}
-                }
+                catalog.validate_calls(&input)?;
                 let job=self.workflow.propose_native_tools(selected.project,input,selected.connection)?;
                 Ok(json!({"job_id":job.snapshot.input.job_id(),"phase":job.snapshot.phase,"human_approval_required":true,"native_tool_calls":true}))
             }

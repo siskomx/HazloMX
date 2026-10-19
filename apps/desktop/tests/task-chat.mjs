@@ -36,7 +36,7 @@ try {
      if(r.action==="add_reference"){t.revision++;t.references.push({id:crypto.randomUUID(),name:r.name,bytes:atob(r.data).length,sha256:"f".repeat(64),image:!!r.preview,shared_with:[],preview:r.preview,data:r.data});}
      if(r.action==="preview_reference"){const ref=t.references.find(x=>x.id===r.reference);if(!ref)throw Error("missing local reference");const text=atob(ref.data),offset=r.offset??0,next=offset+4096;return {kind:"text",content:text.slice(offset,next),next_offset:next<text.length?next:null};}
      if(r.action==="share"){const ref=t.references.find(x=>x.id===r.reference);ref.shared_with=ref.shared_with.filter(p=>p!==t.provider);if(r.allow)ref.shared_with.push(t.provider);t.revision++;}
-     if(r.action==="remove"){t.references=t.references.filter(x=>x.id!==r.reference);t.revision++;}
+     if(r.action==="remove"){const removed=t.references.find(x=>x.id===r.reference);t.references=t.references.filter(x=>x.id!==r.reference);t.pending_removals=[{id:removed.id,bytes:removed.bytes}];t.revision++;}
      if(r.action==="image"){const ref=t.references.find(x=>x.id===r.reference);if(!ref?.shared_with.includes(t.provider))throw Error("sharing required");return structuredClone(ref.preview);}
     }
     persist();return structuredClone(state());
@@ -100,5 +100,11 @@ try {
  await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
  await retained.getByRole("button",{name:"Quitar referencia",exact:true}).click();await page.locator("#send:enabled").waitFor();
  assert.equal(await page.locator("#report-text").textContent(),"");assert(!await page.locator("#task-references").innerText().then(t=>t.includes("capture.bin")));
+ assert.match(await page.locator("#task-references").innerText(),/pendientes de borrar/);
+ await page.reload();await page.locator("#send:enabled").waitFor();
+ assert.match(await page.locator("#task-references").innerText(),/permisos ya están revocados/);
+ await page.evaluate(()=>{const db=JSON.parse(localStorage.getItem("owned-task-fixture"));db.records[db.active].pending_removals=[];localStorage.setItem("owned-task-fixture",JSON.stringify(db));});
+ await page.reload();await page.locator("#send:enabled").waitFor();
+ assert.doesNotMatch(await page.locator("#task-references").innerText(),/pendientes de borrar/);
  console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch and withheld raw input. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}
