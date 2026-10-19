@@ -1045,6 +1045,7 @@ impl Project {
             } else if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) {
                 let id=snapshot.input.job_id();let staged=stage_exists(self,id)?;
                 let directory=if staged {self.store("staging").join(id.to_string())}else{self.artifact_directory(id)};
+                if directory.try_exists()? {if let Some(record)=crate::live_dispatch::read(&directory,&snapshot.input).map_err(io::Error::other)? {summaries.push(record.summary(&snapshot.input));continue;}}
                 let finished=snapshot.input.receipt_sha256().is_some() && (snapshot.phase==Phase::Completed || directory.try_exists()? && self.validate_outputs(&directory,&snapshot.input).is_ok());
                 if finished {summaries.push(crate::native_journal::Summary{job_id:id,program:snapshot.input.native_program(),kind:"live_adapter",acknowledged:1,uncertain:0,not_dispatched:0,finished:true,needs_review:false,outcome_checked:false});}
                 else if native_may_have_run(&snapshot) {summaries.push(unresolved_native(id,snapshot.input.native_program(),"live_adapter"));}
@@ -1057,6 +1058,13 @@ impl Project {
         for mut snapshot in self.history()? {
             let published = self.artifact_directory(snapshot.input.job_id());
             let previous_phase = snapshot.phase;
+            if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) && snapshot.input.receipt_sha256().is_none() {
+                let directory=self.store("staging").join(snapshot.input.job_id().to_string());
+                if directory.try_exists()? && crate::live_dispatch::read(&directory,&snapshot.input).map_err(io::Error::other)?.is_some_and(|r|r.outcome==crate::native_journal::Outcome::Acknowledged) {
+                        let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;
+                        self.validate_outputs(&directory,&checked)?;snapshot.input=checked;self.save(&snapshot)?;
+                }
+            }
             if published.try_exists()? {
                 let _pin = pin_directory(&published, false)?;
                 match self.validate_outputs(&published, &snapshot.input) {

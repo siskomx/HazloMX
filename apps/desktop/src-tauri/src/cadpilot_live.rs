@@ -583,6 +583,20 @@ pub fn run(
     directory: &std::path::Path,
     cancelled: &AtomicBool,
 ) -> Result<(), String> {
+    run_impl(input,directory,cancelled,None)
+}
+async fn submit_native(client:reqwest::Client,endpoint:String,request:Value,dispatch:Option<&std::sync::Arc<crate::live_dispatch::Dispatch>>)->Result<Value,String>{
+    let mut tasks=tokio::task::JoinSet::new();
+    {
+        let _permit=dispatch.map(|d|d.enter()).transpose()?;
+        tasks.spawn(async move {native_request(&client,&endpoint,request).await});
+    }
+    tasks.join_next().await.ok_or(INVALID)?.map_err(|_|INVALID)?
+}
+pub(crate) fn run_gated(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispatch:&std::sync::Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
+    run_impl(input,directory,cancelled,Some(dispatch))
+}
+fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispatch:Option<&std::sync::Arc<crate::live_dispatch::Dispatch>>)->Result<(),String>{
     input.validate_for_dispatch()?;
     let expires = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -598,7 +612,7 @@ pub fn run(
             .timeout(Duration::from_secs(if input.uses_file_dialog() { 600 } else { 15 }))
             .build()
             .map_err(|_| INVALID)?;
-        native_request(&client, "http://127.0.0.1:9875", request).await
+        submit_native(client,"http://127.0.0.1:9875".into(),request,dispatch).await
     })?;
     result["after"]["objects"] = geometry(&result["after"]["objects"])?;
     result["live_cad_version"] = json!(1);
@@ -947,6 +961,43 @@ mod tests {
         }
         assert!(observe(&endpoint, Some("Closed")).await.is_err());
         server.await.unwrap();
+    }
+    #[tokio::test]
+    async fn native_task_submission_is_fenced_and_keeps_polling_an_admitted_call_after_pause() {
+        use std::sync::{Arc,Mutex,atomic::Ordering};
+        use tokio::io::{AsyncReadExt,AsyncWriteExt};
+        let root=std::env::temp_dir().join(format!("hazlo-cad-task-fence-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        let input=crate::project::OperationInput::LiveCad(Input{schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned native submission fence".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None});
+        let gate=Arc::new(Mutex::new(()));let paused=Arc::new(AtomicBool::new(true));
+        let dispatch=crate::live_dispatch::Dispatch::start(&root,&input,gate.clone(),paused,Arc::new(AtomicBool::new(false))).unwrap();
+        let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());
+        let client=reqwest::Client::builder().no_proxy().timeout(Duration::from_secs(5)).build().unwrap();
+        assert!(submit_native(client.clone(),endpoint.clone(),json!({"action":"apply"}),Some(&dispatch)).await.is_err());
+        assert!(tokio::time::timeout(Duration::from_millis(50),listener.accept()).await.is_err());
+        let next=root.join("admitted");std::fs::create_dir(&next).unwrap();let paused=Arc::new(AtomicBool::new(false));
+        let dispatch=crate::live_dispatch::Dispatch::start(&next,&input,gate.clone(),paused.clone(),Arc::new(AtomicBool::new(false))).unwrap();
+        let (seen,poll_seen)=tokio::sync::oneshot::channel();let (release,reply_ready)=tokio::sync::oneshot::channel();
+        let server=tokio::spawn(async move {
+            let mut seen=Some(seen);let mut reply_ready=Some(reply_ready);
+            for method in ["execute_code_async","get_task_result"] {
+                let (mut stream,_)=listener.accept().await.unwrap();let mut request=Vec::new();
+                loop {let mut chunk=[0;4096];let count=stream.read(&mut chunk).await.unwrap();assert!(count>0&&request.len()+count<1_000_000);request.extend_from_slice(&chunk[..count]);if request.windows(13).any(|w|w==b"</methodCall>"){break;}}
+                assert!(String::from_utf8(request).unwrap().contains(&format!("<methodName>{method}</methodName>")));
+                let value=if method=="execute_code_async"{json!({"success":true,"task_id":"f00dbabe"})}else{
+                    seen.take().unwrap().send(()).unwrap();reply_ready.take().unwrap().await.unwrap();
+                    json!({"success":true,"task_id":"f00dbabe","status":"done","output":json!({"ok":true,"result":{"native_reply":true}}).to_string()})
+                };
+                let body=format!("<methodResponse><params><param>{}</param></params></methodResponse>",xml(&value));
+                stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/xml\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}",body.len()).as_bytes()).await.unwrap();
+            }
+        });
+        let selected=dispatch.clone();let operation=tokio::spawn(async move {submit_native(client,endpoint,json!({"action":"apply"}),Some(&selected)).await});
+        tokio::time::timeout(Duration::from_secs(5),poll_seen).await.unwrap().unwrap();
+        let permit=gate.try_lock().expect("Correction waited for native task completion");paused.store(true,Ordering::SeqCst);drop(permit);release.send(()).unwrap();
+        assert_eq!(operation.await.unwrap().unwrap()["native_reply"],true);server.await.unwrap();
+        assert!(crate::live_dispatch::read(&next,&input).unwrap().unwrap().summary(&input).needs_review,"Transport success alone must not release the write hold");
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

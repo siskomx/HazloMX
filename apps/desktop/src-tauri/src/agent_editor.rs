@@ -375,12 +375,8 @@ pub fn validate_report(input: &Input, report: &serde_json::Value) -> Result<(), 
         .map_err(|error| error.message().into())
 }
 
-pub(crate) fn run(
-    input: &Input,
-    connection: &Connection,
-    stage: &Path,
-    cancel: &AtomicBool,
-) -> Result<(), String> {
+pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,cancel:&AtomicBool,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
+    let dispatch=Some(dispatch);
     input.validate()?;
     connection
         .validate_for(&input.before)
@@ -390,13 +386,14 @@ pub(crate) fn run(
         .build()
         .map_err(|_| "No se pudo iniciar la conexión al editor.")?;
     let receipt = if input.save {
-        runtime.block_on(save(connection,input.job_id,&input.before,cancel))
-    } else { runtime.block_on(apply(
+        runtime.block_on(save_with_dispatch(connection,input.job_id,&input.before,cancel,dispatch))
+    } else { runtime.block_on(apply_with_dispatch(
             connection,
             input.job_id,
             &input.before,
             &input.source,
             cancel,
+            dispatch,
         )) }.map_err(|error| error.message())?;
     let mut report = serde_json::to_value(receipt).map_err(|_| Failure::Uncertain.message())?;
     report["after"]
@@ -453,6 +450,9 @@ async fn exchange<T: DeserializeOwned>(
     cancel: &AtomicBool,
     timeout: Duration,
 ) -> Result<T, Failure> {
+    exchange_with_dispatch(connection,request,mutation,cancel,timeout,None).await
+}
+async fn exchange_with_dispatch<T:DeserializeOwned>(connection:&Connection,request:serde_json::Value,mutation:bool,cancel:&AtomicBool,timeout:Duration,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<T,Failure>{
     connection.validate()?;
     if cancel.load(Ordering::SeqCst) {
         return Err(Failure::Refused);
@@ -463,34 +463,27 @@ async fn exchange<T: DeserializeOwned>(
     if frame.len() > FRAME_LIMIT {
         return Err(Failure::Refused);
     }
-    let mut sent = false;
-    let attempt = async {
-        let mut pipe = ClientOptions::new()
-            .open(&connection.pipe)
-            .map_err(|_| ())?;
-        // Once a write is attempted, partial delivery or lost replies cannot prove nonexecution.
-        sent = mutation;
-        pipe.write_all(&frame).await.map_err(|_| ())?;
-        let mut bytes = Vec::new();
-        (&mut pipe)
-            .take((FRAME_LIMIT + 1) as u64)
-            .read_to_end(&mut bytes)
-            .await
-            .map_err(|_| ())?;
-        if bytes.len() > FRAME_LIMIT {
-            return Err(());
-        }
-        serde_json::from_slice::<Reply<T>>(&bytes).map_err(|_| ())
+    let mut pipe=ClientOptions::new().open(&connection.pipe).map_err(|_|Failure::Refused)?;
+    let mut transfer={
+        let permit=dispatch.map(|d|d.enter()).transpose().map_err(|_|Failure::Refused)?;
+        let transfer=tokio::spawn(async move {
+            pipe.write_all(&frame).await.map_err(|_|())?;
+            let mut bytes=Vec::new();
+            (&mut pipe).take((FRAME_LIMIT+1) as u64).read_to_end(&mut bytes).await.map_err(|_|())?;
+            if bytes.len()>FRAME_LIMIT{return Err(());}
+            Ok::<Vec<u8>,()>(bytes)
+        });
+        drop(permit);
+        transfer
     };
-    let cancelled = async {
-        while !cancel.load(Ordering::SeqCst) {
-            tokio::time::sleep(Duration::from_millis(20)).await;
-        }
+    let sent=mutation;
+    let cancelled=async {while !cancel.load(Ordering::SeqCst){tokio::time::sleep(Duration::from_millis(20)).await;}};
+    let bytes=tokio::select! {
+        _=cancelled=>None,
+        result=tokio::time::timeout(timeout,&mut transfer)=>result.ok().and_then(Result::ok).and_then(Result::ok),
     };
-    let reply = tokio::select! {
-        _ = cancelled => None,
-        result = tokio::time::timeout(timeout, attempt) => result.ok().and_then(Result::ok),
-    };
+    transfer.abort();
+    let reply=bytes.and_then(|bytes|serde_json::from_slice::<Reply<T>>(&bytes).ok());
     let failure = if sent {
         Failure::Uncertain
     } else {
@@ -539,6 +532,9 @@ pub async fn apply(
     source: &str,
     cancel: &AtomicBool,
 ) -> Result<Receipt, Failure> {
+    apply_with_dispatch(connection,job,before,source,cancel,None).await
+}
+async fn apply_with_dispatch(connection:&Connection,job:Uuid,before:&Observation,source:&str,cancel:&AtomicBool,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<Receipt,Failure>{
     before.validate()?;
     if job.is_nil()
         || before.instance_id != connection.instance_id
@@ -547,20 +543,23 @@ pub async fn apply(
     {
         return Err(Failure::Refused);
     }
-    let receipt:Receipt = exchange(connection, json!({"action":"apply","job_id":job,
+    let receipt:Receipt = exchange_with_dispatch(connection, json!({"action":"apply","job_id":job,
         "instance_id":before.instance_id,"document_token":before.document_token,"version":before.version,
-        "state_sha256":before.state_sha256,"source":source}), true, cancel, Duration::from_secs(15)).await?;
+        "state_sha256":before.state_sha256,"source":source}), true, cancel, Duration::from_secs(15),dispatch).await?;
     receipt.validate(job, before, source)?;
     Ok(receipt)
 }
 
 // A save is a separately approved effect; it never changes source or supplies a path.
 pub async fn save(connection:&Connection,job:Uuid,before:&Observation,cancel:&AtomicBool) -> Result<Receipt,Failure> {
+    save_with_dispatch(connection,job,before,cancel,None).await
+}
+async fn save_with_dispatch(connection:&Connection,job:Uuid,before:&Observation,cancel:&AtomicBool,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<Receipt,Failure>{
     connection.validate_for(before)?;
     if job.is_nil() || !before.dirty { return Err(Failure::Refused); }
-    let receipt:Receipt=exchange(connection,json!({"action":"save","job_id":job,
+    let receipt:Receipt=exchange_with_dispatch(connection,json!({"action":"save","job_id":job,
         "instance_id":before.instance_id,"document_token":before.document_token,"version":before.version,
-        "state_sha256":before.state_sha256}),true,cancel,Duration::from_secs(15)).await?;
+        "state_sha256":before.state_sha256}),true,cancel,Duration::from_secs(15),dispatch).await?;
     receipt.validate_operation(job,before,&before.source,true)?;
     Ok(receipt)
 }
@@ -979,6 +978,55 @@ pub(crate) mod tests {
         worker.await.unwrap();
         assert_eq!(result.after.source, source);
         assert!(result.after.source.contains("unsaved note"));
+    }
+
+    #[tokio::test(flavor="multi_thread",worker_threads=2)]
+    async fn live_chat_correction_fences_pipe_dispatch_and_preserves_inflight_reply() {
+        use crate::{jobs::Workflow,project::{Project,Phase,OperationInput},tasks::Request};
+        use std::{future::Future,sync::atomic::AtomicUsize};
+        for saving in [false,true] {for scenario in ["before","during","stop"] {
+            let root=std::env::temp_dir().join(format!("hazlo-agent-correction-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();
+            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+            let workflow=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap());workflow.select_project(Project::create(&root).unwrap()).unwrap();
+            let selected=workflow.view().unwrap().project.unwrap();let task=workflow.task_state().unwrap().unwrap().active;
+            workflow.task_request(selected.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve the sketch and make the light blink faster".into(),history:json!({"version":1,"turns":[]}).to_string(),correction_of:None}).unwrap();
+            let task=workflow.task_state().unwrap().unwrap().active;
+            let (connection,mut server)=fixture();let mut input=job_fixture();input.before=observation(connection.instance_id);input.save=saving;input.source=if saving{input.before.source.clone()}else{input.before.source.replace("1000","500")};let id=input.job_id;
+            let pending=workflow.propose_live_agent(selected.clone(),input.clone(),connection).unwrap();let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();
+            let correction="Keep my manual changes; make the next part smaller";
+            let request=||Request::Message{id:task.id,revision:task.revision,text:correction.into(),history:json!({"version":1,"turns":[{"role":"user","content":correction}]}).to_string(),correction_of:Some(id)};
+            if scenario=="before" {workflow.task_request(selected.clone(),request()).unwrap();}
+            let (ready,ready_rx)=tokio::sync::oneshot::channel();let (received,received_rx)=tokio::sync::oneshot::channel();let (release,release_rx)=tokio::sync::oneshot::channel();let mut release=Some(release);
+            let writes=Arc::new(AtomicUsize::new(0));let observed=writes.clone();let native=input.clone();
+            let server_task=tokio::spawn(async move {
+                {
+                    let mut connecting=Box::pin(server.connect());let mut ready=Some(ready);
+                    std::future::poll_fn(|cx|{let result=connecting.as_mut().poll(cx);if let Some(signal)=ready.take(){let _=signal.send(());}result}).await.unwrap();
+                }
+                let mut frame=Vec::new();
+                loop {let mut byte=[0];let count=server.read(&mut byte).await.unwrap();if count==0{return;}
+                    if byte[0]==b'\n'{break;}frame.push(byte[0]);assert!(frame.len()<FRAME_LIMIT);}
+                let request:serde_json::Value=serde_json::from_slice(&frame).unwrap();assert_eq!(request["request"]["job_id"],id.to_string());
+                observed.fetch_add(1,Ordering::SeqCst);let _=received.send(());let _=release_rx.await;
+                let mut result=report_fixture(&native);result["after"]["source"]=json!(native.source);
+                let _=server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":result})).unwrap()).await;
+            });
+            ready_rx.await.unwrap();let runner=workflow.clone();let worker=tokio::task::spawn_blocking(move||runner.execute(dispatch));
+            if scenario!="before" {
+                tokio::time::timeout(Duration::from_secs(5),received_rx).await.unwrap().unwrap();
+                let started=std::time::Instant::now();workflow.task_request(selected.clone(),request()).unwrap();assert!(started.elapsed()<Duration::from_secs(1),"Correction waited for the native reply");
+                if scenario=="stop" {workflow.cancel(id).unwrap();}else{release.take().unwrap().send(()).unwrap();}
+            }
+            let done=tokio::time::timeout(Duration::from_secs(5),worker).await.unwrap().unwrap().unwrap();
+            assert_eq!(done.snapshot.phase,if scenario=="during"{Phase::Completed}else{Phase::Cancelled});
+            assert_eq!(writes.load(Ordering::SeqCst),usize::from(scenario!="before"));drop(release);server_task.await.unwrap();
+            let summary=workflow.native_recovery().unwrap();assert_eq!(summary[0].needs_review,scenario=="stop");assert_eq!(summary[0].not_dispatched,usize::from(scenario=="before"));
+            assert_eq!(workflow.task_state().unwrap().unwrap().active.latest_correction.unwrap().text,correction);
+            assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+            assert_eq!(matches!(done.snapshot.input,OperationInput::LiveAgent(ref i) if i.receipt_sha256.is_some()),scenario=="during");
+            drop(workflow);let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,done.snapshot.phase);assert_eq!(project.native_recovery(None).unwrap()[0].needs_review,scenario=="stop");drop(project);
+            std::fs::remove_dir_all(root).unwrap();
+        }}
     }
 
     #[tokio::test]

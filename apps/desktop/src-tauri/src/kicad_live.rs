@@ -198,13 +198,13 @@ fn inspect_with_worker(
     crate::project::valid_location(board).map_err(|_|"Selecciona una PCB local válida.")?;
     let job = Uuid::new_v4();
     let request=serde_json::json!({"action":"inspect","job_id":job,"board_path":board});
-    let bytes=invoke(worker,&request,connection,profile,cancel,None)?;
+    let bytes=invoke(worker,&request,connection,profile,cancel,None,None)?;
     parse_observation(&bytes,job).map_err(|_|"KiCad no confirmó el estado de la PCB abierta. No se sustituirá por el archivo guardado.".into())
 }
 
 fn invoke(
     worker:&[u8], request:&serde_json::Value, connection:&Connection, profile:&Path,
-    cancel:Arc<AtomicBool>, verifier:Option<&Path>,
+    cancel:Arc<AtomicBool>, verifier:Option<&Path>, dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>,
 ) -> Result<Vec<u8>,String> {
     use crate::{kicad_project as source, process::{run_owned_input, StopReason}};
     const FAILED: &str = "KiCad no confirmó el estado de la PCB abierta. No se sustituirá por el archivo guardado.";
@@ -251,8 +251,10 @@ fn invoke(
     if let Some(path)=verifier {
         variables.insert("HAZLOMEXA_PCB_VERIFIER".into(),path.as_os_str().to_owned());
     }
-    let output = run_owned_input(&executable, &[], profile, &variables, cancel.clone(),
-        Duration::from_secs(30), &request).map_err(|_| FAILED)?;
+    let output=if let Some(dispatch)=dispatch {
+        let permit=dispatch.enter()?;
+        crate::process::run_owned_input_permitted(&executable,&[],profile,&variables,cancel.clone(),Duration::from_secs(30),(&request,permit))
+    } else {run_owned_input(&executable,&[],profile,&variables,cancel.clone(),Duration::from_secs(30),&request)}.map_err(|_|FAILED)?;
     if cancel.load(Ordering::SeqCst) || output.reason == StopReason::Cancelled {
         return Err("Lectura nativa cancelada.".into());
     }
@@ -269,9 +271,8 @@ pub(crate) struct Binding {
     pub board:std::path::PathBuf,
     pub connection:Connection,
 }
-pub(crate) fn run(
-    input:&Input, binding:&Binding, stage:&Path, profile:&Path, cancel:Arc<AtomicBool>,
-) -> Result<(),String> {
+pub(crate) fn run_gated(input:&Input,binding:&Binding,stage:&Path,profile:&Path,cancel:Arc<AtomicBool>,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
+    let dispatch=Some(dispatch);
     input.validate()?;
     binding.connection.validate()?;
     crate::project::valid_location(&binding.board).map_err(|_|"La PCB seleccionada cambió.")?;
@@ -289,7 +290,7 @@ pub(crate) fn run(
         request["destination"]=serde_json::json!(stage.join("Board.kicad_pcb"));
     }
     let failed="KiCad no confirmó el resultado de la edición. Vuelve a leer el documento antes de continuar; no repitas la operación a ciegas.";
-    let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(&verifier))
+    let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(&verifier),dispatch)
         .map_err(|_|failed)?;
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]

@@ -48,6 +48,16 @@ try {
     if(window.nativeOnNext){task().revision++;task().references.push({id:crypto.randomUUID(),name:"Observación nativa.json",bytes:100,sha256:"e".repeat(64),image:false,shared_with:[],parents:task().references.map(r=>r.id)});window.nativeOnNext=false;}
     snapshot.chat={provider:task().provider,id:crypto.randomUUID(),project_id:db.project[0],sequence:1,busy:false,cancelled:false,text:"La tarea sigue guardada; podemos continuar.",error:null};
     if(window.startBatchOnNext){window.startBatchOnNext=false;snapshot.job={snapshot:{schema_version:17,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,native_tools_version:1,job_id:crypto.randomUUID(),connection_id:crypto.randomUUID(),program:"drawing",catalog_sha256:"a".repeat(64),description:"Owned correction batch",calls:[{tool:"native_edit",arguments:{value:7}},{tool:"native_edit",arguments:{value:99}}],readback:{tool:"native_state",arguments:{}},guard:{call:{tool:"native_state",arguments:{}},result_sha256:"b".repeat(64)}},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
+    if(window.startTypedOnNext){
+     const kind=window.startTypedOnNext;window.startTypedOnNext=null;
+     const inputs={
+      agent:{live_agent_version:1,before:{name:"Owned.ino",source:"void setup() {}",dirty:true},source:"void setup() { delay(1); }"},
+      pcb:{live_pcb_version:1,board_name:"Owned.kicad_pcb",units:"mm",before:{components:[]},movement:{uuid:"owned-component",reference:"J1",expected_x_mm:0,expected_y_mm:0,x_mm:1,y_mm:0}},
+      drawing:{live_drawing_version:1,units:"mm",before:{title:"Owned.dxf"},operation:{action:"circle",diameter:12,center:[0,0]}},
+      cad:{live_cad_version:1,document_name:"Owned",before:[],operations:[{action:"edit_object",obj_name:"Box",obj_properties:{Length:"12 mm"}}]},
+     };
+     snapshot.job={snapshot:{schema_version:{agent:15,pcb:14,drawing:16,cad:13}[kind],project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,job_id:crypto.randomUUID(),description:"Owned typed correction",...inputs[kind]},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};
+    }
     if(window.startPublicOnNext){window.startPublicOnNext=false;snapshot.job={snapshot:{schema_version:18,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,public_document_version:1,job_id:crypto.randomUUID(),url:"https://example.org/manual?language=en",purpose:"Check the official public manual"},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
    }
    else if(command==="approve_operation"){
@@ -167,5 +177,22 @@ try {
  await page.locator("#cancel-running:enabled").waitFor();await page.locator("#cancel-running").click();
  await page.waitForFunction(()=>window.calls.some(c=>c.command==="cancel_job"));
  await page.evaluate(()=>window.finishOwnedBatch());await page.locator("#new-chat:enabled").waitFor();
+ for(const kind of ["agent","pcb","drawing","cad"]){
+  await page.evaluate(kind=>window.startTypedOnNext=kind,kind);
+  await page.locator("#prompt").fill("Prepare the owned live "+kind+" change");await page.locator("#send").click();
+  await page.locator("#approve:enabled").waitFor();await page.locator("#approve").click();
+  await page.getByRole("button",{name:"Enviar corrección",exact:true}).waitFor();await page.locator("#cancel-running:enabled").waitFor();
+  const callsBefore=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);
+  const cancelsBefore=await page.evaluate(()=>window.calls.filter(c=>c.command==="cancel_job").length);
+  const text="Preserve the valid work and my edits in "+kind;
+  await page.locator("#prompt").fill(text);await page.locator("#send").click();
+  await page.waitForFunction(text=>{const db=JSON.parse(localStorage.getItem("owned-task-fixture"));return db.records[db.active].latest_correction?.text===text;},text);
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),callsBefore);
+  await page.locator("#cancel-running:enabled").waitFor();await page.locator("#cancel-running").click();
+  await page.waitForFunction(count=>window.calls.filter(c=>c.command==="cancel_job").length===count,cancelsBefore+1);
+  await page.evaluate(()=>window.finishOwnedBatch());await page.locator("#new-chat:enabled").waitFor();
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),callsBefore);
+  assert.match(await page.locator("#conversation").innerText(),new RegExp(text));
+ }
  console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch and withheld raw input. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}

@@ -263,6 +263,9 @@ pub fn run_owned_console(executable:&Path,arguments:&[OsString],cwd:&Path,variab
 pub(crate) fn run_owned_permitted(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration,mode:(bool,Option<MutexGuard<'_,()>>))->io::Result<ProcessOutput> {
     run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(&[],mode.0,mode.1))
 }
+pub(crate) fn run_owned_input_permitted(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration,mode:(&[u8],MutexGuard<'_,()>))->io::Result<ProcessOutput>{
+    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(mode.0,false,Some(mode.1)))
+}
 fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration,mode:(&[u8],bool,Option<MutexGuard<'_,()>>))->io::Result<ProcessOutput> {
     let (input,console_mode,permit)=mode;
     if input.len() > LOG_LIMIT {
@@ -650,6 +653,16 @@ pub(crate) mod tests {
         let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();assert!(!is_alive(child));
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
         fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn stdin_worker_dispatch_permit_releases_before_waiting_for_the_owned_process() {
+        let root=workspace();let gate=Arc::new(std::sync::Mutex::new(()));let cancel=Arc::new(AtomicBool::new(false));
+        let worker_root=root.clone();let worker_gate=gate.clone();let worker_cancel=cancel.clone();
+        let worker=thread::spawn(move||{let permit=worker_gate.lock().unwrap();run_owned_input_permitted(probe(),&["tree".into()],&worker_root,&variables(),worker_cancel,Duration::from_secs(10),(b"PRIVATE_STDIN_SENTINEL",permit)).unwrap()});
+        let started=Instant::now();while !root.join("child.pid").exists()&&started.elapsed()<Duration::from_secs(5){thread::sleep(Duration::from_millis(10));}
+        assert!(root.join("child.pid").exists());let permit=gate.try_lock().expect("Correction must not wait for the stdin worker");cancel.store(true,Ordering::SeqCst);drop(permit);
+        assert_eq!(worker.join().unwrap().reason,StopReason::Cancelled);let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();assert!(!is_alive(child));
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

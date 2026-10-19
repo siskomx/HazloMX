@@ -45,7 +45,8 @@ let program: Program = "planning", provider: Provider = "codex";
 let appliedProgramRoute: string | undefined;
 let commandBusy = false, revision = 0, newSession = true;
 let correctionBusy=false,cancellationBusy=false;
-function canCorrect(){return !!state.tasks && !!state.job?.busy && !!state.job.snapshot.input.native_tools_version && !state.chat?.busy && !historyLoading && !correctionBusy && !cancellationBusy;}
+function correctableInput(input:Snapshot["input"]|undefined){return !!input && !!(input.native_tools_version || input.live_agent_version || input.live_cad_version || input.live_pcb_version || input.live_drawing_version);}
+function canCorrect(){return !!state.tasks && !!state.job?.busy && correctableInput(state.job.snapshot.input) && !state.chat?.busy && !historyLoading && !correctionBusy && !cancellationBusy;}
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
 let historyLoading = false, durableReady = false, storageVersion = 0;
@@ -455,7 +456,7 @@ function render() {
   $("approve").textContent = `Aprobar y pedir revisión a ${providerNames[provider]}`;
   if(state.job?.snapshot.input.public_document_version)$("approve").textContent="Permitir esta consulta pública";
   $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;
-  $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = cancellationBusy || (commandBusy && !(state.job?.snapshot.input.native_tools_version || state.job?.snapshot.input.public_document_version));
+  $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = cancellationBusy || (commandBusy && !(correctableInput(state.job?.snapshot.input) || state.job?.snapshot.input.public_document_version));
   const job = state.job;
   $("job-status").textContent = !job ? "" : (job.error ? job.snapshot.input.native_tools_version ? "El programa informó un bloqueo. Los detalles se conservan en el historial." : job.error : undefined) ?? (job.snapshot.phase === "completed" ? job.snapshot.input.native_tools_version ? "El programa respondió y Hazlo conservó su lectura final. Revisa el resultado nativo." : job.snapshot.input.live_drawing_version ? job.snapshot.input.operation.action === "export_dxf" ? "DXF exportado y verificado. El dibujo abierto conserva su estado y sus cambios sin guardar." : "Cambio leído en el dibujo abierto de CADCraft. Puedes deshacerlo allí; todavía no se guardó ni exportó." : job.snapshot.input.live_agent_version ? job.snapshot.input.save ? "Arduino Agent confirmó el guardado del código aprobado y su estado sin cambios pendientes." : "Cambio leído en el sketch abierto de Arduino Agent. El guardado lo gestiona el IDE." : job.snapshot.input.live_pcb_version ? job.snapshot.input.export_copy ? "PCB exportada y verificada. El documento abierto conserva sus cambios sin guardar." : "Cambio leído en la PCB abierta de KiCad. El archivo todavía no se guardó." : job.snapshot.input.live_cad_version ? job.snapshot.input.operations[0]?.action === "save_as" ? "FreeCAD confirmó el guardado. El informe conserva el nombre y la huella del archivo en ese momento." : job.snapshot.input.operations[0]?.action === "export_step" ? "STEP exportado y verificado. El documento abierto sigue sin cambios; exportar no guarda el modelo nativo." : "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
   renderConnections(busy || !!active); renderQuestion(); renderHistory(); renderLegacy();
@@ -726,8 +727,10 @@ $("approve").onclick = () => void action(async () => {
   if (token === revision && state.job?.snapshot.input.job_id === jobId) apply({ ...state, job });
 });
 for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => {
-  if(id==="cancel-running" && state.job?.busy && (state.job.snapshot.input.native_tools_version || state.job.snapshot.input.public_document_version)){
-    if(cancellationBusy)return;cancellationBusy=true;resultReview=undefined;render();
+  if(id==="cancel-running" && state.job?.busy && (correctableInput(state.job.snapshot.input) || state.job.snapshot.input.public_document_version)){
+    if(cancellationBusy)return;cancellationBusy=true;
+    if(state.job.snapshot.input.native_tools_version || state.job.snapshot.input.public_document_version)resultReview=undefined;
+    render();
     void invoke<Job>("cancel_job",{jobId:state.job.snapshot.input.job_id}).then(job=>{if(state.job?.snapshot.input.job_id===job.snapshot.input.job_id)apply({...state,job});}).catch(error).finally(()=>{cancellationBusy=false;render();});return;
   }
   void action(async () => {

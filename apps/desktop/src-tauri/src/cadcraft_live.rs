@@ -387,11 +387,14 @@ fn stop(cancel: &AtomicBool) -> Result<(), String> {
 }
 impl Session {
     fn call(&mut self, method: &str, params: Value, cancel: &AtomicBool) -> Result<Value, String> {
+        self.call_with_dispatch(method,params,cancel,None)
+    }
+    fn call_with_dispatch(&mut self,method:&str,params:Value,cancel:&AtomicBool,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<Value,String>{
         if self.failed {
             return Err("La conexión terminó. Vuelve a conectar el dibujo desde Conexiones y relee su estado. No repitas una escritura incierta.".into());
         }
-        let result = self.call_inner(method, params, cancel);
-        if result.is_err() {
+        let result = self.call_inner(method, params, cancel,dispatch);
+        if result.is_err() && dispatch.is_none_or(|d|d.was_dispatched()) {
             self.failed = true;
             self.binding = None;
             let _ = self.stream.shutdown(std::net::Shutdown::Both);
@@ -403,6 +406,7 @@ impl Session {
         method: &str,
         params: Value,
         cancel: &AtomicBool,
+        dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>,
     ) -> Result<Value, String> {
         stop(cancel)?;
         if unsafe { WaitForSingleObject(self.process.as_raw_handle(), 0) } != WAIT_TIMEOUT {
@@ -416,7 +420,10 @@ impl Session {
             return Err(INVALID.into());
         }
         request.push(b'\n');
-        self.stream.write_all(&request).map_err(|_| INVALID)?;
+        {
+            let _permit=dispatch.map(|d|d.enter()).transpose()?;
+            self.stream.write_all(&request).map_err(|_| INVALID)?;
+        }
         let deadline = Instant::now() + Duration::from_secs(8);
         let mut frame = Vec::new();
         loop {
@@ -612,6 +619,12 @@ pub fn run(
     profile: &Path,
     cancel: Arc<AtomicBool>,
 ) -> Result<(), String> {
+    run_impl(input,connection,stage,profile,cancel,None)
+}
+pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel:Arc<AtomicBool>,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
+    run_impl(input,connection,stage,profile,cancel,Some(dispatch))
+}
+fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel:Arc<AtomicBool>,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<(),String>{
     input.validate()?;
     let mut session = connection.0.lock().map_err(|_| INVALID)?;
     let (binding, before) = session.binding.take().ok_or(INVALID)?;
@@ -619,10 +632,11 @@ pub fn run(
         return Err(INVALID.into());
     }
     let (command, params) = input.command();
-    let result = session.call(
+    let result = session.call_with_dispatch(
         "engine.execute_checked",
         json!({"expected":binding,"command":command,"params":params}),
         &cancel,
+        dispatch,
     )?;
     let exported_document = if matches!(input.operation, Operation::ExportDxf {}) {
         Some(export_dxf(
@@ -1248,5 +1262,27 @@ pub(crate) mod tests {
             .call("drawing.inspect", json!({}), &AtomicBool::new(false))
             .is_err());
         task.join().unwrap();
+    }
+    #[test]
+    fn socket_dispatch_fence_keeps_unsent_connection_and_releases_during_reply_wait() {
+        use std::io::BufRead;
+        let root=std::env::temp_dir().join(format!("hazlo-drawing-fence-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        let listener=std::net::TcpListener::bind((Ipv4Addr::LOCALHOST,0)).unwrap();let client=TcpStream::connect(listener.local_addr().unwrap()).unwrap();let (mut server,_)=listener.accept().unwrap();
+        let process=server_process(&client,&std::env::current_exe().unwrap()).unwrap();client.set_read_timeout(Some(Duration::from_millis(50))).unwrap();
+        let mut session=Session{stream:client,process,runtime_directory:PathBuf::new(),_files:vec![],instance:Uuid::new_v4(),next:0,failed:false,binding:None};
+        let input=crate::project::OperationInput::LiveDrawing(fixture_input());let gate=Arc::new(Mutex::new(()));
+        let first=crate::live_dispatch::Dispatch::start(&root,&input,gate.clone(),Arc::new(AtomicBool::new(true)),Arc::new(AtomicBool::new(false))).unwrap();
+        assert!(session.call_with_dispatch("engine.execute_checked",json!({}),&AtomicBool::new(false),Some(&first)).is_err());assert!(!session.failed);
+        server.set_nonblocking(true).unwrap();assert_eq!(server.peek(&mut [0]).unwrap_err().kind(),std::io::ErrorKind::WouldBlock);server.set_nonblocking(false).unwrap();
+        let next=root.join("next");std::fs::create_dir(&next).unwrap();let paused=Arc::new(AtomicBool::new(false));
+        let dispatch=crate::live_dispatch::Dispatch::start(&next,&input,gate.clone(),paused.clone(),Arc::new(AtomicBool::new(false))).unwrap();let selected=dispatch.clone();
+        let (sent,received)=std::sync::mpsc::channel();let (release,wait)=std::sync::mpsc::channel();
+        let server_task=std::thread::spawn(move||{let mut reader=std::io::BufReader::new(&mut server);let mut frame=String::new();reader.read_line(&mut frame).unwrap();let request:Value=serde_json::from_str(&frame).unwrap();sent.send(()).unwrap();wait.recv().unwrap();let reply=json!({"id":request["id"],"ok":true,"result":{"accepted":true}});reader.get_mut().write_all(format!("{reply}\n").as_bytes()).unwrap();});
+        let worker=std::thread::spawn(move||{let value=session.call_with_dispatch("engine.execute_checked",json!({}),&AtomicBool::new(false),Some(&selected)).unwrap();assert!(!session.failed);value});
+        received.recv_timeout(Duration::from_secs(5)).unwrap();let permit=gate.try_lock().expect("Correction must not wait for the native reply");paused.store(true,Ordering::SeqCst);drop(permit);
+        release.send(()).unwrap();assert_eq!(worker.join().unwrap()["accepted"],true);server_task.join().unwrap();
+        assert!(crate::live_dispatch::read(&next,&input).unwrap().unwrap().summary(&input).needs_review,"An acknowledgment alone is not a checked native result");
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

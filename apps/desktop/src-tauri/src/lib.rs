@@ -9,6 +9,7 @@ pub mod tasks;
 pub mod public_document;
 #[cfg(windows)]
 pub mod native_journal;
+mod live_dispatch;
 #[cfg(windows)]
 pub mod native_checks;
 

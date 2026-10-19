@@ -237,7 +237,7 @@ impl Workflow {
         let store=crate::tasks::Store::new(&project).map_err(|e|e.to_string())?;
         let gate=if let Some((job_id,binding))=&correction {
             if store.binding().map_err(|e|e.to_string())?.as_ref()!=Some(binding){return Err("La tarea cambió; vuelve a leerla antes de corregir.".into());}
-            let job=state.job.as_ref().filter(|j|j.view.snapshot.input.job_id()==*job_id && matches!(j.view.snapshot.input,OperationInput::NativeTools(_)) && j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==binding.id)).ok_or("La operación nativa cambió; conserva tu corrección y vuelve a leer el estado.")?;
+            let job=state.job.as_ref().filter(|j|j.view.snapshot.input.job_id()==*job_id && j.view.snapshot.input.native_program().is_some() && j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==binding.id)).ok_or("La operación nativa cambió; conserva tu corrección y vuelve a leer el estado.")?;
             Some(job.dispatch_gate.clone())
         }else{None};
         let permit=gate.as_ref().map(|g|g.lock().map_err(|_|"No se pudo confirmar la pausa de despacho.")).transpose()?;
@@ -2574,6 +2574,9 @@ impl Workflow {
             let profile = self
                 .profiles
                 .join(dispatch.snapshot.input.job_id().to_string());
+            let live_dispatch=if matches!(&dispatch.snapshot.input,OperationInput::LiveCad(_)|OperationInput::LiveAgent(_)|OperationInput::LivePcb(_)|OperationInput::LiveDrawing(_)) {
+                Some(crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone())?)
+            }else{None};
             if dispatch.snapshot.audit.as_ref().is_some_and(|a|a.native_attempted.is_some()) {
                 dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);
                 // Durable adapter-entry fact, not proof that bytes reached the native program.
@@ -2596,19 +2599,19 @@ impl Workflow {
                     crate::public_document::run(input,&stage.path,dispatch.cancelled.clone())?;
                 }
                 OperationInput::LiveDrawing(input) => {
-                    crate::cadcraft_live::run(input,dispatch.live_drawing.as_ref().ok_or("La conexión CADCraft venció.")?,
-                        &stage.path,&profile,dispatch.cancelled.clone())?;
+                    crate::cadcraft_live::run_gated(input,dispatch.live_drawing.as_ref().ok_or("La conexión CADCraft venció.")?,
+                        &stage.path,&profile,dispatch.cancelled.clone(),live_dispatch.as_ref().unwrap())?;
                 }
                 OperationInput::LiveAgent(input) => {
-                    crate::agent_editor::run(input,dispatch.live_agent.as_ref().ok_or("La conexión al sketch venció.")?,
-                        &stage.path,&dispatch.cancelled)?;
+                    crate::agent_editor::run_gated(input,dispatch.live_agent.as_ref().ok_or("La conexión al sketch venció.")?,
+                        &stage.path,&dispatch.cancelled,live_dispatch.as_ref().unwrap())?;
                 }
                 OperationInput::LivePcb(input) => {
-                    crate::kicad_live::run(input,dispatch.live_pcb.as_ref().ok_or("La conexión PCB venció.")?,
-                        &stage.path,&profile,dispatch.cancelled.clone())?;
+                    crate::kicad_live::run_gated(input,dispatch.live_pcb.as_ref().ok_or("La conexión PCB venció.")?,
+                        &stage.path,&profile,dispatch.cancelled.clone(),live_dispatch.as_ref().unwrap())?;
                 }
                 OperationInput::LiveCad(input) => {
-                    crate::cadpilot_live::run(input, &stage.path, &dispatch.cancelled)?;
+                    crate::cadpilot_live::run_gated(input, &stage.path, &dispatch.cancelled,live_dispatch.as_ref().unwrap())?;
                 }
                 OperationInput::Cadpilot(input) => {
                     cadpilot::run(
@@ -2719,6 +2722,11 @@ impl Workflow {
                         dispatch.cancelled.clone(),
                     )?;
                 }
+            }
+            if let Some(live_dispatch)=live_dispatch {
+                let mut checked=dispatch.snapshot.input.clone();checked.retain_receipt(&stage.path).map_err(|_|"No se pudo comprobar el recibo nativo.")?;
+                dispatch.project.validate_outputs(&stage.path,&checked).map_err(|_|"El resultado nativo sigue pendiente de comprobación.")?;
+                live_dispatch.complete(&checked)?;
             }
             Ok(stage)
         })();
