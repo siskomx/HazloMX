@@ -139,7 +139,7 @@ def certified_view(data, catalog):
     raise ValueError('GUI document state is not yet supported by the selected-copy adapter')
 
 
-def document(path):
+def document(path, *, headless=False):
     if path.stat().st_size > 32 * 1024 * 1024:
         raise ValueError("Document exceeds 32 MiB")
     entries = {}
@@ -191,6 +191,6 @@ def document(path):
             raise ValueError("Document references an uncaptured resource")
         if node.tag == 'Link' and node.get('value', ''):
             raise ValueError("Linked documents are not certified")
-    if 'guidocument.xml' in entries:
+    if 'guidocument.xml' in entries and not headless:
         certified_view(entries['guidocument.xml'], catalog)
     return catalog
