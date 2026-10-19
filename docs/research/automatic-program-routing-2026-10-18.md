@@ -22,3 +22,11 @@ A fresh candidate app and local project were opened through the Windows UI with 
 In one user turn, the agent read Hazlo's capabilities, selected TShark, received the missing-installation result, then selected bundled Rea and requested its native `current_document` and `inspect_pcap_client` schemas. The visible chat followed both program changes and ended with Rea connected. The agent researched public sources and kept physical compatibility and offline behavior unverified. It did not analyze a nonexistent artifact, download a tool, propose a device operation or claim a repair.
 
 The retained conversation has one user message and one assistant response. Raw provider calls, local paths and receipts remain in ignored evidence folders. No robot, router, firmware, capture driver or physical port was changed. Actual cloud-free robot operation and the optional-download setup flow remain outside this observation.
+
+## Installer and local upgrade
+
+The Windows x64 installer built from `969bd8f` passed with all 6,769 tracked build inputs unchanged and zero builder-profile path matches in the app and helper. Its SHA-256 is `2e89e4bff8b269a45af4d9b42f6cc853314687af32c111bc2669bf898ea95abc` (53,076,630 bytes). The packaged helper passed its 39-tool protocol check, including the selection tool in its catalog.
+
+The current-user upgrade succeeded. Installed app/helper hashes and checked bundled Rea files matched the package, and all 13 checked saved project/connection files retained their hashes. Optional diagnostic packages were not bundled. The installed window opened with the former program-selection chat button removed, and the successful candidate conversation reopened from its saved project.
+
+The clean guest check for this particular build remains pending: preparation refused to start with 1,341 MiB free against its 3,072 MiB requirement. The preceding diagnostic build passed its clean guest lifecycle check, but that does not establish a guest pass for this installer. This installer is retained locally; no new public release was published.
