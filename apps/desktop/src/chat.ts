@@ -265,7 +265,7 @@ function apply(next: DesktopSnapshot) {
   // A chat view carries a project UUID, not its folder; copied projects can share that UUID.
   if (projectChanged && chat) answeredChat = chat.id;
   if (!historyLoading && chat && chat.provider === provider && !chat.busy && chat.id !== answeredChat && chat.project_id === state.project?.[0]) {
-    if (chat.text) turns.push({ role: "assistant", content: chat.text });
+    if (chat.text) turns.push({ role: "assistant", content: chat.text, reply_id:chat.id });
     else if (chat.cancelled) turns.push({ role: "assistant", content: "Conversación detenida." });
     if (chat.error) error(chat.error);
     answeredChat = chat.id; persist();

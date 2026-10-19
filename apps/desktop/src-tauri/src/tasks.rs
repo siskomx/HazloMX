@@ -74,6 +74,37 @@ pub struct Correction {
     pub revision: u64,
     pub text: String,
 }
+#[derive(Clone,PartialEq,Eq,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReplySource {
+    pub id:Uuid,
+    pub sha256:String,
+    pub preview_sha256:Option<String>,
+}
+impl Reference {
+    pub(crate) fn reply_source(&self)->ReplySource{ReplySource{id:self.id,sha256:self.sha256.clone(),preview_sha256:self.preview_sha256.clone()}}
+}
+#[derive(Clone,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReplyReceipt {
+    pub id:Uuid,
+    pub task:Binding,
+    pub provider:String,
+    pub content_sha256:String,
+    pub parent_sha256:String,
+    pub position:usize,
+    pub references:Vec<ReplySource>,
+    pub revoked:bool,
+}
+pub(crate) fn history_parent(raw:Option<&str>)->io::Result<(String,usize)>{
+    let value:serde_json::Value=serde_json::from_str(raw.unwrap_or("{\"version\":1,\"turns\":[]}")).map_err(io::Error::other)?;
+    let turns=value["turns"].as_array().ok_or_else(||error("Historial no válido."))?;
+    Ok((parent_digest(turns)?,turns.len()))
+}
+pub(crate) fn parent_digest(turns:&[serde_json::Value])->io::Result<String>{
+    let projection=turns.iter().map(|t|serde_json::json!({"role":t["role"],"content":t["content"]})).collect::<Vec<_>>();
+    Ok(crate::kicad_project::digest(&serde_json::to_vec(&projection).map_err(io::Error::other)?))
+}
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Task {
@@ -93,12 +124,28 @@ pub struct Task {
     pub restricted_results: bool,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
     pub withdrawn_replies:std::collections::BTreeMap<String,u64>,
+    #[serde(default,skip_serializing_if="Vec::is_empty")]
+    pub reply_receipts:Vec<ReplyReceipt>,
     #[serde(default)]
     pub legacy: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub history: Option<String>,
 }
 impl Task {
+    pub fn reply_receipt_allows(&self,id:Uuid,content:&str)->bool{
+        let hash=crate::kicad_project::digest(content.as_bytes());
+        self.reply_receipts.iter().any(|r|r.id==id && r.content_sha256==hash && self.receipt_authorized(r))
+    }
+    fn receipt_authorized(&self,r:&ReplyReceipt)->bool{
+        !r.revoked && r.task.id==self.id && r.provider==self.provider && r.references.iter().all(|source|self.reply_source_allowed(source,&r.provider))
+    }
+    pub fn reply_source_allowed(&self,source:&ReplySource,provider:&str)->bool{self.references.iter().any(|r|r.id==source.id && r.sha256==source.sha256 && r.preview_sha256==source.preview_sha256 && r.shared_with.iter().any(|p|p==provider))}
+    pub(crate) fn history_reply_allows(&self,turn:&serde_json::Value)->bool{
+        turn["reply_id"].as_str().and_then(|id|Uuid::parse_str(id).ok()).zip(turn["content"].as_str()).is_some_and(|(id,content)|self.reply_receipt_allows(id,content))
+    }
+    pub(crate) fn history_reply_parent_allows(&self,turn:&serde_json::Value,position:usize,parent:&str)->bool{
+        self.history_reply_allows(turn) && self.reply_receipts.iter().any(|r|Some(r.id.to_string())==turn["reply_id"].as_str().map(str::to_string) && r.position==position && r.parent_sha256==parent)
+    }
     pub fn reply_is_withdrawn(&self,content:&str)->bool{
         self.withdrawn_replies.contains_key(&crate::kicad_project::digest(content.as_bytes()))
     }
@@ -151,7 +198,10 @@ impl Task {
         if let Some(raw) = &self.history {
             history(raw)?;
         }
+        let mut receipt_ids=std::collections::BTreeSet::new();
+        if self.reply_receipts.len()>128 || self.reply_receipts.iter().any(|r|r.id.is_nil() || !receipt_ids.insert(r.id) || r.task.id!=self.id || r.task.revision==0 || r.task.revision>self.revision || !provider(&r.provider) || !crate::kicad_project::valid_hash(&r.content_sha256) || !crate::kicad_project::valid_hash(&r.parent_sha256) || r.position>=128 || r.references.len()>64 || r.references.iter().any(|s|s.id.is_nil() || !crate::kicad_project::valid_hash(&s.sha256) || s.preview_sha256.as_ref().is_some_and(|h|!crate::kicad_project::valid_hash(h))) || r.references.iter().map(|s|s.id).collect::<std::collections::BTreeSet<_>>().len()!=r.references.len() || (!r.revoked && r.references.iter().any(|s|!self.references.iter().any(|reference|reference.id==s.id)))) {return Err(error("Proveniencia de respuesta no válida; se conservó la conversación."));}
         let mut reply_hashes:std::collections::BTreeSet<_>=self.withdrawn_replies.keys().cloned().collect();
+        reply_hashes.extend(self.reply_receipts.iter().map(|r|r.content_sha256.clone()));
         if let Some(raw)=&self.history{
             let saved:serde_json::Value=serde_json::from_str(raw).map_err(io::Error::other)?;
             for turn in saved["turns"].as_array().into_iter().flatten().filter(|t|t["role"]=="assistant"){
@@ -211,8 +261,22 @@ fn scrub_history(task: &mut Task, affected: &std::collections::BTreeSet<Uuid>) -
     let revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó el historial."))?;
     // Without fresh reply provenance, another withdrawal must fence matching older cached generations too.
     for withdrawn in task.withdrawn_replies.values_mut(){*withdrawn=revision;}
+    for receipt in &mut task.reply_receipts{
+        if receipt.references.iter().any(|source|affected.contains(&source.id)){
+            receipt.revoked=true;task.withdrawn_replies.insert(receipt.content_sha256.clone(),revision);
+        }
+    }
     let mut value: serde_json::Value =
         serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
+    let mut authenticated=std::collections::BTreeSet::new();
+    if let Some(turns)=value["turns"].as_array(){
+        for (position,turn) in turns.iter().enumerate().filter(|(_,turn)|turn["role"]=="assistant"){
+            let parent=parent_digest(&turns[..position])?;
+            if let Some(receipt)=task.reply_receipts.iter().find(|r|!r.revoked && r.position==position && r.parent_sha256==parent && turn["reply_id"].as_str()==Some(r.id.to_string().as_str()) && turn["content"].as_str().is_some_and(|text|crate::kicad_project::digest(text.as_bytes())==r.content_sha256)){
+                authenticated.insert((receipt.id,position));
+            }
+        }
+    }
     if let Some(turns) = value["turns"].as_array_mut() {
         for turn in turns {
             if turn["reference_ids"].as_array().is_some_and(|ids| {
@@ -227,6 +291,15 @@ fn scrub_history(task: &mut Task, affected: &std::collections::BTreeSet<Uuid>) -
                     }
                 }
                 *turn = serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});
+            }
+        }
+    }
+    if let Some(turns)=value["turns"].as_array(){
+        for (position,turn) in turns.iter().enumerate(){
+            if let Some(id)=turn["reply_id"].as_str().and_then(|id|Uuid::parse_str(id).ok()){
+                if let Some(receipt)=task.reply_receipts.iter_mut().find(|r|r.id==id && authenticated.contains(&(id,position)) && !r.revoked && turn["content"].as_str().is_some_and(|text|crate::kicad_project::digest(text.as_bytes())==r.content_sha256)){
+                    receipt.position=position;receipt.parent_sha256=parent_digest(&turns[..position])?;
+                }
             }
         }
     }
@@ -245,13 +318,17 @@ fn retain_lineage(task: &Task, raw: &str) -> io::Result<String> {
     let mut value: serde_json::Value = serde_json::from_str(raw).map_err(io::Error::other)?;
     let prior: serde_json::Value =
         serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
-    for turn in value["turns"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-    {
+    let incoming=value["turns"].as_array().unwrap().clone();
+    for (position,turn) in value["turns"].as_array_mut().unwrap().iter_mut().enumerate(){
         if turn["role"] == "assistant" {
             let hash=crate::kicad_project::digest(turn["content"].as_str().unwrap().as_bytes());
+            let parent=parent_digest(&incoming[..position])?;
+            let reply_id=turn["reply_id"].as_str().and_then(|id|Uuid::parse_str(id).ok());
+            let fresh=task.reply_receipts.iter().find(|r|Some(r.id)==reply_id && r.content_sha256==hash && r.position==position && r.parent_sha256==parent && task.receipt_authorized(r));
+            if let Some(receipt)=fresh{turn["reply_id"]=serde_json::json!(receipt.id);turn["reference_ids"]=serde_json::json!(receipt.references.iter().map(|s|s.id).collect::<Vec<_>>());continue;}
+            let known=prior["turns"][position].clone();
+            if known["role"]=="assistant" && known["content"]==turn["content"] && task.history_reply_parent_allows(&known,position,&parent){turn["reply_id"]=known["reply_id"].clone();turn["reference_ids"]=known["reference_ids"].clone();continue;}
+            turn.as_object_mut().unwrap().remove("reply_id");
             if task.withdrawn_replies.contains_key(&hash){*turn=serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});continue;}
             let mut references=std::collections::BTreeSet::new();let mut found=false;
             for saved in prior["turns"].as_array().into_iter().flatten().filter(|saved|saved["role"]=="assistant" && saved["content"]==turn["content"]){
@@ -425,6 +502,16 @@ impl<'a> Store<'a> {
         self.recover_creation()?;
         self.index()?.map(|i| self.read(i.active)).transpose()
     }
+    pub(crate) fn record_reply(&self,receipt:ReplyReceipt)->io::Result<bool>{
+        let mut task=self.active()?.ok_or_else(||error("No hay conversación activa."))?;
+        if receipt.task.id!=task.id || receipt.task.revision>task.revision || !task.receipt_authorized(&receipt){return Ok(false);}
+        if let Some(previous)=task.reply_receipts.iter().find(|r|r.id==receipt.id){
+            return if serde_json::to_value(previous).map_err(io::Error::other)?==serde_json::to_value(&receipt).map_err(io::Error::other)?{Ok(!previous.revoked)}else{Err(error("La identidad de respuesta ya tiene otra proveniencia; no se reemplazó."))};
+        }
+        let (parent,position)=history_parent(task.history.as_deref())?;
+        if receipt.parent_sha256!=parent || receipt.position!=position{return Ok(false);}
+        task.reply_receipts.push(receipt);self.save(&task)?;Ok(true)
+    }
     pub fn binding(&self) -> io::Result<Option<Binding>> {
         Ok(self.active()?.map(|t| t.binding()))
     }
@@ -494,6 +581,7 @@ impl<'a> Store<'a> {
             latest_correction: None,
             restricted_results: false,
             withdrawn_replies:Default::default(),
+            reply_receipts:Vec::new(),
             legacy: false,
             history: Some("{\"version\":1,\"turns\":[]}".into()),
         }
@@ -961,6 +1049,62 @@ fn printable_text(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn receipt(task:&Task,text:&str)->ReplyReceipt{
+        let (parent_sha256,position)=history_parent(task.history.as_deref()).unwrap();
+        ReplyReceipt{id:Uuid::new_v4(),task:task.binding(),provider:task.provider.clone(),content_sha256:crate::kicad_project::digest(text.as_bytes()),parent_sha256,position,references:task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(Reference::reply_source).collect(),revoked:false}
+    }
+    fn save_history(store:&Store,turns:serde_json::Value){
+        let t=store.active().unwrap().unwrap();store.request(Request::History{id:t.id,revision:t.revision,value:Some(serde_json::json!({"version":1,"turns":turns}).to_string())}).unwrap();
+    }
+    #[test]
+    fn reply_receipts_preserve_new_authorized_answers_without_reauthorizing_old_context(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;
+        store.request(Request::AddReference{id:t.id,revision:t.revision,name:"source.txt".into(),data:STANDARD.encode(b"private source"),preview:None}).unwrap();
+        let t=store.active().unwrap().unwrap();let reference=t.references[0].id;store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();
+        save_history(&store,serde_json::json!([{"role":"user","content":"Original question"}]));
+        let text="SAME_REPLY_SENTINEL";let old=receipt(&store.active().unwrap().unwrap(),text);assert!(store.record_reply(old.clone()).unwrap());
+        // Revocation applies even before the renderer saves the reply body.
+        let t=store.active().unwrap().unwrap();store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:false}).unwrap();
+        let t=store.active().unwrap().unwrap();assert!(t.reply_is_withdrawn(text));assert!(!t.reply_receipt_allows(old.id,text));assert!(!store.record_reply(old.clone()).unwrap());
+        save_history(&store,serde_json::json!([{"role":"user","content":"Original question"},{"role":"assistant","content":text,"reply_id":old.id}]));
+        assert!(!store.active().unwrap().unwrap().history.unwrap().contains(text));
+        let t=store.active().unwrap().unwrap();store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();
+        save_history(&store,serde_json::json!([{"role":"user","content":"New question"}]));
+        let fresh=receipt(&store.active().unwrap().unwrap(),text);assert!(store.record_reply(fresh.clone()).unwrap());assert!(store.record_reply(fresh.clone()).unwrap());
+        let before=fs::read(store.path(fresh.task.id)).unwrap();let mut changed=fresh.clone();changed.content_sha256=crate::kicad_project::digest(b"changed");assert!(store.record_reply(changed).is_err());assert_eq!(before,fs::read(store.path(fresh.task.id)).unwrap());
+        // A real id cannot transfer permission to a different question, slot or body.
+        save_history(&store,serde_json::json!([{"role":"user","content":"Original question"},{"role":"assistant","content":text,"reply_id":fresh.id}]));
+        assert!(!store.active().unwrap().unwrap().history.unwrap().contains(text));
+        save_history(&store,serde_json::json!([{"role":"user","content":"New question"},{"role":"assistant","content":text,"reply_id":old.id}]));
+        assert!(!store.active().unwrap().unwrap().history.unwrap().contains(text));
+        save_history(&store,serde_json::json!([{"role":"user","content":"New question"},{"role":"assistant","content":text,"reply_id":fresh.id}]));
+        let t=store.active().unwrap().unwrap();assert!(t.history.as_ref().unwrap().contains(text));assert_eq!(t.reply_receipts.len(),2);
+        drop(store);drop(p);let p=Project::open(&root).unwrap();let store=Store::new(&p).unwrap();let t=store.active().unwrap().unwrap();assert!(t.reply_receipt_allows(fresh.id,text));assert!(t.history.unwrap().contains(text));
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn reply_receipts_bind_service_versions_and_authenticate_surviving_history_before_rebasing(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;
+        store.request(Request::AddReference{id:t.id,revision:t.revision,name:"source.txt".into(),data:STANDARD.encode(b"private source"),preview:None}).unwrap();
+        let t=store.active().unwrap().unwrap();let reference=t.references[0].id;store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();
+        let t=store.active().unwrap().unwrap();let first=receipt(&t,"private reply");
+        let mut wrong=first.clone();wrong.provider="claude".into();assert!(!store.record_reply(wrong).unwrap());
+        let mut wrong=first.clone();wrong.references[0].sha256=crate::kicad_project::digest(b"other version");assert!(!store.record_reply(wrong).unwrap());
+        let mut wrong=first.clone();wrong.references[0].preview_sha256=Some(crate::kicad_project::digest(b"other preview"));assert!(!store.record_reply(wrong).unwrap());
+        let before=fs::read(store.path(t.id)).unwrap();let lock=OpenOptions::new().read(true).share_mode(FILE_SHARE_READ).open(store.path(t.id)).unwrap();
+        assert!(store.record_reply(first.clone()).is_err());assert_eq!(before,fs::read(store.path(t.id)).unwrap());drop(lock);
+        assert!(store.record_reply(first.clone()).unwrap());assert!(store.record_reply(first.clone()).unwrap());
+        save_history(&store,serde_json::json!([{"role":"assistant","content":"private reply","reply_id":first.id},{"role":"user","content":"Keep the design"}]));
+        let mut second=receipt(&store.active().unwrap().unwrap(),"unrelated authorized reply");second.references.clear();assert!(store.record_reply(second.clone()).unwrap());
+        save_history(&store,serde_json::json!([{"role":"assistant","content":"private reply","reply_id":first.id},{"role":"user","content":"Keep the design"},{"role":"assistant","content":"unrelated authorized reply","reply_id":second.id}]));
+        let t=store.active().unwrap().unwrap();store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:false}).unwrap();
+        let t=store.active().unwrap().unwrap();let history:serde_json::Value=serde_json::from_str(t.history.as_deref().unwrap()).unwrap();let turns=history["turns"].as_array().unwrap();
+        assert_eq!(turns[0]["content"],WITHDRAWN_REPLY);assert!(t.history_reply_parent_allows(&turns[2],2,&parent_digest(&turns[..2]).unwrap()));assert!(!t.reply_receipt_allows(first.id,"private reply"));
+        // A forged old frame cannot acquire a new parent during a trusted scrub.
+        let mut forged=t.clone();forged.history=Some(serde_json::json!({"version":1,"turns":[{"role":"user","content":"different parent"},{"role":"assistant","content":"unrelated authorized reply","reply_id":second.id}]}).to_string());
+        let old_parent=forged.reply_receipts[1].parent_sha256.clone();scrub_history(&mut forged,&std::collections::BTreeSet::from([reference])).unwrap();assert_eq!(forged.reply_receipts[1].parent_sha256,old_parent);
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn withdrawn_reply_cannot_return_from_a_shifted_stale_history_after_removal(){
         let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;

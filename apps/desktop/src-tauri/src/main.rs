@@ -97,7 +97,7 @@ struct DesktopSnapshot {
 fn purge_withdrawn_reply(state:&AppState,tasks:Option<&hazlomexa::tasks::State>)->Result<(),String>{
     let Some(tasks)=tasks else{return Ok(());};
     let mut chat=state.chat.lock().map_err(|_|"No se pudo comprobar la respuesta local.")?;
-    if chat.as_ref().is_some_and(|turn|!turn.view.busy && turn.scope.task.as_ref().is_some_and(|t|t.id==tasks.active.id && tasks.active.reply_was_withdrawn_after(&turn.view.text,t.revision))){*chat=None;}
+    if chat.as_ref().is_some_and(|turn|!turn.view.busy && turn.scope.task.as_ref().is_some_and(|t|t.id==tasks.active.id && (turn.scope.references.iter().any(|source|!tasks.active.reply_source_allowed(source,turn.scope.provider.as_deref().unwrap_or(""))) || (!tasks.active.reply_receipt_allows(turn.view.id,&turn.view.text) && tasks.active.reply_was_withdrawn_after(&turn.view.text,t.revision))))){*chat=None;}
     Ok(())
 }
 fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
@@ -442,9 +442,12 @@ async fn start_claude_chat(
         let state = handle.state::<AppState>();
         let successful = result.as_ref().is_ok_and(|v| v.error.is_none())
             && !cancelled.load(std::sync::atomic::Ordering::SeqCst);
+        let provenance=if successful{workflow.record_completed_reply(&scope,id,"claude",&result.as_ref().unwrap().text)}else{Ok(false)};
+        let successful=successful && provenance.as_ref().is_ok_and(|saved|*saved);
+        let provenance_error=provenance.err();
         if let Ok(mut saved) = state.chat_session.lock() {
             if saved.as_ref().is_some_and(|s| s.1 == session) {
-                if successful {
+                if successful && provenance_error.is_none() {
                     saved.as_mut().unwrap().2 = true;
                 } else {
                     *saved = None;
@@ -462,7 +465,7 @@ async fn start_claude_chat(
                     match result {
                         Ok(view) => {
                             turn.view.text = view.text;
-                            turn.view.error = view.error;
+                            turn.view.error = view.error.or(provenance_error);
                         }
                         Err(error) => turn.view.error = Some(error),
                     }
@@ -1527,6 +1530,9 @@ mod tests {
         let scope=state.workflow.conversation_scope().unwrap().unwrap();let project_id=scope.project.0;
         *state.chat.lock().unwrap()=Some(ChatTurn{scope,view:ChatView{provider:"codex",id:Uuid::new_v4(),project_id,sequence:1,busy:false,cancelled:false,text:"WITHDRAWN_CACHE_SENTINEL".into(),error:None,question:None},cancel:Arc::new(std::sync::atomic::AtomicBool::new(false)),question:None});
         // A new owned turn is not the older cached response merely because its bytes match.
+        let new_reply=state.chat.lock().unwrap().as_ref().unwrap().view.id;
+        let new_scope=state.chat.lock().unwrap().as_ref().unwrap().scope.clone();
+        assert!(state.workflow.record_completed_reply(&new_scope,new_reply,"codex","WITHDRAWN_CACHE_SENTINEL").unwrap());
         assert!(snapshot(&state).unwrap().chat.is_some());
         let t=state.workflow.task_state().unwrap().unwrap().active;let project=state.workflow.conversation_scope().unwrap().unwrap().project;
         state.workflow.task_request(project.clone(),hazlomexa::tasks::Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();

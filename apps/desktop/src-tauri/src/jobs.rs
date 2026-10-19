@@ -52,6 +52,10 @@ pub struct WorkflowView {
 pub struct ConversationScope {
     pub project:(Uuid,PathBuf),
     pub task:Option<crate::tasks::Binding>,
+    pub provider:Option<String>,
+    pub references:Vec<crate::tasks::ReplySource>,
+    pub parent_sha256:String,
+    pub position:usize,
 }
 
 #[derive(Debug, Clone, Copy, serde::Deserialize, Serialize)]
@@ -192,9 +196,18 @@ impl Workflow {
     pub fn conversation_scope(&self)->Result<Option<ConversationScope>,String>{
         let state=self.state.lock().map_err(|_|"No se pudo comprobar la conversación.")?;
         state.project.as_ref().map(|p|{
-            let task=crate::tasks::Store::new(p).and_then(|s|s.binding()).map_err(|_|"No se pudo comprobar la conversación.")?;
-            Ok(ConversationScope{project:(p.id,p.root.clone()),task})
+            let task=crate::tasks::Store::new(p).and_then(|s|s.active()).map_err(|_|"No se pudo comprobar la conversación.")?;
+            let (parent_sha256,position)=crate::tasks::history_parent(task.as_ref().and_then(|t|t.history.as_deref())).map_err(|_|"No se pudo comprobar el historial local.")?;
+            Ok(ConversationScope{project:(p.id,p.root.clone()),task:task.as_ref().map(|t|t.binding()),provider:task.as_ref().map(|t|t.provider.clone()),references:task.as_ref().map(|t|t.references.iter().filter(|r|r.shared_with.contains(&t.provider)).map(|r|r.reply_source()).collect()).unwrap_or_default(),parent_sha256,position})
         }).transpose()
+    }
+    pub fn record_completed_reply(&self,scope:&ConversationScope,id:Uuid,provider:&str,content:&str)->Result<bool,String>{
+        let state=self.state.lock().map_err(|_|"No se pudo conservar la proveniencia de respuesta.")?;
+        let Some(project)=state.project.as_ref().filter(|p|(p.id,p.root.clone())==scope.project) else{return Ok(false);};
+        let Some(task)=scope.task.as_ref() else{return Ok(false);};
+        if scope.provider.as_deref()!=Some(provider) || content.is_empty(){return Ok(false);}
+        let receipt=crate::tasks::ReplyReceipt{id,task:task.clone(),provider:provider.into(),content_sha256:crate::kicad_project::digest(content.as_bytes()),parent_sha256:scope.parent_sha256.clone(),position:scope.position,references:scope.references.clone(),revoked:false};
+        crate::tasks::Store::new(project).and_then(|s|s.record_reply(receipt)).map_err(|_|"La respuesta sigue local, pero no se pudo registrar su proveniencia. No se restauró contexto retirado.".into())
     }
     fn source_scope(state:&State)->Result<Option<(Uuid,PathBuf,Option<Uuid>)>,String>{
         state.project.as_ref().map(|project|{
@@ -323,10 +336,12 @@ impl Workflow {
         let mut prior=Vec::new();
         if !task.restricted() {
             let saved:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(|_|"Historial no válido.")?;
-            prior=saved["turns"].as_array().into_iter().flatten().filter_map(|turn|{
+            let turns=saved["turns"].as_array().cloned().unwrap_or_default();
+            prior=turns.iter().enumerate().filter_map(|(position,turn)|{
                 if turn["role"]=="assistant" {
                     let content=turn["content"].as_str()?;
-                    if task.reply_is_withdrawn(content) || turn["reference_ids"].as_array().is_some_and(|ids|ids.iter().any(|id|id.as_str().and_then(|s|Uuid::parse_str(s).ok()).is_none_or(|id|!task.references.iter().any(|r|r.id==id && r.shared_with.contains(&task.provider))))){return None;}
+                    let owned=crate::tasks::parent_digest(&turns[..position]).ok().is_some_and(|parent|task.history_reply_parent_allows(turn,position,&parent));
+                    if ((turn.get("reply_id").is_some() || task.reply_is_withdrawn(content)) && !owned) || turn["reference_ids"].as_array().is_some_and(|ids|ids.iter().any(|id|id.as_str().and_then(|s|Uuid::parse_str(s).ok()).is_none_or(|id|!task.references.iter().any(|r|r.id==id && r.shared_with.contains(&task.provider))))){return None;}
                 }
                 Some(serde_json::json!({"role":turn["role"],"content":turn["content"]}))
             }).collect();
@@ -3222,6 +3237,25 @@ mod tests {
         drop(workflow);let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();
         assert_eq!(recovered[0].input.solid().unwrap().dimensions_mm.width,47.);assert!(recovered[0].audit.as_ref().unwrap().user_edited);
         drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn completed_reply_proof_binds_owned_scope_and_projects_only_authorized_text(){
+        let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();let t=workflow.task_state().unwrap().unwrap().active;
+        let history=serde_json::json!({"version":1,"turns":[{"role":"user","content":"Keep my design"}]}).to_string();
+        workflow.task_request(project.clone(),crate::tasks::Request::History{id:t.id,revision:t.revision,value:Some(history)}).unwrap();
+        let scope=workflow.conversation_scope().unwrap().unwrap();let id=Uuid::new_v4();
+        assert!(!workflow.record_completed_reply(&scope,id,"claude","authorized answer").unwrap());
+        let mut wrong=scope.clone();wrong.project.1=root.join("another-folder");assert!(!workflow.record_completed_reply(&wrong,id,"codex","authorized answer").unwrap());
+        assert!(workflow.record_completed_reply(&scope,id,"codex","authorized answer").unwrap());
+        assert!(workflow.record_completed_reply(&scope,id,"codex","authorized answer").unwrap());
+        let t=workflow.task_state().unwrap().unwrap().active;assert_eq!(t.reply_receipts.len(),1);
+        workflow.task_request(project.clone(),crate::tasks::Request::History{id:t.id,revision:t.revision,value:Some(serde_json::json!({"version":1,"turns":[{"role":"user","content":"Keep my design"},{"role":"assistant","content":"authorized answer","reply_id":id,"private_data":"KEEP_EXTRA_FIELD_LOCAL"}]}).to_string())}).unwrap();
+        // An older withdrawn generation may have identical text; only this owned frame is eligible.
+        let path=root.join(".hazlomexa/tasks").join(format!("{}.json",t.id));let mut saved:crate::tasks::Task=crate::project::read_json(&path).unwrap();saved.withdrawn_replies.insert(crate::kicad_project::digest(b"authorized answer"),saved.revision);crate::project::atomic_json(&path,&saved,true).unwrap();
+        let (prompt,_)=workflow.task_prompt("codex",String::new(),Some("Continue".into()),None).unwrap();assert!(prompt.contains("authorized answer"));assert!(!prompt.contains("reply_id") && !prompt.contains("KEEP_EXTRA_FIELD_LOCAL") && !prompt.contains("parent_sha256"));
+        let t=workflow.task_state().unwrap().unwrap().active;let saved=workflow.task_request(project,crate::tasks::Request::History{id:t.id,revision:t.revision,value:None}).unwrap();assert!(saved.as_str().unwrap().contains(&id.to_string()));
+        let mut stale=scope.clone();stale.position=0;assert!(!workflow.record_completed_reply(&stale,Uuid::new_v4(),"codex","not sent again").unwrap());
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn prompt_history_projects_only_authorized_role_and_text_and_keeps_other_fields_local(){

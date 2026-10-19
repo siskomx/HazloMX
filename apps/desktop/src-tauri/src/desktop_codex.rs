@@ -419,9 +419,12 @@ pub(crate) async fn start_codex_chat(
             .as_ref()
             .is_ok_and(|result| result.view.error.is_none() && !result.view.cancelled)
             && !cancelled.load(Ordering::SeqCst);
+        let provenance=if successful{workflow.record_completed_reply(&scope,id,"codex",&result.as_ref().unwrap().view.text)}else{Ok(false)};
+        let successful=successful && provenance.as_ref().is_ok_and(|saved|*saved);
+        let provenance_error=provenance.err();
         if let Ok(mut saved) = state.codex_session.lock() {
             if saved.as_ref().is_some_and(|saved| saved.1 == session) {
-                if successful {
+                if successful && provenance_error.is_none() {
                     saved.as_mut().unwrap().2 = Some(result.as_ref().unwrap().thread_id.clone());
                 } else {
                     *saved = None;
@@ -442,7 +445,7 @@ pub(crate) async fn start_codex_chat(
                         Ok(result) => {
                             turn.view.text = result.view.text;
                             turn.view.cancelled = result.view.cancelled;
-                            turn.view.error = result.view.error;
+                            turn.view.error = result.view.error.or(provenance_error);
                         }
                         Err(error) => turn.view.error = Some(error),
                     }

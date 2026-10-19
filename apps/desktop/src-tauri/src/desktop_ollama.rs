@@ -96,6 +96,7 @@ pub(crate) async fn start_ollama_chat(
         )
         .await
         }.await;
+        let provenance_error=if !cancelled.load(Ordering::SeqCst){match &result{Ok(text)=>workflow.record_completed_reply(&scope,id,provider,text).err(),Err(_)=>None}}else{None};
         if let Ok(mut current) = chat.lock() {
             if let Some(turn) = current.as_mut().filter(|turn| turn.view.id == id) {
                 turn.view.busy = false;
@@ -105,7 +106,7 @@ pub(crate) async fn start_ollama_chat(
                     turn.view.error = None;
                 } else {
                     match result {
-                        Ok(text) => turn.view.text = text,
+                        Ok(text) => {turn.view.text = text;turn.view.error=provenance_error;},
                         Err(error) => turn.view.error = Some(error),
                     }
                 }
