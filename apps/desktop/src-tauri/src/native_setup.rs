@@ -70,7 +70,7 @@ fn registry_folders() -> Vec<PathBuf> {
                     continue;
                 };
                 if ![
-                    "freecad", "cadcraft", "arduino", "kicad", "orca", "python", "konnect",
+                    "freecad", "cadcraft", "arduino", "kicad", "orca", "python", "konnect", "wireshark", "usbpcap",
                 ]
                 .iter()
                 .any(|prefix| display.to_lowercase().starts_with(prefix))
@@ -84,6 +84,7 @@ fn registry_folders() -> Vec<PathBuf> {
                             path.clone(),
                             path.join("bin"),
                             path.join("Scripts"),
+                            path.join("extcap"),
                             path.join("resources/app/lib/backend/resources"),
                         ]);
                     }
@@ -195,7 +196,7 @@ fn folders() -> Vec<PathBuf> {
             for entry in entries.flatten().take(256) {
                 let name = entry.file_name().to_string_lossy().to_lowercase();
                 if [
-                    "freecad", "cadcraft", "arduino", "kicad", "orca", "python", "konnect",
+                    "freecad", "cadcraft", "arduino", "kicad", "orca", "python", "konnect", "wireshark", "usbpcap",
                 ]
                 .iter()
                 .any(|prefix| name.starts_with(prefix))
@@ -206,6 +207,7 @@ fn folders() -> Vec<PathBuf> {
                         path.clone(),
                         path.join("bin"),
                         path.join("Scripts"),
+                        path.join("extcap"),
                         path.join("resources/app/lib/backend/resources"),
                     ]);
                     if name == "kicad" {
@@ -222,6 +224,10 @@ fn folders() -> Vec<PathBuf> {
     roots.extend(registry_folders());
     roots
 }
+pub(crate) fn python() -> Option<PathBuf> {
+    find_in(&folders(), &["python.exe"])
+}
+
 fn find_in(roots: &[PathBuf], names: &[&str]) -> Option<PathBuf> {
     roots
         .iter()
@@ -232,6 +238,9 @@ fn find_in(roots: &[PathBuf], names: &[&str]) -> Option<PathBuf> {
 }
 fn cli(program: Program, roots: &[PathBuf]) -> Option<PathBuf> {
     let names: &[&str] = match program {
+        Program::Tshark => &["tshark.exe"],
+        Program::Usbpcap => &["USBPcapCMD.exe"],
+        Program::Serial => &["python.exe"],
         Program::Drawing => &["cadcraft-cli.exe"],
         Program::Arduino => &["arduino-cli.exe"],
         Program::Kicad => &["kicad-cli.exe"],
@@ -360,6 +369,9 @@ pub fn discover(
     std::fs::create_dir_all(profile)
         .map_err(|_| "No se pudo crear la configuración local de herramientas.")?;
     let mut roots = portable_folders(locations, program)?;
+    if program == Program::Serial {
+        if let Some(data) = locations.parent() { roots.push(data.join("diagnostic-tools/pyserial/Scripts")); }
+    }
     roots.extend(folders());
     let config = match program {
         Program::Rea => {
@@ -443,7 +455,10 @@ pub fn discover(
         )?;
         Ok(Some(Setup::Mcp(config)))
     } else {
-        let executable = cli(program, &roots);
+        let executable = if program == Program::Serial {
+            roots.iter().filter_map(|root| find_in(std::slice::from_ref(root), &["python.exe"]))
+                .find(|python| crate::serial_diagnostics::available(python, project))
+        } else { cli(program, &roots) };
         if let Some(executable) = &executable {
             write_new(
                 &profile.join("connection.json"),

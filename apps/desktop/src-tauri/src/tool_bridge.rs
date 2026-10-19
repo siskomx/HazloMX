@@ -198,10 +198,10 @@ mod tests {
     }
     #[tokio::test]
     async fn program_scopes_advertise_and_enforce_the_selected_engineering_tools() {
-        let programs = [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice, Program::Rea];
+        let programs = [Program::Planning, Program::Freecad, Program::Drawing, Program::Arduino, Program::Agent, Program::Kicad, Program::Slice, Program::Rea,Program::Tshark,Program::Usbpcap,Program::Serial];
         for tool in crate::host_tools::catalog() {
             let count = programs.iter().filter(|program| program.allows(&tool.name)).count();
-            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result" | "inspect_native_tools" | "read_native_tool" | "propose_native_tool_calls") { if tool.name == "get_design_capabilities" { 8 } else { 7 } } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
+            assert_eq!(count, if matches!(tool.name.as_ref(), "get_design_capabilities" | "get_workflow_status" | "read_verified_result" | "inspect_native_tools" | "read_native_tool" | "propose_native_tool_calls") { if tool.name == "get_design_capabilities" { 11 } else { 10 } } else { 1 }, "Tool must have an explicit program scope: {}", tool.name);
         }
         assert!(serde_json::from_str::<Program>("\"unknown\"").is_err());
         for program in programs {

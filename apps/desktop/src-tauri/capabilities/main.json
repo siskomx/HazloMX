@@ -5,6 +5,7 @@
   "webviews": ["main"],
   "permissions": [
     "allow-conversation-history",
+    "allow-prepare-diagnostic-tool",
     "allow-select-codex", "allow-connect-codex", "allow-cancel-codex-login", "allow-open-codex-login", "allow-start-codex-chat", "allow-answer-codex-question",
     "allow-select-claude", "allow-start-claude-chat", "allow-cancel-chat",
     "allow-start-ollama-chat",

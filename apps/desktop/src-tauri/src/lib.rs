@@ -43,6 +43,15 @@ pub mod native_tools;
 pub mod native_setup;
 
 #[cfg(windows)]
+pub mod serial_diagnostics;
+
+#[cfg(windows)]
+pub mod diagnostic_downloads;
+
+#[cfg(windows)]
+mod diagnostic_cli;
+
+#[cfg(windows)]
 mod program_tools;
 
 #[cfg(windows)]

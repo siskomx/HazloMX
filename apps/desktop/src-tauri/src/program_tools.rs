@@ -94,8 +94,11 @@ struct Source {
     discovery: &'static str,
 }
 
-fn sources() -> [Source; 11] {
+fn sources() -> [Source; 14] {
     [
+        Source { id:"tshark",program:Program::Tshark,repository:"https://github.com/wireshark/wireshark",tested_version:"4.6.9",discovery:"Selected TShark CLI --help, -G protocols/fields and -D interfaces. Capture needs a suitable observation point and separately installed driver. No automatic driver installation." },
+        Source { id:"usbpcap",program:Program::Usbpcap,repository:"https://github.com/desowin/usbpcap",tested_version:"1.5.4.0",discovery:"USBPcapCMD --help and extcap interface/config discovery. Windows host USB transfers only; capture needs its installed driver. No driver, registry or USB restart actions." },
+        Source { id:"pyserial",program:Program::Serial,repository:"https://github.com/pyserial/pyserial",tested_version:"3.5",discovery:"Detected Python with pySerial; bounded worker exposes library identity, local port discovery and read-only byte capture. No arbitrary Python, URLs or transmitted commands. Opening a port may affect control lines." },
         Source { id:"rea",program:Program::Rea,repository:"https://github.com/morluto/rea",tested_version:"6.5.0",discovery:"Bundled Rea native MCP tools/list and input schemas. Software, binaries and firmware analysis; not a physical photo-to-CAD engine. Hazlo includes the pinned Rea and Node runtime without changing personal agent registrations. Repository checks never install updates or enable tools." },
         Source { id:"freecad",program:Program::Freecad,repository:"https://github.com/FreeCAD/FreeCAD",tested_version:crate::freecad::SUPPORTED_VERSION,discovery:"FreeCAD Python API; CADPilot MCP tools/list" },
         Source { id:"cadpilot",program:Program::Freecad,repository:"https://github.com/LBurny/cadpilot",tested_version:crate::cadpilot::VERSION,discovery:"MCP tools/list, including pagination; refresh when tools/list changes" },
@@ -272,7 +275,7 @@ mod tests {
     #[test]
     fn offline_catalog_separates_provenance_from_runtime_permissions() {
         let mut catalog = inspect(Request::default(), Arc::new(AtomicBool::new(false))).unwrap();
-        assert_eq!(catalog.as_object().unwrap().len(), 11);
+        assert_eq!(catalog.as_object().unwrap().len(), 14);
         let tool = crate::host_tools::catalog()
             .into_iter()
             .find(|t| t.name == "get_design_capabilities")

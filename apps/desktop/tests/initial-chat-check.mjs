@@ -7,7 +7,7 @@ export async function checkInitialChat(page, snapshot) {
   assert.equal(snapshot.job, null);
   assert.match(await page.locator("#conversation").innerText(), /No necesitas conocer/);
   assert.equal(await page.locator("#length, #width, #height, #pcb-x, #konnect-value, #sketch-source, #workflow").count(), 0, "Legacy engineering controls replaced the chat");
-  assert.deepEqual(await page.locator("#program option").evaluateAll(options => options.map(option => option.value)), ["planning", "freecad", "drawing", "arduino", "agent", "kicad", "slice", "rea"]);
+  assert.deepEqual(await page.locator("#program option").evaluateAll(options => options.map(option => option.value)), ["planning", "freecad", "drawing", "arduino", "agent", "kicad", "slice", "rea", "tshark", "usbpcap", "serial"]);
   assert.deepEqual(await page.locator("#provider option").evaluateAll(options => options.map(option => option.value)), ["codex", "claude", "ollama_local", "ollama_cloud"]);
   assert.equal(await page.locator("#program").inputValue(), "planning");
   assert.equal(await page.locator("#program-actions button").count(), 0);

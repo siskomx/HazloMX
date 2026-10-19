@@ -53,7 +53,13 @@ try {
     window.__TAURI_INTERNALS__ = { transformCallback: () => ++callback, unregisterCallback: () => {}, invoke: async (command, args) => {
       window.calls.push({ command, args });
       if ((command === "get_snapshot" || command === "detect_clients")) return copy();
-      if (command === "connect_native_tools") {args.events.onmessage(crypto.randomUUID());if(args.automatic&&!window.autoNativeInstalled) throw "No se encontraron herramientas compatibles instaladas.";return {connection_id:"native-connection",catalog_sha256:"d".repeat(64),transport:args.mcp ? "mcp" : "cli",tools:[{name:"program_owned_tool"},{name:"observe_native_state"}]};}
+      if (command === "connect_native_tools") {args.events.onmessage(crypto.randomUUID());if(args.automatic&&!window.autoNativeInstalled&&!window.preparedPrograms?.includes(args.program)) throw "No se encontraron herramientas compatibles instaladas.";return {connection_id:"native-connection",catalog_sha256:"d".repeat(64),transport:args.mcp ? "mcp" : "cli",tools:[{name:"program_owned_tool"},{name:"observe_native_state"}]};}
+      if (command === "prepare_diagnostic_tool") {
+        args.events.onmessage(crypto.randomUUID());
+        if(window.prepareCancelled) throw "Preparación detenida.";
+        if(args.program==="serial") window.preparedPrograms=[...(window.preparedPrograms??[]),args.program];
+        return args.program==="serial" ? "pySerial preparado en entorno privado." : "Instalador oficial verificado abierto; completa sus opciones.";
+      }
       if (command === "disconnect_native_tools") return;
       if (command === "install_agent_companion") {
         if (window.refuseCompanionInstall) throw "No se reemplazó el complemento existente.";
@@ -188,7 +194,7 @@ try {
     assert.equal(prompt.desktop_context.document_scope, "choose_program");
     assert.equal(prompt.desktop_context.current_job, null);
     assert.equal(prompt.desktop_context.cad_document_source, undefined);
-    assert.deepEqual(Object.keys(prompt.desktop_context.available_programs), ["freecad", "drawing", "arduino", "agent", "kicad", "slice", "rea"]);
+    assert.deepEqual(Object.keys(prompt.desktop_context.available_programs), ["freecad", "drawing", "arduino", "agent", "kicad", "slice", "rea", "tshark", "usbpcap", "serial"]);
     assert.match(prompt.instruction, /no afirmes haber cambiado la selección/);
     await page.locator("#choose-program").click();
     assert.equal(await page.locator("#connections").getAttribute("open"), "");
@@ -880,7 +886,7 @@ try {
   // The same chat UI handles arbitrary native schemas for every program and provider.
   for(const provider of ["codex","claude","ollama_local","ollama_cloud"]) {
     await page.locator("#provider").selectOption(provider);
-    for(const program of ["freecad","drawing","arduino","agent","kicad","slice","rea"]) {
+    for(const program of ["freecad","drawing","arduino","agent","kicad","slice","rea","tshark","usbpcap","serial"]) {
       await page.locator("#new-chat").click();await page.locator("#program").selectOption(program);
       if(program==="rea") assert.deepEqual(await page.locator("#program-actions button").allTextContents(),["Detectar y conectar automáticamente","Conectar MCP nativo…"],"Rea inherited another program's file controls");
       await page.getByRole("button",{name:"Conectar MCP nativo…",exact:true}).click();await page.locator("#send:enabled").waitFor();
@@ -894,14 +900,14 @@ try {
       assert.equal(nativePrompt.desktop_context.native_tools.program,program);
       assert.equal(nativePrompt.desktop_context.project_directory,"C:\\owned\\other-folder","The save folder must follow the current selection, not the previous folder with the same project ID");
       assert.match(await page.locator("#project-name").innerText(),/Carpeta del proyecto: C:\\owned\\other-folder/);
-      assert.equal(nativePrompt.desktop_context.document_scope,"selected_native_mcp_server");
+      assert.equal(nativePrompt.desktop_context.document_scope,["tshark","usbpcap","serial"].includes(program) ? "device_diagnostics" : "selected_native_mcp_server");
       assert.equal(nativePrompt.desktop_context.current_job,null,"A new program connection inherited another program result");
       assert.match(nativePrompt.instruction,/inputSchema[\s\S]*propose_native_tool_calls/);
       const jobId=`native-router-${provider}-${program}`;
       await page.evaluate(input=>window.setPendingJob(input),{schema_version:1,native_tools_version:1,job_id:jobId,connection_id:"native-connection",program,
-        catalog_sha256:"d".repeat(64),description:"Cambiar con la herramienta propia <img src=x>",calls:[{tool:"program_owned_tool",arguments:{new_parameter:"0.1 in"}}],
+        catalog_sha256:"d".repeat(64),description:"Cambiar con la herramienta propia <img src=x>",calls:["tshark","usbpcap","serial"].includes(program) ? [] : [{tool:"program_owned_tool",arguments:{new_parameter:"0.1 in"}}],
         readback:{tool:"observe_native_state",arguments:{}},guard:{call:{tool:"observe_native_state",arguments:{}},result_sha256:"e".repeat(64)}});
-      if(program==="rea") await send("Muestra la propuesta pendiente."); else await page.locator("#program-actions button").filter({hasNotText:/Detectar y conectar|Conectar MCP nativo|Desconectar herramientas|Actualizar herramientas|Usar herramientas de la CLI/}).first().click();
+      if(["rea","tshark","usbpcap","serial"].includes(program)) await send("Muestra la propuesta pendiente."); else await page.locator("#program-actions button").filter({hasNotText:/Detectar y conectar|Conectar MCP nativo|Desconectar herramientas|Actualizar herramientas|Usar herramientas de la CLI/}).first().click();
       await page.locator("#approve:enabled").waitFor();assert.match(await page.locator("#change-facts").innerText(),/herramientas nativas[\s\S]*no son una certificación independiente/);
       assert.equal(await page.locator("#change-facts img").count(),0);
       assert((await page.locator("#change-facts").innerText()).includes("Carpeta del proyecto de Hazlo: C:\\owned\\other-folder"));
@@ -939,10 +945,31 @@ try {
       }
     }
   }
+  // Optional diagnostics setup is an explicit UI action, never a native-operation approval.
+  const setupApprovals=await page.evaluate(()=>window.approvals);
+  for(const program of ["tshark","usbpcap","serial"]) {
+    await page.locator("#program").selectOption(program);await page.locator("#send:enabled").waitFor();
+    await page.evaluate(()=>{window.prepareCancelled=true;});
+    await page.locator("#program-actions button").filter({hasText:/Descargar/}).click();await page.locator("#send:enabled").waitFor();
+    assert.match(await page.locator("#error").innerText(),/Preparación detenida/);
+    assert.equal(await page.getByRole("button",{name:"Desconectar herramientas nativas",exact:true}).count(),0);
+    await page.evaluate(()=>{window.prepareCancelled=false;});
+    await page.locator("#program-actions button").filter({hasText:/Descargar/}).click();await page.locator("#send:enabled").waitFor();
+    const prepared=await page.evaluate(()=>window.calls.filter(c=>c.command==="prepare_diagnostic_tool").at(-1));
+    assert.equal(prepared.args.program,program);
+    if(program!=="serial") {
+      assert.equal(await page.getByRole("button",{name:"Desconectar herramientas nativas",exact:true}).count(),0,"Downloading installer claimed a connection");
+      await page.evaluate(program=>{window.preparedPrograms=[...(window.preparedPrograms??[]),program];},program);
+      await page.getByRole("button",{name:"Detectar y conectar automáticamente",exact:true}).click();await page.locator("#send:enabled").waitFor();
+    }
+    assert.equal(await page.getByRole("button",{name:"Desconectar herramientas nativas",exact:true}).count(),1);
+    await page.getByRole("button",{name:"Desconectar herramientas nativas",exact:true}).click();await page.locator("#send:enabled").waitFor();
+  }
+  assert.equal(await page.evaluate(()=>window.approvals),setupApprovals,"Tool setup approved a diagnostic operation");
   // Selecting software connects discovered tools without a config-file picker or an approval.
   await page.evaluate(()=>{window.autoNativeInstalled=true;});
   const priorApprovals=await page.evaluate(()=>window.approvals);
-  for(const program of ["freecad","drawing","arduino","agent","kicad","slice","rea"]) {
+  for(const program of ["freecad","drawing","arduino","agent","kicad","slice","rea","tshark","usbpcap","serial"]) {
     await page.locator("#program").selectOption(program);await page.locator("#send:enabled").waitFor();
     assert.match(await page.locator("#connection-status").innerText(),/herramientas MCP conectadas/);
     const call=await page.evaluate(()=>window.calls.filter(c=>c.command==="connect_native_tools").at(-1));
@@ -953,5 +980,5 @@ try {
   await page.locator("#connections > summary").click();
   await page.screenshot({ path: path.join(evidence, "chat.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log("PASS: 28 native catalog routing approval/review cases; production chat entry; all four AI choices and seven program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft edits, four native DXF export and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
+  console.log("PASS: 40 native catalog routing approval/review cases; production chat entry; all four AI choices and ten program groups; 36 saved-copy, four open-FreeCAD edit four native Save As and four native STEP export and four internal native PCB and four internal native Arduino Agent, four patched CADCraft edits, four native DXF export and four circular-measurement approval/review handoffs; native facts, scope and report-only actions; delayed/duplicate completion, visible connection failures, rejection and cancellation; selected context, no automatic approvals, verified-result access, question privacy, stale-event refusal and scoped history; IPC fixtures only");
 } finally { await browser?.close(); await server.close(); }

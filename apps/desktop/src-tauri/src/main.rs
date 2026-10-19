@@ -181,6 +181,23 @@ fn disconnect_native_tools(state:State<AppState>)->Result<(),String> {
 }
 
 #[tauri::command]
+async fn prepare_diagnostic_tool(app:tauri::AppHandle,state:State<'_,AppState>,program:hazlomexa::host_tools::Program,events:Channel<Uuid>)->Result<String,String> {
+    let inspection=source_inspection(&state)?;
+    events.send(inspection.id).map_err(|_|"La preparación perdió su conversación.")?;
+    let data=app.path().app_local_data_dir().map_err(|_|"No se encontró la carpeta local de Hazlo.")?;
+    let installer=hazlomexa::diagnostic_downloads::prepare(program,&data,inspection.cancelled.clone()).await?;
+    if inspection.cancelled.load(std::sync::atomic::Ordering::SeqCst) { return Err("Preparación detenida.".into()); }
+    if let Some(path)=installer {
+        use std::os::windows::ffi::OsStrExt;
+        let file:Vec<u16>=path.as_os_str().encode_wide().chain([0]).collect();
+        let verb:Vec<u16>="open".encode_utf16().chain([0]).collect();
+        let result=unsafe {windows_sys::Win32::UI::Shell::ShellExecuteW(std::ptr::null_mut(),verb.as_ptr(),file.as_ptr(),std::ptr::null(),std::ptr::null(),1)} as isize;
+        if result<=32 { return Err("El instalador está descargado y verificado, pero Windows no pudo abrirlo. Vuelve a pulsar Descargar para reintentarlo.".into()); }
+        Ok("Se abrió el instalador oficial verificado. Completa sus opciones y permisos; después pulsa Detectar y conectar automáticamente. Puede requerir un reinicio. Hazlo no instaló controladores en silencio.".into())
+    } else { Ok("pySerial está preparado en un entorno privado de Hazlo. Pulsa Detectar y conectar automáticamente.".into()) }
+}
+
+#[tauri::command]
 async fn connect_native_tools(app:tauri::AppHandle,state:State<'_,AppState>,program:hazlomexa::host_tools::Program,mcp:bool,refresh:Option<bool>,automatic:Option<bool>,events:Channel<Uuid>)->Result<hazlomexa::native_tools::Catalog,String> {
     let inspection=source_inspection(&state)?;
     let project=state.workflow.view()?.project.ok_or("Abre o crea un proyecto para conectar el programa.")?.1;
@@ -1388,7 +1405,7 @@ fn main() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_snapshot, conversation_history, detect_clients, connect_native_tools, disconnect_native_tools, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
+        .invoke_handler(tauri::generate_handler![get_snapshot, prepare_diagnostic_tool, conversation_history, detect_clients, connect_native_tools, disconnect_native_tools, cancel_source_inspection, discover_cad_document, discover_slice, discover_live_drawing, discover_live_pcb, discover_pcb, prepare_pcb_move, desktop_codex::answer_codex_question, desktop_codex::select_codex, desktop_codex::connect_codex, desktop_codex::cancel_codex_login, desktop_codex::open_codex_login, desktop_codex::start_codex_chat, select_claude, start_claude_chat, desktop_ollama::start_ollama_chat, cancel_chat, set_agent_tools, discover_schematic, prepare_discovered_schematic, select_konnect, prepare_konnect, read_cadpilot_result, prepare_cadpilot_followup, prepare_cadpilot, select_orca, prepare_slice, select_project, select_freecad, select_arduino, select_cadcraft, prepare_drawing, discover_drawing, prepare_selected_drawing, select_kicad, prepare_kicad, read_kicad_summary, install_agent_companion, connect_agent, select_agent_sketch, start_agent_edit, edit_agent_proposal, start_proposal, edit_proposal, start_compile, edit_compile, approve_operation, cancel_job, open_artifact, start_inference, cancel_inference])
         .run(tauri::generate_context!()).expect("Hazlo Mexa desktop could not start");
 }
 

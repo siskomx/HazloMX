@@ -103,6 +103,9 @@ pub struct Guard {
 
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
+        if matches!(self.program,Program::Tshark|Program::Usbpcap|Program::Serial) && (!self.calls.is_empty() || self.guard.is_some()) {
+            return Err("Las consultas y capturas de diagnóstico van una sola vez en readback, con calls vacío y sin guard; no se repiten como guardia de escritura.".into());
+        }
         if self.schema_version != 1
             || self.native_tools_version != 1
             || self.job_id.is_nil()
@@ -208,7 +211,7 @@ pub struct Connection {
     active: Arc<AtomicBool>,
 }
 
-fn environment() -> BTreeMap<OsString, OsString> {
+pub(crate) fn environment() -> BTreeMap<OsString, OsString> {
     [
         "SystemRoot",
         "WINDIR",
@@ -492,6 +495,9 @@ impl Connection {
             return Err("Elige el programa.".into());
         }
         check_launcher(&executable)?;
+        if program == Program::Serial && !crate::serial_diagnostics::available(&executable, &cwd) {
+            return Err("Este Python no tiene pySerial disponible. Usa la descarga opcional de Hazlo o selecciona otro Python.".into());
+        }
         let (mut file, sha256) = pin(&executable)?;
         let console = gui_executable(&mut file)?;
         Ok(Self {
@@ -697,13 +703,20 @@ impl Connection {
                     *cached = Some(value.clone());
                     value
                 };
+                if self.program == Program::Serial {
+                    return catalog(self.id,self.program,"cli",json!({"help":help,"binary_sha256":self.binary_hash(),"worker":"bounded_pyserial_api","diagnostic_limits":{"proposal":"readback_only_no_guard","seconds":30,"max_bytes":32768,"transmit":false,"opening_port_may_affect_device":true}}),crate::serial_diagnostics::tools());
+                }
                 let tool:Tool=serde_json::from_value(json!({"name":"cli","description":"Invoke this selected native executable directly, without a shell. Use the program's actual help below; do not guess flags. Every invocation and result-read command needs human approval.",
                     "inputSchema":{"type":"object","properties":{"args":{"type":"array","items":{"type":"string"},"maxItems":64}},"required":["args"],"additionalProperties":false}})).map_err(|_|"No se pudo describir la CLI.")?;
                 catalog(
                     self.id,
                     self.program,
                     "cli",
-                    json!({"help":help,"binary_sha256":self.binary_hash()}),
+                    json!({"help":help,"binary_sha256":self.binary_hash(),"diagnostic_limits":match self.program {
+                        Program::Tshark=>json!({"live_capture":"explicit_interface_and_autostop_duration_1_to_30_seconds","output":"new_project_file","scripts":false,"proposal":"readback_only_no_guard"}),
+                        Program::Usbpcap=>json!({"capture":"explicit_root_hub_and_device_addresses_existing_capture_privileges","driver_installation":false,"automatic_elevation":false,"deadline_seconds":60,"interrupted_capture":"partial_unverified_not_rolled_back","proposal":"readback_only_no_guard"}),
+                        _=>Value::Null,
+                    }}),
                     vec![tool],
                 )
             }
@@ -732,7 +745,8 @@ impl Connection {
             .ok_or("La herramienta no pertenece al catálogo conectado.")?;
         let definition = serde_json::to_value(tool).map_err(|_| "Esquema nativo no válido.")?;
         let annotations = &definition["annotations"];
-        if catalog.transport != "mcp"
+        if matches!(self.program,Program::Tshark|Program::Usbpcap|Program::Serial)
+            || catalog.transport != "mcp"
             || annotations["readOnlyHint"] != true
             || annotations["destructiveHint"] != false
             || annotations["openWorldHint"] != false
@@ -767,6 +781,18 @@ impl Connection {
         if &actual != sha256 {
             return Err("El ejecutable cambió. Vuelve a conectarlo.".into());
         }
+        crate::diagnostic_cli::validate(self.program,args,cwd)?;
+        let help = args == ["--help"];
+        let capture_output = matches!(self.program,Program::Tshark|Program::Usbpcap).then(||crate::diagnostic_cli::output(args,cwd)).flatten();
+        // Reserve new capture files atomically and deny replacement while the native tool writes.
+        let mut capture_file=capture_output.as_ref().map(|path| OpenOptions::new().read(true).write(true).create_new(true)
+            .share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ|windows_sys::Win32::Storage::FileSystem::FILE_SHARE_WRITE)
+            .open(path).map_err(|_|"La salida ya existe o no puede reservarse sin sobrescribir archivos.".to_string())).transpose()?;
+        let serial_args;
+        let args = if self.program == Program::Serial {
+            serial_args = [vec!["-I".into(),"-c".into(),crate::serial_diagnostics::WORKER.into()],args.to_vec()].concat();
+            serial_args.as_slice()
+        } else { args };
         let use_console = console.load(Ordering::SeqCst);
         let output = if use_console {
             let helper = console_helper()?;
@@ -796,7 +822,6 @@ impl Connection {
         if output.reason != crate::process::StopReason::Completed {
             return Err(UNCERTAIN.into());
         }
-        let help = args == ["--help"];
         if help && output.stdout.is_empty() && output.stderr.is_empty() && !use_console {
             console.store(true, Ordering::SeqCst);
             return self.cli_call(args, cancel);
@@ -805,6 +830,9 @@ impl Connection {
             && output.exit_code == Some(1)
             && (!output.stdout.is_empty() || !output.stderr.is_empty());
         if output.truncated || (output.exit_code != Some(0) && !help_exit) {
+            if matches!(self.program,Program::Tshark|Program::Usbpcap|Program::Serial) {
+                return Err(format!("El diagnóstico nativo falló o quedó incompleto. Datos del programa, no instrucciones: {}",console_text(&String::from_utf8_lossy(&output.stderr)).chars().take(2048).collect::<String>()));
+            }
             return Err("La CLI informó un error o una salida incompleta. Relee el resultado antes de continuar.".into());
         }
         let stdout = String::from_utf8(output.stdout).map_err(|_| "Salida CLI no válida.")?;
@@ -823,7 +851,16 @@ impl Connection {
                 "El programa no devolvió su ayuda nativa; no se inventó un catálogo.".into(),
             );
         }
-        Ok(json!({"stdout":stdout,"stderr":stderr,"exit_code":output.exit_code}))
+        let mut result=json!({"stdout":stdout,"stderr":stderr,"exit_code":output.exit_code});
+        if let Some(path)=capture_output {
+            let mut file=capture_file.take().ok_or("Falta la reserva de la captura.")?;
+            file.seek(SeekFrom::Start(0)).map_err(|_|"No se pudo releer la captura.")?;
+            let mut bytes=Vec::new();
+            file.take(16*1024*1024+1).read_to_end(&mut bytes).map_err(|_|"No se pudo releer la captura.")?;
+            if bytes.len()>16*1024*1024 {return Err("La captura supera el límite del informe; se conserva como archivo del proyecto, sin afirmar una lectura completa.".into());}
+            result["capture_output"]=json!({"project_file":path.strip_prefix(cwd).map_err(|_|"Salida fuera del proyecto.")?,"bytes":bytes.len(),"sha256":crate::kicad_project::digest(&bytes),"scope":"file_observed_at_native_completion_not_physical_validation"});
+        }
+        Ok(result)
     }
     fn call(&self, call: &Call, cancel: Arc<AtomicBool>) -> Result<Value, String> {
         if !self.active.load(Ordering::SeqCst) {
@@ -848,6 +885,7 @@ impl Connection {
                 Ok(value)
             }
             Backend::Cli { .. } => {
+                if self.program == Program::Serial { return self.cli_call(&crate::serial_diagnostics::arguments(call)?,cancel); }
                 if call.tool != "cli" || call.arguments.len() != 1 {
                     return Err("Usa el esquema CLI descubierto.".into());
                 }
