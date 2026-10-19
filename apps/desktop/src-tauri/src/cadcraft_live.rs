@@ -123,6 +123,8 @@ pub struct Input {
     pub native_completion_version:Option<u32>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub native_export_check_version:Option<u32>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub native_working_version:Option<u32>,
 }
 impl Input {
     fn native(&self, value: f64) -> f64 {
@@ -137,7 +139,8 @@ impl Input {
         self.before.validate()?;
         if self.schema_version != 1
             || self.native_completion_version.is_some_and(|version|version!=1)
-            || self.native_export_check_version.is_some_and(|version|version!=1 || !matches!(self.operation,Operation::ExportDxf{}) || self.native_completion_version!=Some(1))
+            || self.native_export_check_version.is_some_and(|version|!matches!(version,1|2) || !matches!(self.operation,Operation::ExportDxf{}) || self.native_completion_version!=Some(1))
+            || self.native_working_version.is_some_and(|version|version!=1 || matches!(self.operation,Operation::ExportDxf{}) || self.native_completion_version!=Some(1) || self.before.document_sha256.is_none())
             || self.live_drawing_version != 1
             || self.job_id.is_nil()
             || self.description.trim().is_empty()
@@ -558,8 +561,12 @@ pub struct NativeCopyCheck{
     native_bytes_roundtrip_equal:bool,model_geometry_checked:bool,native_units:u64,
     coordinate_frame:String,native_open_dependencies:Vec<String>,
     rendering_resources_checked:bool,gui_state_checked:bool,physical_function_checked:bool,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    source_metadata_checked:Option<bool>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    source_metadata_scope:Option<String>,
 }
-fn copy_check(input:&Input)->Option<NativeCopyCheck>{input.native_export_check_version.map(|_|NativeCopyCheck{version:1,verifier_sha256:VERIFIER_SHA256.into(),native_reopen_checked:true,native_bytes_roundtrip_equal:true,model_geometry_checked:true,native_units:input.before.insunits,coordinate_frame:"drawing_model".into(),native_open_dependencies:Vec::new(),rendering_resources_checked:false,gui_state_checked:false,physical_function_checked:false})}
+fn copy_check(input:&Input)->Option<NativeCopyCheck>{input.native_export_check_version.map(|version|NativeCopyCheck{version,verifier_sha256:VERIFIER_SHA256.into(),native_reopen_checked:true,native_bytes_roundtrip_equal:true,model_geometry_checked:true,native_units:input.before.insunits,coordinate_frame:"drawing_model".into(),native_open_dependencies:Vec::new(),rendering_resources_checked:false,gui_state_checked:false,physical_function_checked:false,source_metadata_checked:(version==2).then_some(true),source_metadata_scope:(version==2).then(||"drawing_inspect_layers_and_named_tables_layouts".into())})}
 pub fn validate_report(input: &Input, report: &Receipt) -> Result<(), String> {
     input.validate()?;
     if report.native_copy_check!=copy_check(input){return Err("Las comprobaciones de la copia no pertenecen al alcance aprobado.".into());}
@@ -653,6 +660,7 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,profile:
 }
 fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel:Arc<AtomicBool>,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<(),String>{
     input.validate()?;
+    if input.native_working_version.is_some() && dispatch.is_none(){return Err("La nueva versión requiere el lote aprobado de Hazlo; no se envió la edición.".into());}
     let mut session = connection.0.lock().map_err(|_| INVALID)?;
     let (binding, before) = session.binding.take().ok_or(INVALID)?;
     if before != input.before {
@@ -663,7 +671,7 @@ fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel
     let recorded=methods.as_array().ok_or(INVALID)?.iter().any(|method|method["method"]=="engine.execute_recorded");
     if (dispatch.is_some() || input.native_completion_version==Some(1)) && !recorded{return Err("Este runtime CADCraft no conserva la finalización nativa requerida. Conecta el runtime probado con engine.execute_recorded; no se envió la edición.".into());}
     if recorded {
-        if matches!(input.operation,Operation::ExportDxf{}){
+        if matches!(input.operation,Operation::ExportDxf{}) || input.native_working_version.is_some(){
             let executable=session.runtime_directory.join("cadcraft-cli.exe");let _pin=pin_runtime(&executable,VERIFIER_SHA256,&cancel)?;
             let location=json!({"version":1,"input_sha256":completion_identity(input)?,"executable":executable});
             crate::kicad_project::write_new(&stage.join("drawing-verifier.json"),&serde_json::to_vec(&location).map_err(|_|INVALID)?)?;
@@ -677,7 +685,19 @@ fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel
             return Err("CADCraft confirmó que no inició la edición porque su precondición cambió. Conserva el trabajo y relee el dibujo antes de preparar otra propuesta.".into());
         }
         if let Some(dispatch)=dispatch{dispatch.retain_drawing_completion(input,&proof)?;}
-        return finish_completion(input,&proof,stage,Some(&session.runtime_directory),profile,cancel);
+        finish_completion(input,&proof,stage,Some(&session.runtime_directory),profile,cancel.clone())?;
+        if input.native_working_version.is_some(){
+            let copy=working_version_input(input,&proof)?;
+            let directory=stage.join("DrawingVersion");std::fs::create_dir(&directory).map_err(|_|"La edición se conserva; su carpeta de copia ya existe o no pudo reservarse. No repitas la edición.")?;
+            let _pins=crate::project::pin_lineage(&directory).map_err(|_|INVALID)?;
+            let captured=session.call("engine.execute_recorded",json!({"expected":proof["after"]["binding"],"command":"document.bytes","params":{"format":"dxf"},"input_sha256":completion_identity(&copy)?,"receipt_path":directory.join("drawing-completion.json")}),&cancel)?;
+            let dispatch=dispatch.ok_or(INVALID)?;
+            dispatch.retain_drawing_copy_capture(input,&captured)?;
+            finish_completion(&copy,&captured,&directory,Some(&session.runtime_directory),profile,cancel)?;
+            let hash=crate::kicad_project::digest(&crate::kicad_project::read_regular(&directory.join("result.json"),65536)?);
+            dispatch.retain_drawing_copy_check(input,&hash)?;
+        }
+        return Ok(());
     }
     let result = session.call_with_dispatch(
         "engine.execute_checked",
@@ -689,6 +709,7 @@ fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel
         Some(export_dxf(
             &result,
             &before,
+            None,
             &session.runtime_directory,
             stage,
             profile,
@@ -745,12 +766,13 @@ pub(crate) fn recover_recorded_result(directory:&Path,input:&Input)->Result<bool
     let Some(record)=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveDrawing(input.clone()))? else{return Ok(false);};let Some(hash)=&record.drawing_completion_sha256 else{return Ok(false);};
     // An unfinished export still needs its separate native reopen, never a startup process launch.
     if matches!(input.operation,Operation::ExportDxf{}) && record.outcome!=crate::native_journal::Outcome::Acknowledged{return Ok(false);}
+    if let Some(checked)=&record.drawing_copy_check_sha256{restore_working_version_report(directory,input,record.drawing_copy_capture_sha256.as_deref().ok_or(INVALID)?,checked)?;}
     let report=confirmed_completion(directory,input,hash)?;validate_artifacts(directory,input,&report)?;let bytes=serde_json::to_vec_pretty(&report).map_err(|_|INVALID)?;let path=directory.join("result.json");
     if path.try_exists().map_err(|_|INVALID)?{if crate::kicad_project::read_regular(&path,65536)?!=bytes{return Err("El informe CADCraft cambió; se conserva sin reemplazarlo.".into());}}else{crate::project::atomic_json(&path,&report,false).map_err(|_|"El recibo sigue local; no se pudo recuperar su informe. No repitas la edición.")?;}Ok(true)
 }
 fn finish_completion(input:&Input,proof:&Value,directory:&Path,runtime:Option<&Path>,profile:&Path,cancel:Arc<AtomicBool>)->Result<(),String>{
     let (_,after)=observation_from_native(&proof["after"],input.before.instance_id)?;
-    let exported_document=if matches!(input.operation,Operation::ExportDxf{}){Some(export_dxf(&proof["command_result"],&input.before,runtime.ok_or("Falta el verificador CADCraft seleccionado; el recibo sigue local y no se repitió la exportación.")?,directory,profile,cancel)?)}else{None};
+    let exported_document=if matches!(input.operation,Operation::ExportDxf{}){Some(export_dxf(&proof["command_result"],&input.before,(input.native_export_check_version==Some(2)).then_some(&proof["after"]["drawing"]),runtime.ok_or("Falta el verificador CADCraft seleccionado; el recibo sigue local y no se repitió la exportación.")?,directory,profile,cancel)?)}else{None};
     let report=Receipt{native_copy_check:copy_check(input),native_drawing_version:1,job_id:input.job_id,before_sha256:input.before.binding_sha256.clone(),after,saved:false,native_undo_available:exported_document.is_none(),exported_document};
     validate_artifacts(directory,input,&report)?;
     let bytes=serde_json::to_vec_pretty(&report).map_err(|_|INVALID)?;let path=directory.join("result.json");
@@ -779,6 +801,62 @@ pub(crate) fn recover_result(input:&Input,directory:&Path,profile:&Path,cancel:A
     finish_completion(input,&proof,directory,runtime.as_deref(),profile,cancel)?;Ok(true)
 }
 
+// A separate recorded read captures the exact native binding returned by the edit.
+// Recovery can recheck retained bytes, but never recapture or repeat that edit.
+fn working_version_input(input:&Input,proof:&Value)->Result<Input,String>{
+    if input.native_working_version!=Some(1){return Err(INVALID.into());}
+    let (_,after)=observation_from_native(&proof["after"],input.before.instance_id)?;
+    let mut copy=input.clone();copy.before=after;copy.operation=Operation::ExportDxf{};
+    copy.units=if copy.before.insunits==1{crate::cadcraft::Units::In}else{crate::cadcraft::Units::Mm};
+    copy.receipt_sha256=None;copy.native_working_version=None;copy.native_export_check_version=Some(2);copy.validate()?;Ok(copy)
+}
+pub(crate) fn confirmed_working_capture(directory:&Path,input:&Input,hash:&str)->Result<(Input,Receipt),String>{
+    let _pins=crate::project::pin_lineage(&directory.join("DrawingVersion")).map_err(|_|INVALID)?;
+    let _original_pin=crate::kicad_project::open_regular(&directory.join("drawing-completion.json"),FRAME_LIMIT as u64)?;
+    let _capture_pin=crate::kicad_project::open_regular(&directory.join("DrawingVersion/drawing-completion.json"),FRAME_LIMIT as u64)?;
+    let original=read_completion(input,directory)?;
+    let copy=working_version_input(input,&original)?;
+    let captured=read_completion(&copy,&directory.join("DrawingVersion"))?;
+    if captured["after"]["drawing"]!=original["after"]["drawing"] || captured["after"]["units"]!=original["after"]["units"]{return Err("El dibujo cambió durante la captura. Se conserva la edición y la copia pendiente; no se repite ninguna operación.".into());}
+    let report=confirmed_completion(&directory.join("DrawingVersion"),&copy,hash)?;
+    Ok((copy,report))
+}
+pub(crate) fn validate_working_version(directory:&Path,input:&Input,capture_hash:&str,check_hash:&str)->Result<(),String>{
+    checked_working_version(directory,input,capture_hash,check_hash,true).map(|_|())
+}
+pub(crate) fn confirmed_working_version(directory:&Path,input:&Input,capture_hash:&str,check_hash:&str)->Result<(),String>{
+    checked_working_version(directory,input,capture_hash,check_hash,false).map(|_|())
+}
+fn checked_working_version(directory:&Path,input:&Input,capture_hash:&str,check_hash:&str,require_report:bool)->Result<Receipt,String>{
+    if !crate::kicad_project::valid_hash(check_hash){return Err(INVALID.into());}
+    let child=directory.join("DrawingVersion");let _pins=crate::project::pin_lineage(&child).map_err(|_|INVALID)?;
+    let(copy,expected)=confirmed_working_capture(directory,input,capture_hash)?;
+    let canonical=serde_json::to_vec_pretty(&expected).map_err(|_|INVALID)?;let path=child.join("result.json");
+    if crate::kicad_project::digest(&canonical)!=check_hash || if path.try_exists().map_err(|_|INVALID)?{crate::kicad_project::read_regular(&path,65536)?!=canonical}else{require_report}{return Err("La comprobación de la versión CADCraft cambió o falta; se conserva sin reemplazarla.".into());}
+    validate_artifacts(&child,&copy,&expected)?;Ok(expected)
+}
+fn restore_working_version_report(directory:&Path,input:&Input,capture_hash:&str,check_hash:&str)->Result<(),String>{
+    let expected=checked_working_version(directory,input,capture_hash,check_hash,false)?;
+    let path=directory.join("DrawingVersion/result.json");if !path.try_exists().map_err(|_|INVALID)?{crate::project::atomic_json(&path,&expected,false).map_err(|_|"La copia comprobada sigue local; no pudo recuperarse su informe. No repitas la edición.")?;}Ok(())
+}
+pub(crate) fn recover_working_version(directory:&Path,input:&Input,profile:&Path,cancel:Arc<AtomicBool>)->Result<String,String>{
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|INVALID)?;
+    let record=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveDrawing(input.clone()))?.ok_or(INVALID)?;
+    let hash=record.drawing_copy_capture_sha256.as_deref().ok_or("La edición está confirmada, pero falta una captura nativa vinculada. Conserva el dibujo; no repitas la edición ni adoptes una copia sin confirmar.")?;
+    if let Some(checked)=record.drawing_copy_check_sha256{restore_working_version_report(directory,input,hash,&checked)?;return Ok(checked);}
+    let(copy,_)=confirmed_working_capture(directory,input,hash)?;
+    let child=directory.join("DrawingVersion");let _child_pins=crate::project::pin_lineage(&child).map_err(|_|INVALID)?;
+    let proof=read_completion(&copy,&child)?;
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Location{version:u32,input_sha256:String,executable:PathBuf}
+    let location:Location=serde_json::from_slice(&crate::kicad_project::read_regular(&directory.join("drawing-verifier.json"),8192)?).map_err(|_|INVALID)?;
+    crate::project::valid_location(&location.executable).map_err(|_|INVALID)?;
+    if location.version!=1 || location.input_sha256!=completion_identity(input)? || location.executable.file_name().and_then(|s|s.to_str())!=Some("cadcraft-cli.exe"){return Err(INVALID.into());}
+    finish_completion(&copy,&proof,&child,location.executable.parent(),profile,cancel)?;
+    Ok(crate::kicad_project::digest(&crate::kicad_project::read_regular(&child.join("result.json"),65536)?))
+}
+
 pub(crate) fn validate_artifacts(
     directory: &Path,
     input: &Input,
@@ -797,6 +875,7 @@ pub(crate) fn validate_artifacts(
 
 fn decode_export(result: &Value) -> Result<Vec<u8>, String> {
     use base64::Engine;
+    if !result.as_object().is_some_and(|object|object.len()==2 && object.contains_key("data") && object.contains_key("bytes")){return Err("CADCraft informó pérdidas o una respuesta de copia no reconocida. Conserva el trabajo; la copia no está comprobada.".into());}
     let data = result["data"]
         .as_str()
         .filter(|s| !s.is_empty() && s.len() <= EXPORT_LIMIT * 4 / 3 + 4)
@@ -847,9 +926,17 @@ fn verify_native_roundtrip_output(stdout:&[u8],before:&Observation,original:&[u8
     let encoded:Value=serde_json::from_slice(lines[2]).map_err(|_|INVALID)?;
     if decode_export(&encoded)?!=original{return Err("La copia reabierta no conserva todos los bytes de la serialización nativa. Se conserva sin reemplazarla; no repitas la edición.".into());}Ok(())
 }
+fn verify_source_metadata(stdout:&[u8],source:&Value)->Result<(),String>{
+    let line=stdout.split(|b|*b==b'\n').find(|line|!line.iter().all(u8::is_ascii_whitespace)).ok_or(INVALID)?;
+    let reopened:Value=serde_json::from_slice(line).map_err(|_|INVALID)?;
+    for key in ["layers","currentLayer","linetypes","textStyles","dimStyles","blocks","layouts","counts","entityCount","extents","skipped","space","blockEditor"]{
+        if source.get(key).is_none() || source.get(key)!=reopened.get(key){return Err("La copia no conserva los metadatos observables del dibujo. Se conserva sin reemplazarla; no repitas la edición.".into());}
+    }Ok(())
+}
 fn export_dxf(
     result: &Value,
     before: &Observation,
+    source_metadata:Option<&Value>,
     runtime: &Path,
     stage: &Path,
     profile: &Path,
@@ -934,6 +1021,7 @@ fn export_dxf(
         return Err(INVALID.into());
     }
     verify_native_roundtrip_output(&reply.stdout, before, &bytes)?;
+    if let Some(source)=source_metadata{verify_source_metadata(&reply.stdout,source)?;}
     Ok(crate::kicad_project::CapturedFile {
         path: "Drawing.dxf".into(),
         sha256: crate::kicad_project::digest(&bytes),
@@ -948,13 +1036,57 @@ pub(crate) mod tests {
         let(mut input,mut proof)=recorded_fixture();input.native_completion_version=Some(1);proof["input_sha256"]=json!(completion_identity(&input).unwrap());let mut report=receipt(&input);report.after=observation_from_native(&proof["after"],input.before.instance_id).unwrap().1;validate_report(&input,&report).unwrap();(input,proof,report)
     }
     #[test]
+    fn working_version_scope_is_bound_without_retrofitting_legacy_inputs(){
+        let(mut input,_,_)=completed_fixture();assert!(serde_json::to_value(&input).unwrap().get("native_working_version").is_none());let old=completion_identity(&input).unwrap();input.native_working_version=Some(1);input.validate().unwrap();assert_ne!(completion_identity(&input).unwrap(),old);let valid=input.clone();input.native_working_version=Some(2);assert!(input.validate().is_err());input=valid.clone();input.native_completion_version=None;assert!(input.validate().is_err());input=valid.clone();input.before.document_sha256=None;assert!(input.validate().is_err());input=valid;input.operation=Operation::ExportDxf{};assert!(input.validate().is_err());
+    }
+    #[test]
+    fn source_metadata_and_declared_native_losses_cannot_be_replaced_by_geometry_only(){
+        let source=json!({"layers":[{"name":"Owned","locked":true}],"currentLayer":"Owned","linetypes":["Continuous"],"textStyles":["Standard"],"dimStyles":["Standard"],"blocks":[],"layouts":["Layout1"],"counts":{"Circle":1},"entityCount":1,"extents":[[0,0],[2,2]],"skipped":{"count":0,"sections":{}},"space":"Model","blockEditor":null});
+        verify_source_metadata(&serde_json::to_vec(&source).unwrap(),&source).unwrap();let mut changed=source.clone();changed["layers"][0]["locked"]=json!(false);assert!(verify_source_metadata(&serde_json::to_vec(&changed).unwrap(),&source).is_err());changed=source.clone();changed.as_object_mut().unwrap().remove("layouts");assert!(verify_source_metadata(&serde_json::to_vec(&changed).unwrap(),&source).is_err());
+        let mut bytes=json!({"data":"RFhG","bytes":3});decode_export(&bytes).unwrap();bytes["notSaved"]=json!({"PRIVATE_TYPE":1});let error=decode_export(&bytes).unwrap_err();assert!(!error.contains("PRIVATE_TYPE"));bytes.as_object_mut().unwrap().remove("notSaved");bytes["unrecognized"]=json!(true);assert!(decode_export(&bytes).is_err());
+    }
+    #[test]
+    fn working_copy_recovery_requires_independent_capture_and_reopen_anchors(){
+        use crate::project::{Project,OperationInput,Phase};
+        use std::fs;
+        for mode in ["uncaptured","unbound","captured","checked","changed_copy","changed_capture","changed_check","occupied","missing_report","missing_copy_report"]{
+            let root=std::env::temp_dir().join(format!("hazlo-drawing-version-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
+            let project=Project::create(&root).unwrap();let(mut input,mut proof,_)=completed_fixture();input.native_working_version=Some(1);proof["input_sha256"]=json!(completion_identity(&input).unwrap());input.validate().unwrap();
+            let operation=OperationInput::LiveDrawing(input.clone());let mut snapshot=project.snapshot(operation.clone(),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=crate::project::RunSource::Mcp;project.save(&snapshot).unwrap();let stage=project.reserve_stage(input.job_id).unwrap();let path=stage.path.clone();
+            let fence=crate::live_dispatch::Dispatch::start(&path,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());fs::write(path.join("drawing-completion.json"),serde_json::to_vec(&proof).unwrap()).unwrap();fence.retain_drawing_completion(&input,&proof).unwrap();finish_completion(&input,&proof,&path,None,&root.join("not-launched"),Arc::new(AtomicBool::new(false))).unwrap();
+            let child=path.join("DrawingVersion");
+            if mode!="uncaptured"{
+                fs::create_dir(&child).unwrap();let copy=working_version_input(&input,&proof).unwrap();let mut after=proof["after"].clone();after["binding"]=json!({"token":"101"});let captured=json!({"version":1,"input_sha256":completion_identity(&copy).unwrap(),"outcome":"completed","command_result":{"data":"RFhG","bytes":3},"after":after});let bytes=serde_json::to_vec(&captured).unwrap();fs::write(child.join("drawing-completion.json"),&bytes).unwrap();
+                if mode!="unbound"{fence.retain_drawing_copy_capture(&input,&captured).unwrap();}
+                let(_,report)=confirmed_working_capture(&path,&input,&crate::kicad_project::digest(&bytes)).unwrap();let report=serde_json::to_vec_pretty(&report).unwrap();fs::write(child.join("result.json"),&report).unwrap();fs::write(child.join("Drawing.dxf"),b"DXF").unwrap();
+                if !matches!(mode,"unbound"|"captured"){fence.retain_drawing_copy_check(&input,&crate::kicad_project::digest(&report)).unwrap();}
+            }
+            if matches!(mode,"uncaptured"|"unbound"|"captured"){
+                let mut checked=operation.clone();checked.retain_receipt(&path).unwrap();assert!(project.validate_outputs(&path,&checked).is_err());assert!(fence.complete(&checked).is_err());assert!(crate::live_dispatch::recover_checked(&path,&checked).is_err());
+                assert!(recover_working_version(&path,&input,&root.join("not-launched"),Arc::new(AtomicBool::new(false))).is_err());assert!(!root.join("not-launched").exists());
+            }
+            assert!(fence.enter().is_err());drop(fence);drop(stage);
+            fs::write(root.join("manual.native"),b"preserve valid later work").unwrap();
+            match mode{
+                "changed_copy"=>fs::write(child.join("Drawing.dxf"),b"preserve changed copy").unwrap(),
+                "changed_capture"=>fs::write(child.join("drawing-completion.json"),b"preserve changed capture").unwrap(),
+                "changed_check"=>fs::write(child.join("result.json"),b"preserve changed check").unwrap(),
+                "occupied"=>{fs::create_dir(project.artifact_directory(input.job_id)).unwrap();fs::write(project.artifact_directory(input.job_id).join("manual.native"),b"preserve occupied output").unwrap();},
+                "missing_report"=>fs::remove_file(path.join("result.json")).unwrap(),"missing_copy_report"=>fs::remove_file(child.join("result.json")).unwrap(),_=>(),
+            }
+            if matches!(mode,"changed_copy"|"changed_capture"|"changed_check"){assert!(project.recover().is_err(),"{mode}");}
+            else{let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,if matches!(mode,"checked"|"missing_report"|"missing_copy_report"){Phase::Completed}else{Phase::Interrupted},"{mode}");let summary=project.native_recovery(None).unwrap();assert_eq!(summary[0].acknowledged,1);assert_eq!(summary[0].uncertain,0);assert_eq!(summary[0].needs_review,matches!(mode,"uncaptured"|"unbound"|"captured"));if mode=="checked"{let directory=project.artifact_directory(input.job_id);let record=crate::live_dispatch::read(&directory,&operation).unwrap().unwrap();crate::live_dispatch::retain_drawing_copy_check(&directory,&input,record.drawing_copy_check_sha256.as_deref().unwrap()).unwrap();assert!(crate::live_dispatch::retain_drawing_copy_check(&directory,&input,&"f".repeat(64)).is_err());}}
+            assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"preserve valid later work");drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
     fn native_export_checks_are_approval_bound_and_never_retrofitted_into_legacy_reports(){
-        let mut input=fixture_input();assert!(serde_json::to_value(&input).unwrap().get("native_export_check_version").is_none());input.native_export_check_version=Some(1);assert!(input.validate().is_err());input.operation=Operation::ExportDxf{};input.units=crate::cadcraft::Units::Mm;assert!(input.validate().is_err());input.native_completion_version=Some(1);input.validate().unwrap();let current=completion_identity(&input).unwrap();let mut after=input.before.clone();after.binding_sha256="b".repeat(64);let mut report=Receipt{native_copy_check:copy_check(&input),native_drawing_version:1,job_id:input.job_id,before_sha256:input.before.binding_sha256.clone(),after,saved:false,native_undo_available:false,exported_document:Some(crate::kicad_project::CapturedFile{path:"Drawing.dxf".into(),bytes:3,sha256:crate::kicad_project::digest(b"DXF")})};validate_report(&input,&report).unwrap();report.native_copy_check.as_mut().unwrap().gui_state_checked=true;assert!(validate_report(&input,&report).is_err());report.native_copy_check=copy_check(&input);input.native_export_check_version=None;assert_ne!(completion_identity(&input).unwrap(),current);assert!(validate_report(&input,&report).is_err());report.native_copy_check=None;validate_report(&input,&report).unwrap();assert!(serde_json::to_value(&report).unwrap().get("native_copy_check").is_none());input.native_export_check_version=Some(2);assert!(input.validate().is_err());
+        let mut input=fixture_input();assert!(serde_json::to_value(&input).unwrap().get("native_export_check_version").is_none());input.native_export_check_version=Some(1);assert!(input.validate().is_err());input.operation=Operation::ExportDxf{};input.units=crate::cadcraft::Units::Mm;assert!(input.validate().is_err());input.native_completion_version=Some(1);input.validate().unwrap();let current=completion_identity(&input).unwrap();let mut after=input.before.clone();after.binding_sha256="b".repeat(64);let mut report=Receipt{native_copy_check:copy_check(&input),native_drawing_version:1,job_id:input.job_id,before_sha256:input.before.binding_sha256.clone(),after,saved:false,native_undo_available:false,exported_document:Some(crate::kicad_project::CapturedFile{path:"Drawing.dxf".into(),bytes:3,sha256:crate::kicad_project::digest(b"DXF")})};validate_report(&input,&report).unwrap();report.native_copy_check.as_mut().unwrap().gui_state_checked=true;assert!(validate_report(&input,&report).is_err());report.native_copy_check=copy_check(&input);input.native_export_check_version=None;assert_ne!(completion_identity(&input).unwrap(),current);assert!(validate_report(&input,&report).is_err());report.native_copy_check=None;validate_report(&input,&report).unwrap();assert!(serde_json::to_value(&report).unwrap().get("native_copy_check").is_none());input.native_export_check_version=Some(3);assert!(input.validate().is_err());
     }
     #[test]
     fn external_dependency_export_is_preserved_without_starting_a_native_verifier(){
         use base64::Engine;
-        let root=std::env::temp_dir().join(format!("hazlo-dxf-boundary-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let bytes=b"0\nSECTION\n2\nBLOCKS\n0\nBLOCK\n2\nReference\n70\n4\n1\nC:/Unapproved/Outside.dxf\n0\nENDBLK\n0\nENDSEC\n0\nEOF\n";let result=json!({"data":base64::engine::general_purpose::STANDARD.encode(bytes),"bytes":bytes.len()});let error=export_dxf(&result,&fixture_input().before,&root.join("missing-runtime"),&root,&root.join("not-launched"),Arc::new(AtomicBool::new(false))).unwrap_err();assert!(error.contains("No se cargaron referencias externas"));assert!(!error.contains("Outside.dxf"));assert_eq!(std::fs::read(root.join("Drawing.dxf")).unwrap(),bytes);assert!(!root.join("not-launched").exists());assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+        let root=std::env::temp_dir().join(format!("hazlo-dxf-boundary-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let bytes=b"0\nSECTION\n2\nBLOCKS\n0\nBLOCK\n2\nReference\n70\n4\n1\nC:/Unapproved/Outside.dxf\n0\nENDBLK\n0\nENDSEC\n0\nEOF\n";let result=json!({"data":base64::engine::general_purpose::STANDARD.encode(bytes),"bytes":bytes.len()});let error=export_dxf(&result,&fixture_input().before,None,&root.join("missing-runtime"),&root,&root.join("not-launched"),Arc::new(AtomicBool::new(false))).unwrap_err();assert!(error.contains("No se cargaron referencias externas"));assert!(!error.contains("Outside.dxf"));assert_eq!(std::fs::read(root.join("Drawing.dxf")).unwrap(),bytes);assert!(!root.join("not-launched").exists());assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn production_dispatch_retains_a_completion_before_report_failure_and_refuses_unrecorded_writes(){
@@ -1013,6 +1145,7 @@ pub(crate) mod tests {
             let file = export_dxf(
                 &records[2],
                 &before,
+                Some(&records[0]),
                 &runtime,
                 &stage,
                 &stage.join("profile"),
@@ -1025,7 +1158,7 @@ pub(crate) mod tests {
             );
             let mut after = before.clone();
             after.binding_sha256 = "b".repeat(64);
-            let input = Input {native_export_check_version:Some(1),native_completion_version:Some(1),agreement:Some(crate::native_tools::tests::agreement_fixture()),
+            let input = Input {native_working_version:None,native_export_check_version:Some(2),native_completion_version:Some(1),agreement:Some(crate::native_tools::tests::agreement_fixture()),
                 schema_version: 1,
                 live_drawing_version: 1,
                 job_id: Uuid::new_v4(),
@@ -1052,7 +1185,7 @@ pub(crate) mod tests {
         }
     }
     pub(crate) fn fixture_input() -> Input {
-        Input {native_export_check_version:None,native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
+        Input {native_working_version:None,native_export_check_version:None,native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_drawing_version: 1,
             job_id: Uuid::new_v4(),

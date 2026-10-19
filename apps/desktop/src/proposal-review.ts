@@ -73,7 +73,7 @@ export function proposalFacts(run: Snapshot): string[] {
     facts.push("Cambiar el dibujo abierto en CADCraft.","Dibujo: "+input.before.title,"Objetivo: "+input.description);
     if(op.action==="circle") facts.push(`Crear un círculo de ${number(op.diameter)} ${unit} de diámetro (ancho completo), con centro horizontal ${number(op.center[0])}, vertical ${number(op.center[1])} ${unit}.`);
     else facts.push(`Mover el círculo ${number(op.delta[0])} ${unit} en horizontal y ${number(op.delta[1])} ${unit} en vertical.`);
-    facts.push("Verás el cambio en CADCraft y puedes deshacerlo allí. No se guarda ni exporta el dibujo.","Hazlo comprobará la identidad nativa y releerá la geometría. Cancelar detiene la espera y no deshace una edición aceptada.");
+    facts.push(input.native_working_version===1?"Verás el cambio en CADCraft y puedes deshacerlo allí. El original permanece sin guardar; Hazlo incluye una nueva copia DXF y comprueba sus datos, geometría y unidades al reabrirla por separado. Se comparan las capas y los nombres de estilos y hojas; no todas sus propiedades. La vista y la función física no se comprueban.":"Verás el cambio en CADCraft y puedes deshacerlo allí. No se guarda ni exporta el dibujo.","Hazlo comprobará la identidad nativa y releerá la geometría. Cancelar detiene la espera y no deshace una edición aceptada.");
   } else if(input.live_agent_version){
     if(input.save) facts.push("Guardar el sketch abierto con Arduino Agent.", "Sketch: " + input.before.name,
       "Objetivo: " + input.description, "Se guardará el código actual, incluida tu nota y los cambios sin guardar.",

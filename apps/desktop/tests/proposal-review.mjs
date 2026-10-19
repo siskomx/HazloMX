@@ -25,6 +25,7 @@ for (const units of ["mm","in"]) {
   assert.match(drawingExport,/no cambia de nombre/);
   assert(!drawingExport.includes("Mover el círculo")&&!drawingExport.includes("undefined")&&!drawingExport.includes("puedes deshacerlo"));
 const checkedExport=review({live_drawing_version:1,native_export_check_version:1,description:"Conserva el dibujo",units,before:{title:"Plano.dxf",dirty:true},operation:{action:"export_dxf"}});assert.match(checkedExport,/mismos datos DXF/);assert.match(checkedExport,/referencias externas/);assert.match(checkedExport,/función física no se comprueban/);
+const checkedMove=review({live_drawing_version:1,native_working_version:1,description:"Mover y conservar",units,before:{title:"Plano.dxf",dirty:true},operation:{action:"move_circle",handle:"100",delta:[1,0]}});assert.match(checkedMove,/incluye una nueva copia DXF/);assert.match(checkedMove,/original permanece sin guardar/);assert.match(checkedMove,/función física no se comprueban/);assert.doesNotMatch(checkedMove,/No se guarda ni exporta/);
 }
 const pcbExport=review({live_pcb_version:1,export_copy:true,board_name:"Placa.kicad_pcb",description:"Conserva una copia de la placa abierta"});
 assert.match(pcbExport,/Exportar una copia editable/);

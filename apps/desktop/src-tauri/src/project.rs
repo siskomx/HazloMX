@@ -698,6 +698,7 @@ impl Project {
             (OperationInput::LivePcb(_), ArtifactFormat::LivePcbReport) => "result.json".into(),
             (OperationInput::LiveAgent(_), ArtifactFormat::LiveAgentReport) => "result.json".into(),
             (OperationInput::LiveDrawing(crate::cadcraft_live::Input {operation:crate::cadcraft_live::Operation::ExportDxf {},..}), ArtifactFormat::Drawing) => "Drawing.dxf".into(),
+            (OperationInput::LiveDrawing(input), ArtifactFormat::NativeWorkingVersion) if input.native_working_version.is_some() => "DrawingVersion".into(),
             (OperationInput::LiveDrawing(_), ArtifactFormat::LiveDrawingReport) => "result.json".into(),
             (OperationInput::NativeTools(_), ArtifactFormat::NativeToolsReport) => "result.json".into(),
             (OperationInput::PublicDocument(_), ArtifactFormat::PublicDocumentReport) => "result.json".into(),
@@ -923,6 +924,8 @@ impl Project {
         }
         if let OperationInput::LiveDrawing(input) = input {
             let record=crate::live_dispatch::read(directory,&OperationInput::LiveDrawing(input.clone())).map_err(io::Error::other)?;if input.native_completion_version==Some(1) && record.is_none() || record.as_ref().is_some_and(|record|record.drawing_completion_required && record.drawing_completion_sha256.is_none()){return Err(error("Falta el vínculo original de finalización CADCraft; el trabajo sigue pendiente."));}
+            if input.native_working_version.is_some() && record.as_ref().is_none_or(|record|record.drawing_copy_check_sha256.is_none()){return Err(error("La edición CADCraft se conserva; su nueva versión sigue pendiente de comprobar."));}
+            if input.native_working_version.is_some(){let record=record.as_ref().ok_or_else(||error("Falta el lote CADCraft."))?;crate::cadcraft_live::validate_working_version(directory,input,record.drawing_copy_capture_sha256.as_deref().ok_or_else(||error("Falta la captura CADCraft."))?,record.drawing_copy_check_sha256.as_deref().ok_or_else(||error("Falta la comprobación CADCraft."))?).map_err(io::Error::other)?;}
             let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),65536).map_err(io::Error::other)?;
             if input.receipt_sha256.as_deref()!=Some(&crate::kicad_project::digest(&bytes)) {
                 return Err(error("El informe de CADCraft cambió."));
@@ -1086,7 +1089,7 @@ impl Project {
             if let OperationInput::LiveDrawing(input)=&snapshot.input{
                     let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
                     if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::cadcraft_live::recover_recorded_result(&directory,input),Ok(true)){
-                        let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;self.validate_outputs(&directory,&checked)?;crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}
+                        let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;if self.validate_outputs(&directory,&checked).is_ok(){crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}}
                     }}
             }
             if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) && snapshot.input.receipt_sha256().is_none() {

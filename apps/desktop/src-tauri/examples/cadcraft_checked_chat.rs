@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let inspect = |selection| host.call("inspect_open_drawing", json!({"selection":selection}));
     let propose = |selection, reading: &Value, units: &str, operation: Value| {
         host.call("propose_open_drawing_change",json!({
-        "selection":selection,"binding_sha256":reading["observation"]["binding_sha256"],"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Owned native approval acceptance",
+        "selection":selection,"binding_sha256":reading["observation"]["binding_sha256"],"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check native geometry and the new DXF version by independent reopening; visual fidelity and physical function remain unverified"},"description":"Owned native approval acceptance",
         "units":units,"operation":operation}))
     };
     let approve = || {
@@ -255,6 +255,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     assert_eq!(report_read["format"], "live_drawing_report");
     assert_eq!(report_read["content"], first_report);
+    assert_eq!(report_read["scope"],"verified_native_working_version_report");
+    let version=&report_read["checks"]["native_working_version"];
+    assert_eq!(version["source_preserved"],true);assert_eq!(version["native_checks"]["native_bytes_roundtrip_equal"],true);assert_eq!(version["native_checks"]["native_reopen_checked"],true);assert_eq!(version["agreed_task_outcome_checked"],false);
+    assert_eq!(version["native_checks"]["version"],2);assert_eq!(version["native_checks"]["source_metadata_checked"],true);assert_eq!(version["native_checks"]["source_metadata_scope"],"drawing_inspect_layers_and_named_tables_layouts");
+    assert!(workflow.artifact(first.snapshot.input.job_id(),ArtifactFormat::NativeWorkingVersion)?.path.join("Drawing.dxf").is_file());
     let recovered = Workflow::new(
         root.join("UnusedFreeCAD.exe"),
         root.join("recovered-profiles"),
@@ -284,6 +289,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let recorded=jobs.iter().filter(|job|job.phase==Phase::Completed).all(|job|root.join("project/.hazlomexa/artifacts").join(job.input.job_id().to_string()).join("drawing-completion.json").is_file());
     let anchored=recorded && jobs.iter().filter(|job|job.phase==Phase::Completed).all(|job|{let directory=root.join("project/.hazlomexa/artifacts").join(job.input.job_id().to_string());let record:Value=serde_json::from_slice(&fs::read(directory.join("live-dispatch.json")).unwrap()).unwrap();let hash=format!("{:x}",<sha2::Sha256 as sha2::Digest>::digest(fs::read(directory.join("drawing-completion.json")).unwrap()));record["drawing_completion_required"]==true && record["drawing_completion_sha256"]==hash});
     assert!(anchored,"Every completed owned drawing operation needs its original dispatch anchor");
+    let checked_versions=jobs.iter().filter(|job|job.phase==Phase::Completed && matches!(&job.input,hazlomexa::project::OperationInput::LiveDrawing(input) if input.native_working_version.is_some())).count();
+    assert_eq!(checked_versions,3);for job in jobs.iter().filter(|job|job.phase==Phase::Completed && matches!(&job.input,hazlomexa::project::OperationInput::LiveDrawing(input) if input.native_working_version.is_some())){let directory=root.join("project/.hazlomexa/artifacts").join(job.input.job_id().to_string());let record:Value=serde_json::from_slice(&fs::read(directory.join("live-dispatch.json"))?)?;for key in ["drawing_copy_capture_sha256","drawing_copy_check_sha256"]{assert!(record[key].as_str().is_some_and(|h|h.len()==64));}assert!(directory.join("DrawingVersion/Drawing.dxf").is_file());}
     if recorded {
         drop(recovered);
         let project=Project::open(&root.join("project"))?;
@@ -304,11 +311,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(native.drawing(),current);assert_eq!(native.call("ui.inspect",json!({}))["session"],session);
         assert_eq!(restarted.artifact(first.snapshot.input.job_id(),ArtifactFormat::LiveDrawingReport)?.read_text()?,first_report);
         assert_eq!(restarted.artifact(exported.snapshot.input.job_id(),ArtifactFormat::Drawing)?.read_text()?,exported_dxf);
+        drop(retained);drop(restarted);
+        let project=Project::open(&root.join("project"))?;let id=first.snapshot.input.job_id();let directory=project.artifact_directory(id);
+        let check=directory.join("DrawingVersion/result.json");let check_bytes=fs::read(&check)?;fs::rename(&check,root.join("retained-copy-check.json"))?;
+        let journal=directory.join("live-dispatch.json");let bytes=fs::read(&journal)?;fs::write(root.join("retained-copy-dispatch.json"),&bytes)?;let mut dispatch:Value=serde_json::from_slice(&bytes)?;dispatch["outcome"]=json!("uncertain");dispatch["receipt_sha256"]=Value::Null;dispatch.as_object_mut().unwrap().remove("drawing_copy_check_sha256");fs::write(&journal,serde_json::to_vec_pretty(&dispatch)?)?;
+        let mut snapshot=project.history()?.into_iter().find(|job|job.input.job_id()==id).unwrap();snapshot.phase=Phase::Interrupted;snapshot.audit.as_mut().unwrap().files_verified=false;let hazlomexa::project::OperationInput::LiveDrawing(input)=&mut snapshot.input else{panic!("Wrong owned copy job")};input.receipt_sha256=None;project.save(&snapshot)?;drop(project);
+        let restarted=Arc::new(Workflow::new(root.join("UnusedFreeCAD.exe"),root.join("copy-recovery-profiles"))?);let pending=restarted.select_project(Project::open(&root.join("project"))?)?;assert_eq!(pending.iter().find(|job|job.input.job_id()==id).unwrap().phase,Phase::Interrupted);assert!(!check.exists());
+        let retained=HostTools::new(restarted.clone());assert_eq!(retained.call("recover_native_result",json!({"job_id":id}))?["published"],true);assert_eq!(fs::read(check)?,check_bytes);assert_eq!(native.drawing(),current);assert_eq!(native.call("ui.inspect",json!({}))["session"],session);
     }
     fs::write(
         root.join("backend-result.json"),
         serde_json::to_vec_pretty(
-            &json!({"pass":true,"completed_jobs":4,"cancelled_jobs":1,"refused_jobs":1,
+            &json!({"pass":true,"completed_jobs":4,"cancelled_jobs":1,"refused_jobs":1,"automatic_working_versions":checked_versions,"copy_reopen_recovery":true,"native_source_metadata_checked":true,
         "native_mm_move":1,"native_inch_followup":0.1,"final_x_mm":3.54,"native_undo_steps":3,"stale_unprojected_change_refused":true,
         "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"native_dxf_roundtrip":true,"native_copy_check_manifest":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"retained_completion_recovery":recorded,"native_completion_anchored":anchored,"real_provider":false,"desktop_approval":false}),
         )?,
