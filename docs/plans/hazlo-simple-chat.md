@@ -232,6 +232,18 @@ The regular suite passes 282 tests with 69 environment cases skipped. New Window
 
 The full goal remains active: native concurrency and admitted-call recovery, complete durable constraints/progress/stream corrections, verified native working versions and dependencies, comprehensive evidence/report/cache lineage with account/purpose sharing, setup/hardware scopes and final Windows release acceptance remain required. No model was downloaded. The installer and installed app are unchanged.
 
+### Prevent withdrawn cached replies from returning
+
+New withdrawals now retain bounded, non-content reply fingerprints and the task revision at withdrawal. A stale owned history write cannot restore an exact withdrawn assistant reply, even after removal, service changes, reordering or restart. Known reference links are preserved by matching prior content rather than only its array position; client-supplied reference IDs cannot erase those links. Withdrawal slots are reserved against the live reply fingerprints at intake, so reaching that fingerprint-count limit cannot itself prevent a later revocation. General metadata/disk failures still need their separate recovery handling.
+
+The desktop discards an older finished cached reply when the owned task records its withdrawal, including on snapshot recovery after a missed cleanup. It leaves running clients alone. The withdrawal revision distinguishes an older cache from a new owned turn whose text happens to match; the latter is retained for local display. A later withdrawal also updates these cache barriers, so regranting a reference does not exempt a matching generation from a subsequent revocation. Native outputs and unrelated manual files are preserved.
+
+Outgoing recovered history now projects only role and text. Unknown metadata, nested image fields and free-text extra fields remain local. Known withdrawn assistant text and replies with missing/unapproved reference lineage are withheld even if a local metadata file was restored outside the history writer. Reading a prompt does not rewrite that restored file.
+
+The regular suite passes 285 tests with 69 environment cases skipped. New cases cover moved replies across a service change, exact stale history/message replay after removal/reopen, unchanged native/manual work, all 128 withdrawal slots, rejected excess intake preserving existing bytes, role/text projection and restored metadata with unknown lineage. The desktop test covers actual in-memory cache removal and a newer owned reply with identical text. Desktop Clippy, the durable-task browser fixture and the explicitly selected disposable MCP/bridge fixture also pass. These are host/storage/protocol fixtures, not real-provider/window or release acceptance.
+
+This is not complete reply provenance. In particular, durable history still needs host-owned proof distinguishing a fresh independently authorized generation from an old cached reply with identical text; fingerprints alone cannot grant that exception. Transformed/reworded replies, legacy user-turn excerpts, summaries and provider-managed caches need their remaining lineage treatment. That provenance work is the next required step before release, alongside the remaining account/purpose, native recovery/concurrency, saved-version, setup/hardware and Windows acceptance requirements. The installer and installed app are unchanged. No model was downloaded; the full goal remains active.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

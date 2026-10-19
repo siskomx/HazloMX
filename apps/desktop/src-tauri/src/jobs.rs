@@ -323,7 +323,13 @@ impl Workflow {
         let mut prior=Vec::new();
         if !task.restricted() {
             let saved:serde_json::Value=serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(|_|"Historial no válido.")?;
-            prior=saved["turns"].as_array().cloned().unwrap_or_default();
+            prior=saved["turns"].as_array().into_iter().flatten().filter_map(|turn|{
+                if turn["role"]=="assistant" {
+                    let content=turn["content"].as_str()?;
+                    if task.reply_is_withdrawn(content) || turn["reference_ids"].as_array().is_some_and(|ids|ids.iter().any(|id|id.as_str().and_then(|s|Uuid::parse_str(s).ok()).is_none_or(|id|!task.references.iter().any(|r|r.id==id && r.shared_with.contains(&task.provider))))){return None;}
+                }
+                Some(serde_json::json!({"role":turn["role"],"content":turn["content"]}))
+            }).collect();
             prior=prior.into_iter().rev().take(12).collect();prior.reverse();
         }
         let mut envelope=serde_json::json!({"user_request":text,"task_goal":task.goal,"recovered_conversation":prior,"latest_user_correction":task.latest_correction,
@@ -3216,6 +3222,25 @@ mod tests {
         drop(workflow);let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();
         assert_eq!(recovered[0].input.solid().unwrap().dimensions_mm.width,47.);assert!(recovered[0].audit.as_ref().unwrap().user_edited);
         drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn prompt_history_projects_only_authorized_role_and_text_and_keeps_other_fields_local(){
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let project=workflow.view().unwrap().project.unwrap();
+        let raw=serde_json::json!({"version":1,"turns":[{"role":"user","content":"Keep the intended dimensions","capture":"PRIVATE_UNKNOWN_USER_FIELD"},{"role":"assistant","content":"I will inspect native state","private_log":"PRIVATE_UNKNOWN_ASSISTANT_FIELD","image":{"data":"PRIVATE_UNKNOWN_IMAGE_FIELD"}}]});
+        workflow.task_request(project.clone(),crate::tasks::Request::History{id:task.id,revision:task.revision,value:Some(raw.to_string())}).unwrap();
+        let (prompt,_)=workflow.task_prompt("codex",String::new(),Some("Continue the task".into()),None).unwrap();let sent:serde_json::Value=serde_json::from_str(&prompt).unwrap();
+        assert_eq!(sent["recovered_conversation"],serde_json::json!([{"role":"user","content":"Keep the intended dimensions"},{"role":"assistant","content":"I will inspect native state"}]));
+        assert!(!prompt.contains("PRIVATE_UNKNOWN_"));
+        let retained=workflow.task_request(project,crate::tasks::Request::History{id:task.id,revision:task.revision,value:None}).unwrap();assert!(retained.as_str().unwrap().contains("PRIVATE_UNKNOWN_IMAGE_FIELD"));
+        // Restored metadata is still local data, not an authorization to resend a withdrawn reply.
+        let path=root.join(".hazlomexa/tasks").join(format!("{}.json",task.id));
+        let mut restored:crate::tasks::Task=crate::project::read_json(&path).unwrap();
+        restored.withdrawn_replies.insert(crate::kicad_project::digest(b"WITHDRAWN_HISTORY_SENTINEL"),restored.revision);
+        restored.history=Some(serde_json::json!({"version":1,"turns":[{"role":"user","content":"Keep my current intent"},{"role":"assistant","content":"WITHDRAWN_HISTORY_SENTINEL"},{"role":"assistant","content":"FOREIGN_LINEAGE_SENTINEL","reference_ids":[Uuid::new_v4()]}]}).to_string());
+        crate::project::atomic_json(&path,&restored,true).unwrap();let local=fs::read(&path).unwrap();
+        let (prompt,_)=workflow.task_prompt("codex",String::new(),Some("Continue using authorized facts".into()),None).unwrap();
+        assert!(!prompt.contains("WITHDRAWN_HISTORY_SENTINEL") && !prompt.contains("FOREIGN_LINEAGE_SENTINEL"));assert!(prompt.contains("Keep my current intent"));assert_eq!(fs::read(&path).unwrap(),local);
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn tasks_bind_approval_and_keep_restricted_content_out_of_prompts(){

@@ -94,8 +94,15 @@ struct DesktopSnapshot {
     codex_conversation_ready: bool,
 }
 
+fn purge_withdrawn_reply(state:&AppState,tasks:Option<&hazlomexa::tasks::State>)->Result<(),String>{
+    let Some(tasks)=tasks else{return Ok(());};
+    let mut chat=state.chat.lock().map_err(|_|"No se pudo comprobar la respuesta local.")?;
+    if chat.as_ref().is_some_and(|turn|!turn.view.busy && turn.scope.task.as_ref().is_some_and(|t|t.id==tasks.active.id && tasks.active.reply_was_withdrawn_after(&turn.view.text,t.revision))){*chat=None;}
+    Ok(())
+}
 fn snapshot(state: &AppState) -> Result<DesktopSnapshot, String> {
     let tasks=state.workflow.task_state()?;
+    purge_withdrawn_reply(state,tasks.as_ref())?;
     let view = state.workflow.view()?;
     let scope=state.workflow.conversation_scope()?;
     let freecad = state.freecad.lock().map_err(|e| e.to_string())?.clone();
@@ -1296,7 +1303,9 @@ fn task_action(state:State<AppState>,project_id:Uuid,project_directory:PathBuf,r
         *state.codex_session.lock().map_err(|e|e.to_string())?=None;
         *state.chat_session.lock().map_err(|e|e.to_string())?=None;
     }
-    let result=state.workflow.task_request((project_id,project_directory),request)?;
+    let result=state.workflow.task_request((project_id,project_directory),request);
+    if let Ok(tasks)=state.workflow.task_state(){purge_withdrawn_reply(&state,tasks.as_ref())?;}
+    let result=result?;
     if switches {state.tools.clear_task_context()?;*state.chat.lock().map_err(|e|e.to_string())?=None;}
     Ok(result)
 }
@@ -1503,6 +1512,28 @@ mod tests {
         let mut copied_scope=state.workflow.conversation_scope().unwrap().unwrap();copied_scope.project.1=root.join("copied-folder");
         *state.chat_session.lock().unwrap()=Some((copied_scope.clone(),Uuid::new_v4(),true));*state.codex_session.lock().unwrap()=Some((copied_scope,Uuid::new_v4(),Some("copied-native-thread".into())));
         let copied=snapshot(&state).unwrap();assert!(!copied.claude_conversation_ready && !copied.codex_conversation_ready);
+        let project=state.workflow.conversation_scope().unwrap().unwrap().project;
+        let t=state.workflow.task_state().unwrap().unwrap().active;
+        state.workflow.task_request(project.clone(),hazlomexa::tasks::Request::AddReference{id:t.id,revision:t.revision,name:"source.txt".into(),data:"c291cmNl".into(),preview:None}).unwrap();
+        let t=state.workflow.task_state().unwrap().unwrap().active;let reference=t.references[0].id;
+        state.workflow.task_request(project.clone(),hazlomexa::tasks::Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();
+        let t=state.workflow.task_state().unwrap().unwrap().active;
+        state.workflow.task_request(project.clone(),hazlomexa::tasks::Request::History{id:t.id,revision:t.revision,value:Some(serde_json::json!({"version":1,"turns":[{"role":"assistant","content":"WITHDRAWN_CACHE_SENTINEL"}]}).to_string())}).unwrap();
+        let scope=state.workflow.conversation_scope().unwrap().unwrap();
+        *state.chat.lock().unwrap()=Some(ChatTurn{scope,view:ChatView{provider:"codex",id:Uuid::new_v4(),project_id:project.0,sequence:1,busy:false,cancelled:false,text:"WITHDRAWN_CACHE_SENTINEL".into(),error:None,question:None},cancel:Arc::new(std::sync::atomic::AtomicBool::new(false)),question:None});
+        state.workflow.task_request(project,hazlomexa::tasks::Request::Share{id:t.id,revision:t.revision,reference,allow:false}).unwrap();
+        assert!(state.chat.lock().unwrap().is_some());
+        let revoked=snapshot(&state).unwrap();assert!(revoked.chat.is_none());assert!(state.chat.lock().unwrap().is_none());assert!(!serde_json::to_string(&revoked).unwrap().contains("WITHDRAWN_CACHE_SENTINEL"));
+        let scope=state.workflow.conversation_scope().unwrap().unwrap();let project_id=scope.project.0;
+        *state.chat.lock().unwrap()=Some(ChatTurn{scope,view:ChatView{provider:"codex",id:Uuid::new_v4(),project_id,sequence:1,busy:false,cancelled:false,text:"WITHDRAWN_CACHE_SENTINEL".into(),error:None,question:None},cancel:Arc::new(std::sync::atomic::AtomicBool::new(false)),question:None});
+        // A new owned turn is not the older cached response merely because its bytes match.
+        assert!(snapshot(&state).unwrap().chat.is_some());
+        let t=state.workflow.task_state().unwrap().unwrap().active;let project=state.workflow.conversation_scope().unwrap().unwrap().project;
+        state.workflow.task_request(project.clone(),hazlomexa::tasks::Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();
+        state.chat.lock().unwrap().as_mut().unwrap().scope=state.workflow.conversation_scope().unwrap().unwrap();
+        let t=state.workflow.task_state().unwrap().unwrap().active;
+        state.workflow.task_request(project,hazlomexa::tasks::Request::Share{id:t.id,revision:t.revision,reference,allow:false}).unwrap();
+        assert!(snapshot(&state).unwrap().chat.is_none());
         let other = root.join("other");
         std::fs::create_dir(&other).unwrap();
         state

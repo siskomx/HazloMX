@@ -16,6 +16,7 @@ use windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ;
 
 const FILE_LIMIT: usize = 32 * 1024 * 1024;
 const TASK_LIMIT: u64 = 256 * 1024 * 1024;
+const WITHDRAWN_REPLY:&str="Respuesta retirada junto con su permiso de referencia local.";
 fn error(s: &str) -> io::Error {
     io::Error::other(s)
 }
@@ -90,12 +91,20 @@ pub struct Task {
     pub latest_correction: Option<Correction>,
     #[serde(default)]
     pub restricted_results: bool,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub withdrawn_replies:std::collections::BTreeMap<String,u64>,
     #[serde(default)]
     pub legacy: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub history: Option<String>,
 }
 impl Task {
+    pub fn reply_is_withdrawn(&self,content:&str)->bool{
+        self.withdrawn_replies.contains_key(&crate::kicad_project::digest(content.as_bytes()))
+    }
+    pub fn reply_was_withdrawn_after(&self,content:&str,revision:u64)->bool{
+        self.withdrawn_replies.get(&crate::kicad_project::digest(content.as_bytes())).is_some_and(|withdrawn|*withdrawn>revision)
+    }
     pub fn binding(&self) -> Binding {
         Binding {
             id: self.id,
@@ -128,6 +137,8 @@ impl Task {
             || self.title.len() > 256
             || self.goal.len() > 4096
             || self.references.len() + self.pending_removals.len() > 64
+            || self.withdrawn_replies.len()>128
+            || self.withdrawn_replies.iter().any(|(h,revision)|!crate::kicad_project::valid_hash(h) || *revision==0 || *revision>self.revision)
             || serde_json::to_vec_pretty(self)
                 .map_err(io::Error::other)?
                 .len()
@@ -140,6 +151,16 @@ impl Task {
         if let Some(raw) = &self.history {
             history(raw)?;
         }
+        let mut reply_hashes:std::collections::BTreeSet<_>=self.withdrawn_replies.keys().cloned().collect();
+        if let Some(raw)=&self.history{
+            let saved:serde_json::Value=serde_json::from_str(raw).map_err(io::Error::other)?;
+            for turn in saved["turns"].as_array().into_iter().flatten().filter(|t|t["role"]=="assistant"){
+                let content=turn["content"].as_str().unwrap();
+                if content!=WITHDRAWN_REPLY{reply_hashes.insert(crate::kicad_project::digest(content.as_bytes()));}
+            }
+        }
+        // Reserve non-content withdrawal records at intake, so revocation cannot run out of this budget.
+        if reply_hashes.len()>128{return Err(error("Se alcanzó el límite de respuestas guardadas de esta conversación. Conserva su historial e inicia otra para continuar; no se reemplazó el trabajo anterior."));}
         let mut ids = std::collections::BTreeSet::new();
         let mut total = 0;
         for r in &self.references {
@@ -187,6 +208,9 @@ fn descendants(task: &Task, reference: Uuid) -> std::collections::BTreeSet<Uuid>
     affected
 }
 fn scrub_history(task: &mut Task, affected: &std::collections::BTreeSet<Uuid>) -> io::Result<()> {
+    let revision=task.revision.checked_add(1).ok_or_else(||error("La revisión llegó a su límite; se conservó el historial."))?;
+    // Without fresh reply provenance, another withdrawal must fence matching older cached generations too.
+    for withdrawn in task.withdrawn_replies.values_mut(){*withdrawn=revision;}
     let mut value: serde_json::Value =
         serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
     if let Some(turns) = value["turns"].as_array_mut() {
@@ -196,7 +220,13 @@ fn scrub_history(task: &mut Task, affected: &std::collections::BTreeSet<Uuid>) -
                     .filter_map(|v| v.as_str().and_then(|s| Uuid::parse_str(s).ok()))
                     .any(|id| affected.contains(&id))
             }) {
-                *turn = serde_json::json!({"role":"assistant","content":"Respuesta retirada junto con su permiso de referencia local."});
+                if turn["role"]=="assistant" {
+                    if let Some(content)=turn["content"].as_str().filter(|content|*content!=WITHDRAWN_REPLY){
+                        let hash=crate::kicad_project::digest(content.as_bytes());
+                        task.withdrawn_replies.insert(hash,revision);
+                    }
+                }
+                *turn = serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});
             }
         }
     }
@@ -215,23 +245,21 @@ fn retain_lineage(task: &Task, raw: &str) -> io::Result<String> {
     let mut value: serde_json::Value = serde_json::from_str(raw).map_err(io::Error::other)?;
     let prior: serde_json::Value =
         serde_json::from_str(task.history.as_deref().unwrap_or("{}")).map_err(io::Error::other)?;
-    for (i, turn) in value["turns"]
+    for turn in value["turns"]
         .as_array_mut()
         .unwrap()
         .iter_mut()
-        .enumerate()
     {
         if turn["role"] == "assistant" {
-            turn["reference_ids"] = if prior["turns"][i]["content"] == turn["content"] {
-                prior["turns"][i]["reference_ids"].clone()
-            } else {
-                serde_json::json!(task
-                    .references
-                    .iter()
-                    .filter(|r| r.shared_with.contains(&task.provider))
-                    .map(|r| r.id)
-                    .collect::<Vec<_>>())
-            };
+            let hash=crate::kicad_project::digest(turn["content"].as_str().unwrap().as_bytes());
+            if task.withdrawn_replies.contains_key(&hash){*turn=serde_json::json!({"role":"assistant","content":WITHDRAWN_REPLY});continue;}
+            let mut references=std::collections::BTreeSet::new();let mut found=false;
+            for saved in prior["turns"].as_array().into_iter().flatten().filter(|saved|saved["role"]=="assistant" && saved["content"]==turn["content"]){
+                found=true;
+                if let Some(ids)=saved["reference_ids"].as_array(){for id in ids {if let Some(id)=id.as_str().and_then(|id|Uuid::parse_str(id).ok()){references.insert(id);}}}
+            }
+            if !found{references.extend(task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(|r|r.id));}
+            turn["reference_ids"]=serde_json::json!(references);
         }
     }
     serde_json::to_string(&value).map_err(io::Error::other)
@@ -465,6 +493,7 @@ impl<'a> Store<'a> {
             pending_removals: Vec::new(),
             latest_correction: None,
             restricted_results: false,
+            withdrawn_replies:Default::default(),
             legacy: false,
             history: Some("{\"version\":1,\"turns\":[]}".into()),
         }
@@ -932,6 +961,47 @@ fn printable_text(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn withdrawn_reply_cannot_return_from_a_shifted_stale_history_after_removal(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;
+        store.request(Request::AddReference{id:t.id,revision:t.revision,name:"capture.bin".into(),data:STANDARD.encode(b"PRIVATE_CAPTURE_SENTINEL"),preview:None}).unwrap();
+        let t=store.state().unwrap().active;let reference=t.references[0].id;
+        store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();
+        let reply="PRIVATE_REVOKED_REPLY_SENTINEL";
+        let original=serde_json::json!({"version":1,"turns":[{"role":"user","content":"Preserve the design"},{"role":"assistant","content":reply}]}).to_string();
+        let t=store.state().unwrap().active;store.request(Request::History{id:t.id,revision:t.revision,value:Some(original.clone())}).unwrap();
+        let t=store.state().unwrap().active;store.request(Request::Provider{id:t.id,revision:t.revision,provider:"claude".into()}).unwrap();
+        let shifted=serde_json::json!({"version":1,"turns":[{"role":"user","content":"Preserve another manual correction"},{"role":"user","content":"Preserve the design"},{"role":"assistant","content":reply,"reference_ids":[]}]}).to_string();
+        let t=store.state().unwrap().active;store.request(Request::History{id:t.id,revision:t.revision,value:Some(shifted.clone())}).unwrap();
+        let saved=store.active().unwrap().unwrap();let history:serde_json::Value=serde_json::from_str(saved.history.as_deref().unwrap()).unwrap();
+        assert_eq!(history["turns"][2]["reference_ids"],serde_json::json!([reference]));
+        fs::write(root.join("manual-design.txt"),b"preserved native work").unwrap();
+        store.request(Request::Remove{id:saved.id,revision:saved.revision,reference}).unwrap();
+        let withdrawn=store.active().unwrap().unwrap();assert_eq!(withdrawn.withdrawn_replies.keys().cloned().collect::<Vec<_>>(),vec![crate::kicad_project::digest(reply.as_bytes())]);assert!(!withdrawn.history.as_deref().unwrap().contains(reply));
+        store.request(Request::History{id:withdrawn.id,revision:withdrawn.revision,value:Some(shifted.clone())}).unwrap();
+        let saved=store.active().unwrap().unwrap();assert!(!saved.history.as_deref().unwrap().contains(reply));assert!(saved.history.as_deref().unwrap().contains("Preserve another manual correction"));
+        drop(store);drop(p);let p=Project::open(&root).unwrap();let store=Store::new(&p).unwrap();let saved=store.state().unwrap().active;
+        store.request(Request::Message{id:saved.id,revision:saved.revision,text:"Continue preserving the work".into(),history:original,correction_of:None}).unwrap();
+        let saved=store.active().unwrap().unwrap();assert!(!saved.history.as_deref().unwrap().contains(reply));assert_eq!(saved.withdrawn_replies.len(),1);assert!(saved.references.is_empty());assert!(saved.restricted_results);
+        assert_eq!(fs::read(root.join("manual-design.txt")).unwrap(),b"preserved native work");drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn reply_withdrawal_budget_is_reserved_before_intake_and_never_blocks_revocation(){
+        let (root,p)=setup();let store=Store::new(&p).unwrap();let t=store.state().unwrap().active;
+        store.request(Request::AddReference{id:t.id,revision:t.revision,name:"source.txt".into(),data:STANDARD.encode(b"private source"),preview:None}).unwrap();
+        let t=store.state().unwrap().active;let reference=t.references[0].id;store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:true}).unwrap();
+        let turns=(0..128).map(|i|serde_json::json!({"role":"assistant","content":format!("LOCAL_REPLY_{i}")})).collect::<Vec<_>>();
+        let raw=serde_json::json!({"version":1,"turns":turns}).to_string();let t=store.state().unwrap().active;store.request(Request::History{id:t.id,revision:t.revision,value:Some(raw.clone())}).unwrap();
+        let t=store.state().unwrap().active;store.request(Request::Share{id:t.id,revision:t.revision,reference,allow:false}).unwrap();
+        let t=store.active().unwrap().unwrap();assert_eq!(t.withdrawn_replies.len(),128);assert!(t.references[0].shared_with.is_empty());assert!(!t.history.as_deref().unwrap().contains("LOCAL_REPLY_"));
+        let before=fs::read(store.path(t.id)).unwrap();
+        assert!(store.request(Request::History{id:t.id,revision:t.revision,value:Some(serde_json::json!({"version":1,"turns":[{"role":"assistant","content":"another unknown response"}]}).to_string())}).is_err());
+        assert_eq!(fs::read(store.path(t.id)).unwrap(),before);
+        store.request(Request::History{id:t.id,revision:t.revision,value:Some(raw)}).unwrap();
+        let t=store.active().unwrap().unwrap();assert!(!t.history.as_deref().unwrap().contains("LOCAL_REPLY_"));assert_eq!(t.withdrawn_replies.len(),128);
+        store.request(Request::Remove{id:t.id,revision:t.revision,reference}).unwrap();assert!(store.state().unwrap().active.references.is_empty());
+        drop(store);drop(p);fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn derived_evidence_removal_and_revocation_follow_ancestry_without_deleting_designs() {
         let (root, p) = setup();
