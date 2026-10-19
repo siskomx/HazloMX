@@ -90,3 +90,28 @@ new live engineering acceptance or guarantee that every model follows the skill.
 
 The installed alpha.5 release is unchanged. No new installer or physical repair
 acceptance is claimed by this skill-design work.
+
+## Device diagnostics and replacement electronics
+
+The shared skill now explicitly considers observable network, USB, serial and
+debug interfaces, including recorded logic-analyzer evidence where relevant.
+It requires a specific device and question, distinguishes observation from active
+probing/replay, and discovers actual capture/debugging capabilities rather than
+assuming Rea supplies every instrument. Encrypted captures do not establish decoded
+commands. Missing capture access becomes a concrete setup/acquisition task instead
+of a claim that the engineering goal is impossible.
+
+If available software cannot meet the goal, the agent should proactively consider
+an adapter, companion controller or replacement PCB and firmware. It should make
+the alternative reviewable through a functional diagram, retained subsystem and
+interface requirements, and a useful first experiment. Unknown ratings and pinouts
+may remain explicit in a conceptual design; they cannot become invented values
+in a fabrication-ready board. Power, timing, feedback, drivers, protection,
+calibration and physical validation matter alongside polarity.
+
+This change is shared agent guidance, not a new capture driver, instrument
+integration or hardware-control permission. The native catalog and existing
+proposal/approval/readback boundary remain authoritative. The application stays
+a simple chat. No device-specific operation or compatibility rule was added.
+The installed desktop requires a later rebuild/update to include these instructions;
+no new installed behavioral or physical-device test is claimed here.

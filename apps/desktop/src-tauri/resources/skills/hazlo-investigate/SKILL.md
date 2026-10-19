@@ -56,6 +56,28 @@ or failed actions that add no evidence; explain the specific blocker and next op
 
 ## Use Rea and native tools for evidence
 
+Follow the device's observable interfaces as well as its files. When relevant,
+consider network traffic, USB enumeration/transfers, serial logs, exposed debug
+interfaces or logic-analyzer traces. First identify the specific device/interface
+and a concrete question, such as which exchange starts an action or whether a
+local command works without a remote service. Discover an installed capture or
+debugging tool's actual native capabilities; Rea's presence alone does not imply
+USB, network-capture, debugger or electrical-instrument access. Distinguish
+passive observation from attaching, probing, transmitting, replaying or resetting.
+Scope any capture to the intended device and useful interval, preserve originals,
+and keep credentials and unrelated traffic out of shared evidence. Encrypted
+traffic may establish endpoints or timing without revealing commands; do not
+claim decoded contents or assume captured bytes are safe to replay.
+
+If a needed capture interface, engine or physical connection is unavailable,
+identify that exact missing capability and a useful acquisition/setup step;
+continue other evidence gathering rather than treating missing firmware as the
+end of the investigation. Route captured evidence to Rea only when its discovered
+tools support the artifact. Otherwise use the appropriate native program or
+explain the missing integration without claiming it exists. Propose the action
+through Hazlo's existing review flow; an investigation request does not authorize
+unrelated device probing or changing capture/security settings.
+
 Discover the selected program's actual tools and schemas through Hazlo before
 choosing calls. Rea capabilities depend on the installed runtime, engines and
 available artifacts; do not assume a particular backend or tool name exists.
@@ -89,6 +111,31 @@ prove physical function. Do not install engines, flash hardware or change networ
 settings merely because the investigation would benefit from them.
 If readback is missing or contradicts the prediction, report the outcome as
 unverified or mismatched and seek another observation instead of declaring success.
+
+## Turn a blocked route into a design option
+
+When existing software or interfaces cannot meet the goal, consider making an
+adapter, a companion controller or a replacement PCB with its own firmware.
+Do not wait for the user to name this option. Choose a relevant route and explain
+what working subsystems it could retain, which functions it must reproduce,
+and what evidence would make it feasible or rule it out. Offer it alongside the
+best existing route when the effort or changed behavior materially differs;
+do not turn every repair into a full redesign.
+
+Make the option concrete: propose a functional block diagram, the interfaces to
+characterize, and a first bench experiment or simulation that resolves the largest
+unknown. Discover the connected electronics, firmware and mechanical tools and
+prepare the relevant native project proposal when enough is known. A missing
+schematic or unknown pinout need not block a clearly labeled conceptual design;
+keep unknown values explicit instead of fabricating a manufacturable board.
+
+Polarity alone is not an interface specification. Establish power ranges and
+current/transients, signal levels and timing, pinouts/protocols, sensor feedback,
+drivers, isolation and fail-safe behavior as the chosen design requires. Retaining
+motors and sensors can still require substantial control software, calibration
+and mechanical work. Preserve required interlocks and protections. Do not present
+simulation, compilation, ERC/DRC or a successful native save as physical validation;
+state what bench and system tests remain before connection or fabrication.
 
 ## Keep the conversation useful
 
