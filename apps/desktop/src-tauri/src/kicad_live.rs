@@ -92,6 +92,8 @@ pub struct Input {
     pub receipt_sha256: Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub agreement:Option<crate::native_tools::Agreement>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub native_completion_version:Option<u32>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
@@ -108,7 +110,7 @@ impl Input {
                 return Err("El componente requiere una lectura actual y editable.".into());
             }
         }
-        if self.schema_version!=1 || self.live_pcb_version!=1 || self.job_id.is_nil()
+        if self.schema_version!=1 || self.live_pcb_version!=1 || self.native_completion_version.is_some_and(|version|version!=1) || self.job_id.is_nil()
             || self.board_name.is_empty() || self.board_name.len()>1024
             || self.board_name.chars().any(|c|c.is_control() || matches!(c,'/'|'\\'|':'))
             || !self.board_name.ends_with(".kicad_pcb")
@@ -286,7 +288,6 @@ pub(crate) struct Binding {
     pub connection:Connection,
 }
 pub(crate) fn run_gated(input:&Input,binding:&Binding,stage:&Path,profile:&Path,cancel:Arc<AtomicBool>,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
-    let dispatch=Some(dispatch);
     input.validate()?;
     binding.connection.validate()?;
     crate::project::valid_location(&binding.board).map_err(|_|"La PCB seleccionada cambió.")?;
@@ -304,20 +305,26 @@ pub(crate) fn run_gated(input:&Input,binding:&Binding,stage:&Path,profile:&Path,
         request["destination"]=serde_json::json!(stage.join("Board.kicad_pcb"));
     }
     let failed="KiCad no confirmó el resultado de la edición. Vuelve a leer el documento antes de continuar; no repitas la operación a ciegas.";
-    let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(Execution{verifier:&verifier,stage,input}),dispatch)
+    let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(Execution{verifier:&verifier,stage,input}),Some(dispatch))
         .map_err(|_|failed)?;
+    retain_worker_reply(input,stage,&bytes,dispatch)
+}
+fn retain_worker_reply(input:&Input,stage:&Path,bytes:&[u8],dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
+    let failed="KiCad no confirmó el resultado original; conserva el trabajo y no repitas la operación.";
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Reply { ok:bool, result:Receipt }
-    let reply:Reply=serde_json::from_slice(&bytes).map_err(|_|failed)?;
+    let reply:Reply=serde_json::from_slice(bytes).map_err(|_|failed)?;
     if !reply.ok {return Err(failed.into());}
+    validate_result(input,&reply.result).map_err(|_|failed)?;
+    dispatch.retain_pcb_completion(input,&reply.result)?;
     validate_artifacts(stage,input,&reply.result).map_err(|_|failed)?;
     let report=serde_json::to_vec_pretty(&reply.result).map_err(|_|failed)?;
     crate::kicad_project::write_new(&stage.join("result.json"),&report).map_err(|_|failed)?;
     Ok(())
 }
 
-pub(crate) fn recover_result(input:&Input,directory:&Path)->Result<bool,String>{
+fn read_completion(input:&Input,directory:&Path)->Result<Receipt,String>{
     input.validate()?;
     let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el resultado PCB local.")?;
     let path=directory.join("pcb-completion.json");
@@ -328,14 +335,40 @@ pub(crate) fn recover_result(input:&Input,directory:&Path)->Result<bool,String>{
     let bytes=crate::kicad_project::read_regular(&path,65536)?;
     let proof:Completion=serde_json::from_slice(&bytes).map_err(|_|"El recibo PCB no es compatible; se conserva la pausa.")?;
     if proof.version!=1 || proof.input_sha256!=completion_identity(input)?{return Err("El recibo PCB pertenece a otra operación; se conserva la pausa.".into());}
-    validate_artifacts(directory,input,&proof.result)?;
-    let report=serde_json::to_vec_pretty(&proof.result).map_err(|_|"No se pudo conservar el recibo PCB.")?;
+    validate_result(input,&proof.result)?;Ok(proof.result)
+}
+pub(crate) fn confirmed_completion(directory:&Path,input:&Input,hash:&str)->Result<Receipt,String>{
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el recibo PCB original.")?;
+    let _pin=crate::kicad_project::open_regular(&directory.join("pcb-completion.json"),65536)?;
+    if !crate::kicad_project::valid_hash(hash) || crate::kicad_project::digest(&crate::kicad_project::read_regular(&directory.join("pcb-completion.json"),65536)?)!=hash{return Err("El recibo PCB original cambió; se conserva la pausa sin repetir la operación.".into());}
+    read_completion(input,directory)
+}
+pub(crate) fn legacy_completed_report(directory:&Path,input:&Input,hash:&str)->Result<Receipt,String>{
+    if input.native_completion_version.is_some() || !crate::kicad_project::valid_hash(hash){return Err("La PCB requiere su vínculo original de finalización.".into());}
+    let report=read_completion(input,directory)?;
+    if crate::kicad_project::digest(&serde_json::to_vec_pretty(&report).map_err(|_|"Informe PCB no válido.")?)!=hash{return Err("El recibo PCB no coincide con el resultado originalmente confirmado.".into());}Ok(report)
+}
+pub(crate) fn recover_recorded_result(directory:&Path,input:&Input)->Result<bool,String>{
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el resultado PCB local.")?;
+    let Some(record)=crate::live_dispatch::read(directory,&crate::project::OperationInput::LivePcb(input.clone()))? else{return Ok(false);};
+    if record.pcb_completion_sha256.is_none() && record.outcome==crate::native_journal::Outcome::Acknowledged && directory.join("result.json").try_exists().map_err(|_|"No se pudo comprobar el informe PCB.")?{
+        let report:Receipt=serde_json::from_slice(&crate::kicad_project::read_regular(&directory.join("result.json"),65536)?).map_err(|_|"El informe PCB no es compatible.")?;validate_artifacts(directory,input,&report)?;return Ok(true);
+    }
+    let report=if let Some(hash)=record.pcb_completion_sha256{confirmed_completion(directory,input,&hash)?}
+        else if record.outcome==crate::native_journal::Outcome::Acknowledged{legacy_completed_report(directory,input,record.receipt_sha256.as_deref().ok_or("Falta el informe PCB original.")?)?}
+        else{return Ok(false);};
+    validate_artifacts(directory,input,&report)?;
+    let report=serde_json::to_vec_pretty(&report).map_err(|_|"No se pudo conservar el recibo PCB.")?;
     let result=directory.join("result.json");
     if result.try_exists().map_err(|_|"No se pudo comprobar el informe PCB local.")?{
-        let saved:serde_json::Value=serde_json::from_slice(&crate::kicad_project::read_regular(&result,65536)?).map_err(|_|"El informe PCB cambió; se conserva sin reemplazarlo.")?;
-        if saved!=serde_json::to_value(&proof.result).map_err(|_|"No se pudo comprobar el recibo PCB.")?{return Err("El informe PCB cambió; se conserva sin reemplazarlo.".into());}
+        if crate::kicad_project::read_regular(&result,65536)?!=report{return Err("El informe PCB cambió; se conserva sin reemplazarlo.".into());}
     }else{crate::kicad_project::write_new(&result,&report).map_err(|_|"El recibo sigue local; no se pudo conservar su informe. No repitas la edición.")?;}
     Ok(true)
+}
+pub(crate) fn recover_result(input:&Input,directory:&Path)->Result<bool,String>{
+    input.validate()?;
+    if recover_recorded_result(directory,input)?{return Ok(true);}
+    Err("Falta un vínculo original del resultado PCB. Se conservan los archivos y la pausa; no repitas la operación ni adoptes un recibo sin confirmar.".into())
 }
 
 fn parse_observation(bytes: &[u8], job: Uuid) -> Result<Observation, String> {
@@ -369,7 +402,7 @@ pub(crate) mod tests {
         let id=Uuid::parse_str("1390739f-0b91-4d50-b8ae-92acd725ec51").unwrap();
         let mut before=fixture();
         before.components.push(Component {uuid:id,reference:"R1".into(),value:"10k".into(),x_mm:10.,y_mm:20.,locked:false});
-        Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),board_name:"Owned.kicad_pcb".into(),description:"Move the resistor right by one inch".into(),
+        Input {native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),board_name:"Owned.kicad_pcb".into(),description:"Move the resistor right by one inch".into(),
             units:crate::kicad::Units::In,before,export_copy:false,movement:Some(crate::konnect::FootprintMove {
                 uuid:id,reference:"R1".into(),expected_x_mm:10.,expected_y_mm:20.,x_mm:35.4,y_mm:22.5
             }),receipt_sha256:None}
@@ -389,16 +422,54 @@ pub(crate) mod tests {
     }
     #[test]
     fn recovery_requires_the_exact_retained_completion_and_preserves_existing_reports(){
-        for scenario in ["missing","pending","wrong_input","wrong_job","mismatch","changed_report","success"]{
-            let root=std::env::temp_dir().join(format!("hazlo-pcb-proof-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let input=move_fixture();let mut receipt=receipt_fixture(&input);
+        use std::sync::Mutex;
+        for scenario in ["missing","pending","wrong_input","wrong_job","mismatch","different_reply","unbound","changed_report","success"]{
+            let root=std::env::temp_dir().join(format!("hazlo-pcb-proof-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let mut input=move_fixture();input.native_completion_version=Some(1);let mut receipt=receipt_fixture(&input);
             if scenario=="wrong_job"{receipt.job_id=Uuid::new_v4();}else if scenario=="mismatch"{receipt.after["components"][0]["value"]=json!("manual change");}
+            else if scenario=="different_reply"{receipt.after["state_sha256"]=json!("e".repeat(64));}
             let proof=json!({"version":1,"input_sha256":if scenario=="wrong_input"{"f".repeat(64)}else{completion_identity(&input).unwrap()},"result":receipt});
             if !matches!(scenario,"missing"|"pending"){fs::write(root.join("pcb-completion.json"),serde_json::to_vec(&proof).unwrap()).unwrap();}else if scenario=="pending"{fs::write(root.join("pcb-completion.json.pending"),serde_json::to_vec(&proof).unwrap()).unwrap();}
+            let operation=crate::project::OperationInput::LivePcb(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());
+            if scenario!="unbound"{let anchored=fence.retain_pcb_completion(&input,&receipt_fixture(&input));if matches!(scenario,"changed_report"|"success"){anchored.unwrap();}else{assert!(anchored.is_err(),"{scenario}");}}
             if scenario=="changed_report"{fs::write(root.join("result.json"),b"preserve manual report").unwrap();}
             let result=recover_result(&input,&root);
             if scenario=="success"{assert!(result.unwrap());let before=fs::read(root.join("result.json")).unwrap();assert!(recover_result(&input,&root).unwrap());assert_eq!(fs::read(root.join("result.json")).unwrap(),before);let saved:Receipt=crate::project::read_json(&root.join("result.json")).unwrap();validate_result(&input,&saved).unwrap();}
             else{assert!(result.is_err(),"{scenario}");if scenario=="changed_report"{assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve manual report");}else{assert!(!root.join("result.json").exists());}}
-            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+            assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn completion_binding_requires_admission_and_survives_only_identical_bookkeeping_retries(){
+        use std::{sync::Mutex,os::windows::fs::OpenOptionsExt};
+        let root=std::env::temp_dir().join(format!("hazlo-pcb-anchor-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let mut input=move_fixture();let legacy=serde_json::to_value(&input).unwrap();assert!(legacy.get("native_completion_version").is_none());assert_eq!(serde_json::to_value(serde_json::from_value::<Input>(legacy).unwrap()).unwrap(),serde_json::to_value(&input).unwrap());let old=completion_identity(&input).unwrap();input.native_completion_version=Some(1);assert_ne!(completion_identity(&input).unwrap(),old);let mut invalid=input.clone();invalid.native_completion_version=Some(2);assert!(invalid.validate().is_err());
+        let receipt=receipt_fixture(&input);let bytes=serde_json::to_vec(&json!({"version":1,"input_sha256":completion_identity(&input).unwrap(),"result":receipt})).unwrap();fs::write(root.join("pcb-completion.json"),&bytes).unwrap();let operation=crate::project::OperationInput::LivePcb(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();assert!(fence.retain_pcb_completion(&input,&receipt).is_err());drop(fence.enter().unwrap());
+        let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join("live-dispatch.json")).unwrap();assert!(fence.retain_pcb_completion(&input,&receipt).is_err());assert!(crate::live_dispatch::read(&root,&operation).unwrap().unwrap().pcb_completion_sha256.is_none());assert_eq!(fs::read(root.join("pcb-completion.json")).unwrap(),bytes);drop(lock);fence.retain_pcb_completion(&input,&receipt).unwrap();fence.retain_pcb_completion(&input,&receipt).unwrap();assert!(fence.enter().is_err());
+        let summary=crate::live_dispatch::read(&root,&operation).unwrap().unwrap().summary(&operation);assert_eq!(summary.acknowledged,1);assert_eq!(summary.uncertain,0);assert!(summary.needs_review);let mut changed=input.clone();changed.agreement.as_mut().unwrap().outcome.push_str(" changed");assert!(crate::live_dispatch::read(&root,&crate::project::OperationInput::LivePcb(changed)).is_err());let mut changed=input.clone();changed.native_completion_version=None;assert!(crate::live_dispatch::read(&root,&crate::project::OperationInput::LivePcb(changed)).is_err());
+        assert!(recover_result(&input,&root).unwrap());let mut checked=operation.clone();checked.retain_receipt(&root).unwrap();fence.complete(&checked).unwrap();fs::remove_file(root.join("result.json")).unwrap();assert!(recover_result(&input,&root).unwrap());fs::write(root.join("pcb-completion.json"),b"preserve changed proof").unwrap();assert!(recover_result(&input,&root).is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn confirmed_worker_replies_survive_later_report_and_export_artifact_failures(){
+        use std::sync::Mutex;
+        for exporting in [false,true]{for mode in ["report_clash","copy_missing","copy_changed","success"]{
+            if !exporting && matches!(mode,"copy_missing"|"copy_changed"){continue;}
+            let root=std::env::temp_dir().join(format!("hazlo-pcb-retained-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let mut input=move_fixture();input.native_completion_version=Some(1);input.before.components[0].value="PRIVATE_PCB_REPLY_SENTINEL".into();let copy=b"(kicad_pcb (version 20260101))";if exporting{input.export_copy=true;input.movement=None;input.units=crate::kicad::Units::Mm;input.before.state_sha256=crate::kicad_project::digest(copy);if mode!="copy_missing"{fs::write(root.join("Board.kicad_pcb"),if mode=="copy_changed"{b"preserve changed copy".as_slice()}else{copy.as_slice()}).unwrap();}}
+            let receipt=receipt_fixture(&input);let bytes=serde_json::to_vec(&json!({"version":1,"input_sha256":completion_identity(&input).unwrap(),"result":receipt})).unwrap();fs::write(root.join("pcb-completion.json"),&bytes).unwrap();let operation=crate::project::OperationInput::LivePcb(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());if mode=="report_clash"{fs::write(root.join("result.json"),b"preserve manual report").unwrap();}fs::write(root.join("manual.native"),b"preserve later manual work").unwrap();
+            let reply=serde_json::to_vec(&json!({"ok":true,"result":receipt})).unwrap();let result=retain_worker_reply(&input,&root,&reply,&fence);assert_eq!(result.is_ok(),mode=="success");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();let summary=record.summary(&operation);assert_eq!(summary.acknowledged,1);assert_eq!(summary.uncertain,0);assert!(summary.needs_review);assert!(!serde_json::to_string(&summary).unwrap().contains("PRIVATE_PCB_REPLY_SENTINEL"));assert!(fence.enter().is_err());
+            if mode=="report_clash"{assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve manual report");assert!(recover_result(&input,&root).is_err());fs::rename(root.join("result.json"),root.join("preserved.native")).unwrap();}
+            if matches!(mode,"copy_missing"|"copy_changed"){assert!(recover_result(&input,&root).is_err());assert!(!root.join("result.json").exists());if mode=="copy_changed"{assert_eq!(fs::read(root.join("Board.kicad_pcb")).unwrap(),b"preserve changed copy");}else{assert!(!root.join("Board.kicad_pcb").exists());}fs::write(root.join("Board.kicad_pcb"),copy).unwrap();}
+            assert!(recover_result(&input,&root).unwrap());assert!(recover_result(&input,&root).unwrap());assert_eq!(fs::read(root.join("pcb-completion.json")).unwrap(),bytes);assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"preserve later manual work");drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }}
+    }
+    #[test]
+    fn legacy_uncertain_receipts_stay_paused_but_originally_acknowledged_results_can_recover(){
+        use std::sync::Mutex;
+        for mode in ["matching","changed","missing"]{
+            let root=std::env::temp_dir().join(format!("hazlo-pcb-legacy-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let input=move_fixture();let receipt=receipt_fixture(&input);let proof=serde_json::to_vec(&json!({"version":1,"input_sha256":completion_identity(&input).unwrap(),"result":receipt})).unwrap();fs::write(root.join("pcb-completion.json"),&proof).unwrap();let operation=crate::project::OperationInput::LivePcb(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());assert!(recover_result(&input,&root).is_err());assert!(!root.join("result.json").exists());let bytes=serde_json::to_vec_pretty(&receipt).unwrap();fs::write(root.join("result.json"),&bytes).unwrap();let mut checked=operation.clone();checked.retain_receipt(&root).unwrap();assert!(crate::live_dispatch::recover_checked(&root,&checked).is_err());fence.complete(&checked).unwrap();
+            if mode=="missing"{fs::remove_file(root.join("pcb-completion.json")).unwrap();assert!(recover_result(&input,&root).unwrap());}
+            else if mode=="changed"{let mut changed:serde_json::Value=serde_json::from_slice(&proof).unwrap();changed["result"]["after"]["state_sha256"]=json!("e".repeat(64));fs::write(root.join("pcb-completion.json"),serde_json::to_vec(&changed).unwrap()).unwrap();}
+            fs::remove_file(root.join("result.json")).unwrap();let result=recover_result(&input,&root);
+            if mode=="matching"{assert!(result.unwrap());assert_eq!(fs::read(root.join("result.json")).unwrap(),bytes);assert!(crate::live_dispatch::read(&root,&operation).unwrap().unwrap().pcb_completion_sha256.is_none());}else{assert!(result.is_err());assert!(!root.join("result.json").exists());}
+            drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
         }
     }
     #[test]

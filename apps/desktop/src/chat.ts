@@ -336,6 +336,9 @@ function reviewFinishedOperation() {
       return;
     }
     if (!(input.live_drawing_version || input.live_cad_version || input.live_agent_version || input.live_pcb_version) || !["failed", "cancelled", "interrupted"].includes(job.snapshot.phase)) return;
+    if(input.live_pcb_version && input.native_completion_version && job.snapshot.phase!=="cancelled"){
+      void action(()=>send(`Consulta recover_native_result para job_id ${input.job_id}. Usa el recibo original vinculado para recuperar el informe y comprobar la identidad de la copia existente. No repitas el movimiento ni la exportación, ni sustituyas una copia ausente o cambiada por el dibujo actual. Explica qué está confirmado y qué sigue pendiente; si falta el vínculo original, conserva la pausa. Lee read_verified_result solo si la recuperación confirma su publicación. Esto no demuestra función física ni el estado actual de la PCB.`,false));return;
+    }
     if(input.live_agent_version && input.native_completion_version && job.snapshot.phase!=="cancelled"){
       void action(()=>send(`Consulta recover_native_result para job_id ${input.job_id}. Primero conserva o recupera el recibo original del editor; esa consulta nunca debe repetir la edición ni el guardado. Explica qué efecto confirma el recibo y qué sigue pendiente. No atribuyas el resultado a esta operación solo por observar el estado actual. Lee read_verified_result solo si la recuperación confirma su publicación.`,false));return;
     }

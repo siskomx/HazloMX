@@ -944,6 +944,8 @@ impl Project {
             return crate::agent_editor::validate_report(input,&report).map_err(io::Error::other);
         }
         if let OperationInput::LivePcb(input) = input {
+            let record=crate::live_dispatch::read(directory,&OperationInput::LivePcb(input.clone())).map_err(io::Error::other)?;
+            if input.native_completion_version==Some(1) && record.as_ref().is_none_or(|record|record.pcb_completion_sha256.is_none()) || record.as_ref().is_some_and(|record|record.outcome!=crate::native_journal::Outcome::Acknowledged && record.pcb_completion_sha256.is_none()){return Err(error("Falta el vínculo original PCB; el resultado sigue pendiente."));}
             let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),65536).map_err(io::Error::other)?;
             if input.receipt_sha256.as_deref()!=Some(&crate::kicad_project::digest(&bytes)) {
                 return Err(error("El informe de la edición PCB cambió."));
@@ -1091,6 +1093,12 @@ impl Project {
             if let OperationInput::LiveAgent(input)=&snapshot.input{
                 let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
                 if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::agent_editor::recover_recorded_result(&directory,input),Ok(true)){
+                    let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;if self.validate_outputs(&directory,&checked).is_ok(){crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}}
+                }}
+            }
+            if let OperationInput::LivePcb(input)=&snapshot.input{
+                let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
+                if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::kicad_live::recover_recorded_result(&directory,input),Ok(true)){
                     let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;if self.validate_outputs(&directory,&checked).is_ok(){crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}}
                 }}
             }

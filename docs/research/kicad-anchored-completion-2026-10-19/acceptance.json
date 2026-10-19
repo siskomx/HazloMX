@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "test_kind": "controlled_sdk_nng_and_owned_worker_processes",
+  "pass": true,
+  "native_reply_anchors_checked": true,
+  "offline_report_recovery_checked": true,
+  "source_preserved": true,
+  "completed_host_jobs": 2,
+  "worker_tests_reported": 18,
+  "real_kicad_window": false,
+  "real_provider": false,
+  "hardware": false,
+  "installer_test": false
+}
