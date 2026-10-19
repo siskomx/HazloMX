@@ -2398,8 +2398,20 @@ mod tests {
                 let (observation,observed)=share_fixture_response(&workflow,&project,observed);derived.push(observation);
                 assert_eq!(observed["readback"]["structuredContent"]["native_writes"],0);
                 let scoped=chat_program(host.clone(),project.clone(),program).unwrap();
-                let proposal=scoped.call_in_project("propose_native_tool_calls".into(),json!({"connection_id":catalog["connection_id"],"catalog_sha256":catalog["catalog_sha256"],"description":"Set the disposable fixture value to 27 once","calls":[{"tool":"program_owned_parameter_edit","arguments":{"value":27}}],"guard":{"call":read,"result_sha256":observed["readback_sha256"]},"readback":read}),Arc::new(AtomicBool::new(false))).await.unwrap();
+                let mut request=json!({"connection_id":catalog["connection_id"],"catalog_sha256":catalog["catalog_sha256"],"description":"Set the disposable fixture value to 27 once","calls":[{"tool":"program_owned_parameter_edit","arguments":{"value":27}}],"guard":{"call":read,"result_sha256":observed["readback_sha256"]},"readback":read});
+                let proposal=scoped.call_in_project("propose_native_tool_calls".into(),request.clone(),Arc::new(AtomicBool::new(false))).await.unwrap();
                 assert_eq!(proposal["human_approval_required"],true);let job=workflow.view().unwrap().job.unwrap();
+                let preflight=scoped.call_in_project("read_native_tool".into(),json!({"connection_id":catalog["connection_id"],"catalog_sha256":catalog["catalog_sha256"],"call":read}),Arc::new(AtomicBool::new(false))).await.unwrap();
+                assert!(workflow.begin(job.approval_id.unwrap()).is_err());
+                let retired=workflow.current().unwrap().unwrap();assert!(retired.snapshot.audit.as_ref().unwrap().approval_invalidated);assert_eq!(retired.snapshot.phase,crate::project::Phase::Cancelled);
+                let (preflight_reference,preflight)=share_fixture_response(&workflow,&project,preflight);derived.push(preflight_reference);
+                assert_eq!(preflight["readback"]["structuredContent"]["native_writes"],0);
+                request["guard"]["result_sha256"]=preflight["readback_sha256"].clone();
+                let scoped=chat_program(host.clone(),project.clone(),program).unwrap();
+                scoped.call_in_project("propose_native_tool_calls".into(),request,Arc::new(AtomicBool::new(false))).await.unwrap();
+                let fresh=workflow.view().unwrap().job.unwrap();assert_ne!(fresh.snapshot.input.job_id(),job.snapshot.input.job_id());
+                assert_eq!(serde_json::to_value(&retired.snapshot.input).unwrap()["calls"],serde_json::to_value(&fresh.snapshot.input).unwrap()["calls"]);
+                let job=fresh;
                 let result=workflow.execute(workflow.begin(job.approval_id.unwrap()).unwrap()).unwrap();assert_eq!(result.snapshot.phase,crate::project::Phase::Completed);
                 let id=result.snapshot.input.job_id();
                 let report=scoped.call_in_project("read_verified_result".into(),json!({"job_id":id}),Arc::new(AtomicBool::new(false))).await.unwrap();
@@ -2415,7 +2427,7 @@ mod tests {
             if let Some(id)=completed {
                 let artifact=workflow.artifact(id,crate::project::ArtifactFormat::NativeToolsReport).unwrap();let report:Value=serde_json::from_str(&artifact.read_text().unwrap()).unwrap();
                 assert_eq!(report["readback"]["structuredContent"]["native_value"],27);assert_eq!(report["readback"]["structuredContent"]["native_writes"],1);
-                assert_eq!(workflow.view().unwrap().history.len(),1);
+                assert_eq!(workflow.view().unwrap().history.len(),2);
             }else{assert!(workflow.view().unwrap().job.is_none());assert!(workflow.view().unwrap().history.is_empty());}
             bridge.close().await.unwrap();let _=client.waiting().await;host.disconnect_native_tools().unwrap();drop(host);drop(workflow);
         }

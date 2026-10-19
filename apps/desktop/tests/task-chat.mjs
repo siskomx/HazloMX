@@ -59,6 +59,7 @@ try {
      snapshot.job={snapshot:{schema_version:{agent:15,pcb:14,drawing:16,cad:13}[kind],project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,job_id:crypto.randomUUID(),description:"Owned typed correction",...inputs[kind]},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};
     }
     if(window.startPublicOnNext){window.startPublicOnNext=false;snapshot.job={snapshot:{schema_version:18,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,public_document_version:1,job_id:crypto.randomUUID(),url:"https://example.org/manual?language=en",purpose:"Check the official public manual"},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
+    if(window.retireReviewOnNext){window.retireReviewOnNext=false;snapshot.job.snapshot.phase="cancelled";snapshot.job.snapshot.audit.approval_invalidated=true;snapshot.job.approval_id=null;snapshot.job.error="The task changed; prepared work remains local.";}
    }
    else if(command==="approve_operation"){
     snapshot.job.busy=true;snapshot.job.snapshot.phase="running";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));
@@ -194,5 +195,17 @@ try {
   assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),callsBefore);
   assert.match(await page.locator("#conversation").innerText(),new RegExp(text));
  }
- console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch and withheld raw input. No real provider, native program or model download ran.");
+ const providerCallsBeforeRetired=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);
+ await page.evaluate(()=>{window.startBatchOnNext=true;window.retireReviewOnNext=true;});
+ await page.locator("#prompt").fill("Review the preserved proposal using the current task");await page.locator("#send").click();await page.locator("#send:enabled").waitFor();
+ await page.waitForFunction(()=>document.querySelector("#history")?.textContent.includes("Propuesta conservada; necesita nueva revisión"));
+ await page.locator("#results").evaluate(el=>el.open=true);
+ assert.match(await page.locator("#history").innerText(),/Propuesta conservada; necesita nueva revisión/);
+ assert.match(await page.locator("#job-status").textContent(),/Conservamos la propuesta sin ejecutar/);
+ assert(await page.locator("#approve").isDisabled());
+ await page.getByRole("button",{name:"Ver propuesta conservada",exact:true}).click();await page.locator("#report[open]").waitFor();
+ assert.match(await page.locator("#report-text").innerText(),/native_edit/);assert.match(await page.locator("#report-text").innerText(),/Esta vista es local/);
+ await page.locator("#report").getByRole("button",{name:"Cerrar",exact:true}).click();
+ assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),providerCallsBeforeRetired+1);
+ console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch, withheld raw input and preserved stale-review status. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}

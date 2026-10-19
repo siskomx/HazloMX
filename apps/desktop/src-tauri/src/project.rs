@@ -206,6 +206,8 @@ pub enum RunSource {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RunAudit {
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub approval_invalidated: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native_attempted: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -221,6 +223,8 @@ pub struct RunAudit {
     #[serde(default)]
     pub files_verified: bool,
 }
+
+fn is_false(value:&bool)->bool{!*value}
 
 fn timestamp() -> u64 {
     std::time::SystemTime::now()
@@ -771,6 +775,7 @@ impl Project {
             input,
             phase,
             audit: Some(RunAudit {
+                approval_invalidated: false,
                 native_attempted,
                 task: crate::tasks::Store::new(self)?.binding()?,
                 source: RunSource::Manual,
@@ -839,6 +844,7 @@ impl Project {
                     ));
                 }
                 if audit.adapter_version != 1
+                    || (audit.approval_invalidated && (snapshot.phase!=Phase::Cancelled || audit.native_attempted==Some(true)))
                     || (audit.files_verified
                         && matches!(snapshot.phase, Phase::AwaitingApproval | Phase::Running))
                     || audit.sequence == 0

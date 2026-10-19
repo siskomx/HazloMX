@@ -180,6 +180,28 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    fn reconcile_pending_approval(state:&mut State)->Result<(),String>{
+        let Some(project)=state.project.clone() else{return Ok(());};
+        let Some(job)=state.job.as_mut().filter(|j|!j.view.busy && j.view.snapshot.phase==Phase::AwaitingApproval) else{return Ok(());};
+        let current=crate::tasks::Store::new(&project).and_then(|s|s.binding()).map_err(|_|"No se pudo comprobar la tarea; la propuesta se conserva sin ejecutar.")?;
+        if job.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref())==current.as_ref(){return Ok(());}
+        const NOTICE:&str="La tarea o sus permisos cambiaron. Esta propuesta se conserva sin ejecutar; revisa las entradas actuales y prepara una nueva aprobación.";
+        // Fence approval before storage I/O; an uncertain metadata write must never restore its token.
+        job.view.approval_id=None;job.dispatch_paused.store(true,Ordering::SeqCst);job.view.error=Some(NOTICE.into());
+        let saved=project.history().map_err(|_|"No se pudo releer la propuesta conservada; la aprobación anterior está bloqueada.")?.into_iter().find(|s|s.input.job_id()==job.view.snapshot.input.job_id()).ok_or("No se encontró la propuesta conservada; la aprobación anterior está bloqueada.")?;
+        let saved_input=serde_json::to_value(&saved.input).map_err(|_|"No se pudo comprobar la propuesta conservada.")?;
+        let expected_input=serde_json::to_value(&job.view.snapshot.input).map_err(|_|"No se pudo comprobar la propuesta conservada.")?;
+        if saved_input!=expected_input || saved.audit.as_ref().and_then(|a|a.task.as_ref())!=job.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()) {return Err("La propuesta guardada cambió; se conservó y no se renovó su aprobación.".into());}
+        if saved.audit.as_ref().and_then(|a|a.native_attempted)==Some(true){return Err("La propuesta tiene una posible ejecución nativa; conserva el trabajo y revisa su recuperación sin repetirla.".into());}
+        let mut view=job.view.clone();view.snapshot=saved;
+        if view.snapshot.phase==Phase::Cancelled && view.snapshot.audit.as_ref().is_some_and(|a|a.approval_invalidated){view.sequence+=1;job.view=view;return Ok(());}
+        if view.snapshot.phase!=Phase::AwaitingApproval{return Err("La propuesta guardada tiene otro estado; se conservó sin repetir ninguna operación.".into());}
+        view.snapshot.phase=Phase::Cancelled;
+        if let Some(audit)=&mut view.snapshot.audit{audit.approval_invalidated=true;}
+        view.advance();
+        project.save(&view.snapshot).map_err(|_|"La propuesta se conserva y la aprobación anterior está bloqueada. No se pudo guardar su estado; vuelve a comprobarlo antes de continuar.")?;
+        job.view=view;Ok(())
+    }
     pub(crate) fn reconcile_native_batch(&self,expected:(Uuid,PathBuf),job_id:Uuid,connection:&crate::native_tools::Connection,cancel:Arc<AtomicBool>)->Result<serde_json::Value,String>{
         let project={let state=self.state.lock().map_err(|e|e.to_string())?;inference_idle(&state)?;
             if state.job.as_ref().is_some_and(|j|j.view.busy || j.view.snapshot.phase==Phase::AwaitingApproval){return Err("Termina o cancela la propuesta actual antes de revisar el lote anterior.".into());}
@@ -196,14 +218,16 @@ impl Workflow {
         project.native_recovery(None).map_err(|e|e.to_string())
     }
     pub fn retain_tool_evidence(&self,expected:&crate::tasks::Binding,tool:&str,result:&Result<serde_json::Value,String>)->Result<Uuid,String>{
-        let state=self.state.lock().map_err(|_|"No se pudo conservar evidencia local.")?;
-        let project=state.project.as_ref().ok_or("No hay proyecto activo.")?;
-        let store=crate::tasks::Store::new(project).map_err(|_|"No se pudo conservar evidencia local.")?;
+        let mut state=self.state.lock().map_err(|_|"No se pudo conservar evidencia local.")?;
+        let project=state.project.clone().ok_or("No hay proyecto activo.")?;
+        let store=crate::tasks::Store::new(&project).map_err(|_|"No se pudo conservar evidencia local.")?;
         if store.binding().map_err(|_|"No se pudo comprobar la tarea.")?.as_ref()!=Some(expected){return Err("La tarea cambió; no se compartió la respuesta nativa.".into());}
         let reference_name=if tool=="inspect_native_tools"{"Catálogo nativo.json"}else if tool=="read_verified_result" && result.as_ref().is_ok_and(|v|v["format"]=="public_document_report"){"Documento público.json"}else{"Observación nativa.json"};
         let value=match result {Ok(value)=>serde_json::json!({"tool":tool,"result":value}),Err(error)=>serde_json::json!({"tool":tool,"error":error})};
         let bytes=serde_json::to_vec(&value).map_err(|_|"No se pudo conservar evidencia local.")?;
-        store.retain_evidence(expected,reference_name.into(),bytes).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.".into())
+        let result=store.retain_evidence(expected,reference_name.into(),bytes).map_err(|_|"La respuesta no se envió: no se pudo conservar como evidencia local. Revisa los límites y el espacio libre.".into());
+        Self::reconcile_pending_approval(&mut state)?;
+        result
     }
     pub fn shared_task_reference(&self,reference:Uuid,offset:usize)->Result<serde_json::Value,String>{
         let state=self.state.lock().map_err(|e|e.to_string())?;
@@ -239,7 +263,7 @@ impl Workflow {
         let mut state=self.state.lock().map_err(|e|e.to_string())?;inference_idle(&state)?;
         let correction=match &request {crate::tasks::Request::Message{id,revision,correction_of:Some(job_id),..}=>Some((*job_id,crate::tasks::Binding{id:*id,revision:*revision})),_=>None};
         if correction.is_none() && state.job.as_ref().is_some_and(|j|j.view.busy){return Err("Termina o detén la operación antes de cambiar la tarea.".into());}
-        let changed=request.changes_scope();let switches=matches!(request,crate::tasks::Request::New|crate::tasks::Request::Open{..});
+        let switches=matches!(request,crate::tasks::Request::New|crate::tasks::Request::Open{..});
         let project=state.project.clone().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió; la tarea se conservó.")?;
         let store=crate::tasks::Store::new(&project).map_err(|e|e.to_string())?;
         let gate=if let Some((job_id,binding))=&correction {
@@ -254,11 +278,8 @@ impl Workflow {
             if job.view.busy {job.view.approval_id=None;job.view.error=Some("Se pausaron los pasos pendientes para conservar el trabajo. La llamada enviada puede terminar; comprueba si tu corrección quedó guardada.".into());job.view.advance();project.save(&job.view.snapshot).map_err(|e|e.to_string())?;}
         }
         drop(permit);
+        Self::reconcile_pending_approval(&mut state)?;
         let result=result?;
-        if changed {if let Some(job)=state.job.as_mut().filter(|j|j.view.snapshot.phase==Phase::AwaitingApproval){
-            job.view.approval_id=None;job.view.snapshot.phase=Phase::Cancelled;job.view.advance();
-        }}
-        if changed {if let (Some(project),Some(job))=(&state.project,&state.job){project.save(&job.view.snapshot).map_err(|e|e.to_string())?;}}
         if switches {*self.agent_source.lock().map_err(|e|e.to_string())?=None;}
         Ok(result)
     }
@@ -325,7 +346,8 @@ impl Workflow {
     }
 
     pub fn view(&self) -> Result<WorkflowView, String> {
-        let state = self.state.lock().map_err(|e| e.to_string())?;
+        let mut state = self.state.lock().map_err(|e| e.to_string())?;
+        Self::reconcile_pending_approval(&mut state)?;
         Ok(WorkflowView {
             project: state
                 .project
@@ -2166,6 +2188,7 @@ impl Workflow {
         source: RunSource,
     ) -> Result<JobView, String> {
         input.validate()?;
+        Self::reconcile_pending_approval(state)?;
         if state.job.as_ref().is_some_and(|job| {
             job.view.busy
                 || matches!(
@@ -2350,6 +2373,7 @@ impl Workflow {
     pub fn begin(&self, approval_id: Uuid) -> Result<Dispatch, String> {
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
         inference_idle(&state)?;
+        Self::reconcile_pending_approval(&mut state)?;
         let project = state.project.clone().ok_or("Seleccione un proyecto.")?;
         let current_task=crate::tasks::Store::new(&project).and_then(|s|s.binding()).map_err(|e|e.to_string())?;
         let job = state
@@ -2445,13 +2469,9 @@ impl Workflow {
     }
 
     pub fn current(&self) -> Result<Option<JobView>, String> {
-        Ok(self
-            .state
-            .lock()
-            .map_err(|e| e.to_string())?
-            .job
-            .as_ref()
-            .map(|job| job.view.clone()))
+        let mut state=self.state.lock().map_err(|e|e.to_string())?;
+        Self::reconcile_pending_approval(&mut state)?;
+        Ok(state.job.as_ref().map(|job|job.view.clone()))
     }
 
     pub fn start_inference(
@@ -3048,6 +3068,97 @@ mod tests {
         let mut read_only_batch=input;read_only_batch.job_id=Uuid::new_v4();read_only_batch.calls.clear();read_only_batch.guard=None;
         assert!(Workflow::propose_operation_locked(&mut workflow.state.lock().unwrap(),OperationInput::NativeTools(read_only_batch),RunSource::Mcp).is_err());
         drop(workflow);std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn evidence_intake_retires_only_stale_unstarted_approvals_and_keeps_the_draft(){
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;
+        fs::write(root.join("manual-work.txt"),b"valid manual edits").unwrap();
+        let pending=workflow.propose(dimensions()).unwrap();let id=pending.snapshot.input.job_id();let input=serde_json::to_value(&pending.snapshot.input).unwrap();
+        let reference=workflow.retain_tool_evidence(&task.binding(),"read_native_tool",&Ok(serde_json::json!({"private":"LOCAL_ONLY_SENTINEL"}))).unwrap();
+        assert!(workflow.shared_task_reference(reference,0).is_err());assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+        let retired=workflow.current().unwrap().unwrap();assert_eq!(retired.snapshot.phase,Phase::Cancelled);assert!(retired.approval_id.is_none());
+        assert!(retired.snapshot.audit.as_ref().unwrap().approval_invalidated);
+        assert_eq!(serde_json::to_value(&retired.snapshot.input).unwrap(),input);assert!(retired.error.unwrap().contains("sin ejecutar"));
+        assert!(!root.join(".hazlomexa/staging").join(id.to_string()).exists());
+        let fresh=workflow.propose(dimensions()).unwrap();assert_ne!(fresh.snapshot.input.job_id(),id);assert!(fresh.approval_id.is_some());
+        let history=workflow.view().unwrap().history;assert_eq!(history.len(),2);assert_eq!(serde_json::to_value(&history.iter().find(|s|s.input.job_id()==id).unwrap().input).unwrap(),input);
+        assert_eq!(fs::read(root.join("manual-work.txt")).unwrap(),b"valid manual edits");
+        drop(workflow);let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();
+        assert_eq!(recovered.iter().find(|s|s.input.job_id()==id).unwrap().phase,Phase::Cancelled);
+        drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn lost_task_reply_retires_the_old_approval_after_reading_committed_state(){
+        use std::os::windows::fs::OpenOptionsExt;
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let project=workflow.view().unwrap().project.unwrap();
+        let pending=workflow.propose(dimensions()).unwrap();
+        let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join(".hazlomexa/tasks/index.json")).unwrap();
+        let history=r#"{"version":1,"turns":[{"role":"user","content":"Preserve my manual edits"}]}"#;
+        assert!(workflow.task_request(project,crate::tasks::Request::Message{id:task.id,revision:task.revision,text:"Preserve my manual edits".into(),history:history.into(),correction_of:None}).is_err());
+        // The primary task write committed before the locked title-index update failed.
+        let state=workflow.task_state().unwrap().unwrap().active;assert_eq!(state.revision,task.revision+1);assert_eq!(state.goal,"Preserve my manual edits");
+        assert!(workflow.begin(pending.approval_id.unwrap()).is_err());assert_eq!(workflow.current().unwrap().unwrap().snapshot.phase,Phase::Cancelled);
+        drop(lock);
+        let state=workflow.task_state().unwrap().unwrap().active;assert_eq!(state.revision,task.revision+1);
+        assert!(workflow.propose(dimensions()).is_ok());drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn locked_retirement_blocks_old_approval_and_recovers_without_repeating_intake(){
+        use std::os::windows::fs::OpenOptionsExt;
+        for already_committed in [false,true]{
+            let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let pending=workflow.propose(dimensions()).unwrap();let id=pending.snapshot.input.job_id();
+            let path=root.join(".hazlomexa/runs").join(format!("{id}.json"));
+            let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(&path).unwrap();
+            assert!(workflow.retain_tool_evidence(&task.binding(),"read_native_tool",&Err("LOCAL_ERROR_SENTINEL".into())).is_err());
+            assert!(workflow.state.lock().unwrap().job.as_ref().unwrap().view.approval_id.is_none());assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+            let retained=workflow.task_state().unwrap().unwrap().active;assert_eq!(retained.references.len(),1);assert_eq!(retained.revision,task.revision+1);assert!(retained.references[0].shared_with.is_empty());
+            drop(lock);
+            let commit_lock=if already_committed {
+                let state=workflow.state.lock().unwrap();let job=state.job.as_ref().unwrap();let mut saved=job.view.clone();saved.snapshot.phase=Phase::Cancelled;saved.snapshot.audit.as_mut().unwrap().approval_invalidated=true;saved.advance();state.project.as_ref().unwrap().save(&saved.snapshot).unwrap();
+                Some(fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(&path).unwrap())
+            }else{None};
+            let recovered=workflow.view().unwrap();assert_eq!(recovered.job.unwrap().snapshot.phase,Phase::Cancelled);assert_eq!(recovered.history.len(),1);
+            drop(commit_lock);assert_eq!(workflow.task_state().unwrap().unwrap().active.references.len(),1);assert!(workflow.propose(dimensions()).is_ok());
+            drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn rejected_intake_preserves_a_current_approval_and_running_work_is_not_retired(){
+        use std::os::windows::fs::OpenOptionsExt;
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let pending=workflow.propose(dimensions()).unwrap();
+        let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join(".hazlomexa/tasks").join(format!("{}.json",task.id))).unwrap();
+        assert!(workflow.retain_tool_evidence(&task.binding(),"read_native_tool",&Ok(serde_json::json!({"value":1}))).is_err());
+        assert_eq!(workflow.current().unwrap().unwrap().approval_id,pending.approval_id);assert_eq!(workflow.task_binding().unwrap(),Some(task.binding()));drop(lock);
+        let dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();
+        workflow.retain_tool_evidence(&task.binding(),"read_native_tool",&Ok(serde_json::json!({"value":2}))).unwrap();
+        let current=workflow.current().unwrap().unwrap();assert!(current.busy);assert_eq!(current.snapshot.phase,Phase::Running);assert!(!dispatch.dispatch_paused.load(Ordering::SeqCst));assert!(!dispatch.cancelled.load(Ordering::SeqCst));
+        drop(dispatch);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn stale_review_never_replaces_a_saved_possible_native_execution(){
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let pending=workflow.propose(dimensions()).unwrap();
+        let path=root.join(".hazlomexa/runs").join(format!("{}.json",pending.snapshot.input.job_id()));
+        let mut native=pending.snapshot.clone();native.phase=Phase::Running;native.audit.as_mut().unwrap().native_attempted=Some(true);native.advance();
+        workflow.state.lock().unwrap().project.as_ref().unwrap().save(&native).unwrap();let before=fs::read(&path).unwrap();
+        let mut forged=native.clone();forged.phase=Phase::Cancelled;forged.audit.as_mut().unwrap().approval_invalidated=true;
+        assert!(workflow.state.lock().unwrap().project.as_ref().unwrap().save(&forged).is_err());
+        assert!(workflow.retain_tool_evidence(&task.binding(),"read_native_tool",&Ok(serde_json::json!({"value":1}))).is_err());
+        assert!(workflow.begin(pending.approval_id.unwrap()).is_err());assert!(workflow.propose(dimensions()).is_err());
+        assert_eq!(fs::read(&path).unwrap(),before);assert!(workflow.state.lock().unwrap().job.as_ref().unwrap().view.approval_id.is_none());
+        assert_eq!(workflow.task_state().unwrap().unwrap().active.references.len(),1);
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn stale_review_preserves_a_different_saved_draft_instead_of_overwriting_it(){
+        let (root,workflow)=setup();let task=workflow.task_state().unwrap().unwrap().active;let pending=workflow.propose(dimensions()).unwrap();
+        let mut edited=pending.snapshot.clone();let OperationInput::Freecad(input)=&mut edited.input else{panic!("Expected a solid draft");};input.dimensions_mm.width=47.;edited.audit.as_mut().unwrap().user_edited=true;edited.advance();
+        workflow.state.lock().unwrap().project.as_ref().unwrap().save(&edited).unwrap();
+        let path=root.join(".hazlomexa/runs").join(format!("{}.json",edited.input.job_id()));let before=fs::read(&path).unwrap();
+        assert!(workflow.retain_tool_evidence(&task.binding(),"read_native_tool",&Ok(serde_json::json!({"value":1}))).is_err());
+        assert!(workflow.begin(pending.approval_id.unwrap()).is_err());assert_eq!(fs::read(&path).unwrap(),before);
+        drop(workflow);let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();
+        assert_eq!(recovered[0].input.solid().unwrap().dimensions_mm.width,47.);assert!(recovered[0].audit.as_ref().unwrap().user_edited);
+        drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn tasks_bind_approval_and_keep_restricted_content_out_of_prompts(){
