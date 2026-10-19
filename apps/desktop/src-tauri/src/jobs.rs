@@ -308,6 +308,7 @@ impl Workflow {
                     let connection=if let Some(connection)=agent_connection{connection}else{crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id))).map_err(|_|"La instancia original del editor ya no está conectada. Se conserva el trabajo y la pausa.")?};
                     crate::agent_editor::recover_result(input,&connection,&directory,&cancel)?
                 },
+                OperationInput::LivePcb(input)=>crate::kicad_live::recover_result(input,&directory)?,
                 _=>return Err("Este programa todavía necesita su evidencia nativa de finalización. Se conserva el trabajo y la pausa.".into()),
             };
             if !recovered{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
@@ -3593,6 +3594,19 @@ mod tests {
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn retained_pcb_completion_recovers_after_restart_without_editor_access_or_replay(){
+        for export in [false,true]{
+            let (root,workflow)=setup();let selected=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();let mut input=crate::kicad_live::tests::move_fixture();input.before.components[0].value="PRIVATE_PCB_COMPLETION_SENTINEL".into();let exported=b"(kicad_pcb (version 20260101))";
+            if export{input.export_copy=true;input.movement=None;input.before.state_sha256=crate::kicad_project::digest(exported);}
+            let id=input.job_id;let pending=workflow.propose_live_pcb(selected.clone(),input.clone(),root.join("Owned.kicad_pcb"),crate::kicad_live::Connection{endpoint:format!("ipc://{}",root.join("not-running.sock").display()),token:String::new()}).unwrap();let mut dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);dispatch.project.save(&dispatch.snapshot).unwrap();
+            let stage=dispatch.project.reserve_stage(id).unwrap();let fence=crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone()).unwrap();drop(fence.enter().unwrap());drop(fence);
+            let proof=serde_json::json!({"version":1,"input_sha256":crate::kicad_project::digest(&serde_json::to_vec(&input).unwrap()),"result":crate::kicad_live::tests::receipt_fixture(&input)});fs::write(stage.path.join("pcb-completion.json"),serde_json::to_vec(&proof).unwrap()).unwrap();if export{fs::write(stage.path.join("Board.kicad_pcb"),exported).unwrap();}drop(stage);workflow.finish(dispatch,Err("lost worker reply".into())).unwrap();assert!(workflow.native_recovery().unwrap()[0].needs_review);drop(workflow);
+            let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(Project::open(&root).unwrap()).unwrap();let result=workflow.recover_native_result(selected.clone(),id,Arc::new(AtomicBool::new(false))).unwrap();assert_eq!(result["recovered"],true);assert_eq!(result["published"],true);assert!(!result.to_string().contains("PRIVATE_PCB_COMPLETION_SENTINEL"));assert!(!workflow.native_recovery().unwrap()[0].needs_review);
+            let report=workflow.artifact(id,ArtifactFormat::LivePcbReport).unwrap().read_text().unwrap();assert!(report.contains("PRIVATE_PCB_COMPLETION_SENTINEL"));assert_eq!(workflow.recover_native_result(selected,id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+            drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
     #[test]
     fn native_pcb_jobs_bind_private_connections_to_one_use_approval_and_receipt_recovery() {
         for export_copy in [false,true] {

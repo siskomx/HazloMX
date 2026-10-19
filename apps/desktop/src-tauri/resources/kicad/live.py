@@ -283,16 +283,50 @@ def unique_fields(pairs):
 
 
 def response(data):
+    completion = None
+    native = None
     try:
         if len(data) > 131072:
             raise Refused("request_limit")
-        native = run(json.loads(data, object_pairs_hook=unique_fields))
+        request = json.loads(data, object_pairs_hook=unique_fields)
+        destination = os.environ.get("HAZLOMEXA_PCB_COMPLETION")
+        identity = os.environ.get("HAZLOMEXA_PCB_INPUT_SHA256", "")
+        if destination:
+            if (request.get("action") not in {"move", "export"}
+                    or not ntpath.isabs(destination) or ntpath.basename(destination) != "pcb-completion.json"
+                    or len(identity) != 64 or any(c not in "0123456789abcdef" for c in identity)
+                    or os.path.lexists(destination)):
+                raise Refused("invalid_completion")
+            # Reserve before native admission; never overwrite another attempt's proof.
+            completion = open(destination + ".pending", "xb")
+        native = run(request)
+        if completion is not None and native.get("status") == "completed":
+            proof = json.dumps({"version": 1, "input_sha256": identity, "result": native},
+                               ensure_ascii=False, allow_nan=False).encode("utf-8")
+            if len(proof) > 65536:
+                raise Uncertain("completion_limit")
+            try:
+                completion.write(proof)
+                completion.flush()
+                os.fsync(completion.fileno())
+                completion.close()
+                os.rename(destination + ".pending", destination)
+            except Exception as error:
+                raise Uncertain("completion_unavailable") from error
         result = ({"ok": False, "outcome": "rolled_back", "error": "native_move_refused"}
                   if native.get("status") == "rolled_back" else {"ok": True, "result": native})
     except Uncertain:
         result = {"ok": False, "outcome": "uncertain", "error": "native_outcome_unknown"}
     except Exception:
-        result = {"ok": False, "outcome": "refused", "error": "native_request_refused"}
+        result = ({"ok": False, "outcome": "uncertain", "error": "native_outcome_unknown"}
+                  if native is not None and native.get("status") == "completed"
+                  else {"ok": False, "outcome": "refused", "error": "native_request_refused"})
+    finally:
+        if completion is not None:
+            try:
+                completion.close()
+            except OSError:
+                pass
     return result
 
 

@@ -202,9 +202,14 @@ fn inspect_with_worker(
     parse_observation(&bytes,job).map_err(|_|"KiCad no confirmó el estado de la PCB abierta. No se sustituirá por el archivo guardado.".into())
 }
 
+struct Execution<'a>{verifier:&'a Path,stage:&'a Path,input:&'a Input}
+fn completion_identity(input:&Input)->Result<String,String>{
+    let mut input=input.clone();input.receipt_sha256=None;
+    serde_json::to_vec(&input).map(|bytes|crate::kicad_project::digest(&bytes)).map_err(|_|"No se pudo identificar la operación PCB.".into())
+}
 fn invoke(
     worker:&[u8], request:&serde_json::Value, connection:&Connection, profile:&Path,
-    cancel:Arc<AtomicBool>, verifier:Option<&Path>, dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>,
+    cancel:Arc<AtomicBool>, execution:Option<Execution<'_>>, dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>,
 ) -> Result<Vec<u8>,String> {
     use crate::{kicad_project as source, process::{run_owned_input, StopReason}};
     const FAILED: &str = "KiCad no confirmó el estado de la PCB abierta. No se sustituirá por el archivo guardado.";
@@ -245,6 +250,12 @@ fn invoke(
     }
     variables.insert("KICAD_API_SOCKET".into(), connection.endpoint.clone().into());
     variables.insert("KICAD_API_TOKEN".into(), connection.token.clone().into());
+    let verifier=execution.as_ref().map(|e|e.verifier);
+    let _stage_pins=execution.as_ref().map(|e|crate::project::pin_lineage(e.stage).map_err(|_|FAILED)).transpose()?;
+    if let Some(execution)=&execution {
+        variables.insert("HAZLOMEXA_PCB_COMPLETION".into(),execution.stage.join("pcb-completion.json").into_os_string());
+        variables.insert("HAZLOMEXA_PCB_INPUT_SHA256".into(),completion_identity(execution.input)?.into());
+    }
     let _verifier_pins=verifier.map(|path|crate::project::pin_lineage(path.parent().ok_or(FAILED)?)
         .map_err(|_|FAILED)).transpose()?;
     let _verifier=verifier.map(|path|source::open_regular(path,512*1024*1024)).transpose().map_err(|_|FAILED)?;
@@ -290,7 +301,7 @@ pub(crate) fn run_gated(input:&Input,binding:&Binding,stage:&Path,profile:&Path,
         request["destination"]=serde_json::json!(stage.join("Board.kicad_pcb"));
     }
     let failed="KiCad no confirmó el resultado de la edición. Vuelve a leer el documento antes de continuar; no repitas la operación a ciegas.";
-    let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(&verifier),dispatch)
+    let bytes=invoke(bundled_worker()?,&request,&binding.connection,profile,cancel,Some(Execution{verifier:&verifier,stage,input}),dispatch)
         .map_err(|_|failed)?;
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
@@ -301,6 +312,27 @@ pub(crate) fn run_gated(input:&Input,binding:&Binding,stage:&Path,profile:&Path,
     let report=serde_json::to_vec_pretty(&reply.result).map_err(|_|failed)?;
     crate::kicad_project::write_new(&stage.join("result.json"),&report).map_err(|_|failed)?;
     Ok(())
+}
+
+pub(crate) fn recover_result(input:&Input,directory:&Path)->Result<bool,String>{
+    input.validate()?;
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el resultado PCB local.")?;
+    let path=directory.join("pcb-completion.json");
+    if !path.try_exists().map_err(|_|"No se pudo comprobar el recibo PCB.")?{return Err("Falta el recibo original de finalización de KiCad. Se conserva la pausa; no repitas la edición.".into());}
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Completion{version:u32,input_sha256:String,result:Receipt}
+    let bytes=crate::kicad_project::read_regular(&path,65536)?;
+    let proof:Completion=serde_json::from_slice(&bytes).map_err(|_|"El recibo PCB no es compatible; se conserva la pausa.")?;
+    if proof.version!=1 || proof.input_sha256!=completion_identity(input)?{return Err("El recibo PCB pertenece a otra operación; se conserva la pausa.".into());}
+    validate_artifacts(directory,input,&proof.result)?;
+    let report=serde_json::to_vec_pretty(&proof.result).map_err(|_|"No se pudo conservar el recibo PCB.")?;
+    let result=directory.join("result.json");
+    if result.try_exists().map_err(|_|"No se pudo comprobar el informe PCB local.")?{
+        let saved:serde_json::Value=serde_json::from_slice(&crate::kicad_project::read_regular(&result,65536)?).map_err(|_|"El informe PCB cambió; se conserva sin reemplazarlo.")?;
+        if saved!=serde_json::to_value(&proof.result).map_err(|_|"No se pudo comprobar el recibo PCB.")?{return Err("El informe PCB cambió; se conserva sin reemplazarlo.".into());}
+    }else{crate::kicad_project::write_new(&result,&report).map_err(|_|"El recibo sigue local; no se pudo conservar su informe. No repitas la edición.")?;}
+    Ok(true)
 }
 
 fn parse_observation(bytes: &[u8], job: Uuid) -> Result<Observation, String> {
@@ -351,6 +383,20 @@ pub(crate) mod tests {
         Receipt {native_pcb_version:1,job_id:input.job_id,status:"completed".into(),
             before_sha256:input.before.state_sha256.clone(),after,native_commit_confirmed:!input.export_copy,saved:false,
             exported_sha256:input.export_copy.then(||input.before.state_sha256.clone())}
+    }
+    #[test]
+    fn recovery_requires_the_exact_retained_completion_and_preserves_existing_reports(){
+        for scenario in ["missing","pending","wrong_input","wrong_job","mismatch","changed_report","success"]{
+            let root=std::env::temp_dir().join(format!("hazlo-pcb-proof-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let input=move_fixture();let mut receipt=receipt_fixture(&input);
+            if scenario=="wrong_job"{receipt.job_id=Uuid::new_v4();}else if scenario=="mismatch"{receipt.after["components"][0]["value"]=json!("manual change");}
+            let proof=json!({"version":1,"input_sha256":if scenario=="wrong_input"{"f".repeat(64)}else{completion_identity(&input).unwrap()},"result":receipt});
+            if !matches!(scenario,"missing"|"pending"){fs::write(root.join("pcb-completion.json"),serde_json::to_vec(&proof).unwrap()).unwrap();}else if scenario=="pending"{fs::write(root.join("pcb-completion.json.pending"),serde_json::to_vec(&proof).unwrap()).unwrap();}
+            if scenario=="changed_report"{fs::write(root.join("result.json"),b"preserve manual report").unwrap();}
+            let result=recover_result(&input,&root);
+            if scenario=="success"{assert!(result.unwrap());let before=fs::read(root.join("result.json")).unwrap();assert!(recover_result(&input,&root).unwrap());assert_eq!(fs::read(root.join("result.json")).unwrap(),before);let saved:Receipt=crate::project::read_json(&root.join("result.json")).unwrap();validate_result(&input,&saved).unwrap();}
+            else{assert!(result.is_err(),"{scenario}");if scenario=="changed_report"{assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve manual report");}else{assert!(!root.join("result.json").exists());}}
+            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
     }
     #[test]
     fn exports_require_separate_approval_and_exact_preserved_native_state_and_bytes() {

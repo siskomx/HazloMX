@@ -276,6 +276,29 @@ class Tests(unittest.TestCase):
         finally:
             worker.run = original
 
+    def test_completion_is_retained_before_reply_and_cannot_repeat_an_attempt(self):
+        import json
+        with tempfile.TemporaryDirectory(prefix="hazlo-pcb-completion-") as folder:
+            destination = Path(folder) / "pcb-completion.json"
+            identity = "c" * 64
+            request = json.dumps({"action": "move"}).encode()
+            result = {"status": "completed", "job_id": str(uuid.uuid4()), "local_raw": "LOCAL_COMPLETION_SENTINEL"}
+            with patch.dict(os.environ, {"HAZLOMEXA_PCB_COMPLETION": str(destination), "HAZLOMEXA_PCB_INPUT_SHA256": identity}), patch.object(worker, "run", return_value=result) as run:
+                self.assertEqual(worker.response(request), {"ok": True, "result": result})
+                proof = json.loads(destination.read_text(encoding="utf-8"))
+                self.assertEqual(proof, {"version": 1, "input_sha256": identity, "result": result})
+                before = destination.read_bytes()
+                self.assertFalse(worker.response(request)["ok"])
+                self.assertEqual(run.call_count, 1)
+                self.assertEqual(destination.read_bytes(), before)
+                destination.unlink()
+                with patch.object(worker.os, "fsync", side_effect=OSError("private storage error")):
+                    self.assertEqual(worker.response(request), {"ok": False, "outcome": "uncertain", "error": "native_outcome_unknown"})
+                self.assertFalse(destination.exists())
+                self.assertTrue(Path(str(destination) + ".pending").exists())
+                self.assertFalse(worker.response(request)["ok"])
+                self.assertEqual(run.call_count, 2, "A reserved uncertain attempt was repeated")
+
     @unittest.skipUnless(args.worker, "Supply --worker to test the frozen subprocess")
     def test_frozen_subprocess_inspects_and_moves_over_real_native_transport(self):
         import json
@@ -358,8 +381,30 @@ class Tests(unittest.TestCase):
                     current = initial["components"][0]
                     movement = {**movement, "expected_x_mm":current["x_mm"], "expected_y_mm":current["y_mm"],
                                 "x_mm":86.2, "y_mm":27.5}
-                result = call({**base, "action":"move", "movement":movement,
-                    **{key:initial[key] for key in ("instance_sha256", "document_sha256", "state_sha256")}})
+                completion = root / "pcb-completion.json"
+                env.update({"HAZLOMEXA_PCB_COMPLETION": str(completion), "HAZLOMEXA_PCB_INPUT_SHA256": "c" * 64})
+                request = {**base, "action":"move", "movement":movement,
+                    **{key:initial[key] for key in ("instance_sha256", "document_sha256", "state_sha256")}}
+                result = call(request)
+                proof = json.loads(completion.read_text(encoding="utf-8"))
+                self.assertEqual(proof, {"version": 1, "input_sha256": "c" * 64, "result": result})
+                admitted = len(count)
+                duplicate = subprocess.run([str(Path(args.worker).resolve())], input=json.dumps(request).encode(),
+                    capture_output=True, env=env, cwd=root, timeout=30,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                self.assertEqual(duplicate.returncode, 0)
+                self.assertEqual(duplicate.stderr, b"")
+                self.assertFalse(json.loads(duplicate.stdout)["ok"])
+                self.assertEqual(len(count), admitted, "Duplicate completion sent another native request")
+                export_root = root / "export"
+                export_root.mkdir()
+                env["HAZLOMEXA_PCB_COMPLETION"] = str(export_root / "pcb-completion.json")
+                exported = call({"job_id": str(uuid.uuid4()), "board_path": base["board_path"],
+                    "action": "export", "destination": str(export_root / "Board.kicad_pcb"),
+                    **{key: result["after"][key] for key in ("instance_sha256", "document_sha256", "state_sha256")}})
+                self.assertEqual(json.loads((export_root / "pcb-completion.json").read_text(encoding="utf-8"))["result"], exported)
+                self.assertEqual((export_root / "Board.kicad_pcb").read_text(encoding="utf-8"), self.board.snapshot())
+                self.assertFalse(exported["native_commit_confirmed"])
                 self.assertEqual(result["status"], "completed")
                 self.assertFalse(result["saved"])
                 self.assertEqual(result["after"]["components"][0]["x_mm"], 86.2 if args.host_apply else 35.4)
