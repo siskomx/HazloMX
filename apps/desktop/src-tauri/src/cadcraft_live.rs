@@ -804,7 +804,7 @@ fn export_dxf(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     #[test]
     #[ignore = "Requires explicitly selected owned CLI export fixtures and the maintained native verifier"]
@@ -889,7 +889,7 @@ mod tests {
             validate_artifacts(&stage, &input, &report).unwrap();
         }
     }
-    fn fixture_input() -> Input {
+    pub(crate) fn fixture_input() -> Input {
         Input {
             schema_version: 1,
             live_drawing_version: 1,
@@ -914,7 +914,7 @@ mod tests {
             },
         }
     }
-    fn receipt(input: &Input) -> Receipt {
+    pub(crate) fn receipt(input: &Input) -> Receipt {
         let mut after = input.before.clone();
         after.binding_sha256 = "b".repeat(64);
         after.entities[0]["geometry"]["center"]["x"] = json!(2.54);

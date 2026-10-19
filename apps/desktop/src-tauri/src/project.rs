@@ -92,6 +92,39 @@ impl From<EditInput> for OperationInput {
     }
 }
 impl OperationInput {
+    pub(crate) fn native_program(&self)->Option<crate::host_tools::Program> {
+        use crate::host_tools::Program;
+        match self {
+            Self::NativeTools(i)=>Some(i.program),Self::LiveCad(_)=>Some(Program::Freecad),
+            Self::LivePcb(_)=>Some(Program::Kicad),Self::LiveAgent(_)=>Some(Program::Agent),
+            Self::LiveDrawing(_)=>Some(Program::Drawing),_=>None,
+        }
+    }
+    pub(crate) fn receipt_sha256(&self) -> Option<&str> {
+        match self {
+            Self::NativeTools(i)=>i.receipt_sha256.as_deref(),
+            Self::PublicDocument(i)=>i.receipt_sha256.as_deref(),
+            Self::LiveCad(i)=>i.receipt_sha256.as_deref(),
+            Self::LivePcb(i)=>i.receipt_sha256.as_deref(),
+            Self::LiveAgent(i)=>i.receipt_sha256.as_deref(),
+            Self::LiveDrawing(i)=>i.receipt_sha256.as_deref(),
+            _=>None,
+        }
+    }
+    pub(crate) fn retain_receipt(&mut self, directory:&Path) -> io::Result<bool> {
+        let (receipt,limit)=match self {
+            Self::NativeTools(i)=>(&mut i.receipt_sha256,crate::native_tools::REPORT_LIMIT),
+            Self::PublicDocument(i)=>(&mut i.receipt_sha256,crate::public_document::REPORT_LIMIT),
+            Self::LiveCad(i)=>(&mut i.receipt_sha256,65536),
+            Self::LivePcb(i)=>(&mut i.receipt_sha256,65536),
+            Self::LiveAgent(i)=>(&mut i.receipt_sha256,65536),
+            Self::LiveDrawing(i)=>(&mut i.receipt_sha256,65536),
+            _=>return Ok(false),
+        };
+        let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),limit).map_err(io::Error::other)?;
+        *receipt=Some(crate::kicad_project::digest(&bytes));
+        Ok(true)
+    }
     pub(crate) fn integration(&self) -> &'static str {
         match self {
             Self::Freecad(_) => "freecad",
@@ -174,6 +207,8 @@ pub enum RunSource {
 #[serde(deny_unknown_fields)]
 pub struct RunAudit {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_attempted: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub task: Option<crate::tasks::Binding>,
     pub source: RunSource,
     pub user_edited: bool,
@@ -211,6 +246,14 @@ pub struct Project {
     _writer: File,
 }
 
+fn stage_exists(project:&Project,id:Uuid)->io::Result<bool>{project.store("staging").join(id.to_string()).try_exists()}
+fn native_may_have_run(snapshot:&Snapshot)->bool {
+    snapshot.audit.as_ref().and_then(|a|a.native_attempted).unwrap_or(
+        matches!(snapshot.phase,Phase::Running|Phase::Interrupted|Phase::Failed|Phase::Cancelled))
+}
+fn unresolved_native(id:Uuid,program:Option<crate::host_tools::Program>,kind:&'static str)->crate::native_journal::Summary {
+    crate::native_journal::Summary{job_id:id,program,kind,acknowledged:0,uncertain:1,not_dispatched:0,finished:false,needs_review:true,outcome_checked:false}
+}
 pub struct Stage {
     pub path: PathBuf,
     directory: File,
@@ -705,6 +748,7 @@ impl Project {
         input.clone().validate().map_err(io::Error::other)?;
         let now = timestamp();
         let destination = format!(".hazlomexa/artifacts/{}", input.job_id());
+        let native_attempted=input.native_program().map(|_|false);
         Ok(Snapshot {
             schema_version: match &input {
                 OperationInput::Freecad(_) => 2,
@@ -727,6 +771,7 @@ impl Project {
             input,
             phase,
             audit: Some(RunAudit {
+                native_attempted,
                 task: crate::tasks::Store::new(self)?.binding()?,
                 source: RunSource::Manual,
                 user_edited: false,
@@ -845,7 +890,7 @@ impl Project {
         })
     }
 
-    fn validate_outputs(&self, directory: &Path, input: &OperationInput) -> io::Result<()> {
+    pub(crate) fn validate_outputs(&self, directory: &Path, input: &OperationInput) -> io::Result<()> {
         if let OperationInput::PublicDocument(input)=input {
             return crate::public_document::validate_artifacts(directory,input).map_err(io::Error::other);
         }
@@ -993,7 +1038,16 @@ impl Project {
             if let OperationInput::NativeTools(input)=&snapshot.input {
                 let stage=self.store("staging").join(input.job_id.to_string());
                 let directory=if stage.try_exists()?{stage}else{self.artifact_directory(input.job_id)};
-                if directory.try_exists()? {if let Some(journal)=crate::native_journal::read(&directory,input)? {summaries.push(journal.summary());}}
+                if directory.try_exists()? {if let Some(journal)=crate::native_journal::read(&directory,input)? {let mut summary=journal.summary();summary.program=Some(input.program);summaries.push(summary);continue;}}
+                if !input.calls.is_empty() && native_may_have_run(&snapshot) {
+                    summaries.push(unresolved_native(input.job_id,Some(input.program),"catalog_batch"));
+                }
+            } else if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) {
+                let id=snapshot.input.job_id();let staged=stage_exists(self,id)?;
+                let directory=if staged {self.store("staging").join(id.to_string())}else{self.artifact_directory(id)};
+                let finished=snapshot.input.receipt_sha256().is_some() && (snapshot.phase==Phase::Completed || directory.try_exists()? && self.validate_outputs(&directory,&snapshot.input).is_ok());
+                if finished {summaries.push(crate::native_journal::Summary{job_id:id,program:snapshot.input.native_program(),kind:"live_adapter",acknowledged:1,uncertain:0,not_dispatched:0,finished:true,needs_review:false,outcome_checked:false});}
+                else if native_may_have_run(&snapshot) {summaries.push(unresolved_native(id,snapshot.input.native_program(),"live_adapter"));}
             }
         }
         Ok(summaries)
@@ -1015,11 +1069,11 @@ impl Project {
                         }
                     }
                 }
-            } else if (matches!(&snapshot.input,OperationInput::NativeTools(input) if input.receipt_sha256.is_some()) || matches!(&snapshot.input,OperationInput::PublicDocument(input) if input.receipt_sha256.is_some()))
+            } else if snapshot.input.receipt_sha256().is_some()
                 && self.store("staging").join(snapshot.input.job_id().to_string()).try_exists()?
             {
                 let path=self.store("staging").join(snapshot.input.job_id().to_string());
-                let finished=match &snapshot.input {OperationInput::NativeTools(input)=>crate::native_journal::read(&path,input)?.is_some_and(|j|j.finished),OperationInput::PublicDocument(_)=>true,_=>false};
+                let finished=match &snapshot.input {OperationInput::NativeTools(input)=>crate::native_journal::read(&path,input)?.is_some_and(|j|j.finished),_=>true};
                 // Publish only an already checked, finished report. Never invoke a native call in recovery.
                 if finished && self.validate_outputs(&path,&snapshot.input).is_ok() {
                     let mut running=snapshot.clone();running.phase=Phase::Running;
@@ -1054,6 +1108,68 @@ impl Project {
 pub(crate) mod tests {
     use super::*;
     use crate::{freecad::Geometry, Dimensions};
+
+    #[test]
+    fn all_live_receipts_recover_without_native_calls_and_reject_tampering() {
+        let agent=crate::agent_editor::tests::job_fixture();
+        let pcb=crate::kicad_live::tests::move_fixture();
+        let drawing=crate::cadcraft_live::tests::fixture_input();
+        let cad=crate::cadpilot_live::Input {schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};
+        let cad_report=serde_json::json!({"live_cad_version":1,"job_id":cad.job_id,"document_token":cad.document_token,"before_sha256":cad.state_sha256,"after":{"document_name":cad.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
+        let cases=vec![
+            (OperationInput::LiveAgent(agent.clone()),crate::agent_editor::tests::report_fixture(&agent)),
+            (OperationInput::LivePcb(pcb.clone()),serde_json::to_value(crate::kicad_live::tests::receipt_fixture(&pcb)).unwrap()),
+            (OperationInput::LiveDrawing(drawing.clone()),serde_json::to_value(crate::cadcraft_live::tests::receipt(&drawing)).unwrap()),
+            (OperationInput::LiveCad(cad),cad_report),
+        ];
+        for (input,report) in cases {for mode in ["valid","occupied","tampered"] {
+            let root=root();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+            let project=Project::create(&root).unwrap();let id=input.job_id();
+            let mut snapshot=project.snapshot(input.clone(),Phase::Running).unwrap();
+            let audit=snapshot.audit.as_mut().unwrap();audit.source=RunSource::Mcp;audit.native_attempted=Some(true);
+            let stage=project.reserve_stage(id).unwrap();let bytes=serde_json::to_vec_pretty(&report).unwrap();
+            fs::write(stage.path.join("result.json"),&bytes).unwrap();
+            snapshot.input.retain_receipt(&stage.path).unwrap();project.save(&snapshot).unwrap();
+            project.validate_outputs(&stage.path,&snapshot.input).unwrap();
+            let original=root.join("manual-work.native");fs::write(&original,b"keep user edits").unwrap();
+            let destination=project.artifact_directory(id);
+            if mode=="occupied" {fs::create_dir(&destination).unwrap();fs::write(destination.join("unrelated.txt"),b"keep occupied destination").unwrap();}
+            if mode=="tampered" {fs::write(stage.path.join("result.json"),b"changed report").unwrap();}
+            drop(stage);drop(project);
+            let project=Project::open(&root).unwrap();
+            let recovered=project.recover().unwrap();
+            if mode=="valid" {assert_eq!(recovered[0].phase,Phase::Completed);assert_eq!(fs::read(destination.join("result.json")).unwrap(),bytes);}
+            else {assert_eq!(recovered[0].phase,Phase::Interrupted);assert!(project.store("staging").join(id.to_string()).join("result.json").exists());}
+            assert_eq!(project.native_recovery(None).unwrap()[0].needs_review,mode=="tampered");
+            if mode=="occupied" {
+                assert_eq!(fs::read(destination.join("unrelated.txt")).unwrap(),b"keep occupied destination");
+                assert!(destination.canonicalize().unwrap().starts_with(root.canonicalize().unwrap()));
+                fs::remove_file(destination.join("unrelated.txt")).unwrap();fs::remove_dir(&destination).unwrap();
+                assert_eq!(project.recover().unwrap()[0].phase,Phase::Completed);
+                assert_eq!(fs::read(destination.join("result.json")).unwrap(),bytes);
+            }
+            assert_eq!(fs::read(original).unwrap(),b"keep user edits");
+            if mode!="tampered" {let before=serde_json::to_value(project.history().unwrap()).unwrap();assert_eq!(serde_json::to_value(project.recover().unwrap()).unwrap(),before);}
+            drop(project);fs::remove_dir_all(root).unwrap();
+        }}
+    }
+    #[test]
+    fn missing_dispatch_records_do_not_clear_an_attempted_mutation_or_legacy_uncertainty() {
+        let root=root();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        let project=Project::create(&root).unwrap();
+        let call=crate::native_tools::Call{tool:"state".into(),arguments:Default::default()};
+        let input=crate::native_tools::Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:crate::host_tools::Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned missing-journal recovery".into(),calls:vec![crate::native_tools::Call{tool:"edit".into(),arguments:Default::default()}],readback:call.clone(),guard:Some(crate::native_tools::Guard{call,result_sha256:"b".repeat(64),checks:Vec::new()}),receipt_sha256:None};
+        let mut snapshot=project.snapshot(OperationInput::NativeTools(input),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;
+        project.save(&snapshot).unwrap();assert!(project.native_recovery(None).unwrap().is_empty());
+        snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();
+        assert!(project.native_recovery(None).unwrap()[0].needs_review);
+        for phase in [Phase::Running,Phase::Cancelled,Phase::Failed,Phase::Interrupted] {
+            snapshot.phase=phase;snapshot.audit.as_mut().unwrap().native_attempted=None;project.save(&snapshot).unwrap();
+            assert!(project.native_recovery(None).unwrap()[0].needs_review);
+        }
+        snapshot.phase=Phase::AwaitingApproval;project.save(&snapshot).unwrap();assert!(project.native_recovery(None).unwrap().is_empty());
+        drop(project);fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     #[ignore = "Retained owned legacy native project fixture required; never run on a user project"]

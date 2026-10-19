@@ -192,6 +192,13 @@ pub struct Catalog {
     pub scope: &'static str,
 }
 impl Catalog {
+    pub(crate) fn local_read_only(&self,call:&Call)->bool {
+        if matches!(self.program,Program::Tshark|Program::Usbpcap|Program::Serial) || self.transport!="mcp" {return false;}
+        self.tools.iter().find(|t|t.name==call.tool).and_then(|tool|serde_json::to_value(tool).ok()).is_some_and(|definition| {
+            let a=&definition["annotations"];
+            a["readOnlyHint"]==true && a["destructiveHint"]==false && a["openWorldHint"]==false
+        })
+    }
     pub(crate) fn validate_calls(&self, input: &Input) -> Result<(), String> {
         for call in input.calls.iter().chain([&input.readback]).chain(input.guard.iter().map(|g| &g.call)) {
             self.validate_arguments(call)?;
@@ -786,19 +793,7 @@ impl Connection {
             return Err("El catálogo cambió. Descubre de nuevo sus herramientas.".into());
         }
         catalog.validate_arguments(call)?;
-        let tool = catalog
-            .tools
-            .iter()
-            .find(|t| t.name == call.tool)
-            .ok_or("La herramienta no pertenece al catálogo conectado.")?;
-        let definition = serde_json::to_value(tool).map_err(|_| "Esquema nativo no válido.")?;
-        let annotations = &definition["annotations"];
-        if matches!(self.program,Program::Tshark|Program::Usbpcap|Program::Serial)
-            || catalog.transport != "mcp"
-            || annotations["readOnlyHint"] != true
-            || annotations["destructiveHint"] != false
-            || annotations["openWorldHint"] != false
-        {
+        if !catalog.local_read_only(call) {
             return Err("Esta herramienta no declara una consulta local de solo lectura. Prepárala para revisión con propose_native_tool_calls.".into());
         }
         Ok(catalog)
@@ -1009,7 +1004,7 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,directory:&Path,canc
         );
     }
     catalog.validate_calls(input)?;
-    let mut journal=crate::native_journal::Batch::start(directory,input)?;
+    let mut journal=crate::native_journal::Batch::start_with_catalog(directory,input,&catalog)?;
     let offset=usize::from(input.guard.is_some());
     if let Some(guard) = &input.guard {
         if !guard.checks.is_empty(){connection.read_catalog(&input.catalog_sha256,&guard.call,cancel.clone())?;}
@@ -1215,6 +1210,14 @@ mod tests {
             assert_eq!(actual["readback"]["structuredContent"]["native_writes"],0);
         }
         assert!(connection.read(&catalog.catalog_sha256,&call("observe_native_state",json!({"unknown":true})),cancel()).is_err());
+        let mut stale=input(&catalog);stale.calls=vec![call("program_owned_parameter_edit",json!({"value":7}))];stale.guard=Some(Guard{call:query.clone(),result_sha256:"0".repeat(64),checks:Vec::new()});
+        let folder=root.join(Uuid::new_v4().to_string());std::fs::create_dir(&folder).unwrap();
+        assert!(run(&stale,&connection,&folder,cancel()).unwrap_err().contains("estado nativo cambió"));
+        let journal=crate::native_journal::read(&folder,&stale).unwrap().unwrap();
+        assert_eq!(journal.read_only_steps,vec![0,2]);assert!(!journal.summary().needs_review);
+        assert_eq!(journal.steps[1].outcome,crate::native_journal::Outcome::Pending);
+        assert!(run(&stale,&connection,&folder,cancel()).is_err());
+        let actual=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();assert_eq!(actual["readback"]["structuredContent"]["native_writes"],0);
         connection.close();
     }
     #[test]

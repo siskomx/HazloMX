@@ -2562,7 +2562,7 @@ impl Workflow {
         Ok(Some(item.view.clone()))
     }
 
-    pub fn execute(&self, dispatch: Dispatch) -> Result<JobView, String> {
+    pub fn execute(&self, mut dispatch: Dispatch) -> Result<JobView, String> {
         let result = (|| {
             if dispatch.cancelled.load(Ordering::SeqCst) {
                 return Err("Operación cancelada.".into());
@@ -2574,6 +2574,11 @@ impl Workflow {
             let profile = self
                 .profiles
                 .join(dispatch.snapshot.input.job_id().to_string());
+            if dispatch.snapshot.audit.as_ref().is_some_and(|a|a.native_attempted.is_some()) {
+                dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);
+                // Durable adapter-entry fact, not proof that bytes reached the native program.
+                dispatch.project.save(&dispatch.snapshot).map_err(|e|e.to_string())?;
+            }
             match &dispatch.snapshot.input {
                 OperationInput::Freecad(input) => {
                     freecad::generate(
@@ -2729,31 +2734,11 @@ impl Workflow {
             result
         })();
         let result = result.and_then(|stage| {
-            if let OperationInput::PublicDocument(input)=&mut dispatch.snapshot.input {
-                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),crate::public_document::REPORT_LIMIT)?;
-                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
+            let mut checked=dispatch.snapshot.input.clone();
+            if checked.retain_receipt(&stage.path).map_err(|_|"El resultado puede estar terminado, pero no se pudo conservar su recibo. No repitas la operación.".to_string())? {
+                dispatch.project.validate_outputs(&stage.path,&checked).map_err(|_|"El resultado local no pasó sus comprobaciones. Se conserva para revisión; no repitas las llamadas.".to_string())?;
+                dispatch.snapshot.input=checked;
                 dispatch.project.save(&dispatch.snapshot).map_err(|e|e.to_string())?;
-            }
-            if let OperationInput::LiveCad(input) = &mut dispatch.snapshot.input {
-                let bytes = crate::kicad_project::read_regular(&stage.path.join("result.json"), 65536)?;
-                input.receipt_sha256 = Some(crate::kicad_project::digest(&bytes));
-            }
-            if let OperationInput::NativeTools(input)=&mut dispatch.snapshot.input {
-                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),crate::native_tools::REPORT_LIMIT)?;
-                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
-                dispatch.project.save(&dispatch.snapshot).map_err(|e|e.to_string())?;
-            }
-            if let OperationInput::LiveDrawing(input)=&mut dispatch.snapshot.input {
-                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
-                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
-            }
-            if let OperationInput::LiveAgent(input)=&mut dispatch.snapshot.input {
-                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
-                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
-            }
-            if let OperationInput::LivePcb(input)=&mut dispatch.snapshot.input {
-                let bytes=crate::kicad_project::read_regular(&stage.path.join("result.json"),65536)?;
-                input.receipt_sha256=Some(crate::kicad_project::digest(&bytes));
             }
             Ok(stage)
         });
@@ -2779,7 +2764,8 @@ impl Workflow {
             return Err(warning.unwrap_or("El proyecto activo cambió; los archivos no se publicaron.").into());
         }
         let job = state.job.as_mut().unwrap();
-        if matches!(&dispatch.snapshot.input,OperationInput::PublicDocument(input) if input.receipt_sha256.is_some() || input.redirect_sha256.is_some()) {job.view.snapshot.input=dispatch.snapshot.input.clone();}
+        if dispatch.snapshot.input.receipt_sha256().is_some() || matches!(&dispatch.snapshot.input,OperationInput::PublicDocument(input) if input.redirect_sha256.is_some()) {job.view.snapshot.input=dispatch.snapshot.input.clone();}
+        if let Some((current,run))=job.view.snapshot.audit.as_mut().zip(dispatch.snapshot.audit.as_ref()){current.native_attempted=run.native_attempted;}
         if dispatch.dispatch_paused.load(Ordering::SeqCst) {
             // A correction during final readback must not discard a completed local receipt.
             job.view.snapshot.input=dispatch.snapshot.input.clone();
@@ -2791,6 +2777,12 @@ impl Workflow {
                     Ok(_)=>{job.view.snapshot.phase=Phase::Completed;job.view.error=None;}
                     Err(_)=>{job.view.snapshot.phase=Phase::Interrupted;job.view.error=Some("El informe terminado sigue local y su publicación está pendiente. Tu corrección se conserva; no repitas las llamadas.".into());}
                 }
+            }
+        } else if dispatch.cancelled.load(Ordering::SeqCst) && result.is_ok() && dispatch.snapshot.input.receipt_sha256().is_some() {
+            // Stop never discards a result that already passed the adapter's native checks.
+            match dispatch.project.publish(result.unwrap(),&dispatch.snapshot) {
+                Ok(_)=>{job.view.snapshot.phase=Phase::Completed;job.view.error=None;if let Some(audit)=&mut job.view.snapshot.audit {audit.files_verified=true;}},
+                Err(_)=>{job.view.snapshot.phase=Phase::Interrupted;job.view.error=Some("El resultado comprobado sigue local y su publicación está pendiente. No repitas las llamadas.".into());},
             }
         } else if dispatch.cancelled.load(Ordering::SeqCst) {
             job.view.snapshot.phase = Phase::Cancelled;
@@ -3118,6 +3110,69 @@ mod tests {
         assert!(workflow.begin(approval).is_err());assert!(workflow.artifact(input.job_id,ArtifactFormat::LiveAgentReport).is_err());
         drop(workflow);let project=Project::open(&root).unwrap();assert_eq!(project.recover().unwrap()[0].phase,Phase::Cancelled);drop(project);
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn checked_live_result_survives_stop_and_publication_failure_without_replay() {
+        for blocked in [false,true] {
+            let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();
+            let input=crate::agent_editor::tests::job_fixture();let id=input.job_id;
+            let pending=workflow.propose_live_agent(project,input.clone(),crate::agent_editor::tests::connection_fixture(&input)).unwrap();
+            let mut dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();
+            dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);dispatch.project.save(&dispatch.snapshot).unwrap();
+            let stage=dispatch.project.reserve_stage(id).unwrap();let bytes=serde_json::to_vec_pretty(&crate::agent_editor::tests::report_fixture(&input)).unwrap();fs::write(stage.path.join("result.json"),&bytes).unwrap();
+            let destination=dispatch.project.artifact_directory(id);
+            if blocked {fs::create_dir(&destination).unwrap();fs::write(destination.join("preserve.native"),b"valid unrelated output").unwrap();}
+            workflow.cancel(id).unwrap();
+            let done=workflow.finish(dispatch,Ok(stage)).unwrap();
+            assert_eq!(done.snapshot.phase,if blocked{Phase::Interrupted}else{Phase::Completed});
+            assert!(done.snapshot.input.receipt_sha256().is_some());assert!(done.snapshot.audit.as_ref().unwrap().native_attempted.unwrap());
+            assert!(!workflow.native_recovery().unwrap()[0].needs_review);
+            assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+            if blocked {
+                assert!(destination.canonicalize().unwrap().starts_with(root.canonicalize().unwrap()));
+                assert_eq!(fs::read(destination.join("preserve.native")).unwrap(),b"valid unrelated output");
+                fs::remove_file(destination.join("preserve.native")).unwrap();fs::remove_dir(&destination).unwrap();
+            }
+            drop(workflow);let project=Project::open(&root).unwrap();assert_eq!(project.recover().unwrap()[0].phase,Phase::Completed);
+            assert_eq!(fs::read(destination.join("result.json")).unwrap(),bytes);
+            drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn incomplete_live_adapter_blocks_new_mutations_after_restart() {
+        let (root,workflow)=setup();let project=workflow.view().unwrap().project.unwrap();
+        let input=crate::agent_editor::tests::job_fixture();let id=input.job_id;
+        let pending=workflow.propose_live_agent(project.clone(),input.clone(),crate::agent_editor::tests::connection_fixture(&input)).unwrap();
+        let mut dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();
+        dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);dispatch.project.save(&dispatch.snapshot).unwrap();
+        let stage=dispatch.project.reserve_stage(id).unwrap();fs::write(stage.path.join("partial.local"),b"valid partial work").unwrap();
+        workflow.cancel(id).unwrap();workflow.finish(dispatch,Err("Lost native reply".into())).unwrap();
+        assert!(workflow.native_recovery().unwrap()[0].needs_review);
+        let next=crate::agent_editor::tests::job_fixture();assert!(workflow.propose_live_agent(project.clone(),next.clone(),crate::agent_editor::tests::connection_fixture(&next)).unwrap_err().contains("lote nativo incompleto"));
+        let summary=workflow.native_recovery().unwrap();assert_eq!(summary[0].program,Some(crate::host_tools::Program::Agent));assert_eq!(summary[0].kind,"live_adapter");
+        drop(stage);drop(workflow);
+        let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(Project::open(&root).unwrap()).unwrap();workflow.task_state().unwrap();
+        workflow.task_request(project.clone(),crate::tasks::Request::New).unwrap();
+        assert!(workflow.native_recovery().unwrap()[0].needs_review);
+        let next=crate::agent_editor::tests::job_fixture();assert!(workflow.propose_live_agent(project,next.clone(),crate::agent_editor::tests::connection_fixture(&next)).unwrap_err().contains("lote nativo incompleto"));
+        assert_eq!(fs::read(root.join(".hazlomexa/staging").join(id.to_string()).join("partial.local")).unwrap(),b"valid partial work");
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn altered_live_report_does_not_get_a_completion_receipt_or_release_the_write_hold() {
+        let (root,workflow)=setup();let selected=workflow.view().unwrap().project.unwrap();
+        let input=crate::agent_editor::tests::job_fixture();let id=input.job_id;
+        let pending=workflow.propose_live_agent(selected,input.clone(),crate::agent_editor::tests::connection_fixture(&input)).unwrap();
+        let mut dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);dispatch.project.save(&dispatch.snapshot).unwrap();
+        let stage=dispatch.project.reserve_stage(id).unwrap();let mut report=crate::agent_editor::tests::report_fixture(&input);report["job_id"]=serde_json::json!(Uuid::new_v4());
+        let bytes=serde_json::to_vec_pretty(&report).unwrap();fs::write(stage.path.join("result.json"),&bytes).unwrap();
+        let done=workflow.finish(dispatch,Ok(stage)).unwrap();assert_eq!(done.snapshot.phase,Phase::Failed);
+        assert!(done.snapshot.input.receipt_sha256().is_none());assert!(!done.snapshot.audit.as_ref().unwrap().files_verified);
+        assert!(workflow.native_recovery().unwrap()[0].needs_review);
+        assert_eq!(fs::read(root.join(".hazlomexa/staging").join(id.to_string()).join("result.json")).unwrap(),bytes);
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
