@@ -21,7 +21,7 @@ fn measure(observed:&Value,key:&str,expected:f64) {
 }
 fn request(observed:&Value,operations:Value)->Value {
     json!({"document_name":"OwnedCreationFixture","document_token":observed["document_token"],
-        "state_sha256":observed["state_sha256"],"description":"Create or revise the explicitly sized owned support","operations":operations})
+        "state_sha256":observed["state_sha256"],"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Create or revise the explicitly sized owned support","operations":operations})
 }
 fn main() {
     let root=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_CREATION_ROOT").expect("Owned fixture required"));

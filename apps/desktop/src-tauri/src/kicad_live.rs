@@ -90,9 +90,12 @@ pub struct Input {
     pub export_copy: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receipt_sha256: Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub agreement:Option<crate::native_tools::Agreement>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(agreement)=&self.agreement{agreement.validate()?;}
         self.before.validate(self.before.job_id)?;
         if self.export_copy {
             if self.movement.is_some() { return Err("Exportar requiere una propuesta separada sin movimiento.".into()); }
@@ -366,7 +369,7 @@ pub(crate) mod tests {
         let id=Uuid::parse_str("1390739f-0b91-4d50-b8ae-92acd725ec51").unwrap();
         let mut before=fixture();
         before.components.push(Component {uuid:id,reference:"R1".into(),value:"10k".into(),x_mm:10.,y_mm:20.,locked:false});
-        Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),board_name:"Owned.kicad_pcb".into(),description:"Move the resistor right by one inch".into(),
+        Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),board_name:"Owned.kicad_pcb".into(),description:"Move the resistor right by one inch".into(),
             units:crate::kicad::Units::In,before,export_copy:false,movement:Some(crate::konnect::FootprintMove {
                 uuid:id,reference:"R1".into(),expected_x_mm:10.,expected_y_mm:20.,x_mm:35.4,y_mm:22.5
             }),receipt_sha256:None}

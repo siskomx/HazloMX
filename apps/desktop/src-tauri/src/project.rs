@@ -92,6 +92,7 @@ impl From<EditInput> for OperationInput {
     }
 }
 impl OperationInput {
+    pub(crate) fn agreement(&self)->Option<&crate::native_tools::Agreement>{match self{Self::NativeTools(input)=>input.agreement.as_ref(),Self::LiveCad(input)=>input.agreement.as_ref(),Self::LiveAgent(input)=>input.agreement.as_ref(),Self::LivePcb(input)=>input.agreement.as_ref(),Self::LiveDrawing(input)=>input.agreement.as_ref(),_=>None}}
     pub(crate) fn native_program(&self)->Option<crate::host_tools::Program> {
         use crate::host_tools::Program;
         match self {
@@ -1150,7 +1151,7 @@ pub(crate) mod tests {
         let agent=crate::agent_editor::tests::job_fixture();
         let pcb=crate::kicad_live::tests::move_fixture();
         let drawing=crate::cadcraft_live::tests::fixture_input();
-        let cad=crate::cadpilot_live::Input {schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};
+        let cad=crate::cadpilot_live::Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};
         let cad_report=serde_json::json!({"live_cad_version":1,"job_id":cad.job_id,"document_token":cad.document_token,"before_sha256":cad.state_sha256,"after":{"document_name":cad.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
         let cases=vec![
             (OperationInput::LiveAgent(agent.clone()),crate::agent_editor::tests::report_fixture(&agent)),

@@ -89,7 +89,7 @@ try {
       drawing:{live_drawing_version:1,units:"mm",before:{title:"Owned.dxf"},operation:{action:"circle",diameter:12,center:[0,0]}},
       cad:{live_cad_version:1,document_name:"Owned",before:[],operations:[{action:"edit_object",obj_name:"Box",obj_properties:{Length:"12 mm"}}]},
      };
-     snapshot.job={snapshot:{schema_version:{agent:15,pcb:14,drawing:16,cad:13}[kind],project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,job_id:crypto.randomUUID(),description:"Owned typed correction",...inputs[kind]},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};
+     snapshot.job={snapshot:{schema_version:{agent:15,pcb:14,drawing:16,cad:13}[kind],project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,job_id:crypto.randomUUID(),description:"Owned typed correction",agreement:{kind:"provisional_draft",outcome:"Apply the requested typed fixture change <img src=x onerror=alert(1)>",assumptions:["Fit is unmeasured"],constraints:["Preserve manual edits"],losses:["Physical function is not checked"],verification:"Inspect native state; checked reopen remains pending"},...inputs[kind]},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};
     }
     if(window.startPublicOnNext){window.startPublicOnNext=false;snapshot.job={snapshot:{schema_version:18,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,public_document_version:1,job_id:crypto.randomUUID(),url:"https://example.org/manual?language=en",purpose:"Check the official public manual"},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
     if(window.retireReviewOnNext){window.retireReviewOnNext=false;snapshot.job.snapshot.phase="cancelled";snapshot.job.snapshot.audit.approval_invalidated=true;snapshot.job.approval_id=null;snapshot.job.error="The task changed; prepared work remains local.";}
@@ -214,7 +214,7 @@ try {
  for(const kind of ["agent","pcb","drawing","cad"]){
   await page.evaluate(kind=>window.startTypedOnNext=kind,kind);
   await page.locator("#prompt").fill("Prepare the owned live "+kind+" change");await page.locator("#send").click();
-  await page.locator("#approve:enabled").waitFor();await page.locator("#approve").click();
+  await page.locator("#approve:enabled").waitFor();const typedFacts=await page.locator("#change-facts").innerText();for(const fact of ["Apply the requested typed fixture change <img src=x onerror=alert(1)>","Fit is unmeasured","Preserve manual edits","Physical function is not checked","checked reopen remains pending"])assert(typedFacts.includes(fact));assert.equal(await page.locator("#change-facts img").count(),0);await page.locator("#approve").click();
   await page.getByRole("button",{name:"Enviar corrección",exact:true}).waitFor();await page.locator("#cancel-running:enabled").waitFor();
   const callsBefore=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);
   const cancelsBefore=await page.evaluate(()=>window.calls.filter(c=>c.command==="cancel_job").length);

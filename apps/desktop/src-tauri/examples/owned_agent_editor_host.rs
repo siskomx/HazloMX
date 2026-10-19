@@ -107,7 +107,7 @@ fn main() {
     for (old, new) in changes {
         let source = current.source.replace(old, new);
         let request=serde_json::json!({"instance_id":current.instance_id,"document_token":current.document_token,
-            "version":current.version,"state_sha256":current.state_sha256,"description":"Change timing in the owned sketch","source":source});
+            "version":current.version,"state_sha256":current.state_sha256,"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Change timing in the owned sketch","source":source});
         let prepared=host.call("propose_open_agent_change",request.clone()).unwrap();
         let pending=workflow.view().unwrap().job.unwrap();
         let job_id=pending.snapshot.input.job_id();
@@ -169,7 +169,7 @@ fn main() {
     let saving=std::env::var("HAZLOMEXA_NATIVE_SAVE_TEST").as_deref()==Ok("1");
     if saving {
         let request=serde_json::json!({"instance_id":final_state.instance_id,"document_token":final_state.document_token,
-            "version":final_state.version,"state_sha256":final_state.state_sha256,"description":"Save the reviewed current sketch"});
+            "version":final_state.version,"state_sha256":final_state.state_sha256,"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Save the reviewed current sketch"});
         let reply=host.call("propose_open_agent_save",request.clone()).unwrap();
         assert_eq!(reply["human_approval_required"],true);
         let pending=workflow.view().unwrap().job.unwrap();
@@ -189,7 +189,7 @@ fn main() {
         let source=final_state.source.replace("delay(250)","delay(125)");
         assert_ne!(source,final_state.source);
         let request=serde_json::json!({"instance_id":final_state.instance_id,"document_token":final_state.document_token,
-            "version":final_state.version,"state_sha256":final_state.state_sha256,"description":"Owned delayed edit","source":source});
+            "version":final_state.version,"state_sha256":final_state.state_sha256,"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Owned delayed edit","source":source});
         host.call("propose_open_agent_change",request.clone()).unwrap();
         let pending=workflow.view().unwrap().job.unwrap();
         let job_id=pending.snapshot.input.job_id();

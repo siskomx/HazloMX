@@ -6,6 +6,17 @@ const source = await readFile(new URL("../src/proposal-review.ts",import.meta.ur
 const {code} = await transformWithOxc(source,"proposal-review.ts");
 const {proposalFacts} = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 const review = input => proposalFacts({input}).join("\n");
+{
+const agreement={kind:"provisional_draft",outcome:"Prepare the provisional part <img src=x>",assumptions:["Fit is unmeasured"],constraints:["Preserve manual edits"],losses:["Copy omits construction history"],verification:"Inspect native properties; independent reopen remains pending"};
+for(const input of [
+ {live_cad_version:1,description:"Owned",before:[],operations:[{action:"edit_object",obj_name:"Box",obj_properties:{Length:12}}]},
+ {live_agent_version:1,description:"Owned",before:{name:"Owned.ino",source:"before",dirty:true},source:"after"},
+ {live_pcb_version:1,description:"Owned",board_name:"Owned.kicad_pcb",units:"mm",before:{components:[]},export_copy:true},
+ {live_drawing_version:1,description:"Owned",units:"mm",before:{title:"Owned",dirty:true},operation:{action:"export_dxf"}},
+]){
+ const proposed=review({...input,agreement});for(const value of [agreement.outcome,...agreement.assumptions,...agreement.constraints,...agreement.losses,agreement.verification])assert(proposed.includes(value));assert.match(proposed,/no medición/);assert.match(proposed,/No convierte supuestos/);assert.match(review(input),/Propuesta anterior sin resultado y supuestos/);
+}
+}
 for (const units of ["mm","in"]) {
   const drawingExport=review({live_drawing_version:1,description:"Exporta mi dibujo",units,before:{title:"Plano.dxf",dirty:true},operation:{action:"export_dxf"}});
   assert.match(drawingExport,/copia del dibujo abierto de CADCraft a DXF/);

@@ -117,6 +117,8 @@ pub struct Input {
     pub before: Observation,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receipt_sha256: Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub agreement:Option<crate::native_tools::Agreement>,
 }
 impl Input {
     fn native(&self, value: f64) -> f64 {
@@ -127,6 +129,7 @@ impl Input {
         }
     }
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(agreement)=&self.agreement{agreement.validate()?;}
         self.before.validate()?;
         if self.schema_version != 1
             || self.live_drawing_version != 1
@@ -945,7 +948,7 @@ pub(crate) mod tests {
             );
             let mut after = before.clone();
             after.binding_sha256 = "b".repeat(64);
-            let input = Input {
+            let input = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
                 schema_version: 1,
                 live_drawing_version: 1,
                 job_id: Uuid::new_v4(),
@@ -972,7 +975,7 @@ pub(crate) mod tests {
         }
     }
     pub(crate) fn fixture_input() -> Input {
-        Input {
+        Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_drawing_version: 1,
             job_id: Uuid::new_v4(),

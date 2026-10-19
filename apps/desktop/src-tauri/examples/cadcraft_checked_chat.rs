@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let inspect = |selection| host.call("inspect_open_drawing", json!({"selection":selection}));
     let propose = |selection, reading: &Value, units: &str, operation: Value| {
         host.call("propose_open_drawing_change",json!({
-        "selection":selection,"binding_sha256":reading["observation"]["binding_sha256"],"description":"Owned native approval acceptance",
+        "selection":selection,"binding_sha256":reading["observation"]["binding_sha256"],"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Owned native approval acceptance",
         "units":units,"operation":operation}))
     };
     let approve = || {

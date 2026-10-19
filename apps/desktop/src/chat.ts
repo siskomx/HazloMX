@@ -404,7 +404,7 @@ function renderHistory() {
   if (state.job) runs.set(state.job.snapshot.input.job_id, state.job.snapshot);
   for (const run of [...runs.values()].sort((a, b) => (b.audit?.created_unix_ms ?? 0) - (a.audit?.created_unix_ms ?? 0) || a.input.job_id.localeCompare(b.input.job_id))) {
     const row = document.createElement("article"), title = document.createElement("p"); title.textContent = `${summary(run)} · ${run.audit?.approval_invalidated ? "Propuesta conservada; necesita nueva revisión" : phases[run.phase]}`; row.append(title);
-    if(run.input.native_tools_version && run.input.agreement){
+    if((run.input.native_tools_version || run.input.live_cad_version || run.input.live_agent_version || run.input.live_pcb_version || run.input.live_drawing_version) && run.input.agreement){
       const button=document.createElement("button");button.className="secondary";button.textContent="Ver condiciones del lote";button.disabled=commandBusy;
       button.onclick=()=>{clearReport();$("report-text").textContent="Condiciones guardadas de este lote. Conservan la propuesta original; no son una aprobación reutilizable ni prueba de que la tarea esté terminada. Esta vista es local.\n\n"+proposalFacts(run).join("\n");$<HTMLDialogElement>("report").showModal();};row.append(button);
     }

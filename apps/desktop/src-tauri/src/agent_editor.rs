@@ -319,9 +319,12 @@ pub struct Input {
     pub save: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receipt_sha256: Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub agreement:Option<crate::native_tools::Agreement>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(agreement)=&self.agreement{agreement.validate()?;}
         self.before.validate().map_err(|error| error.message())?;
         if self.schema_version != 1
             || self.live_agent_version != 1
@@ -796,7 +799,7 @@ pub(crate) mod tests {
 
     pub(crate) fn job_fixture() -> Input {
         let before = observation(Uuid::new_v4());
-        Input {
+        Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_agent_version: 1,
             job_id: Uuid::new_v4(),

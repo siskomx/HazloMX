@@ -41,7 +41,7 @@ export function proposalFacts(run: Snapshot): string[] {
     return ["Permitir el envío de esta dirección por internet; esta autorización es distinta de editar un programa y solo vale para esta tarea y sus entradas actuales.","Dirección completa que recibirá el sitio: "+input.url,"Para qué: "+input.purpose,"El sitio recibirá también la ruta y todos los valores de la consulta. Pueden revelar información de la tarea: esta dirección es el contenido concreto que autorizas enviar.","No se adjuntan archivos ni se envían cookies, credenciales de sesión o el resto del historial. Eso no garantiza que la dirección esté libre de datos privados.","Una lectura de texto UTF-8 de hasta 512 KiB y 20 segundos. Hazlo no sigue redirecciones, ejecuta scripts ni reintenta automáticamente.","La respuesta queda local con la tarea. Compartirla con una IA requiere un permiso posterior; esta consulta no comparte otras referencias."];
   }
   if(run.audit?.task) facts.push("Esta aprobación solo permite el cambio mostrado en esta conversación. Cambiar la tarea, sus mensajes o referencias invalida la propuesta; no permite instalar herramientas, compartir nuevas referencias ni controlar hardware.");
-  if(input.native_tools_version){
+  if(input.native_tools_version || input.live_cad_version || input.live_agent_version || input.live_pcb_version || input.live_drawing_version){
     const agreement=input.agreement;
     if(agreement){
       facts.push(agreement.kind==="provisional_draft"?"Preparar un borrador provisional con las condiciones indicadas.":"Realizar este lote de software con las condiciones indicadas.","Resultado propuesto: "+agreement.outcome);
@@ -50,6 +50,8 @@ export function proposalFacts(run: Snapshot): string[] {
       for(const value of agreement.losses)facts.push("Pérdida que aceptarías con este lote: "+value);
       facts.push("Cómo se propone comprobarlo: "+agreement.verification,"Aprobar acepta estas condiciones para este lote. No convierte supuestos ni planes de comprobación en hechos verificados.");
     }else facts.push("Propuesta anterior sin resultado y supuestos estructurados; pide a Hazlo que la prepare de nuevo antes de continuar.");
+  }
+  if(input.native_tools_version){
     if(!input.guard?.checks?.some(check=>check.role==="outcome"))facts.push("No hay comprobaciones automáticas del resultado acordado. Una respuesta del programa no demostrará que la tarea esté terminada.");
     for(const check of input.guard?.checks??[])facts.push(check.role==="identity"?`Mantener la identidad de ${check.label}.`:`Comprobar ${check.label}: ${JSON.stringify(check.expected)}.`);
     facts.push("Usar las herramientas nativas de " + input.program + ".", "Objetivo: " + input.description,

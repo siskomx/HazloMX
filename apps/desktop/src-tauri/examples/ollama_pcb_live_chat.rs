@@ -389,7 +389,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             host.call("propose_selected_live_pcb_move", json!({
             "selection":selected.id,"instance_sha256":initial.instance_sha256,"document_sha256":initial.document_sha256,
             "state_sha256":initial.state_sha256,"component":target.uuid,"units":"mm","x":target.x_mm+2.,"y":target.y_mm,
-            "description":"Owned unsaved edit before export"
+            "agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Owned unsaved edit before export"
         }))
         })?;
         let moved_job = chat.approve_fixture().await?;
@@ -398,13 +398,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let before = read()?;
         assert_ne!(before.state_sha256, initial.state_sha256);
         let invalid = json!({"selection":selected.id,"instance_sha256":before.instance_sha256,"document_sha256":before.document_sha256,
-            "state_sha256":before.state_sha256,"description":"Export","destination":"C:/unselected/Board.kicad_pcb"});
+            "state_sha256":before.state_sha256,"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Export","destination":"C:/unselected/Board.kicad_pcb"});
         assert!(tokio::task::block_in_place(
             || host.call("propose_selected_live_pcb_export", invalid)
         )
         .is_err());
         let stale = json!({"selection":selected.id,"instance_sha256":before.instance_sha256,"document_sha256":before.document_sha256,
-            "state_sha256":initial.state_sha256,"description":"Export stale state"});
+            "state_sha256":initial.state_sha256,"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Export stale state"});
         assert!(tokio::task::block_in_place(
             || host.call("propose_selected_live_pcb_export", stale)
         )
@@ -416,7 +416,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::task::block_in_place(|| {
             host.call("propose_selected_live_pcb_export",json!({
             "selection":selected.id,"instance_sha256":before.instance_sha256,"document_sha256":before.document_sha256,
-            "state_sha256":before.state_sha256,"description":"Export the approved open PCB without saving it"
+            "state_sha256":before.state_sha256,"agreement":{"kind":"software_operation","outcome":"Apply the explicitly requested owned fixture operation","assumptions":["Physical function is not verified"],"constraints":["Preserve unrelated source and manual edits"],"losses":[],"verification":"Check the native report and final state; independent reopen remains unverified"},"description":"Export the approved open PCB without saving it"
         }))
         })?;
         assert_eq!(read()?.state_sha256, before.state_sha256);

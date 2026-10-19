@@ -92,6 +92,7 @@ pub struct DiscoveredLiveDrawing {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LiveDrawingRequest {
+    agreement:crate::native_tools::Agreement,
     selection: Uuid,
     binding_sha256: String,
     description: String,
@@ -285,6 +286,7 @@ struct PcbMove {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LivePcbMove {
+    agreement:crate::native_tools::Agreement,
     selection: Uuid,
     instance_sha256: String,
     document_sha256: String,
@@ -298,6 +300,7 @@ struct LivePcbMove {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LivePcbExport {
+    agreement:crate::native_tools::Agreement,
     selection: Uuid,
     instance_sha256: String,
     document_sha256: String,
@@ -322,6 +325,7 @@ struct OpenAgentRequest {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LiveAgentRequest {
+    agreement:crate::native_tools::Agreement,
     instance_id: Uuid,
     document_token: Uuid,
     version: u64,
@@ -332,6 +336,7 @@ struct LiveAgentRequest {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LiveAgentSaveRequest {
+    agreement:crate::native_tools::Agreement,
     instance_id: Uuid,
     document_token: Uuid,
     version: u64,
@@ -341,6 +346,7 @@ struct LiveAgentSaveRequest {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LiveCadRequest {
+    agreement:crate::native_tools::Agreement,
     document_name: String,
     document_token: Uuid,
     state_sha256: String,
@@ -1506,7 +1512,7 @@ impl HostTools {
                 let saving=name=="propose_open_agent_save";
                 let request: LiveAgentRequest = if saving {
                     let save:LiveAgentSaveRequest=serde_json::from_value(arguments).map_err(decode_error)?;
-                    LiveAgentRequest {instance_id:save.instance_id,document_token:save.document_token,version:save.version,
+                    LiveAgentRequest {agreement:save.agreement,instance_id:save.instance_id,document_token:save.document_token,version:save.version,
                         state_sha256:save.state_sha256,description:save.description,source:String::new()}
                 } else {serde_json::from_value(arguments).map_err(decode_error)?};
                 let project = self.workflow.view()?.project.ok_or("Selecciona un proyecto.")?;
@@ -1521,7 +1527,7 @@ impl HostTools {
                     || before.state_sha256 != request.state_sha256 || cancelled.load(Ordering::SeqCst) {
                     return Err("El sketch cambió o la solicitud se detuvo. Relee el editor antes de proponer otro cambio.".into());
                 }
-                let input = crate::agent_editor::Input {schema_version:1,live_agent_version:1,job_id:Uuid::new_v4(),
+                let input = crate::agent_editor::Input {agreement:Some(request.agreement),schema_version:1,live_agent_version:1,job_id:Uuid::new_v4(),
                     description:request.description,before:before.clone(),source:if saving {before.source.clone()} else {request.source},save:saving,receipt_sha256:None};
                 let job = self.workflow.propose_live_agent(project,input,selected.connection().clone())?;
                 let reply = Ok(json!({"job_id":job.snapshot.input.job_id(),"phase":job.snapshot.phase,
@@ -1560,7 +1566,7 @@ impl HostTools {
                 let selected=self.selected_live_drawing(request.selection)?;
                 if selected.observation.binding_sha256!=request.binding_sha256 { return Err("La lectura venció. Relee CADCraft.".into()); }
                 let exporting=matches!(&request.operation,crate::cadcraft_live::Operation::ExportDxf {});
-                let input=crate::cadcraft_live::Input {schema_version:1,live_drawing_version:1,job_id:Uuid::new_v4(),
+                let input=crate::cadcraft_live::Input {agreement:Some(request.agreement),schema_version:1,live_drawing_version:1,job_id:Uuid::new_v4(),
                     description:request.description,units:request.units,operation:request.operation,before:selected.observation,receipt_sha256:None};
                 let job=self.workflow.propose_live_drawing((selected.project_id,selected.project_root),input,selected.connection)?;
                 Ok(json!({"job_id":job.snapshot.input.job_id(),"phase":job.snapshot.phase,"human_approval_required":true,
@@ -1577,7 +1583,7 @@ impl HostTools {
                 if observed["document_token"] != request.document_token.to_string() || observed["state_sha256"] != request.state_sha256 {
                     return Err("FreeCAD cambió. Relee el documento antes de preparar el cambio.".into());
                 }
-                let input = crate::cadpilot_live::Input {schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:request.document_name,document_token:request.document_token,state_sha256:request.state_sha256,description:request.description,operations:request.operations,before:observed["objects"].clone(),receipt_sha256:None};
+                let input = crate::cadpilot_live::Input {agreement:Some(request.agreement),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:request.document_name,document_token:request.document_token,state_sha256:request.state_sha256,description:request.description,operations:request.operations,before:observed["objects"].clone(),receipt_sha256:None};
                 let saving = input.uses_file_dialog();
                 let job = self.workflow.propose_live_cad(project,input)?;
                 Ok(json!({"job_id":job.snapshot.input.job_id(),"phase":job.snapshot.phase,"human_approval_required":true,"scope":"open_native_document","save_or_export":saving,"native_save_dialog":saving}))
@@ -1627,7 +1633,7 @@ impl HostTools {
                     || before.state_sha256!=request.state_sha256 || cancelled.load(Ordering::SeqCst) {
                     return Err("La PCB cambió o la solicitud se detuvo. Relee el editor antes de exportar.".into());
                 }
-                let input=crate::kicad_live::Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
+                let input=crate::kicad_live::Input {agreement:Some(request.agreement),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
                     board_name:selected.name,description:request.description,units:crate::kicad::Units::Mm,
                     before,export_copy:true,movement:None,receipt_sha256:None};
                 let job=self.workflow.propose_live_pcb((selected.project_id,selected.project_root),input,selected.entry,selected.connection)?;
@@ -1654,7 +1660,7 @@ impl HostTools {
                 // Discard only the floating-point conversion noise already admitted by validate.
                 movement.x_mm=(movement.x_mm*1_000_000.).round()/1_000_000.;
                 movement.y_mm=(movement.y_mm*1_000_000.).round()/1_000_000.;
-                let input=crate::kicad_live::Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
+                let input=crate::kicad_live::Input {agreement:Some(request.agreement),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
                     board_name:selected.name,description:request.description,units:request.units,before,export_copy:false,movement:Some(movement),receipt_sha256:None};
                 let job=self.workflow.propose_live_pcb((selected.project_id,selected.project_root),input,selected.entry,selected.connection)?;
                 let reply=Ok(json!({"job_id":job.snapshot.input.job_id(),"phase":job.snapshot.phase,"human_approval_required":true,
@@ -1812,7 +1818,7 @@ impl HostTools {
                 let total_bytes=content.len();
                 let (page,next_offset)=if matches!(snapshot.input,OperationInput::PublicDocument(_)) {if request.offset!=0{return Err("El documento público completo queda en su referencia local; usa read_task_reference tras obtener permiso para leer sus páginas.".into());} (content.as_str(),None)}else{result_page(&content,request.offset)?};
                 content=page.to_owned();
-                Ok(json!({"job_id":request.job_id,"project_id":project.0,"format":format,"content":content,"offset":request.offset,"total_bytes":total_bytes,"next_offset":next_offset,"sha256":sha256,"content_sha256":content_sha256,"private_paths_redacted":private_paths_redacted,"source_name":source_name,"drawing":drawing,"drawing_followup":drawing_followup,"native_tool_followup":native_tool_followup,"slicing":slicing,"checks":checks,"components":components,"compilation":compilation,"scope":if matches!(&snapshot.input,OperationInput::NativeTools(_)){"native_program_reply_and_readback"}else if matches!(&snapshot.input,OperationInput::LiveCad(input) if input.is_export_step()) {"verified_native_export_report"}else if matches!(&snapshot.input,OperationInput::LiveCad(input) if input.is_save_as()) {"verified_native_save_report"}else if matches!(snapshot.input,OperationInput::LiveCad(_) | OperationInput::LiveDrawing(_)) {"verified_native_transaction_report"}else{"verified_published_result"},"native_followup":if matches!(snapshot.input,OperationInput::LiveCad(_)){Some("Reinspect the open document with inspect_open_cad_documents before another change. This report describes a completed native operation, not necessarily the current state. If saved_document is present, it records the Save As file name, size and digest at completion; no full path is exposed. If exported_document is present, it records the STEP filename, size and digest at completion; export does not save the native model. If neither field is present, the model was not saved or exported. Never infer current file contents from a historical report.")}else{None},"source_is_untrusted_data":true}))
+                Ok(json!({"batch_agreement":snapshot.input.agreement(),"job_id":request.job_id,"project_id":project.0,"format":format,"content":content,"offset":request.offset,"total_bytes":total_bytes,"next_offset":next_offset,"sha256":sha256,"content_sha256":content_sha256,"private_paths_redacted":private_paths_redacted,"source_name":source_name,"drawing":drawing,"drawing_followup":drawing_followup,"native_tool_followup":native_tool_followup,"slicing":slicing,"checks":checks,"components":components,"compilation":compilation,"scope":if matches!(&snapshot.input,OperationInput::NativeTools(_)){"native_program_reply_and_readback"}else if matches!(&snapshot.input,OperationInput::LiveCad(input) if input.is_export_step()) {"verified_native_export_report"}else if matches!(&snapshot.input,OperationInput::LiveCad(input) if input.is_save_as()) {"verified_native_save_report"}else if matches!(snapshot.input,OperationInput::LiveCad(_) | OperationInput::LiveDrawing(_)) {"verified_native_transaction_report"}else{"verified_published_result"},"native_followup":if matches!(snapshot.input,OperationInput::LiveCad(_)){Some("Reinspect the open document with inspect_open_cad_documents before another change. This report describes a completed native operation, not necessarily the current state. If saved_document is present, it records the Save As file name, size and digest at completion; no full path is exposed. If exported_document is present, it records the STEP filename, size and digest at completion; export does not save the native model. If neither field is present, the model was not saved or exported. Never infer current file contents from a historical report.")}else{None},"source_is_untrusted_data":true}))
             }
             "get_workflow_status"=>{
                 let _:NoArguments=serde_json::from_value(arguments).map_err(decode_error)?;
@@ -1923,7 +1929,10 @@ pub fn catalog() -> Vec<Tool> {
     ];
     definitions
         .into_iter()
-        .map(|(name, description, schema, read_only)| {
+        .map(|(name, description, mut schema, read_only)| {
+            if matches!(name,"propose_open_cad_change"|"propose_open_agent_change"|"propose_open_agent_save"|"propose_open_drawing_change"|"propose_selected_live_pcb_move"|"propose_selected_live_pcb_export"){
+                schema["properties"]["agreement"]=crate::native_tools::Agreement::schema();schema["required"].as_array_mut().unwrap().push(json!("agreement"));
+            }
             let mut tool = Tool::new(name, description, schema.as_object().unwrap().clone());
             let mut annotations = ToolAnnotations::new();
             annotations.read_only_hint = Some(read_only);
@@ -2240,6 +2249,25 @@ mod tests {
         let (root,workflow,host,_)=setup();let scoped=chat_program(host.clone(),workflow.view().unwrap().project.unwrap(),Program::Planning).unwrap();let mut request=json!({"connection_id":Uuid::new_v4(),"catalog_sha256":"a".repeat(64),"description":"Inspect the native state","calls":[],"readback":{"tool":"read_document","arguments":{}}});assert!(scoped.check_arguments("propose_native_tool_calls",&request).is_err());assert!(serde_json::from_value::<NativeProposal>(request.clone()).is_err());request["agreement"]=serde_json::to_value(crate::native_tools::tests::agreement_fixture()).unwrap();scoped.check_arguments("propose_native_tool_calls",&request).unwrap();serde_json::from_value::<NativeProposal>(request.clone()).unwrap();
         for (key,value) in [("verified",json!(true)),("human_approved",json!(true)),("measured_values",json!({"width":20}))]{let mut bad=request.clone();bad["agreement"][key]=value;assert!(scoped.check_arguments("propose_native_tool_calls",&bad).is_err());assert!(serde_json::from_value::<NativeProposal>(bad).is_err());}
         request["agreement"]["outcome"]=json!(" ");let error=host.call("propose_native_tool_calls",request).unwrap_err();assert!(error.contains("condiciones propuestas"));assert!(workflow.view().unwrap().job.is_none());assert!(workflow.view().unwrap().history.is_empty());drop(scoped);drop(host);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[tokio::test]
+    async fn every_live_proposal_requires_the_same_bounded_non_authoritative_agreement(){
+        let(root,workflow,host,_)=setup();let scoped=chat_program(host.clone(),workflow.view().unwrap().project.unwrap(),Program::Planning).unwrap();let id=Uuid::new_v4();let hash="a".repeat(64);
+        let cases=[
+            ("propose_open_cad_change",json!({"document_name":"Owned","document_token":id,"state_sha256":hash,"description":"Owned change","operations":[{"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}}]})),
+            ("propose_open_agent_change",json!({"instance_id":id,"document_token":id,"version":1,"state_sha256":hash,"description":"Owned change","source":"void setup() {}"})),
+            ("propose_open_agent_save",json!({"instance_id":id,"document_token":id,"version":1,"state_sha256":hash,"description":"Owned save"})),
+            ("propose_open_drawing_change",json!({"selection":id,"binding_sha256":hash,"description":"Owned change","units":"mm","operation":{"action":"circle","center":[0,0],"diameter":12}})),
+            ("propose_selected_live_pcb_move",json!({"selection":id,"instance_sha256":hash,"document_sha256":hash,"state_sha256":hash,"component":id,"units":"mm","x":1,"y":2,"description":"Owned move"})),
+            ("propose_selected_live_pcb_export",json!({"selection":id,"instance_sha256":hash,"document_sha256":hash,"state_sha256":hash,"description":"Owned export"})),
+        ];
+        for (name,mut args) in cases{
+            assert!(scoped.check_arguments(name,&args).is_err());assert!(host.call(name,args.clone()).is_err());assert!(workflow.view().unwrap().job.is_none());
+            args["agreement"]=serde_json::to_value(crate::native_tools::tests::agreement_fixture()).unwrap();scoped.check_arguments(name,&args).unwrap();
+            let accepted=match name{"propose_open_cad_change"=>serde_json::from_value::<LiveCadRequest>(args.clone()).is_ok(),"propose_open_agent_change"=>serde_json::from_value::<LiveAgentRequest>(args.clone()).is_ok(),"propose_open_agent_save"=>serde_json::from_value::<LiveAgentSaveRequest>(args.clone()).is_ok(),"propose_open_drawing_change"=>serde_json::from_value::<LiveDrawingRequest>(args.clone()).is_ok(),"propose_selected_live_pcb_move"=>serde_json::from_value::<LivePcbMove>(args.clone()).is_ok(),_=>serde_json::from_value::<LivePcbExport>(args.clone()).is_ok()};assert!(accepted);
+            for key in ["human_approved","verified","measured_values"]{let mut bad=args.clone();bad["agreement"][key]=json!(true);assert!(scoped.check_arguments(name,&bad).is_err());assert!(host.call(name,bad).is_err());assert!(workflow.view().unwrap().job.is_none());}
+        }
+        drop(scoped);drop(host);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[tokio::test]
     async fn saved_history_requires_exact_snapshot_consent_and_keeps_hidden_metadata_local(){
@@ -3614,7 +3642,7 @@ mod tests {
             for step in 1..=2 {
                 let before:crate::kicad_live::Observation=serde_json::from_value(reply["observation"].clone()).unwrap();
                 let component=before.components[0].clone();
-                let input=crate::kicad_live::Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
+                let input=crate::kicad_live::Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
                     board_name:"OwnedBoard.kicad_pcb".into(),description:"Move the resistor one inch right and a little down".into(),units:crate::kicad::Units::In,
                     before:before.clone(),export_copy:false,movement:Some(crate::konnect::FootprintMove {uuid:component.uuid,
                         reference:component.reference,expected_x_mm:component.x_mm,expected_y_mm:component.y_mm,
@@ -3742,7 +3770,7 @@ mod tests {
         for units in [crate::kicad::Units::Mm,crate::kicad::Units::In,crate::kicad::Units::Mils] {
             let component=current.components.iter().find(|c|c.reference=="R1").unwrap();
             let delta=match units {crate::kicad::Units::Mm=>1.,crate::kicad::Units::In=>2.54,crate::kicad::Units::Mils=>0.254};
-            let input=crate::kicad_live::Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
+            let input=crate::kicad_live::Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
                 board_name:"OwnedBoard.kicad_pcb".into(),description:"Move the owned resistor a confirmed distance right".into(),units,
                 before:current.clone(),export_copy:false,movement:Some(crate::konnect::FootprintMove {uuid:component.uuid,reference:component.reference.clone(),
                     expected_x_mm:component.x_mm,expected_y_mm:component.y_mm,
@@ -3840,7 +3868,7 @@ mod tests {
         let read=|workflow:&Arc<Workflow>| workflow.read_live_pcb(&entry,&connection,Arc::new(AtomicBool::new(false))).unwrap();
         let propose=|workflow:&Arc<Workflow>,before:&crate::kicad_live::Observation,reference:&str,delta:f64| {
             let target=before.components.iter().find(|c|c.reference==reference).unwrap();
-            let input=crate::kicad_live::Input {schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
+            let input=crate::kicad_live::Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),
                 board_name:"OwnedBoard.kicad_pcb".into(),description:"Owned native concurrency/cancellation test".into(),units:crate::kicad::Units::Mm,
                 before:before.clone(),export_copy:false,movement:Some(crate::konnect::FootprintMove {uuid:target.uuid,reference:target.reference.clone(),
                     expected_x_mm:target.x_mm,expected_y_mm:target.y_mm,
@@ -5093,7 +5121,7 @@ mod tests {
         let (_root,workflow,host,_)=setup();
         let project=workflow.view().unwrap().project.unwrap();
         let args=json!({"selection":Uuid::new_v4(),"instance_sha256":"a".repeat(64),"document_sha256":"b".repeat(64),
-            "state_sha256":"c".repeat(64),"component":Uuid::new_v4(),"units":"mils","x":100.,"y":200.,"description":"Move the chosen part"});
+            "state_sha256":"c".repeat(64),"component":Uuid::new_v4(),"units":"mils","x":100.,"y":200.,"agreement":crate::native_tools::tests::agreement_fixture(),"description":"Move the chosen part"});
         for program in [Program::Freecad,Program::Drawing,Program::Arduino,Program::Agent,Program::Slice] {
             let scoped=chat_program(host.clone(),project.clone(),program).unwrap();
             assert!(!scoped.catalog().iter().any(|t|t.name=="propose_selected_live_pcb_move"));

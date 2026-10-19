@@ -190,6 +190,18 @@ impl Dispatch {
 mod tests {
     use super::*;
     #[test]
+    fn live_agreements_are_input_bound_and_legacy_receipts_do_not_gain_invented_conditions(){
+        let cad=serde_json::from_value(serde_json::json!({"schema_version":1,"live_cad_version":1,"job_id":Uuid::new_v4(),"document_name":"Owned","document_token":Uuid::new_v4(),"state_sha256":"a".repeat(64),"description":"Apply the owned change","operations":[{"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}}],"before":[],"agreement":crate::native_tools::tests::agreement_fixture()})).unwrap();
+        let cases=[OperationInput::LiveCad(cad),OperationInput::LiveAgent(crate::agent_editor::tests::job_fixture()),OperationInput::LivePcb(crate::kicad_live::tests::move_fixture()),OperationInput::LiveDrawing(crate::cadcraft_live::tests::fixture_input())];
+        for original in cases{
+            original.validate().unwrap();let root=std::env::temp_dir().join(format!("hazlo-live-agreement-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();
+            let fence=Dispatch::start(&root,&original,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence);
+            let mut changed=serde_json::to_value(&original).unwrap();changed["agreement"]["outcome"]=serde_json::json!("Different outcome after approval");let changed:OperationInput=serde_json::from_value(changed).unwrap();assert!(read(&root,&changed).is_err());assert!(read(&root,&original).unwrap().is_some());std::fs::remove_file(root.join("live-dispatch.json")).unwrap();
+            let mut legacy=serde_json::to_value(&original).unwrap();legacy.as_object_mut().unwrap().remove("agreement");let input:OperationInput=serde_json::from_value(legacy.clone()).unwrap();input.validate().unwrap();assert_eq!(serde_json::to_value(&input).unwrap(),legacy);assert!(input.agreement().is_none());
+            let fence=Dispatch::start(&root,&input,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence);assert!(read(&root,&input).unwrap().is_some());assert!(read(&root,&original).is_err(),"Conditions were retrofitted into an old receipt");assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
     fn original_refusal_proof_resolves_uncertainty_without_erasing_admission_or_accepting_results(){
         let root=std::env::temp_dir().join(format!("hazlo-native-refusal-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let (input,completed)=crate::cadcraft_live::tests::recorded_fixture();let original=OperationInput::LiveDrawing(input.clone());
         let fence=Dispatch::start(&root,&original,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();let proof=serde_json::json!({"version":1,"input_sha256":completed["input_sha256"],"outcome":"not_dispatched"});let path=root.join("drawing-completion.json");std::fs::write(&path,serde_json::to_vec(&proof).unwrap()).unwrap();assert!(recover_refused(&root,&original).is_err());drop(fence.enter().unwrap());

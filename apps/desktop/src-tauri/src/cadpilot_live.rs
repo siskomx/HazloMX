@@ -26,6 +26,8 @@ pub struct Input {
     pub before: Value,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receipt_sha256: Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub agreement:Option<crate::native_tools::Agreement>,
 }
 impl Input {
     // New creation rules apply before effects; existing verified receipts remain readable.
@@ -66,6 +68,7 @@ impl Input {
     }
 
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(agreement)=&self.agreement{agreement.validate()?;}
         name(&json!(self.document_name))?;
         if self.schema_version != 1
             || self.live_cad_version != 1
@@ -708,7 +711,7 @@ mod tests {
 
     #[test]
     fn primitive_creation_requires_explicit_sizes_without_changing_history_validation() {
-        let mut input=Input {schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
+        let mut input=Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
             document_name:"NewPart".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),
             description:"Create the confirmed shape".into(),operations:vec![],before:json!([]),receipt_sha256:None};
         for (kind,properties) in [
@@ -747,7 +750,7 @@ mod tests {
 
     #[test]
     fn creation_coordinates_use_native_placement_before_dispatch() {
-        let mut input=Input {schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
+        let mut input=Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),
             document_name:"NewPart".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),
             description:"Create a support".into(),before:json!([]),receipt_sha256:None,
             operations:vec![json!({"action":"create_object","obj_type":"Part::Box","obj_name":"Support",
@@ -769,7 +772,7 @@ mod tests {
 
     #[test]
     fn native_proposals_reject_code_paths_and_scripted_types_before_execution() {
-        let valid = Input {
+        let valid = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_cad_version: 1,
             job_id: uuid::Uuid::new_v4(),
@@ -803,7 +806,7 @@ mod tests {
 
     #[test]
     fn native_save_requires_one_pathless_action_and_a_verified_native_file_receipt() {
-        let mut input = Input {
+        let mut input = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1, live_cad_version: 1, job_id: uuid::Uuid::new_v4(),
             document_name: "Enclosure".into(), document_token: uuid::Uuid::new_v4(),
             state_sha256: "a".repeat(64), description: "Save the finished enclosure".into(),
@@ -837,7 +840,7 @@ mod tests {
 
     #[test]
     fn native_step_export_is_separate_pathless_and_verifies_unchanged_document() {
-        let mut input = Input {
+        let mut input = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1, live_cad_version: 1, job_id: uuid::Uuid::new_v4(),
             document_name: "Enclosure".into(), document_token: uuid::Uuid::new_v4(),
             state_sha256: "a".repeat(64), description: "Export the enclosure".into(),
@@ -996,7 +999,7 @@ mod tests {
         use tokio::io::{AsyncReadExt,AsyncWriteExt};
         let root=std::env::temp_dir().join(format!("hazlo-cad-task-fence-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
-        let input=crate::project::OperationInput::LiveCad(Input{schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned native submission fence".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None});
+        let input=crate::project::OperationInput::LiveCad(Input{agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned native submission fence".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None});
         let gate=Arc::new(Mutex::new(()));let paused=Arc::new(AtomicBool::new(true));
         let dispatch=crate::live_dispatch::Dispatch::start(&root,&input,gate.clone(),paused,Arc::new(AtomicBool::new(false))).unwrap();
         let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());
@@ -1041,7 +1044,7 @@ mod tests {
     fn native_recovery_uses_only_the_original_receipt_and_preserves_changed_local_reports(){
         use std::{io::{Read,Write},net::TcpListener};
         let root=std::env::temp_dir().join(format!("hazlo-native-recovery-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
-        let input=Input{schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Change the approved part".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None};
+        let input=Input{agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:uuid::Uuid::new_v4(),document_name:"Owned".into(),document_token:uuid::Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Change the approved part".into(),operations:vec![json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:json!([]),receipt_sha256:None};
         let result=json!({"job_id":input.job_id,"document_token":input.document_token,"before_sha256":input.state_sha256,"after":{"document_name":input.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
         let listener=TcpListener::bind("127.0.0.1:0").unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());let expected=input.clone();let native=result.clone();
         let server=std::thread::spawn(move||{
