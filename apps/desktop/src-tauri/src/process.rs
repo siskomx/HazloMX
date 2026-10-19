@@ -13,7 +13,7 @@ use std::{
     ptr::{null, null_mut},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, MutexGuard,
     },
     thread,
     time::{Duration, Instant},
@@ -252,16 +252,19 @@ pub fn run_owned_input(
     timeout: Duration,
     input: &[u8],
 ) -> io::Result<ProcessOutput> {
-    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(input,false))
+    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(input,false,None))
 }
 
 /// A hidden native console also captures programs that reopen CONOUT$ instead of using their pipes.
 pub fn run_owned_console(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration)->io::Result<ProcessOutput> {
-    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(&[],true))
+    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(&[],true,None))
 }
 
-fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration,mode:(&[u8],bool))->io::Result<ProcessOutput> {
-    let (input,console_mode)=mode;
+pub(crate) fn run_owned_permitted(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration,mode:(bool,Option<MutexGuard<'_,()>>))->io::Result<ProcessOutput> {
+    run_owned_streams(executable,arguments,cwd,variables,cancelled,timeout,(&[],mode.0,mode.1))
+}
+fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:&BTreeMap<OsString,OsString>,cancelled:Arc<AtomicBool>,timeout:Duration,mode:(&[u8],bool,Option<MutexGuard<'_,()>>))->io::Result<ProcessOutput> {
+    let (input,console_mode,permit)=mode;
     if input.len() > LOG_LIMIT {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "Stdin exceeds limit"));
     }
@@ -372,6 +375,7 @@ fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:
     {
         return Err(io::Error::last_os_error());
     }
+    drop(permit);
     let started = Instant::now();
     let reason = loop {
         if cancelled.load(Ordering::SeqCst) {
@@ -626,6 +630,25 @@ pub(crate) mod tests {
         assert!(started.elapsed() < Duration::from_secs(5));
         let child: u32 = fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();
         assert!(!is_alive(child));
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn cli_dispatch_permit_is_released_while_the_owned_process_is_running() {
+        let root=workspace();let gate=Arc::new(std::sync::Mutex::new(()));
+        let cancelled=Arc::new(AtomicBool::new(false));
+        let worker_gate=gate.clone();let worker_cancel=cancelled.clone();let worker_root=root.clone();
+        let worker=thread::spawn(move||{
+            let permit=worker_gate.lock().unwrap();
+            run_owned_permitted(probe(),&["tree".into()],&worker_root,&variables(),worker_cancel,Duration::from_secs(10),(false,Some(permit))).unwrap()
+        });
+        let started=Instant::now();
+        while !root.join("child.pid").exists() && started.elapsed()<Duration::from_secs(5){thread::sleep(Duration::from_millis(10));}
+        assert!(root.join("child.pid").exists());
+        let permit=gate.try_lock().expect("Correction must not wait for CLI completion");
+        cancelled.store(true,Ordering::SeqCst);drop(permit);
+        assert_eq!(worker.join().unwrap().reason,StopReason::Cancelled);
+        let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();assert!(!is_alive(child));
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
         fs::remove_dir_all(root).unwrap();
     }
 

@@ -71,12 +71,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "wait_after_effect" => {
                     self.0.lock().unwrap().0 = value;
                     self.0.lock().unwrap().3 += 1;
-                    tokio::time::sleep(std::time::Duration::from_secs(120)).await;
+                    if let Some(path)=std::env::var_os("NATIVE_EFFECT_MARKER") {let state=self.0.lock().unwrap();std::fs::write(path,json!({"native_value":state.0,"native_writes":state.3}).to_string()).unwrap();}
+                    let delay=std::env::var("NATIVE_EFFECT_DELAY_MS").ok().and_then(|v|v.parse::<u64>().ok()).unwrap_or(120_000).min(120_000);
+                    tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
                 }
                 _ => return Err(ErrorData::invalid_params("Unknown native tool", None)),
             }
             let (state,_,identity,writes) = *self.0.lock().unwrap();
+            if request.name!="observe_native_state" {if let Some(path)=std::env::var_os("NATIVE_EFFECT_MARKER") {std::fs::write(path,json!({"native_value":state,"native_writes":writes}).to_string()).unwrap();}}
             if request.name == "observe_native_state" && value > 0 {
+                if let Some(path)=std::env::var_os("NATIVE_READBACK_MARKER") {std::fs::write(path,b"readback").unwrap();tokio::time::sleep(std::time::Duration::from_secs(10)).await;}
                 return Ok(CallToolResult::structured(json!({"native_value":state,"native_id":identity,"native_writes":writes,"evidence":"á".repeat(value.min(100000) as usize)})).into());
             }
             Ok(CallToolResult::structured(json!({"native_value":state,"native_id":identity,"native_writes":writes,"secret_echo":std::env::var("NATIVE_TEST_TOKEN").unwrap_or_default()})).into())

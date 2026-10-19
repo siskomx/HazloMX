@@ -31,7 +31,7 @@ try {
     else {
      const t=task();if(r.id!==t.id || r.revision!==t.revision)throw Error("stale task");
      if(r.action==="history"){if(r.value==null)return t.history;t.history=r.value;}
-     if(r.action==="message"){t.revision++;t.history=r.history;if(!t.goal){t.goal=r.text;t.title=r.text.slice(0,60);}}
+     if(r.action==="message"){t.revision++;t.history=r.history;if(r.correction_of){t.latest_correction={job_id:r.correction_of,revision:t.revision,text:r.text};snapshot.job.approval_id=null;}if(!t.goal){t.goal=r.text;t.title=r.text.slice(0,60);}}
      if(r.action==="provider"){t.revision++;t.provider=r.provider;}
      if(r.action==="add_reference"){t.revision++;t.references.push({id:crypto.randomUUID(),name:r.name,bytes:atob(r.data).length,sha256:"f".repeat(64),image:!!r.preview,shared_with:[],preview:r.preview,data:r.data});}
      if(r.action==="preview_reference"){const ref=t.references.find(x=>x.id===r.reference);if(!ref)throw Error("missing local reference");const text=atob(ref.data),offset=r.offset??0,next=offset+4096;return {kind:"text",content:text.slice(offset,next),next_offset:next<text.length?next:null};}
@@ -44,7 +44,13 @@ try {
    else if(command.startsWith("start_") && command.endsWith("_chat")){
     if(window.nativeOnNext){task().revision++;task().references.push({id:crypto.randomUUID(),name:"Observación nativa.json",bytes:100,sha256:"e".repeat(64),image:false,shared_with:[]});window.nativeOnNext=false;}
     snapshot.chat={provider:task().provider,id:crypto.randomUUID(),project_id:db.project[0],sequence:1,busy:false,cancelled:false,text:"La tarea sigue guardada; podemos continuar.",error:null};
+    if(window.startBatchOnNext){window.startBatchOnNext=false;snapshot.job={snapshot:{schema_version:17,project_id:db.project[0],phase:"awaiting_approval",input:{schema_version:1,native_tools_version:1,job_id:crypto.randomUUID(),connection_id:crypto.randomUUID(),program:"drawing",catalog_sha256:"a".repeat(64),description:"Owned correction batch",calls:[{tool:"native_edit",arguments:{value:7}},{tool:"native_edit",arguments:{value:99}}],readback:{tool:"native_state",arguments:{}},guard:{call:{tool:"native_state",arguments:{}},result_sha256:"b".repeat(64)}},audit:{source:{provider:"mcp"},files_verified:false,task:{id:task().id,revision:task().revision}}},approval_id:"owned-approval",sequence:1,busy:false,error:null};}
    }
+   else if(command==="approve_operation"){
+    snapshot.job.busy=true;snapshot.job.snapshot.phase="running";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));
+    return await new Promise(resolve=>{window.finishOwnedBatch=()=>{snapshot.job.busy=false;snapshot.job.snapshot.phase="cancelled";snapshot.job.sequence++;args.events.onmessage(structuredClone(snapshot.job));persist();resolve(structuredClone(snapshot.job));};});
+   }
+   else if(command==="cancel_job"){snapshot.job.snapshot.phase="cancelled";snapshot.job.sequence++;return structuredClone(snapshot.job);}
    else if(!["get_snapshot","detect_clients"].includes(command))throw Error(command);
    persist();return structuredClone(snapshot);
   }};
@@ -106,5 +112,24 @@ try {
  await page.evaluate(()=>{const db=JSON.parse(localStorage.getItem("owned-task-fixture"));db.records[db.active].pending_removals=[];localStorage.setItem("owned-task-fixture",JSON.stringify(db));});
  await page.reload();await page.locator("#send:enabled").waitFor();
  assert.doesNotMatch(await page.locator("#task-references").innerText(),/pendientes de borrar/);
+ await page.evaluate(()=>window.startBatchOnNext=true);
+ await page.locator("#prompt").fill("Prepare a bounded native batch");await page.locator("#send").click();
+ await page.locator("#approve:enabled").waitFor();await page.locator("#approve").click();
+ await page.getByRole("button",{name:"Enviar corrección",exact:true}).waitFor();
+ const chatsBeforeCorrection=await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length);
+ await page.locator("#prompt").fill("Keep the first valid change; make the next part smaller");await page.locator("#send").click();
+ await page.waitForFunction(()=>JSON.parse(localStorage.getItem("owned-task-fixture")).records[JSON.parse(localStorage.getItem("owned-task-fixture")).active].latest_correction);
+ assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.command.startsWith("start_")).length),chatsBeforeCorrection);
+ await page.evaluate(()=>window.finishOwnedBatch());await page.locator("#new-chat:enabled").waitFor();
+ assert.match(await page.locator("#conversation").innerText(),/make the next part smaller/);
+ await page.reload();await page.locator("#send:enabled").waitFor();
+ assert.match(await page.locator("#conversation").innerText(),/make the next part smaller/);
+ assert.match(await page.locator("#task-references").innerText(),/última corrección/);
+ await page.evaluate(()=>window.startBatchOnNext=true);
+ await page.locator("#prompt").fill("Prepare another bounded native batch");await page.locator("#send").click();
+ await page.locator("#approve:enabled").waitFor();await page.locator("#approve").click();
+ await page.locator("#cancel-running:enabled").waitFor();await page.locator("#cancel-running").click();
+ await page.waitForFunction(()=>window.calls.some(c=>c.command==="cancel_job"));
+ await page.evaluate(()=>window.finishOwnedBatch());await page.locator("#new-chat:enabled").waitFor();
  console.log("Durable task chat fixture passed: automatic workspace, archived chats, reload, local references, explicit provider switch and withheld raw input. No real provider, native program or model download ran.");
 } finally {await browser?.close();await server.close();}

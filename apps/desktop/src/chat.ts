@@ -44,6 +44,8 @@ let state: DesktopSnapshot = { project: null, job: null, inference: null, recove
 let program: Program = "planning", provider: Provider = "codex";
 let appliedProgramRoute: string | undefined;
 let commandBusy = false, revision = 0, newSession = true;
+let correctionBusy=false,cancellationBusy=false;
+function canCorrect(){return !!state.tasks && !!state.job?.busy && !!state.job.snapshot.input.native_tools_version && !state.chat?.busy && !historyLoading && !correctionBusy && !cancellationBusy;}
 let turns: Turn[] = [], answeredChat: string | undefined, storageKey = "", questionId: string | undefined;
 let renderedConversation = "", contextNotice = "";
 let historyLoading = false, durableReady = false, storageVersion = 0;
@@ -116,6 +118,7 @@ function renderTasks(busy:boolean){
   $("reference-offer-text").textContent=pendingReference?`¿Permites que ${providerNames[provider]} reciba el contenido de «${pendingReference.name}» y los resultados de su análisis para esta tarea? Puede enviarse a su servicio externo. Puedes revocar el permiso; no borra lo ya enviado.`:"";
   for(const id of ["approve-provider","keep-provider","approve-reference","keep-reference-local"]) $<HTMLButtonElement>(id).disabled=busy;
   const rows=$("task-references");rows.replaceChildren();
+  if(tasks?.active.latest_correction){const p=document.createElement("p");p.className="fine";p.textContent="La última corrección queda guardada con la tarea. Las llamadas ya enviadas se revisan antes de nuevos cambios; cancelar no las deshace.";rows.append(p);}
   if(tasks?.active.pending_removals?.length){const p=document.createElement("p");p.className="fine";p.textContent="Hay copias locales retiradas pendientes de borrar porque no están disponibles. Su acceso y permisos ya están revocados. Hazlo reintentará borrar sus copias al volver a esta conversación; el trabajo del proyecto se conserva.";rows.append(p);}
   for(const ref of tasks?.active.references??[]){
     const row=document.createElement("p"),label=document.createElement("span");const shared=ref.shared_with.includes(provider);
@@ -409,8 +412,11 @@ function render() {
     if (follow) log.scrollTop = log.scrollHeight;
   }
   $("chat-progress").textContent = inspection ? inspection.cancelled || inspection.stopping ? "Deteniendo inspección…" : inspection.id ? "Inspeccionando el documento con sus herramientas…" : "Selecciona las fuentes o cancela la ventana de selección." : state.chat?.provider === provider && state.chat.busy ? state.chat.cancelled ? "Deteniendo conversación…" : state.chat.text || "Consultando a tu IA…" : inspectionNotice;
-  for (const id of ["send", "new-chat"]) $<HTMLButtonElement>(id).disabled = busy || (!state.project && !state.task_support) || !clientReady;
-  $<HTMLTextAreaElement>("prompt").disabled = busy;
+  const correcting=canCorrect();
+  $<HTMLButtonElement>("send").disabled = !correcting && (busy || (!state.project && !state.task_support) || !clientReady);
+  $("send").textContent=correcting?"Enviar corrección":"Enviar";
+  $<HTMLButtonElement>("new-chat").disabled = busy || (!state.project && !state.task_support) || !clientReady;
+  $<HTMLTextAreaElement>("prompt").disabled = busy && !correcting;
   $<HTMLButtonElement>("stop").disabled = inspection ? !inspection.id || inspection.stopping || inspection.cancelled : commandBusy || !state.chat?.busy || !!state.chat.cancelled;
   $("stop").textContent = inspection ? "Detener inspección" : "Detener";
   for (const id of ["provider", "program"]) $<HTMLSelectElement>(id).disabled = busy || state.job?.snapshot.phase === "awaiting_approval";
@@ -432,7 +438,7 @@ function render() {
   $<HTMLButtonElement>("approve").disabled = busy || !active || !state.job?.approval_id;
   $("approve").textContent = `Aprobar y pedir revisión a ${providerNames[provider]}`;
   $<HTMLButtonElement>("cancel-job").disabled = commandBusy || !active;
-  $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = commandBusy;
+  $("cancel-running").hidden = !state.job?.busy; $<HTMLButtonElement>("cancel-running").disabled = cancellationBusy || (commandBusy && !state.job?.snapshot.input.native_tools_version);
   const job = state.job;
   $("job-status").textContent = !job ? "" : (job.error ? job.snapshot.input.native_tools_version ? "El programa informó un bloqueo. Los detalles se conservan en el historial." : job.error : undefined) ?? (job.snapshot.phase === "completed" ? job.snapshot.input.native_tools_version ? "El programa respondió y Hazlo conservó su lectura final. Revisa el resultado nativo." : job.snapshot.input.live_drawing_version ? job.snapshot.input.operation.action === "export_dxf" ? "DXF exportado y verificado. El dibujo abierto conserva su estado y sus cambios sin guardar." : "Cambio leído en el dibujo abierto de CADCraft. Puedes deshacerlo allí; todavía no se guardó ni exportó." : job.snapshot.input.live_agent_version ? job.snapshot.input.save ? "Arduino Agent confirmó el guardado del código aprobado y su estado sin cambios pendientes." : "Cambio leído en el sketch abierto de Arduino Agent. El guardado lo gestiona el IDE." : job.snapshot.input.live_pcb_version ? job.snapshot.input.export_copy ? "PCB exportada y verificada. El documento abierto conserva sus cambios sin guardar." : "Cambio leído en la PCB abierta de KiCad. El archivo todavía no se guardó." : job.snapshot.input.live_cad_version ? job.snapshot.input.operations[0]?.action === "save_as" ? "FreeCAD confirmó el guardado. El informe conserva el nombre y la huella del archivo en ese momento." : job.snapshot.input.operations[0]?.action === "export_step" ? "STEP exportado y verificado. El documento abierto sigue sin cambios; exportar no guarda el modelo nativo." : "Cambio leído en el documento abierto de FreeCAD. Puedes deshacerlo allí; todavía no se guardó ni exportó el modelo." : "Resultado guardado y verificado por Hazlo. Puedes revisarlo en Resultados." : job.snapshot.phase === "awaiting_approval" ? "Cambio pendiente de tu aprobación." : job.busy ? "El programa está realizando la operación…" : `Operación: ${phases[job.snapshot.phase]}.`);
   renderConnections(busy || !!active); renderQuestion(); renderHistory(); renderLegacy();
@@ -653,7 +659,18 @@ $("image-reference").onchange = () => {
   const input=$<HTMLInputElement>("image-reference"),file=input.files?.[0];
   if (file) void action(async()=>{try { if(state.task_support)await addReference(file,true);else referenceImage=await prepareImageReference(file); } finally { input.value=""; }});
 };
-$("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if (content) void action(() => send(content)); };
+async function correctRunningTask(content:string){
+  if(!canCorrect())return;
+  correctionBusy=true;render();
+  try {
+    await taskWrites;const {scope}=scopedTask(),jobId=state.job!.snapshot.input.job_id;
+    resultReview=undefined;
+    await taskCommand({action:"message",...scope,text:content,history:JSON.stringify({version:1,turns:[...turns,{role:"user",content}]}),correction_of:jobId});
+    turns.push({role:"user",content});$<HTMLTextAreaElement>("prompt").value="";
+    inspectionNotice="Corrección guardada. El trabajo válido se conserva y no se repetirán las llamadas enviadas. Falta revisar cualquier efecto en vuelo antes de preparar nuevos cambios.";
+  }catch(e){error(e);}finally{correctionBusy=false;render();}
+}
+$("chat-form").onsubmit = event => { event.preventDefault(); const content = $<HTMLTextAreaElement>("prompt").value.trim(); if(content){if(canCorrect())void correctRunningTask(content);else void action(() => send(content));} };
 $("new-chat").onclick = () => {
   if(state.task_support){void action(async()=>{await ensureTask();persist();await taskCommand({action:"new"},true);});return;}
   if (state.chat?.busy || commandBusy) return; clearImage(); revision++; turns = []; answeredChat = state.chat?.id; newSession = true; contextNotice = ""; persist(); render();
@@ -690,13 +707,20 @@ $("approve").onclick = () => void action(async () => {
   catch (e) { resultReview = undefined; throw e; }
   if (token === revision && state.job?.snapshot.input.job_id === jobId) apply({ ...state, job });
 });
-for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => void action(async () => {
+for (const id of ["cancel-job", "cancel-running"]) $(id).onclick = () => {
+  if(id==="cancel-running" && state.job?.busy && state.job.snapshot.input.native_tools_version){
+    if(cancellationBusy)return;cancellationBusy=true;resultReview=undefined;render();
+    void invoke<Job>("cancel_job",{jobId:state.job.snapshot.input.job_id}).then(job=>{if(state.job?.snapshot.input.job_id===job.snapshot.input.job_id)apply({...state,job});}).catch(error).finally(()=>{cancellationBusy=false;render();});return;
+  }
+  void action(async () => {
   const input = state.job?.snapshot.input;
   if (!state.job?.busy || !(input?.live_drawing_version || input?.live_cad_version || input?.live_agent_version || input?.live_pcb_version)) resultReview = undefined;
   if (state.job) apply({ ...state, job: await invoke<Job>("cancel_job", { jobId: state.job.snapshot.input.job_id }) });
-});
+  });
+};
 void action(async () => { apply(await invoke<DesktopSnapshot>("get_snapshot")); apply(await invoke<DesktopSnapshot>("detect_clients")); });
 setInterval(() => {
   const token = revision;
-  if (!commandBusy && (state.chat?.busy || state.job?.busy || state.codex_login?.busy)) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
+  const correctingJob=state.job?.busy && (state.tasks?.active.latest_correction?.job_id===state.job.snapshot.input.job_id || state.job.snapshot.phase==="cancelled");
+  if ((!commandBusy || correctingJob) && (state.chat?.busy || state.job?.busy || state.codex_login?.busy)) void invoke<DesktopSnapshot>("get_snapshot").then(next => { if (token === revision) apply(next); }).catch(error);
 }, 1000);

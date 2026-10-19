@@ -64,6 +64,13 @@ pub struct PendingRemoval {
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct Correction {
+    pub job_id: Uuid,
+    pub revision: u64,
+    pub text: String,
+}
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Task {
     pub id: Uuid,
     pub revision: u64,
@@ -73,6 +80,8 @@ pub struct Task {
     pub references: Vec<Reference>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pending_removals: Vec<PendingRemoval>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub latest_correction: Option<Correction>,
     #[serde(default)]
     pub restricted_results: bool,
     #[serde(default)]
@@ -95,6 +104,17 @@ impl Task {
                 .any(|r| !r.shared_with.contains(&self.provider))
     }
     fn validate(&self) -> io::Result<()> {
+        if self.latest_correction.as_ref().is_some_and(|c| {
+            c.job_id.is_nil()
+                || c.revision == 0
+                || c.revision > self.revision
+                || c.text.trim().is_empty()
+                || c.text.len() > 4096
+        }) {
+            return Err(error(
+                "Corrección de tarea no válida; sus datos se conservan.",
+            ));
+        }
         if self.id.is_nil()
             || self.revision == 0
             || !provider(&self.provider)
@@ -213,6 +233,8 @@ pub enum Request {
         revision: u64,
         text: String,
         history: String,
+        #[serde(default)]
+        correction_of: Option<Uuid>,
     },
     Provider {
         id: Uuid,
@@ -364,6 +386,7 @@ impl<'a> Store<'a> {
             provider: provider.into(),
             references: Vec::new(),
             pending_removals: Vec::new(),
+            latest_correction: None,
             restricted_results: false,
             legacy: false,
             history: Some("{\"version\":1,\"turns\":[]}".into()),
@@ -526,6 +549,7 @@ impl<'a> Store<'a> {
                 revision,
                 text,
                 history: raw,
+                correction_of,
             } => {
                 if text.trim().is_empty() || text.len() > 4096 {
                     return Err(error("Escribe un mensaje de hasta 4 KiB."));
@@ -533,6 +557,13 @@ impl<'a> Store<'a> {
                 history(&raw)?;
                 let mut task = self.scoped(id, revision)?;
                 task.revision += 1;
+                if let Some(job_id) = correction_of {
+                    task.latest_correction = Some(Correction {
+                        job_id,
+                        revision: task.revision,
+                        text: text.clone(),
+                    });
+                }
                 if task.goal.is_empty() {
                     task.goal = text;
                     task.title = task.goal.chars().take(60).collect();

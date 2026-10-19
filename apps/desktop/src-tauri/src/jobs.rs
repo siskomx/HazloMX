@@ -112,6 +112,8 @@ pub struct InferenceDispatch {
 }
 
 struct Job {
+    dispatch_gate: Arc<Mutex<()>>,
+    dispatch_paused: Arc<AtomicBool>,
     live_agent: Option<crate::agent_editor::Connection>,
     live_pcb: Option<crate::kicad_live::Binding>,
     live_drawing: Option<crate::cadcraft_live::Connection>,
@@ -165,6 +167,8 @@ impl AgentSource {
 }
 
 pub struct Dispatch {
+    dispatch_gate: Arc<Mutex<()>>,
+    dispatch_paused: Arc<AtomicBool>,
     live_agent: Option<crate::agent_editor::Connection>,
     live_pcb: Option<crate::kicad_live::Binding>,
     live_drawing: Option<crate::cadcraft_live::Connection>,
@@ -227,10 +231,24 @@ impl Workflow {
     }
     pub fn task_request(&self,expected:(Uuid,PathBuf),request:crate::tasks::Request)->Result<serde_json::Value,String>{
         let mut state=self.state.lock().map_err(|e|e.to_string())?;inference_idle(&state)?;
-        if state.job.as_ref().is_some_and(|j|j.view.busy){return Err("Termina o detén la operación antes de cambiar la tarea.".into());}
+        let correction=match &request {crate::tasks::Request::Message{id,revision,correction_of:Some(job_id),..}=>Some((*job_id,crate::tasks::Binding{id:*id,revision:*revision})),_=>None};
+        if correction.is_none() && state.job.as_ref().is_some_and(|j|j.view.busy){return Err("Termina o detén la operación antes de cambiar la tarea.".into());}
         let changed=request.changes_scope();let switches=matches!(request,crate::tasks::Request::New|crate::tasks::Request::Open{..});
-        let project=state.project.as_ref().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió; la tarea se conservó.")?;
-        let result=crate::tasks::Store::new(project).and_then(|s|s.request(request)).map_err(|e|e.to_string())?;
+        let project=state.project.clone().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió; la tarea se conservó.")?;
+        let store=crate::tasks::Store::new(&project).map_err(|e|e.to_string())?;
+        let gate=if let Some((job_id,binding))=&correction {
+            if store.binding().map_err(|e|e.to_string())?.as_ref()!=Some(binding){return Err("La tarea cambió; vuelve a leerla antes de corregir.".into());}
+            let job=state.job.as_ref().filter(|j|j.view.snapshot.input.job_id()==*job_id && matches!(j.view.snapshot.input,OperationInput::NativeTools(_)) && j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==binding.id)).ok_or("La operación nativa cambió; conserva tu corrección y vuelve a leer el estado.")?;
+            Some(job.dispatch_gate.clone())
+        }else{None};
+        let permit=gate.as_ref().map(|g|g.lock().map_err(|_|"No se pudo confirmar la pausa de despacho.")).transpose()?;
+        let result=store.request(request).map_err(|e|e.to_string());
+        if correction.is_some(){
+            let job=state.job.as_mut().unwrap();job.dispatch_paused.store(true,Ordering::SeqCst);
+            if job.view.busy {job.view.approval_id=None;job.view.error=Some("Se pausaron los pasos pendientes para conservar el trabajo. La llamada enviada puede terminar; comprueba si tu corrección quedó guardada.".into());job.view.advance();project.save(&job.view.snapshot).map_err(|e|e.to_string())?;}
+        }
+        drop(permit);
+        let result=result?;
         if changed {if let Some(job)=state.job.as_mut().filter(|j|j.view.snapshot.phase==Phase::AwaitingApproval){
             job.view.approval_id=None;job.view.snapshot.phase=Phase::Cancelled;job.view.advance();
         }}
@@ -259,7 +277,7 @@ impl Workflow {
             prior=saved["turns"].as_array().cloned().unwrap_or_default();
             prior=prior.into_iter().rev().take(12).collect();prior.reverse();
         }
-        let mut envelope=serde_json::json!({"user_request":text,"recovered_conversation":prior,
+        let mut envelope=serde_json::json!({"user_request":text,"task_goal":task.goal,"recovered_conversation":prior,"latest_user_correction":task.latest_correction,
             "desktop_context":{"project_id":project.id,"project_directory":project.root,"task_id":task.id,"revision":task.revision,
             "authorized_references":task.references.iter().filter(|r|r.shared_with.contains(&task.provider)).map(|r|r.id).collect::<Vec<_>>(),
             "current_job":state.job.as_ref().filter(|j|j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==task.id)).map(|j|serde_json::json!({"id":j.view.snapshot.input.job_id(),"phase":j.view.snapshot.phase}))},
@@ -2183,6 +2201,8 @@ impl Workflow {
             busy: false,
         };
         state.job = Some(Job {
+            dispatch_gate: Arc::new(Mutex::new(())),
+            dispatch_paused: Arc::new(AtomicBool::new(false)),
             live_agent: None,
             live_pcb: None,
             live_drawing: None,
@@ -2340,6 +2360,8 @@ impl Workflow {
         job.view.busy = true;
         job.view.sequence += 1;
         Ok(Dispatch {
+            dispatch_gate: job.dispatch_gate.clone(),
+            dispatch_paused: job.dispatch_paused.clone(),
             native_tools,
             live_agent,
             live_pcb,
@@ -2379,6 +2401,7 @@ impl Workflow {
         ) {
             return Ok(job.view.clone());
         }
+        let _permit=job.dispatch_gate.lock().map_err(|_|"No se pudo confirmar la pausa de despacho.")?;
         job.cancelled.store(true, Ordering::SeqCst);
         job.view.snapshot.phase = Phase::Cancelled;
         job.view.approval_id = None;
@@ -2537,7 +2560,7 @@ impl Workflow {
                     )?;
                 }
                 OperationInput::NativeTools(input) => {
-                    crate::native_tools::run(input,dispatch.native_tools.as_ref().ok_or("La conexión nativa venció.")?,&stage.path,dispatch.cancelled.clone())?;
+                    crate::native_tools::run_gated(input,dispatch.native_tools.as_ref().ok_or("La conexión nativa venció.")?,&stage.path,dispatch.cancelled.clone(),&dispatch.dispatch_gate,&dispatch.dispatch_paused)?;
                 }
                 OperationInput::LiveDrawing(input) => {
                     crate::cadcraft_live::run(input,dispatch.live_drawing.as_ref().ok_or("La conexión CADCraft venció.")?,
@@ -2716,7 +2739,19 @@ impl Workflow {
             return Err(warning.unwrap_or("El proyecto activo cambió; los archivos no se publicaron.").into());
         }
         let job = state.job.as_mut().unwrap();
-        if dispatch.cancelled.load(Ordering::SeqCst) {
+        if dispatch.dispatch_paused.load(Ordering::SeqCst) {
+            // A correction during final readback must not discard a completed local receipt.
+            job.view.snapshot.input=dispatch.snapshot.input.clone();
+            job.view.snapshot.phase=Phase::Cancelled;
+            job.view.error=Some("Se pausaron los pasos pendientes por tu corrección. Se conservaron las respuestas de las llamadas enviadas; revisa su estado antes de nuevos cambios. No se repiten ni se deshacen automáticamente.".into());
+            if let Ok(stage)=result {
+                if let Some(audit)=&mut job.view.snapshot.audit {audit.files_verified=true;}
+                match dispatch.project.publish(stage,&dispatch.snapshot) {
+                    Ok(_)=>{job.view.snapshot.phase=Phase::Completed;job.view.error=None;}
+                    Err(_)=>{job.view.snapshot.phase=Phase::Interrupted;job.view.error=Some("El informe terminado sigue local y su publicación está pendiente. Tu corrección se conserva; no repitas las llamadas.".into());}
+                }
+            }
+        } else if dispatch.cancelled.load(Ordering::SeqCst) {
             job.view.snapshot.phase = Phase::Cancelled;
             if matches!(dispatch.snapshot.input, OperationInput::LiveCad(_)) {
                 job.view.error = Some("La espera se canceló. FreeCAD puede haber completado la operación nativa; vuelve a leer el documento antes de continuar. Cancelar no deshace una edición nativa.".into());
@@ -2776,6 +2811,90 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
     #[test]
+    #[ignore = "Explicit disposable MCP fixture; tests correction during a real in-flight call"]
+    fn native_correction_preserves_inflight_effect_and_survives_restart(){
+        use crate::{tasks::Request,native_tools::{Connection,McpConfig,Input,Call,Guard},host_tools::Program};
+        for scenario in 0..3 {
+        let final_readback=scenario==1;
+        let (root,workflow)=setup();let workflow=Arc::new(workflow);
+        let project=workflow.view().unwrap().project.unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        workflow.task_request(project.clone(),Request::AddReference{id:task.id,revision:task.revision,name:"capture.bin".into(),data:base64::Engine::encode(&base64::engine::general_purpose::STANDARD,b"RAW_CORRECTION_SENTINEL"),preview:None}).unwrap();
+        let task=workflow.task_state().unwrap().unwrap().active;
+        let marker=root.join("effect.marker");
+        let readback_marker=root.join("readback.marker");
+        let executable=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_FIXTURE").expect("Set owned fixture"));
+        let cancel=||Arc::new(AtomicBool::new(false));
+        let (connection,catalog)=Connection::mcp(Program::Drawing,McpConfig{executable,args:vec![],env:std::collections::BTreeMap::from([("NATIVE_EFFECT_MARKER".into(),marker.to_string_lossy().into_owned()),("NATIVE_EFFECT_DELAY_MS".into(),"10000".into()),("NATIVE_READBACK_MARKER".into(),readback_marker.to_string_lossy().into_owned())]),url:None,authorization:None},root.clone(),cancel()).unwrap();
+        let call=|tool:&str,args:serde_json::Value|Call{tool:tool.into(),arguments:args.as_object().unwrap().clone()};
+        let query=call("observe_native_state",serde_json::json!({}));
+        let before=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();
+        let input=Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:catalog.connection_id,program:Program::Drawing,catalog_sha256:catalog.catalog_sha256.clone(),description:"Owned correction fixture".into(),calls:if final_readback{vec![call("program_owned_parameter_edit",serde_json::json!({"value":7}))]}else{vec![call("wait_after_effect",serde_json::json!({"value":7})),call("program_owned_parameter_edit",serde_json::json!({"value":99}))]},readback:if final_readback{call("observe_native_state",serde_json::json!({"value":1}))}else{query.clone()},guard:Some(Guard{call:query.clone(),result_sha256:before["readback_sha256"].as_str().unwrap().into(),checks:vec![]}),receipt_sha256:None};
+        let id=input.job_id;
+        let proposed=workflow.propose_native_tools(project.clone(),input.clone(),connection.clone()).unwrap();
+        let dispatch=workflow.begin(proposed.approval_id.unwrap()).unwrap();
+        let worker=workflow.clone();let handle=std::thread::spawn(move||worker.execute(dispatch));
+        let started=std::time::Instant::now();
+        let pause_marker=if final_readback{&readback_marker}else{&marker};
+        while !pause_marker.exists() && started.elapsed()<std::time::Duration::from_secs(10){std::thread::sleep(std::time::Duration::from_millis(10));}
+        assert!(pause_marker.exists(),"Owned fixture did not reach its in-flight effect/readback");
+        let correction="Keep the valid first change; make the next part smaller";
+        let request=|revision,job_id|Request::Message{id:task.id,revision,text:correction.into(),history:serde_json::json!({"version":1,"turns":[{"role":"user","content":correction}]}).to_string(),correction_of:Some(job_id)};
+        assert!(workflow.task_request(project.clone(),request(task.revision-1,id)).is_err());
+        assert!(workflow.task_request(project.clone(),request(task.revision,Uuid::new_v4())).is_err());
+        assert!(!workflow.state.lock().unwrap().job.as_ref().unwrap().cancelled.load(Ordering::SeqCst));
+        workflow.task_request(project.clone(),request(task.revision,id)).unwrap();
+        assert!(!workflow.state.lock().unwrap().job.as_ref().unwrap().cancelled.load(Ordering::SeqCst));
+        if scenario==2 {workflow.cancel(id).unwrap();}
+        let stopped=handle.join().unwrap().unwrap();
+        assert_eq!(stopped.snapshot.phase,if final_readback{Phase::Completed}else{Phase::Cancelled});assert!(!stopped.busy);
+        let observed=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();
+        assert_eq!(observed["readback"]["structuredContent"]["native_value"],7);
+        assert_eq!(observed["readback"]["structuredContent"]["native_writes"],1);
+        let actual:serde_json::Value=serde_json::from_slice(&std::fs::read(&marker).unwrap()).unwrap();
+        assert_eq!(actual["native_value"],7);assert_eq!(actual["native_writes"],1);
+        let native_project=workflow.state.lock().unwrap().project.clone().unwrap();
+        let directory=if final_readback{native_project.artifact_directory(id)}else{native_project.store("staging").join(id.to_string())};
+        let journal=crate::native_journal::read(&directory,&input).unwrap().unwrap();
+        assert_eq!(journal.steps[1].outcome,if scenario==2{crate::native_journal::Outcome::Uncertain}else{crate::native_journal::Outcome::Acknowledged});
+        if final_readback {
+            assert!(journal.finished);
+            let OperationInput::NativeTools(completed)=&stopped.snapshot.input else{panic!("Wrong input");};
+            assert!(completed.receipt_sha256.is_some());
+            crate::native_tools::validate_artifacts(&directory,completed).unwrap();
+        }else{
+            assert_eq!(journal.steps[2].outcome,crate::native_journal::Outcome::Pending);
+            assert_eq!(journal.steps[3].outcome,crate::native_journal::Outcome::Pending);
+        }
+        let (prompt,restricted)=workflow.task_prompt("codex",String::new(),None,None).unwrap();
+        assert!(restricted && prompt.contains(correction) && !prompt.contains("RAW_CORRECTION_SENTINEL"));
+        let revision=workflow.task_state().unwrap().unwrap().active.revision;
+        connection.close();drop(native_project);drop(workflow);
+        let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(Project::open(&root).unwrap()).unwrap();
+        let restored=workflow.task_state().unwrap().unwrap().active;
+        assert_eq!(restored.revision,revision);assert_eq!(restored.latest_correction.unwrap().text,correction);
+        let history=workflow.task_request(workflow.view().unwrap().project.unwrap(),Request::History{id:restored.id,revision:restored.revision,value:None}).unwrap();
+        assert!(history.as_str().unwrap().contains(correction));
+        let summary=workflow.native_recovery().unwrap();assert_eq!(summary[0].needs_review,!final_readback);assert_eq!(summary[0].uncertain,usize::from(scenario==2));assert_eq!(summary[0].not_dispatched,if final_readback{0}else{2});
+        if final_readback {
+            assert_eq!(workflow.view().unwrap().history.iter().find(|s|s.input.job_id()==id).unwrap().phase,Phase::Completed);
+        }else{
+        let mut next=input;next.job_id=Uuid::new_v4();
+        assert!(Workflow::propose_operation_locked(&mut workflow.state.lock().unwrap(),OperationInput::NativeTools(next),RunSource::Mcp).is_err());
+        }
+        drop(workflow);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        Uuid::parse_str(root.file_name().unwrap().to_str().unwrap().strip_prefix("hazlomexa-workflow-").unwrap()).unwrap();
+        // Only disposable teardown retries: closing the MCP is not native completion evidence.
+        let teardown=std::time::Instant::now();
+        loop {match std::fs::remove_dir_all(&root) {
+            Ok(())=>break,
+            Err(e) if matches!(e.raw_os_error(),Some(5|32|145)) && teardown.elapsed()<std::time::Duration::from_secs(5)=>std::thread::sleep(std::time::Duration::from_millis(25)),
+            Err(e)=>panic!("Owned fixture teardown failed: {e}"),
+        }}
+        }
+    }
+    #[test]
     fn incomplete_native_dispatch_blocks_new_mutations_after_restart(){
         use crate::{native_tools::{Input,Call,Guard},native_journal::Batch,host_tools::Program};
         let (root,workflow)=setup();workflow.task_state().unwrap();
@@ -2803,7 +2922,7 @@ mod tests {
         let task=workflow.task_state().unwrap().unwrap().active;
         let proposed=workflow.propose(dimensions()).unwrap();assert_eq!(proposed.snapshot.audit.as_ref().unwrap().task.as_ref().unwrap().id,task.id);
         let approval=proposed.approval_id.unwrap();
-        workflow.task_request(project.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve my edits".into(),history:"{\"version\":1,\"turns\":[]}".into()}).unwrap();
+        workflow.task_request(project.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve my edits".into(),history:"{\"version\":1,\"turns\":[]}".into(),correction_of:None}).unwrap();
         assert!(workflow.begin(approval).is_err());
         let (prompt,_)=workflow.task_prompt("codex","selected source or automatic error: NO_CONSENT_SENTINEL".into(),Some("Research public information".into()),None).unwrap();
         assert!(!prompt.contains("NO_CONSENT_SENTINEL"));
@@ -2814,7 +2933,7 @@ mod tests {
         let (prompt,isolated)=workflow.task_prompt("codex","native error contains private sentinel".into(),None,None).unwrap();
         assert!(isolated && !prompt.contains("private sentinel"));
         let (prompt,_)=workflow.task_prompt("codex","history contains private sentinel".into(),Some("Research public documents".into()),None).unwrap();
-        assert!(!prompt.contains("private sentinel") && prompt.contains("Research public documents"));
+        assert!(!prompt.contains("private sentinel") && prompt.contains("Research public documents") && prompt.contains("Preserve my edits"));
         assert!(workflow.task_prompt("claude","hello".into(),None,None).is_err());
         workflow.task_request(project,Request::New).unwrap();assert!(!workflow.task_allows_snapshot(&proposed.snapshot).unwrap());
         let host=Arc::new(crate::host_tools::HostTools::new(workflow.clone()));

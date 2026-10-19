@@ -18,7 +18,7 @@ use std::{
     process::Stdio,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc, Arc,
+        mpsc, Arc, Mutex, MutexGuard,
     },
     time::Duration,
 };
@@ -673,7 +673,8 @@ impl Connection {
                     match request {
                         Request::Close=>break,
                         Request::Catalog(cancel,reply)=>{let _=reply.send(mcp_catalog(&service,id,program,&cancel).await);},
-                        Request::Call(call,cancel,reply)=>{let result=mcp_call(&service,call,&cancel).await;let failed=result.is_err();let _=reply.send(result);if failed{break;}},
+                        // A cancelled wait must not kill a server holding unsaved native work.
+                        Request::Call(call,cancel,reply)=>{let result=mcp_call(&service,call,&cancel).await;let _=reply.send(result);},
                     }
                 }
                 let _=service.cancel().await;
@@ -736,7 +737,7 @@ impl Connection {
                 let help = if let Some(value) = cached.as_ref() {
                     value.clone()
                 } else {
-                    let value = self.cli_call(&["--help".into()], cancel)?;
+                    let value = self.cli_call(&["--help".into()], cancel, None)?;
                     *cached = Some(value.clone());
                     value
                 };
@@ -771,6 +772,15 @@ impl Connection {
         call: &Call,
         cancel: Arc<AtomicBool>,
     ) -> Result<Value, String> {
+        let catalog=self.read_catalog(expected,call,cancel.clone())?;
+        let readback = self.call_permitted(call, cancel, None)?;
+        let digest = crate::kicad_project::digest(
+            &serde_json::to_vec(&readback).map_err(|_| "Lectura no válida.")?,
+        );
+        Ok(json!({"connection_id":self.id,"program":self.program,"catalog_sha256":expected,"readback":readback,"readback_sha256":digest,
+            "scope":catalog.scope,"source_is_untrusted_data":true,"human_approval_granted":false,"geometry_independently_verified":false}))
+    }
+    fn read_catalog(&self,expected:&str,call:&Call,cancel:Arc<AtomicBool>)->Result<Catalog,String>{
         let catalog = self.catalog(cancel.clone())?;
         if catalog.catalog_sha256 != expected {
             return Err("El catálogo cambió. Descubre de nuevo sus herramientas.".into());
@@ -791,16 +801,9 @@ impl Connection {
         {
             return Err("Esta herramienta no declara una consulta local de solo lectura. Prepárala para revisión con propose_native_tool_calls.".into());
         }
-        let readback = self.call(call, cancel)?;
-        let digest = crate::kicad_project::digest(
-            &serde_json::to_vec(&readback).map_err(|_| "Lectura nativa no válida.")?,
-        );
-        Ok(
-            json!({"connection_id":self.id,"program":self.program,"catalog_sha256":expected,"readback":readback,"readback_sha256":digest,
-            "scope":catalog.scope,"source_is_untrusted_data":true,"human_approval_granted":false,"geometry_independently_verified":false}),
-        )
+        Ok(catalog)
     }
-    fn cli_call(&self, args: &[String], cancel: Arc<AtomicBool>) -> Result<Value, String> {
+    fn cli_call(&self, args: &[String], cancel: Arc<AtomicBool>, permit:Option<MutexGuard<'_,()>>) -> Result<Value, String> {
         let Backend::Cli {
             executable,
             sha256,
@@ -838,22 +841,24 @@ impl Connection {
                 .map_err(|_| "Falta el helper de consola del paquete actual de Hazlo.")?;
             let mut arguments = vec!["--native-console".into(), executable.as_os_str().to_owned()];
             arguments.extend(args.iter().map(OsString::from));
-            crate::process::run_owned_console(
+            crate::process::run_owned_permitted(
                 &helper,
                 &arguments,
                 cwd,
                 env,
                 cancel.clone(),
                 Duration::from_secs(60),
+                (true,permit),
             )
         } else {
-            crate::process::run_owned(
+            crate::process::run_owned_permitted(
                 executable,
                 &args.iter().map(OsString::from).collect::<Vec<_>>(),
                 cwd,
                 env,
                 cancel.clone(),
                 Duration::from_secs(60),
+                (false,permit),
             )
         }
         .map_err(|_| "No se pudo ejecutar el programa nativo.")?;
@@ -862,7 +867,7 @@ impl Connection {
         }
         if help && output.stdout.is_empty() && output.stderr.is_empty() && !use_console {
             console.store(true, Ordering::SeqCst);
-            return self.cli_call(args, cancel);
+            return self.cli_call(args, cancel, None);
         }
         let help_exit = help
             && output.exit_code == Some(1)
@@ -900,7 +905,11 @@ impl Connection {
         }
         Ok(result)
     }
+    #[cfg(test)]
     fn call(&self, call: &Call, cancel: Arc<AtomicBool>) -> Result<Value, String> {
+        self.call_permitted(call,cancel,None)
+    }
+    fn call_permitted(&self, call:&Call,cancel:Arc<AtomicBool>,permit:Option<MutexGuard<'_,()>>)->Result<Value,String>{
         if !self.active.load(Ordering::SeqCst) {
             return Err(
                 "La conexión nativa terminó. Relee el programa tras conectarlo de nuevo.".into(),
@@ -913,6 +922,7 @@ impl Connection {
                 sender
                     .send(Request::Call(call.clone(), cancel, reply))
                     .map_err(|_| "El MCP se cerró. Relee el programa.")?;
+                drop(permit);
                 let value = result
                     .recv_timeout(Duration::from_secs(65))
                     .map_err(|_| UNCERTAIN.to_string())?
@@ -923,7 +933,7 @@ impl Connection {
                 Ok(value)
             }
             Backend::Cli { .. } => {
-                if self.program == Program::Serial { return self.cli_call(&crate::serial_diagnostics::arguments(call)?,cancel); }
+                if self.program == Program::Serial { return self.cli_call(&crate::serial_diagnostics::arguments(call)?,cancel,permit); }
                 if call.tool != "cli" || call.arguments.len() != 1 {
                     return Err("Usa el esquema CLI descubierto.".into());
                 }
@@ -942,7 +952,7 @@ impl Connection {
                 }) {
                     return Err("No se permite controlar dispositivos.".into());
                 }
-                self.cli_call(&args, cancel)
+                self.cli_call(&args, cancel,permit)
             }
         }
     }
@@ -985,6 +995,9 @@ pub fn run(
     directory: &Path,
     cancel: Arc<AtomicBool>,
 ) -> Result<(), String> {
+    run_gated(input,connection,directory,cancel,&Mutex::new(()),&AtomicBool::new(false))
+}
+pub(crate) fn run_gated(input:&Input,connection:&Connection,directory:&Path,cancel:Arc<AtomicBool>,gate:&Mutex<()>,paused:&AtomicBool)->Result<(),String>{
     input.validate()?;
     if connection.id != input.connection_id || connection.program != input.program {
         return Err("La conexión nativa cambió. Prepara otra propuesta.".into());
@@ -999,9 +1012,10 @@ pub fn run(
     let mut journal=crate::native_journal::Batch::start(directory,input)?;
     let offset=usize::from(input.guard.is_some());
     if let Some(guard) = &input.guard {
-        if cancel.load(Ordering::SeqCst){return Err(UNCERTAIN.into());}
+        if !guard.checks.is_empty(){connection.read_catalog(&input.catalog_sha256,&guard.call,cancel.clone())?;}
+        let permit=dispatch_permit(gate,&cancel,paused)?;
         journal.dispatch(0)?;
-        let result=if guard.checks.is_empty(){connection.call(&guard.call,cancel.clone())}else{connection.read(&input.catalog_sha256,&guard.call,cancel.clone()).map(|v|v["readback"].clone())};
+        let result=connection.call_permitted(&guard.call,cancel.clone(),Some(permit));
         journal.observe(0,&result)?;
         let observed = result.map_err(|_|"La comprobación previa falló; su respuesta queda local. No se enviaron las ediciones del lote.")?;
         if !guard.checks.is_empty() && !crate::native_checks::identities(&guard.checks,&observed){return Err("La identidad nativa no coincide con la aprobada. No se enviaron las ediciones.".into());}
@@ -1016,17 +1030,16 @@ pub fn run(
     }
     let mut results = Vec::new();
     for (index,call) in input.calls.iter().enumerate() {
-        if cancel.load(Ordering::SeqCst) {
-            return Err(UNCERTAIN.into());
-        }
+        let permit=dispatch_permit(gate,&cancel,paused)?;
         journal.dispatch(offset+index)?;
-        let result=connection.call(call,cancel.clone());
+        let result=connection.call_permitted(call,cancel.clone(),Some(permit));
         journal.observe(offset+index,&result)?;
         results.push(result.map_err(|_|"Una llamada nativa falló o tiene efectos inciertos. Su respuesta queda local; conserva los pasos confirmados y revisa el programa antes de continuar.")?);
     }
-    if cancel.load(Ordering::SeqCst){return Err(UNCERTAIN.into());}
+    if input.guard.as_ref().is_some_and(|g|!g.checks.is_empty()){connection.read_catalog(&input.catalog_sha256,&input.readback,cancel.clone())?;}
+    let permit=dispatch_permit(gate,&cancel,paused)?;
     journal.dispatch(offset+input.calls.len())?;
-    let result=if input.guard.as_ref().is_some_and(|g|!g.checks.is_empty()){connection.read(&input.catalog_sha256,&input.readback,cancel.clone()).map(|v|v["readback"].clone())}else{connection.call(&input.readback,cancel.clone())};
+    let result=connection.call_permitted(&input.readback,cancel.clone(),Some(permit));
     journal.observe(offset+input.calls.len(),&result)?;
     let readback = result.map_err(|_|"La lectura final falló o quedó incierta. Las respuestas anteriores quedan locales; no repitas las ediciones.")?;
     if let Some(guard)=input.guard.as_ref().filter(|g|!g.checks.is_empty()) {
@@ -1059,6 +1072,11 @@ pub fn run(
         .and_then(|_| file.sync_all())
         .map_err(|_| "No se pudo conservar el informe nativo.")?;
     journal.complete()
+}
+fn dispatch_permit<'a>(gate:&'a Mutex<()>,cancel:&AtomicBool,paused:&AtomicBool)->Result<MutexGuard<'a,()>,String>{
+    let permit=gate.lock().map_err(|_|"No se pudo comprobar la pausa del lote; no se enviaron más llamadas.")?;
+    if cancel.load(Ordering::SeqCst) || paused.load(Ordering::SeqCst){return Err(UNCERTAIN.into());}
+    Ok(permit)
 }
 pub fn validate_artifacts(directory: &Path, input: &Input) -> Result<(), String> {
     crate::native_journal::validate_observations(directory,input)?;
@@ -1747,6 +1765,8 @@ mod tests {
             .call(&call("wait_after_effect", json!({"value":9})), cancel)
             .is_err());
         assert!(started.elapsed() < Duration::from_secs(3));
+        assert!(connection.catalog(Arc::new(AtomicBool::new(false))).is_ok());
+        assert_eq!(connection.call(&call("observe_native_state",json!({})),Arc::new(AtomicBool::new(false))).unwrap()["structuredContent"]["native_value"],9);
         for program in [
             Program::Drawing,
             Program::Arduino,
