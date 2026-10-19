@@ -119,6 +119,8 @@ pub struct Input {
     pub receipt_sha256: Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub agreement:Option<crate::native_tools::Agreement>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub native_completion_version:Option<u32>,
 }
 impl Input {
     fn native(&self, value: f64) -> f64 {
@@ -132,6 +134,7 @@ impl Input {
         if let Some(agreement)=&self.agreement{agreement.validate()?;}
         self.before.validate()?;
         if self.schema_version != 1
+            || self.native_completion_version.is_some_and(|version|version!=1)
             || self.live_drawing_version != 1
             || self.job_id.is_nil()
             || self.description.trim().is_empty()
@@ -643,6 +646,7 @@ fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel
     let (command, params) = input.command();
     let methods=session.call("control.methods",json!({}),&cancel)?;
     let recorded=methods.as_array().ok_or(INVALID)?.iter().any(|method|method["method"]=="engine.execute_recorded");
+    if dispatch.is_some() && !recorded{return Err("Este runtime CADCraft no conserva la finalización nativa requerida. Conecta el runtime probado con engine.execute_recorded; no se envió la edición.".into());}
     if recorded {
         if matches!(input.operation,Operation::ExportDxf{}){
             let executable=session.runtime_directory.join("cadcraft-cli.exe");let _pin=pin_runtime(&executable,VERIFIER_SHA256,&cancel)?;
@@ -657,6 +661,7 @@ fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel
             session.failed=true;let _=session.stream.shutdown(std::net::Shutdown::Both);
             return Err("CADCraft confirmó que no inició la edición porque su precondición cambió. Conserva el trabajo y relee el dibujo antes de preparar otra propuesta.".into());
         }
+        if let Some(dispatch)=dispatch{dispatch.retain_drawing_completion(input,&proof)?;}
         return finish_completion(input,&proof,stage,Some(&session.runtime_directory),profile,cancel);
     }
     let result = session.call_with_dispatch(
@@ -712,6 +717,22 @@ fn read_completion(input:&Input,directory:&Path)->Result<Value,String>{
     Ok(proof)
 }
 pub(crate) fn refusal_proof(input:&Input,directory:&Path)->Result<bool,String>{Ok(read_completion(input,directory)?["outcome"]=="not_dispatched")}
+pub(crate) fn confirmed_completion(directory:&Path,input:&Input,hash:&str)->Result<Receipt,String>{
+    if !crate::kicad_project::valid_hash(hash){return Err(INVALID.into());}
+    let _pin=crate::kicad_project::open_regular(&directory.join("drawing-completion.json"),FRAME_LIMIT as u64)?;
+    if crate::kicad_project::digest(&crate::kicad_project::read_regular(&directory.join("drawing-completion.json"),FRAME_LIMIT as u64)?)!=hash{return Err("El recibo original CADCraft cambió; se conserva la pausa sin repetir la edición.".into());}
+    let proof=read_completion(input,directory)?;if proof["outcome"]!="completed"{return Err("El recibo CADCraft no confirma una operación completada.".into());}
+    let(_,after)=observation_from_native(&proof["after"],input.before.instance_id)?;
+    let exported_document=if matches!(input.operation,Operation::ExportDxf{}){let bytes=decode_export(&proof["command_result"])?;Some(crate::kicad_project::CapturedFile{path:"Drawing.dxf".into(),bytes:bytes.len() as u64,sha256:crate::kicad_project::digest(&bytes)})}else{None};
+    let report=Receipt{native_drawing_version:1,job_id:input.job_id,before_sha256:input.before.binding_sha256.clone(),after,saved:false,native_undo_available:exported_document.is_none(),exported_document};validate_report(input,&report)?;Ok(report)
+}
+pub(crate) fn recover_recorded_result(directory:&Path,input:&Input)->Result<bool,String>{
+    let Some(record)=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveDrawing(input.clone()))? else{return Ok(false);};let Some(hash)=&record.drawing_completion_sha256 else{return Ok(false);};
+    // An unfinished export still needs its separate native reopen, never a startup process launch.
+    if matches!(input.operation,Operation::ExportDxf{}) && record.outcome!=crate::native_journal::Outcome::Acknowledged{return Ok(false);}
+    let report=confirmed_completion(directory,input,hash)?;validate_artifacts(directory,input,&report)?;let bytes=serde_json::to_vec_pretty(&report).map_err(|_|INVALID)?;let path=directory.join("result.json");
+    if path.try_exists().map_err(|_|INVALID)?{if crate::kicad_project::read_regular(&path,65536)?!=bytes{return Err("El informe CADCraft cambió; se conserva sin reemplazarlo.".into());}}else{crate::project::atomic_json(&path,&report,false).map_err(|_|"El recibo sigue local; no se pudo recuperar su informe. No repitas la edición.")?;}Ok(true)
+}
 fn finish_completion(input:&Input,proof:&Value,directory:&Path,runtime:Option<&Path>,profile:&Path,cancel:Arc<AtomicBool>)->Result<(),String>{
     let (_,after)=observation_from_native(&proof["after"],input.before.instance_id)?;
     let exported_document=if matches!(input.operation,Operation::ExportDxf{}){Some(export_dxf(&proof["command_result"],&input.before,runtime.ok_or("Falta el verificador CADCraft seleccionado; el recibo sigue local y no se repitió la exportación.")?,directory,profile,cancel)?)}else{None};
@@ -727,6 +748,8 @@ fn finish_completion(input:&Input,proof:&Value,directory:&Path,runtime:Option<&P
 pub(crate) fn recover_result(input:&Input,directory:&Path,profile:&Path,cancel:Arc<AtomicBool>)->Result<bool,String>{
     input.validate()?;stop(&cancel)?;
     let _pins=crate::project::pin_lineage(directory).map_err(|_|INVALID)?;
+    if recover_recorded_result(directory,input)?{return Ok(true);}
+    let record=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveDrawing(input.clone()))?;if input.native_completion_version==Some(1) && record.is_none() || record.as_ref().is_some_and(|record|record.drawing_completion_required && record.drawing_completion_sha256.is_none()){return Err("Falta el vínculo del resultado nativo original. Conserva el trabajo y revisa su evidencia; no repitas la operación ni adoptes un recibo sin confirmar.".into());}
     let proof=read_completion(input,directory)?;
     if proof["outcome"]!="completed"{return Err("CADCraft no inició esta edición; no existe un resultado completado que publicar.".into());}
     let runtime=if matches!(input.operation,Operation::ExportDxf{}){
@@ -891,6 +914,21 @@ fn export_dxf(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    pub(crate) fn completed_fixture()->(Input,Value,Receipt){
+        let(mut input,mut proof)=recorded_fixture();input.native_completion_version=Some(1);proof["input_sha256"]=json!(completion_identity(&input).unwrap());let mut report=receipt(&input);report.after=observation_from_native(&proof["after"],input.before.instance_id).unwrap().1;validate_report(&input,&report).unwrap();(input,proof,report)
+    }
+    #[test]
+    fn production_dispatch_retains_a_completion_before_report_failure_and_refuses_unrecorded_writes(){
+        use std::{fs,io::{BufRead,BufReader},sync::atomic::AtomicUsize};
+        for supported in [true,false]{
+            let root=std::env::temp_dir().join(format!("hazlo-drawing-transport-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let(input,proof,_)=completed_fixture();let listener=std::net::TcpListener::bind((Ipv4Addr::LOCALHOST,0)).unwrap();let client=TcpStream::connect(listener.local_addr().unwrap()).unwrap();let(mut server,_)=listener.accept().unwrap();let process=server_process(&client,&std::env::current_exe().unwrap()).unwrap();client.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
+            let connection=Connection(Arc::new(Mutex::new(Session{stream:client,process,runtime_directory:root.clone(),_files:Vec::new(),instance:input.before.instance_id,next:0,failed:false,binding:Some((json!({"token":"1"}),input.before.clone()))})));let count=Arc::new(AtomicUsize::new(0));let calls=count.clone();let directory=root.clone();let native=proof.clone();
+            let server=std::thread::spawn(move||{let mut reader=BufReader::new(server.try_clone().unwrap());for id in 1..=if supported{2}else{1}{let mut line=String::new();reader.read_line(&mut line).unwrap();assert!(line.len()<16384);let request:Value=serde_json::from_str(&line).unwrap();assert_eq!(request["id"],id);let result=if id==1{assert_eq!(request["method"],"control.methods");if supported{json!([{"method":"engine.execute_recorded"}])}else{json!([])}}else{assert_eq!(request["method"],"engine.execute_recorded");assert_eq!(request["params"]["command"],"move");assert_eq!(request["params"]["input_sha256"],native["input_sha256"]);assert_eq!(request["params"]["receipt_path"],json!(directory.join("drawing-completion.json")));calls.fetch_add(1,Ordering::SeqCst);fs::write(directory.join("drawing-completion.json"),serde_json::to_vec(&native).unwrap()).unwrap();native.clone()};let mut reply=serde_json::to_vec(&json!({"id":id,"ok":true,"result":result})).unwrap();reply.push(b'\n');server.write_all(&reply).unwrap();}});
+            let operation=crate::project::OperationInput::LiveDrawing(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();fs::write(root.join("result.json"),b"preserve occupied report").unwrap();assert!(run_gated(&input,&connection,&root,&root.join("no-verifier-needed"),Arc::new(AtomicBool::new(false)),&fence).is_err());server.join().unwrap();assert_eq!(count.load(Ordering::SeqCst),usize::from(supported));assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert_eq!(record.summary(&operation).acknowledged,usize::from(supported));assert_eq!(record.summary(&operation).uncertain,0);assert!(!root.join("no-verifier-needed").exists());
+            if supported{assert!(fence.enter().is_err());fs::rename(root.join("result.json"),root.join("preserved.native")).unwrap();assert!(recover_result(&input,&root,&root.join("still-no-verifier"),Arc::new(AtomicBool::new(false))).unwrap());assert_eq!(fs::read(root.join("preserved.native")).unwrap(),b"preserve occupied report");assert_eq!(count.load(Ordering::SeqCst),1);}
+            drop(fence);drop(connection);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
     #[test]
     #[ignore = "Requires explicitly selected owned CLI export fixtures and the maintained native verifier"]
     fn verifies_real_native_exports_with_the_owned_process_runner() {
@@ -948,7 +986,7 @@ pub(crate) mod tests {
             );
             let mut after = before.clone();
             after.binding_sha256 = "b".repeat(64);
-            let input = Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
+            let input = Input {native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
                 schema_version: 1,
                 live_drawing_version: 1,
                 job_id: Uuid::new_v4(),
@@ -975,7 +1013,7 @@ pub(crate) mod tests {
         }
     }
     pub(crate) fn fixture_input() -> Input {
-        Input {agreement:Some(crate::native_tools::tests::agreement_fixture()),
+        Input {native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_drawing_version: 1,
             job_id: Uuid::new_v4(),
@@ -1240,6 +1278,7 @@ pub(crate) mod tests {
 
     #[test]
     fn native_journal_round_trip_uses_its_own_mcp_schema() {
+        let mut future=fixture_input();assert!(serde_json::to_value(&future).unwrap().get("native_completion_version").is_none());future.native_completion_version=Some(2);assert!(future.validate().is_err());future.native_completion_version=Some(1);future.validate().unwrap();
         use crate::project::{OperationInput, Phase, Project, RunSource};
         let root =
             std::env::temp_dir().join(format!("hazlomexa-drawing-journal-{}", Uuid::new_v4()));

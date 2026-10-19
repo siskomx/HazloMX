@@ -922,6 +922,7 @@ impl Project {
             return crate::native_tools::validate_artifacts(directory,input).map_err(io::Error::other);
         }
         if let OperationInput::LiveDrawing(input) = input {
+            let record=crate::live_dispatch::read(directory,&OperationInput::LiveDrawing(input.clone())).map_err(io::Error::other)?;if input.native_completion_version==Some(1) && record.is_none() || record.as_ref().is_some_and(|record|record.drawing_completion_required && record.drawing_completion_sha256.is_none()){return Err(error("Falta el vínculo original de finalización CADCraft; el trabajo sigue pendiente."));}
             let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),65536).map_err(io::Error::other)?;
             if input.receipt_sha256.as_deref()!=Some(&crate::kicad_project::digest(&bytes)) {
                 return Err(error("El informe de CADCraft cambió."));
@@ -1082,6 +1083,12 @@ impl Project {
                     let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;if self.validate_outputs(&directory,&checked).is_ok(){crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}}
                 }}
             }
+            if let OperationInput::LiveDrawing(input)=&snapshot.input{
+                    let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
+                    if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if matches!(crate::cadcraft_live::recover_recorded_result(&directory,input),Ok(true)){
+                        let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;self.validate_outputs(&directory,&checked)?;crate::live_dispatch::recover_checked(&directory,&checked).map_err(io::Error::other)?;if snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}
+                    }}
+            }
             if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) && snapshot.input.receipt_sha256().is_none() {
                 let stage=self.store("staging").join(snapshot.input.job_id().to_string());
                 let directory=if stage.try_exists()?{stage}else{published.clone()};
@@ -1159,13 +1166,15 @@ pub(crate) mod tests {
     fn all_live_receipts_recover_without_native_calls_and_reject_tampering() {
         let agent=crate::agent_editor::tests::job_fixture();
         let pcb=crate::kicad_live::tests::move_fixture();
-        let drawing=crate::cadcraft_live::tests::fixture_input();
+        let (mut drawing,mut drawing_proof,drawing_report)=crate::cadcraft_live::tests::completed_fixture();
+        // This cross-adapter migration fixture includes older inputs without dispatch requirements.
+        drawing.native_completion_version=None;drawing_proof["input_sha256"]=serde_json::json!(crate::kicad_project::digest(&serde_json::to_vec(&drawing).unwrap()));
         let cad=crate::cadpilot_live::Input {working_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),schema_version:1,live_cad_version:1,job_id:Uuid::new_v4(),document_name:"Owned".into(),document_token:Uuid::new_v4(),state_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),operations:vec![serde_json::json!({"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}})],before:serde_json::json!([]),receipt_sha256:None};
         let cad_report=serde_json::json!({"live_cad_version":1,"job_id":cad.job_id,"document_token":cad.document_token,"before_sha256":cad.state_sha256,"after":{"document_name":cad.document_name,"state_sha256":"b".repeat(64),"objects":[]},"operations":[{"action":"edit_object","success":true}],"undo_available":true});
         let cases=vec![
             (OperationInput::LiveAgent(agent.clone()),crate::agent_editor::tests::report_fixture(&agent)),
             (OperationInput::LivePcb(pcb.clone()),serde_json::to_value(crate::kicad_live::tests::receipt_fixture(&pcb)).unwrap()),
-            (OperationInput::LiveDrawing(drawing.clone()),serde_json::to_value(crate::cadcraft_live::tests::receipt(&drawing)).unwrap()),
+            (OperationInput::LiveDrawing(drawing.clone()),serde_json::to_value(drawing_report).unwrap()),
             (OperationInput::LiveCad(cad),cad_report),
         ];
         for (input,report) in cases {for mode in ["valid","occupied","tampered","published_without_final_snapshot"] {
@@ -1173,13 +1182,13 @@ pub(crate) mod tests {
             let project=Project::create(&root).unwrap();let id=input.job_id();
             let mut snapshot=project.snapshot(input.clone(),Phase::Running).unwrap();
             let audit=snapshot.audit.as_mut().unwrap();audit.source=RunSource::Mcp;audit.native_attempted=Some(true);
-            let stage=project.reserve_stage(id).unwrap();let bytes=serde_json::to_vec_pretty(&report).unwrap();
+            let stage=project.reserve_stage(id).unwrap();let bytes=if matches!(input,OperationInput::LiveDrawing(_)){serde_json::to_vec_pretty(&serde_json::from_value::<crate::cadcraft_live::Receipt>(report.clone()).unwrap()).unwrap()}else{serde_json::to_vec_pretty(&report).unwrap()};
             fs::write(stage.path.join("result.json"),&bytes).unwrap();
             snapshot.input.retain_receipt(&stage.path).unwrap();project.save(&snapshot).unwrap();
             project.validate_outputs(&stage.path,&snapshot.input).unwrap();
             let original=root.join("manual-work.native");fs::write(&original,b"keep user edits").unwrap();
             if mode=="published_without_final_snapshot"{
-                let fence=crate::live_dispatch::Dispatch::start(&stage.path,&input,std::sync::Arc::new(std::sync::Mutex::new(())),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());fence.complete(&snapshot.input).unwrap();drop(fence);
+                let fence=crate::live_dispatch::Dispatch::start(&stage.path,&input,std::sync::Arc::new(std::sync::Mutex::new(())),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());if let OperationInput::LiveDrawing(drawing)=&input{fs::write(stage.path.join("drawing-completion.json"),serde_json::to_vec(&drawing_proof).unwrap()).unwrap();fence.retain_drawing_completion(drawing,&drawing_proof).unwrap();}fence.complete(&snapshot.input).unwrap();drop(fence);
                 let destination=project.publish(stage,&snapshot).unwrap();snapshot.input=input.clone();snapshot.phase=Phase::Interrupted;snapshot.audit.as_mut().unwrap().files_verified=false;project.save(&snapshot).unwrap();drop(project);
                 let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,Phase::Completed);assert!(recovered[0].audit.as_ref().unwrap().files_verified);assert_eq!(recovered[0].input.receipt_sha256(),Some(crate::kicad_project::digest(&bytes).as_str()));assert_eq!(fs::read(destination.join("result.json")).unwrap(),bytes);assert_eq!(fs::read(&original).unwrap(),b"keep user edits");assert!(!project.native_recovery(None).unwrap()[0].needs_review);drop(project);fs::remove_dir_all(root).unwrap();continue;
             }
@@ -1219,6 +1228,24 @@ pub(crate) mod tests {
             if matches!(scenario,"changed_copy"|"changed_proof"){assert!(project.recover().is_err());assert!(path.join("native-completion.json").is_file());}
             else{let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,if scenario=="checked"{Phase::Completed}else{Phase::Interrupted});if scenario=="checked"{assert!(recovered[0].audit.as_ref().unwrap().files_verified);assert_eq!(fs::read(project.artifact_directory(id).join("NativeVersion/verification.json")).unwrap(),proof);}else{assert!(path.join("result.json").is_file());let summary=project.native_recovery(None).unwrap();assert_eq!(summary[0].acknowledged,1);assert_eq!(summary[0].uncertain,0);assert_eq!(summary[0].needs_review,scenario=="unbound");}}
             assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"preserve later manual work");drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn drawing_completion_recovers_offline_without_overwriting_later_work(){
+        use std::sync::{Arc,Mutex,atomic::AtomicBool};
+        for scenario in ["missing_report","occupied","changed_report","unbound","changed_proof","missing_record"]{
+            let root=root();let project=Project::create(&root).unwrap();let(input,proof,native_report)=crate::cadcraft_live::tests::completed_fixture();let id=input.job_id;let operation=OperationInput::LiveDrawing(input.clone());let mut snapshot=project.snapshot(operation.clone(),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();let stage=project.reserve_stage(id).unwrap();let path=stage.path.clone();let bytes=serde_json::to_vec(&proof).unwrap();fs::write(path.join("drawing-completion.json"),&bytes).unwrap();let fence=crate::live_dispatch::Dispatch::start(&path,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());if scenario!="unbound"{fence.retain_drawing_completion(&input,&proof).unwrap();}drop(fence);drop(stage);
+            fs::write(root.join("manual.native"),b"preserve later drawing work").unwrap();if scenario=="missing_record"{fs::write(path.join("result.json"),serde_json::to_vec_pretty(&native_report).unwrap()).unwrap();fs::remove_file(path.join("live-dispatch.json")).unwrap();let mut checked=operation.clone();checked.retain_receipt(&path).unwrap();assert!(project.validate_outputs(&path,&checked).is_err());}
+            if scenario=="occupied"{fs::create_dir(project.artifact_directory(id)).unwrap();fs::write(project.artifact_directory(id).join("manual.native"),b"preserve occupied destination").unwrap();}
+            if scenario=="changed_report"{fs::write(path.join("result.json"),b"preserve changed report").unwrap();}
+            if scenario=="changed_proof"{fs::write(path.join("drawing-completion.json"),b"preserve changed proof").unwrap();assert!(project.recover().is_err());}else{
+                let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,if scenario=="missing_report"{Phase::Completed}else{Phase::Interrupted});let summary=project.native_recovery(None).unwrap();assert_eq!(summary[0].uncertain,usize::from(matches!(scenario,"unbound"|"missing_record")));assert_eq!(summary[0].acknowledged,usize::from(!matches!(scenario,"unbound"|"missing_record")));
+                if scenario=="missing_report"{let published=project.artifact_directory(id);assert_eq!(fs::read(published.join("drawing-completion.json")).unwrap(),bytes);let report=fs::read(published.join("result.json")).unwrap();fs::remove_file(published.join("result.json")).unwrap();assert_eq!(project.recover().unwrap()[0].phase,Phase::Completed);assert_eq!(fs::read(published.join("result.json")).unwrap(),report);}
+                if scenario=="occupied"{assert_eq!(fs::read(project.artifact_directory(id).join("manual.native")).unwrap(),b"preserve occupied destination");assert!(path.join("result.json").exists());}
+                if scenario=="changed_report"{assert_eq!(fs::read(path.join("result.json")).unwrap(),b"preserve changed report");assert!(summary[0].needs_review);}
+                if scenario=="unbound"{assert!(!path.join("result.json").exists());assert!(summary[0].needs_review);}
+            }
+            assert_eq!(fs::read(root.join("manual.native")).unwrap(),b"preserve later drawing work");drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
         }
     }
     #[test]

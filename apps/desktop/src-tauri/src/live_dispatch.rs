@@ -28,6 +28,10 @@ pub(crate) struct Record {
     pub native_completion_sha256:Option<String>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub working_version_sha256:Option<String>,
+    #[serde(default,skip_serializing_if="std::ops::Not::not")]
+    pub drawing_completion_required:bool,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub drawing_completion_sha256:Option<String>,
 }
 fn digest(input: &OperationInput) -> Result<String, String> {
     if !matches!(
@@ -52,7 +56,7 @@ impl Record {
     pub fn summary(&self, input: &OperationInput) -> Summary {
         let finished = self.outcome == Outcome::Acknowledged;
         let refused=self.refusal_sha256.is_some();
-        let observed=self.native_completion_sha256.is_some();
+        let observed=self.native_completion_sha256.is_some() || self.drawing_completion_sha256.is_some();
         Summary {
             job_id: self.job_id,
             program: input.native_program(),
@@ -90,6 +94,15 @@ pub(crate) fn read(directory: &Path, input: &OperationInput) -> Result<Option<Re
         return Err("El registro no coincide con la operación aprobada. No se repetirá.".into());
     }
     let mut retained_result=None;
+    if matches!(input,OperationInput::LiveDrawing(drawing) if drawing.native_completion_version==Some(1)) && !record.drawing_completion_required{return Err("La operación exige finalización nativa; no se puede degradar su registro.".into());}
+    if record.drawing_completion_required && (!matches!(input,OperationInput::LiveDrawing(_)) || record.outcome==Outcome::Acknowledged && record.drawing_completion_sha256.is_none()){return Err("Falta el vínculo original de finalización CADCraft; se conserva la pausa.".into());}
+    if let Some(hash)=&record.drawing_completion_sha256{
+        let OperationInput::LiveDrawing(drawing)=input else{return Err("Recibo CADCraft incompatible.".into());};
+        if matches!(record.outcome,Outcome::Pending) || record.refusal_sha256.is_some(){return Err("El recibo CADCraft no pertenece a una llamada admitida.".into());}
+        let report=crate::cadcraft_live::confirmed_completion(directory,drawing,hash)?;
+        let expected=crate::kicad_project::digest(&serde_json::to_vec_pretty(&report).map_err(|_|"Recibo CADCraft no válido.")?);
+        if record.receipt_sha256.as_ref().is_some_and(|hash|hash!=&expected) || input.receipt_sha256().is_some_and(|hash|hash!=expected){return Err("El informe CADCraft no coincide con el resultado nativo original.".into());}retained_result=Some(expected);
+    }
     if let Some(hash)=&record.native_completion_sha256{
         let OperationInput::LiveCad(cad)=input else{return Err("Recibo nativo incompatible; se conserva la pausa.".into());};
         if !crate::kicad_project::valid_hash(hash) || matches!(record.outcome,Outcome::Pending) || record.refusal_sha256.is_some(){return Err("El recibo nativo cambió; se conserva la pausa sin repetir la edición.".into());}
@@ -137,6 +150,7 @@ pub(crate) fn recover_refused(directory:&Path,input:&OperationInput)->Result<(),
 }
 pub(crate) fn recover_checked(directory:&Path,checked:&OperationInput)->Result<(),String>{
     let mut record=read(directory,checked)?.ok_or("Falta el registro de la llamada; no se adoptó el resultado.")?;
+    if record.drawing_completion_required && record.drawing_completion_sha256.is_none(){return Err("Falta el vínculo original CADCraft; no se adoptó otro resultado.".into());}
     if record.refusal_sha256.is_some(){return Err("La edición no inició; no se adoptó otro resultado como completado.".into());}
     let hash=checked.receipt_sha256().ok_or("Falta el recibo del resultado comprobado.")?;
     if record.outcome==Outcome::Acknowledged{return Ok(());}
@@ -168,6 +182,8 @@ impl Dispatch {
             refusal_sha256:None,
             native_completion_sha256:None,
             working_version_sha256:None,
+            drawing_completion_required:matches!(input,OperationInput::LiveDrawing(_)),
+            drawing_completion_sha256:None,
         };
         let path = directory.join("live-dispatch.json");
         atomic_json(&path,&record,false).map_err(|_|"La operación ya tiene un registro o no se pudo reservar. No se enviaron nuevas llamadas.")?;
@@ -206,7 +222,17 @@ impl Dispatch {
     pub(crate) fn retain_working_version(&self,input:&crate::cadpilot_live::Input,hash:&str)->Result<(),String>{
         let mut record=self.record.lock().map_err(|_|"No se pudo vincular la comprobación de copia.")?;record.working_version_sha256=Some(retain_working_version(self.path.parent().ok_or("Falta el registro nativo.")?,input,hash)?);Ok(())
     }
+    pub(crate) fn retain_drawing_completion(&self,input:&crate::cadcraft_live::Input,result:&serde_json::Value)->Result<(),String>{
+        let mut current=self.record.lock().map_err(|_|"No se pudo conservar el resultado CADCraft.")?;let directory=self.path.parent().ok_or("Falta el registro nativo.")?;let operation=OperationInput::LiveDrawing(input.clone());let mut saved=read(directory,&operation)?.ok_or("Falta el envío original CADCraft.")?;
+        if !matches!(saved.outcome,Outcome::Dispatched|Outcome::Uncertain) || saved.refusal_sha256.is_some(){return Err("La llamada CADCraft no fue admitida para otro resultado.".into());}
+        let bytes=crate::kicad_project::read_regular(&directory.join("drawing-completion.json"),256*1024)?;let hash=crate::kicad_project::digest(&bytes);let native:serde_json::Value=serde_json::from_slice(&bytes).map_err(|_|"Recibo CADCraft no válido.")?;
+        if &native!=result || saved.drawing_completion_sha256.as_ref().is_some_and(|old|old!=&hash){return Err("El resultado CADCraft cambió; se conserva sin reemplazarlo.".into());}
+        crate::cadcraft_live::confirmed_completion(directory,input,&hash)?;
+        if saved.drawing_completion_sha256.is_none(){saved.drawing_completion_sha256=Some(hash.clone());atomic_json(&self.path,&saved,true).map_err(|_|"El resultado CADCraft sigue local, pero no se confirmó su vínculo. No repitas la edición.")?;}
+        current.drawing_completion_sha256=Some(hash);Ok(())
+    }
     pub fn complete(&self, checked: &OperationInput) -> Result<(), String> {
+        if read(self.path.parent().ok_or("Falta el registro nativo.")?,checked)?.is_some_and(|record|record.drawing_completion_required && record.drawing_completion_sha256.is_none()){return Err("Falta el vínculo original CADCraft; se conserva la pausa.".into());}
         if read(self.path.parent().ok_or("Falta el registro nativo.")?,checked)?.is_some_and(|record|record.refusal_sha256.is_some()){return Err("La edición no inició; no se marcará como completada.".into());}
         let mut record = self
             .record
@@ -227,6 +253,16 @@ impl Dispatch {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn drawing_completion_is_input_bound_and_survives_a_locked_anchor_without_replay(){
+        use std::{fs,os::windows::fs::OpenOptionsExt};
+        let root=std::env::temp_dir().join(format!("hazlo-drawing-anchor-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let(input,proof,_)=crate::cadcraft_live::tests::completed_fixture();let original=OperationInput::LiveDrawing(input.clone());let fence=Dispatch::start(&root,&original,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();let bytes=serde_json::to_vec(&proof).unwrap();fs::write(root.join("drawing-completion.json"),&bytes).unwrap();
+        let original_record=fs::read(root.join("live-dispatch.json")).unwrap();let mut downgraded:serde_json::Value=serde_json::from_slice(&original_record).unwrap();downgraded.as_object_mut().unwrap().remove("drawing_completion_required");fs::write(root.join("live-dispatch.json"),serde_json::to_vec(&downgraded).unwrap()).unwrap();assert!(read(&root,&original).is_err());fs::write(root.join("live-dispatch.json"),&original_record).unwrap();assert!(fence.retain_drawing_completion(&input,&proof).is_err());drop(fence.enter().unwrap());assert!(crate::cadcraft_live::recover_result(&input,&root,&root.join("not-launched"),Arc::new(AtomicBool::new(false))).is_err());assert!(!root.join("result.json").exists());assert!(!root.join("not-launched").exists());
+        let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join("live-dispatch.json")).unwrap();assert!(fence.retain_drawing_completion(&input,&proof).is_err());assert!(read(&root,&original).unwrap().unwrap().drawing_completion_sha256.is_none());assert_eq!(fs::read(root.join("drawing-completion.json")).unwrap(),bytes);drop(lock);
+        fence.retain_drawing_completion(&input,&proof).unwrap();fence.retain_drawing_completion(&input,&proof).unwrap();assert!(fence.enter().is_err());let summary=read(&root,&original).unwrap().unwrap().summary(&original);assert_eq!(summary.acknowledged,1);assert_eq!(summary.uncertain,0);assert!(summary.needs_review);assert!(!summary.finished);
+        let mut changed=input.clone();changed.agreement.as_mut().unwrap().outcome="Changed conditions".into();assert!(read(&root,&OperationInput::LiveDrawing(changed)).is_err());let mut changed=proof.clone();changed["after"]["drawing"]["entities"][0]["geometry"]["radius"]=serde_json::json!(999);fs::write(root.join("drawing-completion.json"),serde_json::to_vec(&changed).unwrap()).unwrap();assert!(read(&root,&original).is_err());assert!(fence.retain_drawing_completion(&input,&changed).is_err());fs::write(root.join("drawing-completion.json"),&bytes).unwrap();
+        assert!(crate::cadcraft_live::recover_recorded_result(&root,&input).unwrap());let mut checked=original.clone();checked.retain_receipt(&root).unwrap();recover_checked(&root,&checked).unwrap();let final_bytes=fs::read(root.join("result.json")).unwrap();fs::remove_file(root.join("result.json")).unwrap();assert!(crate::cadcraft_live::recover_recorded_result(&root,&input).unwrap());assert_eq!(fs::read(root.join("result.json")).unwrap(),final_bytes);fs::write(root.join("result.json"),b"preserve changed final report").unwrap();assert!(crate::cadcraft_live::recover_recorded_result(&root,&input).is_err());assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve changed final report");drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn live_agreements_are_input_bound_and_legacy_receipts_do_not_gain_invented_conditions(){
         let cad=serde_json::from_value(serde_json::json!({"schema_version":1,"live_cad_version":1,"job_id":Uuid::new_v4(),"document_name":"Owned","document_token":Uuid::new_v4(),"state_sha256":"a".repeat(64),"description":"Apply the owned change","operations":[{"action":"edit_object","obj_name":"Box","obj_properties":{"Length":"12 mm"}}],"before":[],"agreement":crate::native_tools::tests::agreement_fixture()})).unwrap();

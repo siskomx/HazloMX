@@ -280,6 +280,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         exported_dxf
     );
     let recorded=jobs.iter().filter(|job|job.phase==Phase::Completed).all(|job|root.join("project/.hazlomexa/artifacts").join(job.input.job_id().to_string()).join("drawing-completion.json").is_file());
+    let anchored=recorded && jobs.iter().filter(|job|job.phase==Phase::Completed).all(|job|{let directory=root.join("project/.hazlomexa/artifacts").join(job.input.job_id().to_string());let record:Value=serde_json::from_slice(&fs::read(directory.join("live-dispatch.json")).unwrap()).unwrap();let hash=format!("{:x}",<sha2::Sha256 as sha2::Digest>::digest(fs::read(directory.join("drawing-completion.json")).unwrap()));record["drawing_completion_required"]==true && record["drawing_completion_sha256"]==hash});
+    assert!(anchored,"Every completed owned drawing operation needs its original dispatch anchor");
     if recorded {
         drop(recovered);
         let project=Project::open(&root.join("project"))?;
@@ -306,7 +308,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         serde_json::to_vec_pretty(
             &json!({"pass":true,"completed_jobs":4,"cancelled_jobs":1,"refused_jobs":1,
         "native_mm_move":1,"native_inch_followup":0.1,"final_x_mm":3.54,"native_undo_steps":3,"stale_unprojected_change_refused":true,
-        "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"retained_completion_recovery":recorded,"real_provider":false,"desktop_approval":false}),
+        "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"retained_completion_recovery":recorded,"native_completion_anchored":anchored,"real_provider":false,"desktop_approval":false}),
         )?,
     )?;
     println!("PASS: production checked drawing tools, approval/replay/cancel, metric/inch native readback, hidden-state refusal, Undo and report recovery");
