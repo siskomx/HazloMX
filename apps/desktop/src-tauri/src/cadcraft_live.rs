@@ -32,7 +32,8 @@ use windows_sys::Win32::{
     },
 };
 
-pub const RUNTIME_SHA256: &str = "bea64cc9f40935947bde7c37221b8ddf6e24e71d6bdf2a54b6156e4e04551bf5";
+pub const RUNTIME_SHA256: &str = "fda54c840f0ec0cb63eb9263f386975cb485d3082b81769e6edf5c643b059044";
+const LEGACY_RUNTIME_SHA256:&str="bea64cc9f40935947bde7c37221b8ddf6e24e71d6bdf2a54b6156e4e04551bf5";
 const INVALID: &str = "CADCraft no confirmó el estado esperado. Relee el dibujo antes de continuar; no repitas una escritura incierta.";
 const FRAME_LIMIT: usize = 256 * 1024;
 const EXPORT_LIMIT: usize = 128 * 1024;
@@ -251,7 +252,8 @@ fn pin_runtime(
         }
         hasher.update(&buffer[..n]);
     }
-    if format!("{:x}", hasher.finalize()) != expected {
+    let actual=format!("{:x}", hasher.finalize());
+    if actual != expected && !(expected==RUNTIME_SHA256 && actual==LEGACY_RUNTIME_SHA256) {
         return Err(
             "Selecciona el runtime CADCraft parcheado y probado; el instalado no se reemplaza."
                 .into(),
@@ -455,46 +457,50 @@ impl Session {
     fn read(&mut self, cancel: &AtomicBool) -> Result<Observation, String> {
         self.binding = None;
         let native = self.call("document.observe", json!({}), cancel)?;
-        let token = &native["binding"];
-        let document_id = native["document_id"].as_str().ok_or(INVALID)?;
-        if document_id.is_empty()
-            || document_id.len() > 32
-            || !document_id.bytes().all(|b| b.is_ascii_digit())
-        {
-            return Err(INVALID.into());
-        }
-        if !token["token"].as_str().is_some_and(|s| {
-            !s.is_empty() && s.len() <= 32 && s.bytes().all(|b| b.is_ascii_digit())
-        }) {
-            return Err(INVALID.into());
-        }
-        let drawing = &native["drawing"];
-        let units = &native["units"];
-        let entities = drawing["entities"].as_array().ok_or(INVALID)?.clone();
-        if drawing["space"] != "Model"
-            || !drawing["blockEditor"].is_null()
-            || drawing["entityCount"].as_u64() != Some(entities.len() as u64)
-            || drawing["skipped"]["count"] != 0
-        {
-            return Err("Esta conexión requiere un dibujo completo en Modelo, sin bloques en edición ni geometría omitida.".into());
-        }
-        let observation = Observation {
-            instance_id: self.instance,
-            binding_sha256: crate::kicad_project::digest(
-                &serde_json::to_vec(&json!([self.instance, token])).map_err(|_| INVALID)?,
-            ),
-            document_sha256: Some(crate::kicad_project::digest(
-                &serde_json::to_vec(&json!([self.instance, document_id])).map_err(|_| INVALID)?,
-            )),
-            title: drawing["title"].as_str().ok_or(INVALID)?.into(),
-            dirty: drawing["dirty"].as_bool().ok_or(INVALID)?,
-            insunits: units["insunits"].as_u64().ok_or(INVALID)?,
-            entities,
-        };
-        observation.validate()?;
-        self.binding = Some((json!({"token":token["token"]}), observation.clone()));
+        let (binding,observation)=observation_from_native(&native,self.instance)?;
+        self.binding=Some((binding,observation.clone()));
         Ok(observation)
     }
+}
+fn observation_from_native(native:&Value,instance:Uuid)->Result<(Value,Observation),String>{
+    let token = &native["binding"];
+    let document_id = native["document_id"].as_str().ok_or(INVALID)?;
+    if document_id.is_empty()
+        || document_id.len() > 32
+        || !document_id.bytes().all(|b| b.is_ascii_digit())
+    {
+        return Err(INVALID.into());
+    }
+    if !token["token"].as_str().is_some_and(|s| {
+        !s.is_empty() && s.len() <= 32 && s.bytes().all(|b| b.is_ascii_digit())
+    }) {
+        return Err(INVALID.into());
+    }
+    let drawing = &native["drawing"];
+    let units = &native["units"];
+    let entities = drawing["entities"].as_array().ok_or(INVALID)?.clone();
+    if drawing["space"] != "Model"
+        || !drawing["blockEditor"].is_null()
+        || drawing["entityCount"].as_u64() != Some(entities.len() as u64)
+        || drawing["skipped"]["count"] != 0
+    {
+        return Err("Esta conexión requiere un dibujo completo en Modelo, sin bloques en edición ni geometría omitida.".into());
+    }
+    let observation = Observation {
+        instance_id: instance,
+        binding_sha256: crate::kicad_project::digest(
+            &serde_json::to_vec(&json!([instance, token])).map_err(|_| INVALID)?,
+        ),
+        document_sha256: Some(crate::kicad_project::digest(
+            &serde_json::to_vec(&json!([instance, document_id])).map_err(|_| INVALID)?,
+        )),
+        title: drawing["title"].as_str().ok_or(INVALID)?.into(),
+        dirty: drawing["dirty"].as_bool().ok_or(INVALID)?,
+        insunits: units["insunits"].as_u64().ok_or(INVALID)?,
+        entities,
+    };
+    observation.validate()?;
+    Ok((json!({"token":token["token"]}),observation))
 }
 impl Connection {
     pub(crate) fn native_mcp_config(&self)->Result<crate::native_tools::McpConfig,String> {
@@ -632,6 +638,24 @@ fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel
         return Err(INVALID.into());
     }
     let (command, params) = input.command();
+    let methods=session.call("control.methods",json!({}),&cancel)?;
+    let recorded=methods.as_array().ok_or(INVALID)?.iter().any(|method|method["method"]=="engine.execute_recorded");
+    if recorded {
+        if matches!(input.operation,Operation::ExportDxf{}){
+            let executable=session.runtime_directory.join("cadcraft-cli.exe");let _pin=pin_runtime(&executable,VERIFIER_SHA256,&cancel)?;
+            let location=json!({"version":1,"input_sha256":completion_identity(input)?,"executable":executable});
+            crate::kicad_project::write_new(&stage.join("drawing-verifier.json"),&serde_json::to_vec(&location).map_err(|_|INVALID)?)?;
+        }
+        let result=session.call_with_dispatch("engine.execute_recorded",json!({"expected":binding,"command":command,"params":params,"input_sha256":completion_identity(input)?,"receipt_path":stage.join("drawing-completion.json")}),&cancel,dispatch)?;
+        let proof=read_completion(input,stage)?;
+        if result!=proof{return Err("El recibo nativo cambió; se conserva la pausa sin repetir la edición.".into());}
+        if proof["outcome"]=="not_dispatched"{
+            crate::live_dispatch::recover_refused(stage,&crate::project::OperationInput::LiveDrawing(input.clone()))?;
+            session.failed=true;let _=session.stream.shutdown(std::net::Shutdown::Both);
+            return Err("CADCraft confirmó que no inició la edición porque su precondición cambió. Conserva el trabajo y relee el dibujo antes de preparar otra propuesta.".into());
+        }
+        return finish_completion(input,&proof,stage,Some(&session.runtime_directory),profile,cancel);
+    }
     let result = session.call_with_dispatch(
         "engine.execute_checked",
         json!({"expected":binding,"command":command,"params":params}),
@@ -670,6 +694,48 @@ fn run_impl(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel
     file.write_all(&bytes)
         .and_then(|_| file.sync_all())
         .map_err(|_| INVALID.to_string())
+}
+
+fn completion_identity(input:&Input)->Result<String,String>{
+    let mut input=input.clone();input.receipt_sha256=None;
+    serde_json::to_vec(&input).map(|bytes|crate::kicad_project::digest(&bytes)).map_err(|_|INVALID.into())
+}
+fn read_completion(input:&Input,directory:&Path)->Result<Value,String>{
+    let bytes=crate::kicad_project::read_regular(&directory.join("drawing-completion.json"),FRAME_LIMIT as u64).map_err(|_|"Falta un recibo original completo de CADCraft; se conserva la pausa sin repetir la operación.")?;
+    let proof:Value=serde_json::from_slice(&bytes).map_err(|_|INVALID)?;
+    let completed=proof["outcome"]=="completed" && proof.as_object().map(|p|p.len())==Some(5) && proof.get("command_result").is_some() && proof.get("after").is_some();
+    let refused=proof["outcome"]=="not_dispatched" && proof.as_object().map(|p|p.len())==Some(3);
+    if (!completed && !refused) || proof["version"]!=1 || proof["input_sha256"]!=completion_identity(input)?{return Err("El recibo CADCraft no coincide con la operación aprobada; se conserva la pausa.".into());}
+    Ok(proof)
+}
+pub(crate) fn refusal_proof(input:&Input,directory:&Path)->Result<bool,String>{Ok(read_completion(input,directory)?["outcome"]=="not_dispatched")}
+fn finish_completion(input:&Input,proof:&Value,directory:&Path,runtime:Option<&Path>,profile:&Path,cancel:Arc<AtomicBool>)->Result<(),String>{
+    let (_,after)=observation_from_native(&proof["after"],input.before.instance_id)?;
+    let exported_document=if matches!(input.operation,Operation::ExportDxf{}){Some(export_dxf(&proof["command_result"],&input.before,runtime.ok_or("Falta el verificador CADCraft seleccionado; el recibo sigue local y no se repitió la exportación.")?,directory,profile,cancel)?)}else{None};
+    let report=Receipt{native_drawing_version:1,job_id:input.job_id,before_sha256:input.before.binding_sha256.clone(),after,saved:false,native_undo_available:exported_document.is_none(),exported_document};
+    validate_artifacts(directory,input,&report)?;
+    let bytes=serde_json::to_vec_pretty(&report).map_err(|_|INVALID)?;let path=directory.join("result.json");
+    if path.try_exists().map_err(|_|INVALID)?{
+        let saved:Value=serde_json::from_slice(&crate::kicad_project::read_regular(&path,65536)?).map_err(|_|INVALID)?;
+        if saved!=serde_json::to_value(&report).map_err(|_|INVALID)?{return Err("El informe CADCraft cambió; se conserva sin reemplazarlo.".into());}
+    }else{crate::kicad_project::write_new(&path,&bytes).map_err(|_|"El recibo sigue local; no se pudo conservar su informe. No repitas la operación.")?;}
+    Ok(())
+}
+pub(crate) fn recover_result(input:&Input,directory:&Path,profile:&Path,cancel:Arc<AtomicBool>)->Result<bool,String>{
+    input.validate()?;stop(&cancel)?;
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|INVALID)?;
+    let proof=read_completion(input,directory)?;
+    if proof["outcome"]!="completed"{return Err("CADCraft no inició esta edición; no existe un resultado completado que publicar.".into());}
+    let runtime=if matches!(input.operation,Operation::ExportDxf{}){
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Location{version:u32,input_sha256:String,executable:PathBuf}
+        let location:Location=serde_json::from_slice(&crate::kicad_project::read_regular(&directory.join("drawing-verifier.json"),8192)?).map_err(|_|"Falta la ubicación verificada del exportador; el recibo sigue local.")?;
+        crate::project::valid_location(&location.executable).map_err(|_|INVALID)?;
+        if location.version!=1 || location.input_sha256!=completion_identity(input)? || location.executable.file_name().and_then(|s|s.to_str())!=Some("cadcraft-cli.exe"){return Err("La ubicación del verificador no coincide; se conserva el resultado sin repetir la exportación.".into());}
+        Some(location.executable.parent().ok_or(INVALID)?.to_owned())
+    }else{None};
+    finish_completion(input,&proof,directory,runtime.as_deref(),profile,cancel)?;Ok(true)
 }
 
 pub(crate) fn validate_artifacts(
@@ -744,7 +810,9 @@ fn export_dxf(
     let bytes = decode_export(result)?;
     stop(&cancel)?;
     let path = stage.join("Drawing.dxf");
-    let mut output = OpenOptions::new()
+    if path.try_exists().map_err(|_|INVALID)? {
+        if crate::kicad_project::read_regular(&path,EXPORT_LIMIT as u64)?!=bytes{return Err("La copia DXF cambió; se conserva sin reemplazarla.".into());}
+    }else{let mut output = OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(&path)
@@ -753,7 +821,7 @@ fn export_dxf(
         .write_all(&bytes)
         .and_then(|_| output.sync_all())
         .map_err(|_| INVALID)?;
-    drop(output);
+    drop(output);}
     let _drawing_pin = OpenOptions::new()
         .read(true)
         .share_mode(FILE_SHARE_READ)
@@ -940,6 +1008,24 @@ pub(crate) mod tests {
             saved: false,
             native_undo_available: true,
             exported_document: None,
+        }
+    }
+    pub(crate) fn recorded_fixture()->(Input,Value){
+        let mut input=fixture_input();input.before.document_sha256=Some(crate::kicad_project::digest(&serde_json::to_vec(&json!([input.before.instance_id,"77"])).unwrap()));let report=receipt(&input);
+        let native=json!({"binding":{"token":"99"},"document_id":"77","drawing":{"title":report.after.title,"dirty":report.after.dirty,"entities":report.after.entities,"entityCount":report.after.entities.len(),"skipped":{"count":0},"space":"Model","blockEditor":null},"units":{"insunits":report.after.insunits}});
+        let proof=json!({"version":1,"input_sha256":completion_identity(&input).unwrap(),"outcome":"completed","command_result":{},"after":native});(input,proof)
+    }
+    #[test]
+    fn recorded_recovery_requires_original_proof_and_preserves_changed_reports(){
+        for mode in ["missing","pending","wrong_input","wrong_document","changed_report","success"]{
+            let root=std::env::temp_dir().join(format!("hazlo-drawing-proof-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let (input,mut proof)=recorded_fixture();
+            if mode=="wrong_input"{proof["input_sha256"]=json!("f".repeat(64));}else if mode=="wrong_document"{proof["after"]["document_id"]=json!("78");}
+            if mode!="missing"{std::fs::write(root.join(if mode=="pending"{"drawing-completion.json.pending"}else{"drawing-completion.json"}),serde_json::to_vec(&proof).unwrap()).unwrap();}
+            if mode=="changed_report"{std::fs::write(root.join("result.json"),b"preserve manual report").unwrap();}
+            let result=recover_result(&input,&root,&root.join("unused-profile"),Arc::new(AtomicBool::new(false)));
+            if mode=="success"{assert!(result.unwrap());let saved=std::fs::read(root.join("result.json")).unwrap();assert!(recover_result(&input,&root,&root.join("unused-profile"),Arc::new(AtomicBool::new(false))).unwrap());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),saved);let report:Receipt=serde_json::from_slice(&saved).unwrap();validate_report(&input,&report).unwrap();}
+            else{assert!(result.is_err(),"{mode}");if mode=="changed_report"{assert_eq!(std::fs::read(root.join("result.json")).unwrap(),b"preserve manual report");}else{assert!(!root.join("result.json").exists());}}
+            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
         }
     }
     #[test]

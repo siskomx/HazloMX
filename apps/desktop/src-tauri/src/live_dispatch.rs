@@ -22,6 +22,8 @@ pub(crate) struct Record {
     input_sha256: String,
     pub outcome: Outcome,
     pub receipt_sha256: Option<String>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub refusal_sha256:Option<String>,
 }
 fn digest(input: &OperationInput) -> Result<String, String> {
     if !matches!(
@@ -45,19 +47,20 @@ fn digest(input: &OperationInput) -> Result<String, String> {
 impl Record {
     pub fn summary(&self, input: &OperationInput) -> Summary {
         let finished = self.outcome == Outcome::Acknowledged;
+        let refused=self.refusal_sha256.is_some();
         Summary {
             job_id: self.job_id,
             program: input.native_program(),
             kind: "live_adapter",
             acknowledged: usize::from(finished),
-            uncertain: usize::from(matches!(
+            uncertain: usize::from(!refused && matches!(
                 self.outcome,
                 Outcome::Dispatched | Outcome::Uncertain
             )),
-            not_dispatched: usize::from(self.outcome == Outcome::Pending),
+            not_dispatched: usize::from(self.outcome == Outcome::Pending || refused),
             finished,
-            needs_review: matches!(self.outcome, Outcome::Dispatched | Outcome::Uncertain),
-            outcome_checked: false,
+            needs_review: !refused && matches!(self.outcome, Outcome::Dispatched | Outcome::Uncertain),
+            outcome_checked: refused,
         }
     }
 }
@@ -89,10 +92,23 @@ pub(crate) fn read(directory: &Path, input: &OperationInput) -> Result<Option<Re
             return Err("El resultado nativo cambió; se conserva la pausa.".into());
         }
     }
+    if let Some(hash)=&record.refusal_sha256{
+        let OperationInput::LiveDrawing(drawing)=input else{return Err("Prueba de rechazo incompatible; se conserva la pausa.".into());};
+        if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || !crate::kicad_project::valid_hash(hash) || crate::kicad_project::digest(&crate::kicad_project::read_regular(&directory.join("drawing-completion.json"),256*1024)?)!=*hash || !crate::cadcraft_live::refusal_proof(drawing,directory)?{return Err("La prueba de rechazo cambió; se conserva la pausa.".into());}
+    }
     Ok(Some(record))
+}
+pub(crate) fn recover_refused(directory:&Path,input:&OperationInput)->Result<(),String>{
+    let mut record=read(directory,input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
+    if record.refusal_sha256.is_some(){return Ok(());}
+    let OperationInput::LiveDrawing(drawing)=input else{return Err("Este adaptador no tiene una prueba de rechazo compatible.".into());};
+    if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain) || !crate::cadcraft_live::refusal_proof(drawing,directory)?{return Err("Falta la prueba original de que no inició la edición; se conserva la pausa.".into());}
+    record.refusal_sha256=Some(crate::kicad_project::digest(&crate::kicad_project::read_regular(&directory.join("drawing-completion.json"),256*1024)?));
+    atomic_json(&directory.join("live-dispatch.json"),&record,true).map_err(|_|"El rechazo sigue local, pero no se confirmó su registro. No repitas la operación.".into())
 }
 pub(crate) fn recover_checked(directory:&Path,checked:&OperationInput)->Result<(),String>{
     let mut record=read(directory,checked)?.ok_or("Falta el registro de la llamada; no se adoptó el resultado.")?;
+    if record.refusal_sha256.is_some(){return Err("La edición no inició; no se adoptó otro resultado como completado.".into());}
     let hash=checked.receipt_sha256().ok_or("Falta el recibo del resultado comprobado.")?;
     if record.outcome==Outcome::Acknowledged{return Ok(());}
     if !matches!(record.outcome,Outcome::Dispatched|Outcome::Uncertain){return Err("La llamada no fue admitida; no se adoptó un resultado ajeno.".into());}
@@ -120,6 +136,7 @@ impl Dispatch {
             input_sha256: digest(input)?,
             outcome: Outcome::Pending,
             receipt_sha256: None,
+            refusal_sha256:None,
         };
         let path = directory.join("live-dispatch.json");
         atomic_json(&path,&record,false).map_err(|_|"La operación ya tiene un registro o no se pudo reservar. No se enviaron nuevas llamadas.")?;
@@ -152,6 +169,7 @@ impl Dispatch {
             .map_or(true, |r| r.outcome != Outcome::Pending)
     }
     pub fn complete(&self, checked: &OperationInput) -> Result<(), String> {
+        if read(self.path.parent().ok_or("Falta el registro nativo.")?,checked)?.is_some_and(|record|record.refusal_sha256.is_some()){return Err("La edición no inició; no se marcará como completada.".into());}
         let mut record = self
             .record
             .lock()
@@ -171,6 +189,14 @@ impl Dispatch {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn original_refusal_proof_resolves_uncertainty_without_erasing_admission_or_accepting_results(){
+        let root=std::env::temp_dir().join(format!("hazlo-native-refusal-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let (input,completed)=crate::cadcraft_live::tests::recorded_fixture();let original=OperationInput::LiveDrawing(input.clone());
+        let fence=Dispatch::start(&root,&original,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();let proof=serde_json::json!({"version":1,"input_sha256":completed["input_sha256"],"outcome":"not_dispatched"});let path=root.join("drawing-completion.json");std::fs::write(&path,serde_json::to_vec(&proof).unwrap()).unwrap();assert!(recover_refused(&root,&original).is_err());drop(fence.enter().unwrap());
+        recover_refused(&root,&original).unwrap();recover_refused(&root,&original).unwrap();let record=read(&root,&original).unwrap().unwrap();assert_eq!(record.outcome,Outcome::Dispatched);assert!(record.summary(&original).outcome_checked);assert!(!record.summary(&original).needs_review);assert_eq!(record.summary(&original).not_dispatched,1);assert_eq!(record.summary(&original).uncertain,0);
+        std::fs::write(root.join("result.json"),serde_json::to_vec(&crate::cadcraft_live::tests::receipt(&input)).unwrap()).unwrap();let mut checked=original.clone();checked.retain_receipt(&root).unwrap();assert!(recover_checked(&root,&checked).is_err());assert!(fence.complete(&checked).is_err());std::fs::write(&path,serde_json::to_vec(&completed).unwrap()).unwrap();assert!(read(&root,&original).is_err());
+        drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn recovered_acknowledgment_survives_locks_and_rejects_changed_evidence(){
         use std::os::windows::fs::OpenOptionsExt;

@@ -1,0 +1,255 @@
+--- a/crates/ui-egui/src/control.rs
++++ b/crates/ui-egui/src/control.rs
+@@ -196,6 +196,11 @@
+     ("engine.execute", "{command, params}", "Run any command with JSON parameters. Never opens a dialog."),
+     ("document.binding", "", "Current native document lifetime, revision and editing context."),
+     ("document.observe", "", "Atomically read the active document identity, units, entities and one-use binding."),
++    (
++        "engine.execute_recorded",
++        "{expected, command, params, input_sha256, receipt_path}",
++        "Execute a checked circle, move or DXF serialization and retain its exact completion before replying.",
++    ),
+     (
+         "engine.execute_checked",
+         "{expected, command, params}",
+@@ -353,6 +358,76 @@
+     Ok(json!({"binding":binding,"document_id":document_id,"drawing":drawing,"units":units}))
+ }
+
++fn checked_preflight(app: &CadApp, ctx: &egui::Context, p: &Value) -> Result<(), String> {
++    binding_idle(app)?;
++    let binding = ctx.data_mut(|data| data.get_temp::<DocumentBinding>(binding_key())).ok_or("no native binding")?;
++    let state = app.session.state().map_err(|e| e.to_string())?;
++    if p.get("expected") != Some(&json!({"token":binding.token}))
++        || state.uid != binding.uid
++        || state.revision != binding.revision
++        || !Arc::ptr_eq(&state.doc, &binding.drawing)
++        || state.path != binding.path
++        || state.is_dirty() != binding.dirty
++        || binding_context(state) != binding.context
++    {
++        return Err("document binding changed".into());
++    }
++    let id = p["command"].as_str().ok_or("missing `command`")?;
++    if id != "document.bytes" && (state.undo_ctl.control == cadcraft_engine::undoctl::Control::None || state.undo_ctl.group.is_some()) {
++        return Err("native undo must be enabled without an open group".into());
++    }
++    if !p["params"].is_object() {
++        return Err("missing object `params`".into());
++    }
++    Ok(())
++}
++
++fn execute_recorded(app: &mut CadApp, ctx: &egui::Context, p: &Value) -> Result<Value, String> {
++    use std::{fs::OpenOptions, io::Write, path::Path};
++    let command = p["command"].as_str().ok_or("missing command")?;
++    let identity = p["input_sha256"].as_str().ok_or("missing input identity")?;
++    let destination = Path::new(p["receipt_path"].as_str().ok_or("missing receipt path")?);
++    #[cfg(windows)]
++    if !matches!(destination.components().next(), Some(std::path::Component::Prefix(prefix)) if matches!(prefix.kind(), std::path::Prefix::Disk(_) | std::path::Prefix::VerbatimDisk(_)))
++    {
++        return Err("receipt requires a local drive".into());
++    }
++    if p.as_object().map(|p| p.len()) != Some(5)
++        || !matches!(command, "circle" | "move" | "document.bytes")
++        || identity.len() != 64
++        || !identity.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
++        || !destination.is_absolute()
++        || destination.file_name().and_then(|n| n.to_str()) != Some("drawing-completion.json")
++        || destination.try_exists().map_err(|_| "receipt unavailable")?
++    {
++        return Err("invalid recorded operation".into());
++    }
++    let pending = destination.with_file_name("drawing-completion.json.pending");
++    // Reserve before native execution; a failed or interrupted attempt cannot reuse this slot.
++    let mut output = OpenOptions::new().write(true).create_new(true).open(&pending).map_err(|_| "receipt already reserved or unavailable")?;
++    let proof = if checked_preflight(app, ctx, p).is_err() {
++        json!({"version":1,"input_sha256":identity,"outcome":"not_dispatched"})
++    } else {
++        let (request, _) = ControlRequest::new("engine.execute_checked", json!({"expected":p["expected"],"command":command,"params":p["params"]}));
++        let result = match handle(app, ctx, &request) {
++            Outcome::Done(value) if value["ok"] == true => value["result"].clone(),
++            _ => return Err("native outcome unavailable; preserve the receipt reservation".into()),
++        };
++        let after = document_observe(app, ctx)?;
++        json!({"version":1,"input_sha256":identity,"outcome":"completed","command_result":result,"after":after})
++    };
++    let bytes = serde_json::to_vec(&proof).map_err(|_| "completion unavailable")?;
++    if bytes.len() > 256 * 1024 {
++        return Err("completion exceeds retention limit; do not repeat the operation".into());
++    }
++    output.write_all(&bytes).and_then(|_| output.sync_all()).map_err(|_| "completion not retained; do not repeat the operation")?;
++    drop(output);
++    // Unlike rename on some platforms, link cannot replace an existing final receipt.
++    std::fs::hard_link(&pending, destination).map_err(|_| "completion publication unconfirmed; do not repeat the operation")?;
++    std::fs::remove_file(pending).map_err(|_| "completion retained; pending cleanup required")?;
++    Ok(proof)
++}
++
+ pub fn handle(app: &mut CadApp, ctx: &egui::Context, req: &ControlRequest) -> Outcome {
+     let p = &req.params;
+     let s = |k: &str| p.get(k).and_then(Value::as_str);
+@@ -360,31 +435,13 @@
+     match req.method.as_str() {
+         "document.binding" => wrap(document_binding(app, ctx)),
+         "document.observe" => wrap(document_observe(app, ctx)),
++        "engine.execute_recorded" => wrap(execute_recorded(app, ctx, p)),
+         "engine.execute_checked" => {
+-            if let Err(e) = binding_idle(app) {
+-                return err(e);
+-            }
+-            let Some(binding) = ctx.data_mut(|data| data.get_temp::<DocumentBinding>(binding_key())) else { return err("no native binding") };
+-            let state = match app.session.state() {
+-                Ok(v) => v,
+-                Err(e) => return err(e),
+-            };
+-            if p.get("expected") != Some(&json!({"token":binding.token}))
+-                || state.uid != binding.uid
+-                || state.revision != binding.revision
+-                || !Arc::ptr_eq(&state.doc, &binding.drawing)
+-                || state.path != binding.path
+-                || state.is_dirty() != binding.dirty
+-                || binding_context(state) != binding.context
+-            {
+-                return err("document binding changed");
++            if let Err(error) = checked_preflight(app, ctx, p) {
++                return err(error);
+             }
+             let Some(id) = s("command") else { return err("missing `command`") };
+-            // Serialization is read-only; engineering edits still require native Undo.
+-            if id != "document.bytes" && (state.undo_ctl.control == cadcraft_engine::undoctl::Control::None || state.undo_ctl.group.is_some()) {
+-                return err("native undo must be enabled without an open group");
+-            }
+-            let Some(params) = p.get("params").filter(|v| v.is_object()) else { return err("missing object `params`") };
++            let Some(params) = p.get("params") else { return err("missing object `params`") };
+             ctx.data_mut(|data| data.remove::<DocumentBinding>(binding_key()));
+             wrap(app.session.execute(id, params).map_err(|e| e.to_string()))
+         }
+--- a/crates/ui-egui/tests/control_binding.rs
++++ b/crates/ui-egui/tests/control_binding.rs
+@@ -15,6 +15,109 @@
+ }
+ fn setup() -> (CadApp, egui::Context) {
+     (CadApp::new(Session::new(), Services::default()), egui::Context::default())
++}
++
++fn receipt_directory() -> std::path::PathBuf {
++    let root = std::env::temp_dir().join(format!(
++        "cadcraft-completion-{}-{}",
++        std::process::id(),
++        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
++    ));
++    std::fs::create_dir(&root).unwrap();
++    root
++}
++
++#[test]
++fn recorded_export_retains_exact_bytes_without_saving_the_source() {
++    cadcraft_engine::cmd::file::set_io(cadcraft_engine::cmd::file::IoHooks {
++        read: |_, _| Err("not used by this dispatch test".into()),
++        write: |_, _| Ok(b"owned dispatch test bytes".to_vec()),
++        plot: None,
++    });
++    let (mut app, ctx) = setup();
++    let root = receipt_directory();
++    let before = app.session.summary();
++    let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++    let reply = call(
++        &mut app,
++        &ctx,
++        "engine.execute_recorded",
++        json!({"expected":binding,"command":"document.bytes","params":{"format":"dxf"},"input_sha256":"a".repeat(64),"receipt_path":root.join("drawing-completion.json")}),
++    );
++    assert_eq!(reply["ok"], true, "{reply}");
++    assert!(reply["result"]["command_result"]["bytes"].as_u64().unwrap() > 0);
++    assert_eq!(app.session.summary(), before);
++    assert_eq!(app.session.state().unwrap().undo.len(), 0);
++    let proof: Value = serde_json::from_slice(&std::fs::read(root.join("drawing-completion.json")).unwrap()).unwrap();
++    assert_eq!(proof, reply["result"]);
++    std::fs::remove_dir_all(root).unwrap();
++}
++fn recorded(app: &mut CadApp, ctx: &egui::Context, root: &std::path::Path, binding: Value) -> Value {
++    call(
++        app,
++        ctx,
++        "engine.execute_recorded",
++        json!({"expected":binding,"command":"circle","params":{"center":[0,0],"diameter":2},"input_sha256":"a".repeat(64),"receipt_path":root.join("drawing-completion.json")}),
++    )
++}
++
++#[test]
++fn recorded_completion_precedes_reply_and_preserves_later_manual_edits() {
++    let (mut app, ctx) = setup();
++    let root = receipt_directory();
++    let before = call(&mut app, &ctx, "document.observe", json!({}));
++    let reply = recorded(&mut app, &ctx, &root, before["result"]["binding"].clone());
++    assert_eq!(reply["ok"], true, "{reply}");
++    let bytes = std::fs::read(root.join("drawing-completion.json")).unwrap();
++    let proof: Value = serde_json::from_slice(&bytes).unwrap();
++    assert_eq!(proof, reply["result"]);
++    assert_eq!(proof["input_sha256"], "a".repeat(64));
++    assert_eq!(proof["after"]["drawing"]["entityCount"], 1);
++    assert!(!root.join("drawing-completion.json.pending").exists());
++    assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"circle","params":{"center":[4,5],"diameter":3}}))["ok"], true);
++    assert_eq!(recorded(&mut app, &ctx, &root, before["result"]["binding"].clone())["ok"], false);
++    assert_eq!(app.session.state().unwrap().doc.entity_count(), 2);
++    assert_eq!(std::fs::read(root.join("drawing-completion.json")).unwrap(), bytes);
++    std::fs::remove_dir_all(root).unwrap();
++}
++
++#[test]
++fn refused_or_reserved_recorded_calls_never_repeat_or_replace_work() {
++    for mode in ["changed", "pending", "existing"] {
++        let (mut app, ctx) = setup();
++        let root = receipt_directory();
++        let binding = call(&mut app, &ctx, "document.binding", json!({}))["result"].clone();
++        if mode == "changed" {
++            assert_eq!(call(&mut app, &ctx, "engine.execute", json!({"command":"layer.set","params":{"name":"0","lineweight":0.5}}))["ok"], true);
++        } else {
++            std::fs::write(
++                root.join(if mode == "pending" { "drawing-completion.json.pending" } else { "drawing-completion.json" }),
++                b"preserve prior work",
++            )
++            .unwrap();
++        }
++        let before = app.session.summary();
++        let first = recorded(&mut app, &ctx, &root, binding.clone());
++        if mode == "changed" {
++            assert_eq!(first["ok"], true);
++            assert_eq!(first["result"]["outcome"], "not_dispatched");
++        } else {
++            assert_eq!(first["ok"], false);
++        }
++        assert_eq!(recorded(&mut app, &ctx, &root, binding)["ok"], false);
++        assert_eq!(app.session.summary(), before);
++        assert_eq!(app.session.state().unwrap().doc.entity_count(), 0);
++        if mode == "changed" {
++            assert!(root.join("drawing-completion.json").exists());
++            assert!(!root.join("drawing-completion.json.pending").exists());
++        } else {
++            assert_eq!(
++                std::fs::read(root.join(if mode == "pending" { "drawing-completion.json.pending" } else { "drawing-completion.json" })).unwrap(),
++                b"preserve prior work"
++            );
++        }
++        std::fs::remove_dir_all(root).unwrap();
++    }
+ }
+
+ #[test]
+--- a/docs/control-protocol.md
++++ b/docs/control-protocol.md
+@@ -35,6 +35,7 @@
+ | `document.binding` | | Capture an opaque one-use binding to the active native drawing and editing context. A new binding replaces the previous one. |
+ | `document.observe` | | Atomically read `{document_id, drawing, units, binding}` on the GUI thread. Drawing includes up to 128 entities; callers must check completeness. The document ID remains stable for its open lifetime and changes after close/reopen. Refuses an active command or LISP continuation. Replaces the previous one-use binding. |
+ | `engine.execute_checked` | `{expected, command, params}` | Compare the captured binding and execute the native command on the same GUI thread; refuse intervening changes. |
++| `engine.execute_recorded` | `{expected, command, params, input_sha256, receipt_path}` | Checked circle/move/DXF serialization; reserve a local completion slot before dispatch and retain the exact result plus atomic native observation before replying. Existing slots refuse without another native call. |
+ | `drawing.inspect` | `{entities?, limit?}` | Drawing summary (counts, extents, layers, styles, blocks, layouts, selection, undo) and entities with handles and geometry. |
+ | `ui.inspect` | | UI state, canvas rect, view, cursor and snap, performance counters; `closePrompt`: the drawing a "Save changes?" prompt is asking about (null when none); and actual egui keyboard focus (`focus.id`, `focus.label`, `focus.role`). |
+ | `ui.elements` | `{label?, role?, focused?}` | Observed toolbar, tab, drafting and layer-palette controls from the latest UI frame. Filters match exactly. Each entry has its real egui `id`, label, role, rectangle `[x,y,width,height]`, enabled/visible/selected state and current focus. |
+@@ -166,3 +167,5 @@
+ `{"interfaceLanguage":"uk"}`; `ui.inspect` reports the saved choice in its UI state.
+ Invalid choices leave the current language unchanged. Menus, command labels and prompt text
+ returned by the control channel retain their English source text. See [localization.md](localization.md).
++
++Recorded calls accept a local absolute `drawing-completion.json` destination and a 64-character lowercase SHA-256 input identity. A native preflight refusal retains only `{version, input_sha256, outcome: "not_dispatched"}`; no engineering command was admitted. A successful call retains `{version, input_sha256, outcome: "completed", command_result, after}` with the exact atomic native observation. Downstream errors, missing or partial receipts prove neither completion nor refusal. Never repeat such an operation merely because its client stopped waiting. Retention is bounded to 256 KiB per receipt; failure preserves the reserved slot. Receipt reads do not require or mutate current document state. These bookkeeping identities are not authentication.

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "upstream_commit": "fc4e98315a8d771b5ab832f0ade0b5e7b106df7f",
+  "gui_sha256": "fda54c840f0ec0cb63eb9263f386975cb485d3082b81769e6edf5c643b059044",
+  "cli_sha256": "5cc67bb2265a8eae4918379ff139888e3b1b317692798982cf5d109534ba14a7",
+  "native_binding_tests": 20,
+  "native_protocol_tests": 4,
+  "native_window": {
+    "pass": true,
+    "native_window_observed": true,
+    "source_preserved": true,
+    "host_settings_preserved": true,
+    "retained_completion_recovery": true,
+    "native_process_stopped": true
+  },
+  "production_native_jobs": 4,
+  "host_record_loss_simulated": true,
+  "real_provider": false,
+  "hazlo_ui_approval_test": false,
+  "installed_package_test": false,
+  "model_downloaded": false,
+  "upstream_ci": {
+    "passed": false,
+    "stopped_at": "fmt",
+    "windows_error": 206
+  },
+  "native_strict_clippy": {
+    "passed": false,
+    "baseline_warnings_in_unchanged_files": true
+  },
+  "changed_native_files_formatted": true
+}

@@ -301,6 +301,10 @@ impl Workflow {
         let _pins=crate::project::pin_lineage(&directory).map_err(|_|"No se pudo fijar el resultado local para recuperación.")?;
         let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
         if record.outcome==crate::native_journal::Outcome::Pending{return Err("La llamada no fue admitida; prepara una nueva propuesta con el estado actual.".into());}
+        if record.refusal_sha256.is_some() || matches!(&snapshot.input,OperationInput::LiveDrawing(input) if crate::cadcraft_live::refusal_proof(input,&directory).unwrap_or(false)){
+            crate::live_dispatch::recover_refused(&directory,&snapshot.input)?;
+            return Ok(serde_json::json!({"job_id":job_id,"recovered":true,"published":false,"native_operation_rejected":true,"edit_repeated":false,"guidance":"The original native receipt proves that the edit did not start. Preserve current work and inspect fresh state before a new proposal; this is not task completion."}));
+        }
         if record.outcome!=crate::native_journal::Outcome::Acknowledged{
             let recovered=match &snapshot.input{
                 OperationInput::LiveCad(input)=>crate::cadpilot_live::recover_result(input,&directory,&cancel)?,
@@ -309,6 +313,9 @@ impl Workflow {
                     crate::agent_editor::recover_result(input,&connection,&directory,&cancel)?
                 },
                 OperationInput::LivePcb(input)=>crate::kicad_live::recover_result(input,&directory)?,
+                OperationInput::LiveDrawing(input)=>{
+                    crate::cadcraft_live::recover_result(input,&directory,&self.profiles.join(format!("drawing-recovery-{}",Uuid::new_v4())),cancel.clone())?
+                },
                 _=>return Err("Este programa todavía necesita su evidencia nativa de finalización. Se conserva el trabajo y la pausa.".into()),
             };
             if !recovered{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
@@ -3594,6 +3601,13 @@ mod tests {
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn retained_drawing_completion_recovers_after_restart_without_a_live_connection(){
+        let (root,workflow)=setup();let selected=workflow.view().unwrap().project.unwrap();workflow.task_state().unwrap();let (input,proof)=crate::cadcraft_live::tests::recorded_fixture();let id=input.job_id;
+        let pending=Workflow::propose_operation_locked(&mut workflow.state.lock().unwrap(),OperationInput::LiveDrawing(input),RunSource::Mcp).unwrap();let mut snapshot=pending.snapshot.clone();snapshot.phase=Phase::Running;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);let project=workflow.state.lock().unwrap().project.clone().unwrap();project.save(&snapshot).unwrap();let stage=project.reserve_stage(id).unwrap();let fence=crate::live_dispatch::Dispatch::start(&stage.path,&snapshot.input,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());drop(fence);fs::write(stage.path.join("drawing-completion.json"),serde_json::to_vec(&proof).unwrap()).unwrap();drop(stage);drop(project);drop(workflow);
+        let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(Project::open(&root).unwrap()).unwrap();assert!(workflow.native_recovery().unwrap()[0].needs_review);let recovered=workflow.recover_native_result(selected.clone(),id,Arc::new(AtomicBool::new(false))).unwrap();assert_eq!(recovered["published"],true);assert_eq!(recovered["edit_repeated"],false);assert!(!workflow.native_recovery().unwrap()[0].needs_review);assert!(workflow.artifact(id,ArtifactFormat::LiveDrawingReport).unwrap().read_text().unwrap().contains("\"saved\": false"));assert_eq!(workflow.recover_native_result(selected,id,Arc::new(AtomicBool::new(false))).unwrap()["published"],true);assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn retained_pcb_completion_recovers_after_restart_without_editor_access_or_replay(){
         for export in [false,true]{

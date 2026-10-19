@@ -1065,8 +1065,10 @@ impl Project {
             let published = self.artifact_directory(snapshot.input.job_id());
             let previous_phase = snapshot.phase;
             if matches!(&snapshot.input,OperationInput::LiveCad(_)|OperationInput::LivePcb(_)|OperationInput::LiveAgent(_)|OperationInput::LiveDrawing(_)) && snapshot.input.receipt_sha256().is_none() {
-                let directory=self.store("staging").join(snapshot.input.job_id().to_string());
+                let stage=self.store("staging").join(snapshot.input.job_id().to_string());
+                let directory=if stage.try_exists()?{stage}else{published.clone()};
                 if directory.try_exists()? && crate::live_dispatch::read(&directory,&snapshot.input).map_err(io::Error::other)?.is_some_and(|r|r.outcome==crate::native_journal::Outcome::Acknowledged) {
+                        let _pin=pin_directory(&directory,false)?;
                         let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;
                         self.validate_outputs(&directory,&checked)?;snapshot.input=checked;self.save(&snapshot)?;
                 }
@@ -1136,7 +1138,7 @@ pub(crate) mod tests {
             (OperationInput::LiveDrawing(drawing.clone()),serde_json::to_value(crate::cadcraft_live::tests::receipt(&drawing)).unwrap()),
             (OperationInput::LiveCad(cad),cad_report),
         ];
-        for (input,report) in cases {for mode in ["valid","occupied","tampered"] {
+        for (input,report) in cases {for mode in ["valid","occupied","tampered","published_without_final_snapshot"] {
             let root=root();assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
             let project=Project::create(&root).unwrap();let id=input.job_id();
             let mut snapshot=project.snapshot(input.clone(),Phase::Running).unwrap();
@@ -1146,6 +1148,11 @@ pub(crate) mod tests {
             snapshot.input.retain_receipt(&stage.path).unwrap();project.save(&snapshot).unwrap();
             project.validate_outputs(&stage.path,&snapshot.input).unwrap();
             let original=root.join("manual-work.native");fs::write(&original,b"keep user edits").unwrap();
+            if mode=="published_without_final_snapshot"{
+                let fence=crate::live_dispatch::Dispatch::start(&stage.path,&input,std::sync::Arc::new(std::sync::Mutex::new(())),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());fence.complete(&snapshot.input).unwrap();drop(fence);
+                let destination=project.publish(stage,&snapshot).unwrap();snapshot.input=input.clone();snapshot.phase=Phase::Interrupted;snapshot.audit.as_mut().unwrap().files_verified=false;project.save(&snapshot).unwrap();drop(project);
+                let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,Phase::Completed);assert!(recovered[0].audit.as_ref().unwrap().files_verified);assert_eq!(recovered[0].input.receipt_sha256(),Some(crate::kicad_project::digest(&bytes).as_str()));assert_eq!(fs::read(destination.join("result.json")).unwrap(),bytes);assert_eq!(fs::read(&original).unwrap(),b"keep user edits");assert!(!project.native_recovery(None).unwrap()[0].needs_review);drop(project);fs::remove_dir_all(root).unwrap();continue;
+            }
             let destination=project.artifact_directory(id);
             if mode=="occupied" {fs::create_dir(&destination).unwrap();fs::write(destination.join("unrelated.txt"),b"keep occupied destination").unwrap();}
             if mode=="tampered" {fs::write(stage.path.join("result.json"),b"changed report").unwrap();}

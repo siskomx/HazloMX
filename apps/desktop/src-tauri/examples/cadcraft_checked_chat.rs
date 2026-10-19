@@ -207,7 +207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Failed transport must require reconnect rather than retry"
     );
     native.execute("u", json!({}));
-    let selected = host.select_live_drawing(project_id, executable, port, cancel)?;
+    let selected = host.select_live_drawing(project_id, executable.clone(), port, cancel)?;
     let read = inspect(selected.id)?;
     propose(
         selected.id,
@@ -279,12 +279,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .read_text()?,
         exported_dxf
     );
+    let recorded=jobs.iter().filter(|job|job.phase==Phase::Completed).all(|job|root.join("project/.hazlomexa/artifacts").join(job.input.job_id().to_string()).join("drawing-completion.json").is_file());
+    if recorded {
+        drop(recovered);
+        let project=Project::open(&root.join("project"))?;
+        // Model lost host acknowledgments using owned copies; retain the original reports and journals.
+        for id in [first.snapshot.input.job_id(),exported.snapshot.input.job_id()] {
+            let directory=project.artifact_directory(id);fs::rename(directory.join("result.json"),root.join(format!("retained-report-{id}.json")))?;
+            let journal=directory.join("live-dispatch.json");let bytes=fs::read(&journal)?;fs::write(root.join(format!("retained-dispatch-{id}.json")),&bytes)?;let mut dispatch:Value=serde_json::from_slice(&bytes)?;dispatch["outcome"]=json!("uncertain");dispatch["receipt_sha256"]=Value::Null;fs::write(journal,serde_json::to_vec_pretty(&dispatch)?)?;
+            let mut snapshot=jobs.iter().find(|job|job.input.job_id()==id).unwrap().clone();snapshot.phase=Phase::Interrupted;snapshot.audit.as_mut().unwrap().files_verified=false;
+            let hazlomexa::project::OperationInput::LiveDrawing(input)=&mut snapshot.input else{panic!("Wrong owned job")};input.receipt_sha256=None;project.save(&snapshot)?;
+        }
+        drop(project);
+        let restarted=Arc::new(Workflow::new(root.join("UnusedFreeCAD.exe"),root.join("completion-recovery-profiles"))?);restarted.select_project(Project::open(&root.join("project"))?)?;
+        let retained=HostTools::new(restarted.clone());let current=native.drawing();let session=native.call("ui.inspect",json!({}))["session"].clone();
+        for id in [first.snapshot.input.job_id(),exported.snapshot.input.job_id()] {
+            let result=retained.call("recover_native_result",json!({"job_id":id}))?;assert_eq!(result["recovered"],true);assert_eq!(result["published"],true);assert_eq!(result["edit_repeated"],false);
+            assert_eq!(retained.call("recover_native_result",json!({"job_id":id}))?["published"],true);
+        }
+        assert_eq!(native.drawing(),current);assert_eq!(native.call("ui.inspect",json!({}))["session"],session);
+        assert_eq!(restarted.artifact(first.snapshot.input.job_id(),ArtifactFormat::LiveDrawingReport)?.read_text()?,first_report);
+        assert_eq!(restarted.artifact(exported.snapshot.input.job_id(),ArtifactFormat::Drawing)?.read_text()?,exported_dxf);
+    }
     fs::write(
         root.join("backend-result.json"),
         serde_json::to_vec_pretty(
             &json!({"pass":true,"completed_jobs":4,"cancelled_jobs":1,"refused_jobs":1,
         "native_mm_move":1,"native_inch_followup":0.1,"final_x_mm":3.54,"native_undo_steps":3,"stale_unprojected_change_refused":true,
-        "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"real_provider":false,"desktop_approval":false}),
+        "units_query_preserved_state":true,"atomic_document_identity":true,"identical_reopen_distinguished":true,"native_export_verified":true,"export_includes_unsaved_state":true,"export_no_native_undo":true,"approval_replay_refused":true,"recovery_pass":true,"retained_completion_recovery":recorded,"real_provider":false,"desktop_approval":false}),
         )?,
     )?;
     println!("PASS: production checked drawing tools, approval/replay/cancel, metric/inch native readback, hidden-state refusal, Undo and report recovery");
