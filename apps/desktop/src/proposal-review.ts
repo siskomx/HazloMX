@@ -39,6 +39,7 @@ export function proposalFacts(run: Snapshot): string[] {
   const facts: string[] = [];
   if(run.audit?.task) facts.push("Esta aprobación solo permite el cambio mostrado en esta conversación. Cambiar la tarea, sus mensajes o referencias invalida la propuesta; no permite instalar herramientas, compartir nuevas referencias ni controlar hardware.");
   if(input.native_tools_version){
+    for(const check of input.guard?.checks??[])facts.push(check.role==="identity"?`Mantener la identidad de ${check.label}.`:`Comprobar ${check.label}: ${JSON.stringify(check.expected)}.`);
     facts.push("Usar las herramientas nativas de " + input.program + ".", "Objetivo: " + input.description,
       "El programa ejecutará las llamadas del catálogo conectado; puedes revisar sus argumentos en los detalles.",
       "Hazlo pedirá una lectura nativa al terminar. Las respuestas no son una certificación independiente de geometría.",

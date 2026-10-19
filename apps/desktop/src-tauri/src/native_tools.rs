@@ -99,10 +99,16 @@ pub struct Input {
 pub struct Guard {
     pub call: Call,
     pub result_sha256: String,
+    #[serde(default,skip_serializing_if="Vec::is_empty")]
+    pub checks:Vec<crate::native_checks::Check>,
 }
 
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(guard)=&self.guard {
+            crate::native_checks::validate(&guard.checks,self.calls.len())?;
+            if !guard.checks.is_empty() && (self.calls.is_empty() || guard.call!=self.readback){return Err("Las comprobaciones necesitan la misma consulta nativa antes y después de las ediciones.".into());}
+        }
         if matches!(self.program,Program::Tshark|Program::Usbpcap|Program::Serial) && (!self.calls.is_empty() || self.guard.is_some()) {
             return Err("Las consultas y capturas de diagnóstico van una sola vez en readback, con calls vacío y sin guard; no se repiten como guardia de escritura.".into());
         }
@@ -972,9 +978,10 @@ pub fn run(
     if let Some(guard) = &input.guard {
         if cancel.load(Ordering::SeqCst){return Err(UNCERTAIN.into());}
         journal.dispatch(0)?;
-        let result=connection.call(&guard.call,cancel.clone());
+        let result=if guard.checks.is_empty(){connection.call(&guard.call,cancel.clone())}else{connection.read(&input.catalog_sha256,&guard.call,cancel.clone()).map(|v|v["readback"].clone())};
         journal.observe(0,&result)?;
         let observed = result.map_err(|_|"La comprobación previa falló; su respuesta queda local. No se enviaron las ediciones del lote.")?;
+        if !guard.checks.is_empty() && !crate::native_checks::identities(&guard.checks,&observed){return Err("La identidad nativa no coincide con la aprobada. No se enviaron las ediciones.".into());}
         if crate::kicad_project::digest(
             &serde_json::to_vec(&observed).map_err(|_| "Lectura no válida.")?,
         ) != guard.result_sha256
@@ -996,9 +1003,13 @@ pub fn run(
     }
     if cancel.load(Ordering::SeqCst){return Err(UNCERTAIN.into());}
     journal.dispatch(offset+input.calls.len())?;
-    let result=connection.call(&input.readback,cancel.clone());
+    let result=if input.guard.as_ref().is_some_and(|g|!g.checks.is_empty()){connection.read(&input.catalog_sha256,&input.readback,cancel.clone()).map(|v|v["readback"].clone())}else{connection.call(&input.readback,cancel.clone())};
     journal.observe(offset+input.calls.len(),&result)?;
     let readback = result.map_err(|_|"La lectura final falló o quedó incierta. Las respuestas anteriores quedan locales; no repitas las ediciones.")?;
+    if let Some(guard)=input.guard.as_ref().filter(|g|!g.checks.is_empty()) {
+        let value=crate::native_checks::observed(&readback);
+        if guard.checks.iter().any(|c|!crate::native_checks::matches(c,&value)){return Err("Las comprobaciones nativas no coinciden con lo aprobado. El trabajo y las respuestas quedan locales; no repitas las ediciones.".into());}
+    }
     let readback_sha256 = crate::kicad_project::digest(
         &serde_json::to_vec(&readback).map_err(|_| "Lectura no válida.")?,
     );
@@ -1055,6 +1066,36 @@ pub fn validate_artifacts(directory: &Path, input: &Input) -> Result<(), String>
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore="Requires explicitly built disposable native_tools_fixture executable"]
+    fn native_reconciliation_preserves_uncertain_effects_without_replay(){
+        use crate::native_checks::{Check,Role};
+        let executable=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_FIXTURE").expect("Set owned fixture"));
+        let root=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_TEST_ROOT").expect("Set owned root"));
+        let config=||McpConfig{executable:executable.clone(),args:vec![],env:BTreeMap::new(),url:None,authorization:None};
+        let cancel=||Arc::new(AtomicBool::new(false));
+        for scenario in ["matched","wrong_identity","different_outcome"] {
+            let folder=root.join(Uuid::new_v4().to_string());std::fs::create_dir(&folder).unwrap();
+            let (connection,catalog)=Connection::mcp(Program::Drawing,config(),folder.clone(),cancel()).unwrap();
+            let query=call("observe_native_state",json!({}));
+            let before=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();
+            let identity=before["readback"]["structuredContent"]["native_id"].clone();
+            let mut edit=input(&catalog);edit.readback=query.clone();
+            edit.calls=vec![call("fail_after_effect",json!({"value":9})),call("program_owned_parameter_edit",json!({"value":9}))];
+            edit.guard=Some(Guard{call:query.clone(),result_sha256:before["readback_sha256"].as_str().unwrap().into(),checks:vec![Check{role:Role::Identity,label:"Owned native document".into(),pointer:"/native_id".into(),expected:identity,step:None},Check{role:Role::Outcome,label:"First agreed value".into(),pointer:"/native_value".into(),expected:json!(9),step:Some(0)},Check{role:Role::Outcome,label:"Remaining acknowledged action".into(),pointer:"/native_writes".into(),expected:json!(2),step:Some(1)}]});
+            assert!(run(&edit,&connection,&folder,cancel()).is_err());
+            if scenario=="different_outcome" {connection.call(&call("program_owned_parameter_edit",json!({"value":11})),cancel()).unwrap();}
+            let other=if scenario=="wrong_identity"{Some(Connection::mcp(Program::Drawing,config(),folder.clone(),cancel()).unwrap().0)}else{None};
+            let review=crate::native_journal::reconcile(&folder,&edit,other.as_ref().unwrap_or(&connection),cancel()).unwrap();
+            assert_eq!(review["review"]["outcome_checked"],scenario=="matched");assert_eq!(review["review"]["needs_review"],true);assert_eq!(review["quiescence_verified"],false);
+            let journal=crate::native_journal::read(&folder,&edit).unwrap().unwrap();assert_eq!(journal.steps[1].outcome,crate::native_journal::Outcome::Uncertain);assert_eq!(journal.steps[2].outcome,crate::native_journal::Outcome::Pending);
+            let current=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();assert_eq!(current["readback"]["structuredContent"]["native_value"],if scenario=="different_outcome"{11}else{9});assert_eq!(current["readback"]["structuredContent"]["native_writes"],if scenario=="different_outcome"{2}else{1});
+            assert!(run(&edit,&connection,&folder,cancel()).is_err());
+            if scenario=="matched"{assert!(crate::native_journal::reconcile(&folder,&edit,&connection,cancel()).unwrap_err().contains("ya coinciden"));}
+            let mut altered=edit.clone();altered.guard.as_mut().unwrap().checks[1].expected=json!(11);assert!(crate::native_journal::read(&folder,&altered).is_err());
+            if let Some(other)=other{other.close();}connection.close();
+        }
+    }
     fn call(tool: &str, args: Value) -> Call {
         Call {
             tool: tool.into(),
@@ -1097,7 +1138,7 @@ mod tests {
             json!({"parameter_defined_by_program":{"amount":"0.1 in"}}),
         ));
         assert!(input.validate().is_err());
-        input.guard = Some(Guard {
+        input.guard = Some(Guard {checks:Vec::new(),
             call: input.readback.clone(),
             result_sha256: "a".repeat(64),
         });
@@ -1274,7 +1315,7 @@ mod tests {
             "execute",
             json!({"command":"line","params":{"points":[[1,2],[31,42]]}}),
         )];
-        edit.guard = Some(Guard {
+        edit.guard = Some(Guard {checks:Vec::new(),
             call: query,
             result_sha256: crate::kicad_project::digest(&serde_json::to_vec(&before).unwrap()),
         });
@@ -1396,7 +1437,7 @@ mod tests {
         assert_eq!(value["value"], 0);
         let mut edit = input(&catalog);
         edit.readback = query.clone();
-        edit.guard = Some(Guard {
+        edit.guard = Some(Guard {checks:Vec::new(),
             call: query,
             result_sha256: observed["readback_sha256"].as_str().unwrap().into(),
         });
@@ -1529,7 +1570,7 @@ mod tests {
             let report: Value = serde_json::from_slice(&bytes).unwrap();
             let mut edit = input(&catalog);
             edit.calls = vec![call("program_owned_parameter_edit", json!({"value":42}))];
-            edit.guard = Some(Guard {
+            edit.guard = Some(Guard {checks:Vec::new(),
                 call: edit.readback.clone(),
                 result_sha256: report["readback_sha256"].as_str().unwrap().into(),
             });
@@ -1655,7 +1696,7 @@ mod tests {
             let mut edit = input(&catalog);
             edit.calls = vec![call("cli", json!({"args":["set","17"]}))];
             edit.readback = query.clone();
-            edit.guard = Some(Guard {
+            edit.guard = Some(Guard {checks:Vec::new(),
                 call: query,
                 result_sha256: crate::kicad_project::digest(&serde_json::to_vec(&state).unwrap()),
             });

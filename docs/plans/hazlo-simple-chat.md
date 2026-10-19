@@ -84,6 +84,16 @@ This is a conservative checkpoint, not complete recovery or complete egress isol
 
 Source checks cover partial dispatch/restart, refusal to restart a batch, project-wide mutation pauses including a new conversation, recovery publication without native calls, raw reply/error sentinels, reference consent and service changes, and prompt error/source withholding. Browser checks use IPC fixtures, including newly retained evidence during a reply; they are not real provider or native-window tests. The current regular Rust suite has 231 passing tests and 64 environment-dependent tests skipped; desktop command, frontend build, Clippy and browser fixtures are checked separately.
 
+### Approved outcome checks and local reconciliation
+
+New native batches can include bounded, pre-approved identity and per-step observable outcome checks in their guard. A native UUID is required to identify the target; a content hash alone is insufficient. The checks use scalar values at explicit JSON pointers, reject contradictory final values, and refer to the same declared local read-only native query before and after the operations. Checks appear in the ordinary software approval. They do not establish atomic concurrency guarantees. Existing batches without checks are not retroactively assigned checks after failure.
+
+The dispatch journal binds the complete approved input independently of its eventual receipt. The new reconciliation tool runs only that approved query against a compatible native catalog, retains its result locally, and checks identities plus the outcomes of dispatched steps. Pending steps are not assumed to have occurred. A changed target or a conflicting manual change keeps the task paused; no restore or edit is issued. The retained observation also carries the original plan and dispatch outcomes for an authorized agent to recover context. Sharing that content remains a separate reference permission. Reads are bounded to three attempts, and an already matched inspection is not repeated.
+
+A matching property read does not prove that a native operation caused it or that an interrupted operation has stopped running. Consequently matching these facts does not clear the write barrier. A reviewed native completion/serialization facility or an isolated, faithfully captured and verified working-copy route remains necessary. These facilities and their integration-specific checks are still implementation work, alongside the other remaining plan items.
+
+The source suite has 232 passing tests; 65 environment tests are skipped by the regular run. One of those is also run explicitly against the rebuilt disposable MCP executable: it covers partial-effect errors, pending steps staying unsent, no batch replay, mismatched native identity, preservation of a later manual edit, and rejection of altered approved checks. This is real MCP transport with a synthetic program, not engineering-window or physical-device acceptance. Reconciliation replies have their own raw-evidence sentinel in the sharing-gate test. Frontend build, desktop command tests, Clippy, chat IPC fixtures and readable approval checks also pass. No model is downloaded; the installer remains unchanged.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

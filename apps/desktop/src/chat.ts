@@ -360,7 +360,7 @@ function render() {
   const busy = historyLoading || commandBusy || !!state.chat?.busy || !!state.job?.busy || !!state.codex_login?.busy;
   renderTasks(busy);
   const recovery=state.native_recovery?.filter(r=>r.needs_review)??[];
-  $("recovery-status").textContent=recovery.length?`Trabajo conservado: ${recovery.reduce((n,r)=>n+r.acknowledged,0)} llamadas reconocidas por el programa, ${recovery.reduce((n,r)=>n+r.uncertain,0)} con resultado incierto. Hazlo no repetirá el lote. Falta reconciliar el estado antes de nuevas ediciones.`:"";
+  $("recovery-status").textContent=recovery.length?`Trabajo conservado: ${recovery.reduce((n,r)=>n+r.acknowledged,0)} llamadas reconocidas por el programa, ${recovery.reduce((n,r)=>n+r.uncertain,0)} con resultado incierto. Hazlo no repetirá el lote. Falta reconciliar el estado antes de nuevas ediciones.${recovery.some(r=>r.outcome_checked)?" Los hechos acordados de los pasos enviados coinciden, pero falta confirmar que la operación nativa terminó; esto no permite nuevas escrituras.":""}`:"";
   $("context-status").textContent = contextNotice;
   $<HTMLButtonElement>("attach-image").disabled = busy || (!state.project && !state.task_support);
   $<HTMLButtonElement>("remove-image").disabled = busy;

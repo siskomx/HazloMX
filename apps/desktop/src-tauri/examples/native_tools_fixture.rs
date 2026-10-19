@@ -7,8 +7,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     use serde_json::json;
     use std::sync::{Arc, Mutex};
-    #[derive(Clone, Default)]
-    struct Fixture(Arc<Mutex<(i64, bool)>>);
+    #[derive(Clone)]
+    struct Fixture(Arc<Mutex<(i64, bool, uuid::Uuid, u64)>>);
+    impl Default for Fixture {fn default()->Self {Self(Arc::new(Mutex::new((0,false,uuid::Uuid::new_v4(),0))))}}
     fn tools(changed: bool) -> Vec<Tool> {
         ["observe_native_state","program_owned_parameter_edit","change_catalog","fail_after_effect","wait_after_effect"]
             .into_iter().chain(changed.then_some("new_native_tool")).map(|name|serde_json::from_value(json!({
@@ -58,25 +59,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let value = args.get("value").and_then(|v| v.as_i64()).unwrap_or(0);
             match request.name.as_ref() {
                 "observe_native_state" => {}
-                "program_owned_parameter_edit" => self.0.lock().unwrap().0 = value,
+                "program_owned_parameter_edit" => {let mut state=self.0.lock().unwrap();state.0=value;state.3+=1;},
                 "change_catalog" => self.0.lock().unwrap().1 = true,
                 "fail_after_effect" => {
                     self.0.lock().unwrap().0 = value;
+                    self.0.lock().unwrap().3 += 1;
                     return Ok(
                         CallToolResult::error(vec![ContentBlock::text("Uncertain effect")]).into(),
                     );
                 }
                 "wait_after_effect" => {
                     self.0.lock().unwrap().0 = value;
+                    self.0.lock().unwrap().3 += 1;
                     tokio::time::sleep(std::time::Duration::from_secs(120)).await;
                 }
                 _ => return Err(ErrorData::invalid_params("Unknown native tool", None)),
             }
-            let state = self.0.lock().unwrap().0;
+            let (state,_,identity,writes) = *self.0.lock().unwrap();
             if request.name == "observe_native_state" && value > 0 {
-                return Ok(CallToolResult::structured(json!({"native_value":state,"evidence":"á".repeat(value.min(100000) as usize)})).into());
+                return Ok(CallToolResult::structured(json!({"native_value":state,"native_id":identity,"native_writes":writes,"evidence":"á".repeat(value.min(100000) as usize)})).into());
             }
-            Ok(CallToolResult::structured(json!({"native_value":state,"secret_echo":std::env::var("NATIVE_TEST_TOKEN").unwrap_or_default()})).into())
+            Ok(CallToolResult::structured(json!({"native_value":state,"native_id":identity,"native_writes":writes,"secret_echo":std::env::var("NATIVE_TEST_TOKEN").unwrap_or_default()})).into())
         }
     }
     match std::env::args().nth(1).as_deref() {

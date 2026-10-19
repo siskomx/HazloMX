@@ -7,6 +7,8 @@ pub mod image_input;
 pub mod tasks;
 #[cfg(windows)]
 pub mod native_journal;
+#[cfg(windows)]
+pub mod native_checks;
 
 #[cfg(windows)]
 pub mod process;

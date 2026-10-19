@@ -176,6 +176,17 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    pub(crate) fn reconcile_native_batch(&self,expected:(Uuid,PathBuf),job_id:Uuid,connection:&crate::native_tools::Connection,cancel:Arc<AtomicBool>)->Result<serde_json::Value,String>{
+        let project={let state=self.state.lock().map_err(|e|e.to_string())?;inference_idle(&state)?;
+            if state.job.as_ref().is_some_and(|j|j.view.busy || j.view.snapshot.phase==Phase::AwaitingApproval){return Err("Termina o cancela la propuesta actual antes de revisar el lote anterior.".into());}
+            state.project.clone().filter(|p|p.id==expected.0 && p.root==expected.1).ok_or("El proyecto cambió.")?};
+        let snapshot=project.history().map_err(|e|e.to_string())?.into_iter().find(|s|s.input.job_id()==job_id).ok_or("No se encontró el lote en este proyecto.")?;
+        if !self.task_allows_snapshot(&snapshot)?{return Err("Vuelve a la conversación del lote para revisar sus comprobaciones.".into());}
+        let OperationInput::NativeTools(input)=&snapshot.input else{return Err("Este adaptador necesita su revisión nativa específica.".into());};
+        let stage=project.store("staging").join(job_id.to_string());let directory=if stage.try_exists().map_err(|_|"No se pudo comprobar el trabajo local.")?{stage}else{project.artifact_directory(job_id)};
+        let _pins=crate::project::pin_lineage(&directory).map_err(|_|"No se pudo fijar el trabajo local para revisión.")?;
+        crate::native_journal::reconcile(&directory,input,connection,cancel)
+    }
     pub fn native_recovery(&self)->Result<Vec<crate::native_journal::Summary>,String>{
         let state=self.state.lock().map_err(|e|e.to_string())?;let Some(project)=&state.project else{return Ok(Vec::new());};
         project.native_recovery(None).map_err(|e|e.to_string())
@@ -2770,7 +2781,7 @@ mod tests {
         let (root,workflow)=setup();workflow.task_state().unwrap();
         let project=workflow.state.lock().unwrap().project.clone().unwrap();
         let read=Call{tool:"state".into(),arguments:Default::default()};
-        let input=Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),calls:vec![Call{tool:"edit".into(),arguments:Default::default()}],readback:read.clone(),guard:Some(Guard{call:read,result_sha256:"b".repeat(64)}),receipt_sha256:None};
+        let input=Input{schema_version:1,native_tools_version:1,job_id:Uuid::new_v4(),connection_id:Uuid::new_v4(),program:Program::Freecad,catalog_sha256:"a".repeat(64),description:"Owned recovery fixture".into(),calls:vec![Call{tool:"edit".into(),arguments:Default::default()}],readback:read.clone(),guard:Some(Guard{checks:Vec::new(),call:read,result_sha256:"b".repeat(64)}),receipt_sha256:None};
         let mut snapshot=project.snapshot(OperationInput::NativeTools(input.clone()),Phase::Running).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;project.save(&snapshot).unwrap();
         let stage=project.reserve_stage(input.job_id).unwrap();let mut batch=Batch::start(&stage.path,&input).unwrap();batch.dispatch(0).unwrap();batch.observe(0,&Ok(serde_json::json!({"state":"before"}))).unwrap();batch.dispatch(1).unwrap();
         drop(batch);drop(stage);drop(project);drop(workflow);

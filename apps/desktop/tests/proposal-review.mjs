@@ -140,4 +140,8 @@ assert.match(slice,/no se envían a una impresora/);
 const folder=proposalFacts({input:{fqbn:"arduino:avr:uno"},audit:{destination:"owned-output"}});
 assert.equal(folder.at(-1),"Carpeta de resultado dentro del proyecto: owned-output");
 assert(!folder.join(" ").includes("undefined"));
+const checkedNative={native_tools_version:1,program:"freecad",description:"Ajustar el ancho",calls:[],guard:{checks:[{role:"identity",label:"la pieza elegida",pointer:"/id",expected:"11111111-1111-4111-8111-111111111111"},{role:"outcome",label:"ancho en mm",pointer:"/width",expected:42,step:0}]}};
+const nativeBefore=JSON.stringify(checkedNative),checkedFacts=review(checkedNative);
+assert.match(checkedFacts,/Mantener la identidad de la pieza elegida/);assert.match(checkedFacts,/Comprobar ancho en mm: 42/);
+assert(!checkedFacts.includes("11111111-1111-4111-8111-111111111111"));assert.equal(JSON.stringify(checkedNative),nativeBefore);
 console.log("PASS: source-derived Spanish approval facts; all operations, 33 native drawing actions, explicit units, diameter, absolute PCB positions, compile/slice scope and destination");
