@@ -103,6 +103,37 @@ async function runProbe() {
     const original = await inspect();
     assert.equal(original.dirty, true); assert(original.source.includes("unsaved user note"));
     assert.equal(fs.readFileSync(file,"utf8"), disk);
+    result.stage = "native unsaved header context"; save();
+    const headerFile = path.join(path.dirname(file),"Helper.h"), headerDisk = fs.readFileSync(headerFile,"utf8");
+    const header = await api.workspace.openTextDocument(api.Uri.file(headerFile));
+    await api.window.showTextDocument(header);
+    let headerEditor;
+    for (let attempt=0;attempt<100;attempt++) {
+      const current=api.window.activeTextEditor;
+      if (current?.document === header) {headerEditor=current;break;}
+      await new Promise(resolve=>setTimeout(resolve,20));
+    }
+    assert(headerEditor,"The owned header must be the active native document");
+    const headerSource="// unsaved header stays local\n#define DELAY 500\n";
+    assert.equal(await headerEditor.edit(edit=>edit.replace(new api.Range(header.positionAt(0),header.positionAt(header.getText().length)),headerSource)),true);
+    for(let attempt=0;attempt<100 && header.getText()!==headerSource;attempt++) await new Promise(resolve=>setTimeout(resolve,20));
+    assert.equal(header.getText(),headerSource);assert.equal(header.isDirty,true);
+    await api.window.showTextDocument(doc);
+    for(let attempt=0;attempt<100 && api.window.activeTextEditor?.document!==doc;attempt++) await new Promise(resolve=>setTimeout(resolve,20));
+    const activeAgain=await inspect();assert.equal(activeAgain.document_token,original.document_token);
+    assert.equal(activeAgain.source,original.source);
+    const buffers=await tools.request({action:"inspect_project_buffers",instance_id:activeAgain.instance_id,
+      document_token:activeAgain.document_token,version:activeAgain.version,state_sha256:activeAgain.state_sha256});
+    assert.equal(buffers.ok,true,"Native workspace buffer context must confirm without saving");
+    assert.equal(path.resolve(buffers.result.root).toLowerCase(),path.dirname(file).toLowerCase());
+    const capturedHeader=buffers.result.buffers.find(item=>item.relative_path==="Helper.h");
+    assert(capturedHeader);assert.equal(capturedHeader.source,headerSource);assert.equal(capturedHeader.dirty,true);
+    assert.equal(capturedHeader.version,header.version);
+    assert.equal(capturedHeader.state_sha256,crypto.createHash("sha256").update(headerSource).digest("hex"));
+    assert.equal(fs.readFileSync(headerFile,"utf8"),headerDisk);
+    assert.equal(fs.readFileSync(file,"utf8"),disk);
+    result.native_open_buffers_verified=true;result.unsaved_header_preserved=true;
+    result.header_disk_unchanged=true;result.native_open_buffer_count=buffers.result.buffers.length;
     result.stage = "native edit and undo"; save();
     const beforeUndo = await apply(original);
     const undoTarget = await inspect();

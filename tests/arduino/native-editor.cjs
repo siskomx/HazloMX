@@ -47,6 +47,73 @@ function save(before) {
   const {source,...request}=apply(before,before.source);
   return {...request,action:"save"};
 }
+
+async function projectBuffers(f, extra = {}) {
+  const before = await read(f);
+  return f.tools.request({action:"inspect_project_buffers",instance_id:before.instance_id,
+    document_token:before.document_token,version:before.version,state_sha256:before.state_sha256,...extra});
+}
+function workspace(f, docs = [f.doc]) {
+  f.api.workspace = {textDocuments:docs,
+    getWorkspaceFolder:()=>({uri:{scheme:"file",fsPath:"C:\\owned\\Sketch"}})};
+}
+function header(f, name = "Helper.h", source = "// unsaved header\n#define DELAY 500\n") {
+  return {...f.doc,uri:{scheme:"file",fsPath:"C:\\owned\\Sketch\\"+name},text:source,version:9};
+}
+test("native project read preserves unsaved headers and tabs without saving or editing",async()=>{
+  const f=fixture(),h=header(f),cpp=header(f,"src\\Helper.cpp","// native cpp\n");
+  workspace(f,[cpp,f.doc,h,header(f,"..\\Other\\Other.ino"),{isClosed:true}]);
+  const result=await projectBuffers(f);assert.equal(result.ok,true);
+  const capture=result.result;
+  assert.equal(capture.project_buffers_version,1);assert.equal(capture.root,"C:\\owned\\Sketch");
+  assert.deepEqual(capture.buffers.map(x=>x.relative_path),["Helper.h","Sketch.ino","src/Helper.cpp"]);
+  assert.equal(capture.buffers[0].source,h.text);assert.equal(capture.buffers[1].source,f.doc.text);
+  assert(capture.buffers.every(x=>x.dirty));assert.equal(f.editor.calls,0);assert.equal(f.doc.isDirty,true);
+  h.text+="// manual correction\n";h.version++;
+  const fresh=await projectBuffers(f);assert.equal(fresh.ok,true);
+  assert.notEqual(fresh.result.buffers[0].state_sha256,capture.buffers[0].state_sha256);
+  assert.equal(fresh.result.buffers[0].document_token,capture.buffers[0].document_token);
+  assert.equal(capture.buffers[0].source,"// unsaved header\n#define DELAY 500\n");
+});
+test("project read rejects stale bindings and paths before any mutation",async()=>{
+  for(const field of ["instance_id","document_token","version","state_sha256","path"]){
+    const f=fixture();workspace(f);
+    const result=await projectBuffers(f,{[field]:field==="version"?999:"invalid"});
+    assert.equal(result.outcome,"refused");assert.equal(f.editor.calls,0);assert.equal(f.doc.isDirty,true);
+  }
+});
+test("project read never substitutes disk or another workspace for native buffers",async()=>{
+  for(const mode of ["no_workspace","parent","remote","active_missing","duplicate","invalid_path","nul","eol","too_large","count","document_count"]){
+    const f=fixture();workspace(f,[f.doc,header(f)]);
+    if(mode==="no_workspace")delete f.api.workspace;
+    if(mode==="parent")f.api.workspace.getWorkspaceFolder=()=>({uri:{scheme:"file",fsPath:"C:\\owned"}});
+    if(mode==="remote")f.api.workspace.getWorkspaceFolder=()=>({uri:{scheme:"vscode-remote",fsPath:"C:\\owned\\Sketch"}});
+    if(mode==="active_missing")f.api.workspace.textDocuments=[header(f)];
+    if(mode==="duplicate")f.api.workspace.textDocuments.push(header(f,"helper.H"));
+    if(mode==="invalid_path")f.api.workspace.textDocuments.push(header(f,"src\\..\\Private.h"));
+    if(mode==="nul")f.api.workspace.textDocuments.push(header(f,"Data.h","secret\0data"));
+    if(mode==="eol")f.api.workspace.textDocuments.push(header(f,"Data.h","mixed\r\nline\n"));
+    if(mode==="too_large")f.api.workspace.textDocuments.push(header(f,"Data.h","x".repeat(65537)));
+    if(mode==="count")for(let i=0;i<32;i++)f.api.workspace.textDocuments.push(header(f,`H${i}.h`));
+    if(mode==="document_count")f.api.workspace.textDocuments=[f.doc,...Array(256).fill({isClosed:true})];
+    const result=await projectBuffers(f);assert.equal(result.outcome,"refused",mode);
+    assert(!JSON.stringify(result).includes("secret"));assert.equal(f.editor.calls,0);assert.equal(f.doc.isDirty,true);
+  }
+});
+test("project read bounds aggregate and escaped response bytes",async()=>{
+  for(const source of ["x".repeat(65536),"\u0001".repeat(64000)]){
+    const f=fixture();workspace(f,[f.doc,header(f,"A.h",source),header(f,"B.h",source)]);
+    const result=await projectBuffers(f);assert.equal(result.outcome,"refused");assert.equal(f.editor.calls,0);
+  }
+});
+test("project read refuses a switched or changed active buffer",async()=>{
+  for(const mode of ["switch","edit"]){
+    const f=fixture(),h=header(f);workspace(f,[f.doc,h]);
+    h.getText=()=>{if(mode==="switch")f.api.window.activeTextEditor={document:header(f,"Other.ino")};
+      else {f.doc.text+="// user changed\n";f.doc.version++;}return h.text;};
+    assert.equal((await projectBuffers(f)).outcome,"refused");assert.equal(f.editor.calls,0);
+  }
+});
 test("native recovery preserves completed edits and later manual changes without replay",async()=>{
   const f=fixture(),before=await read(f),request=apply(before,before.source.replace("1000","500"));
   const done=await f.tools.request(request);assert.equal(done.ok,true);
@@ -72,6 +139,7 @@ test("native save recovery never saves again and rejects reuse of an attempted i
 test("running and uncertain attempts never become recovered completion",async()=>{
   const f=fixture(),before=await read(f),request=apply(before,before.source.replace("1000","500"));let release;
   f.editor.hold=new Promise(resolve=>{release=resolve;});const pending=f.tools.request(request);
+  workspace(f);assert.equal((await projectBuffers(f)).outcome,"refused");
   assert.deepEqual(await f.tools.request({action:"recover",original:request}),{ok:true,result:{editor_recovery_version:1,status:"running"}});
   assert.equal((await f.tools.request(request)).outcome,"refused");release();assert.equal((await pending).ok,true);assert.equal(f.editor.calls,1);
   const bad=fixture(),initial=await read(bad),uncertain=apply(initial,initial.source.replace("1000","500"));bad.editor.mode="lost_reply";

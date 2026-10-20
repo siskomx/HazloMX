@@ -10,7 +10,12 @@ use uuid::Uuid;
 const REFUSED:&str="El complemento o su preparación cambió. Se conservó su contenido; revisa la instalación antes de continuar.";
 const PENDING:&str="La actualización local del complemento sigue pendiente. Se conservó la versión anterior; vuelve a preparar el complemento cuando la carpeta esté disponible.";
 // Full three-file manifests from the prior owned companion revisions, never a name/version assertion.
-const PREVIOUS: [[&str; 3]; 3] = [
+const PREVIOUS: [[&str; 3]; 4] = [
+    [
+        "96b95465d63ebe8d258d97fca0b4bb4f519c3c53ada646629ebf4633c8b2dd0a",
+        "4e636e9355166b1c7350ec17358783c4e3af4ae332f1ad2231d7dacda433e80d",
+        "f35a9f9a8d2b0e4cec7083f69c8800c479682d7c1bb8578a67add09e9e3dccc3",
+    ],
     [
         "96b95465d63ebe8d258d97fca0b4bb4f519c3c53ada646629ebf4633c8b2dd0a",
         "41b43a52692594d04c7697081c046d0ded99d5138f3f1b214656e84de5fdbebb",

@@ -35,7 +35,11 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     doc.source = replacement; doc.version++; return true;
   }};
   doc.save=async()=>{saves++;await fs.writeFile(path.join(root,"Sketch.ino"),doc.source);doc.isDirty=false;return true;};
-  const api = {env:{appName:"Arduino Agent"}, window:{activeTextEditor:editor}, Range:class {}};
+  const header = {...doc,uri:{scheme:"file",fsPath:path.join(root,"Helper.h")},
+    source:"// unsaved header stays local\n#define DELAY 500\n",version:7};
+  await fs.writeFile(header.uri.fsPath,"// saved header is stale\n");
+  const api = {env:{appName:"Arduino Agent"}, window:{activeTextEditor:editor}, Range:class {},
+    workspace:{textDocuments:[doc,header],getWorkspaceFolder:()=>({uri:{scheme:"file",fsPath:root}})}};
   const context = {subscriptions:[]};
   try {
     process.env.HAZLOMEXA_AGENT_EDITOR_ROOT = await fs.realpath(root);
@@ -67,6 +71,16 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     const first = await send({token:connection.token, request:{action:"inspect"}});
     assert.equal(first.ok, true); assert.equal(first.result.source, doc.source);
     assert(!JSON.stringify(first).includes("C:"));
+    const projectRequest={action:"inspect_project_buffers",instance_id:first.result.instance_id,
+      document_token:first.result.document_token,version:first.result.version,state_sha256:first.result.state_sha256};
+    const readsBefore=reads;
+    assert.equal((await send({token:"0".repeat(64),request:projectRequest})).ok,false);
+    assert.equal(reads,readsBefore);
+    const buffers=await send({token:connection.token,request:projectRequest});assert.equal(buffers.ok,true);
+    assert.equal(buffers.result.buffers.length,2);
+    assert.equal(buffers.result.buffers.find(x=>x.relative_path==="Helper.h").source,header.source);
+    assert.equal(edits,0);assert.equal(saves,0);
+    assert.equal(await fs.readFile(header.uri.fsPath,"utf8"),"// saved header is stale\n");
     const request = {action:"apply", job_id:crypto.randomUUID(), instance_id:first.result.instance_id,
       document_token:first.result.document_token, version:first.result.version,
       state_sha256:first.result.state_sha256, source:doc.source + "void setup() {}\n"};

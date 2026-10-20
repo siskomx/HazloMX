@@ -37,11 +37,59 @@ function createEditorTools(api) {
       source, eol:doc.eol, dirty:doc.isDirty, source_is_untrusted_data:true};
   }
 
+  function projectBuffers(input) {
+    const editor = api.window.activeTextEditor, before = observe(editor);
+    for (const key of ["instance_id", "document_token", "version", "state_sha256"]) {
+      if (input[key] !== before[key]) throw Error("stale");
+    }
+    const folder = api.workspace?.getWorkspaceFolder(editor.document.uri);
+    const root = folder?.uri?.fsPath;
+    const openDocuments = api.workspace?.textDocuments;
+    if (folder?.uri?.scheme !== "file" || folder.uri.authority || typeof root !== "string"
+        || !/^[a-z]:[\\/]/i.test(root) || path.win32.normalize(root) !== root
+        || path.win32.dirname(editor.document.uri.fsPath).toLowerCase() !== root.toLowerCase()
+        || !Array.isArray(openDocuments) || openDocuments.length > 256) throw Error("workspace");
+    const snapshots = [], names = new Set();
+    let total = 0;
+    for (const doc of openDocuments) {
+      if (doc.isClosed || doc.uri?.scheme !== "file") continue;
+      const relative = path.win32.relative(root, doc.uri.fsPath);
+      if (relative === ".." || relative.startsWith("..\\") || path.win32.isAbsolute(relative)) continue;
+      if (!relative || doc.uri.authority || path.win32.normalize(doc.uri.fsPath) !== doc.uri.fsPath
+          || relative.split("\\").some(part => !part || /[\x00-\x1f<>:"|?*]/.test(part) || /[. ]$/.test(part))
+          || names.has(relative.toLowerCase()) || snapshots.length >= 32
+          || typeof doc.isDirty !== "boolean" || !Number.isSafeInteger(doc.version) || doc.version < 1
+          || ![1, 2].includes(doc.eol)) throw Error("buffer");
+      const source = doc.getText();
+      if (typeof source !== "string" || source.includes("\0") || Buffer.byteLength(source,"utf8") > LIMIT
+          || (total += Buffer.byteLength(source,"utf8")) > 128 * 1024
+          || (doc.eol === 1 ? source.includes("\r") : /(^|[^\r])\n|\r(?!\n)/.test(source))) throw Error("limit");
+      if (!documents.has(doc)) documents.set(doc, crypto.randomUUID());
+      names.add(relative.toLowerCase());
+      snapshots.push({relative_path:relative.replaceAll("\\","/"), document_token:documents.get(doc),
+        version:doc.version, state_sha256:hash(source), source, eol:doc.eol, dirty:doc.isDirty});
+    }
+    snapshots.sort((a,b)=>a.relative_path < b.relative_path ? -1 : a.relative_path > b.relative_path ? 1 : 0);
+    const after = observe(api.window.activeTextEditor);
+    if (JSON.stringify(before) !== JSON.stringify(after)
+        || !snapshots.some(item => item.document_token === before.document_token && item.source === before.source
+          && item.version === before.version && item.dirty === before.dirty && item.eol === before.eol)) throw Error("changed");
+    const result = {project_buffers_version:1, instance_id:instance, active_document_token:before.document_token,
+      root, buffers:snapshots};
+    // Bound the encoded reply as well as source bytes; escaped control characters can expand it.
+    if (Buffer.byteLength(JSON.stringify(result),"utf8") > 384 * 1024) throw Error("limit");
+    return result;
+  }
+
   async function request(input) {
     let sent = false, confirmedRefusal = false, ownsBusy = false;
     try {
       if (fields(input, ["action"]) && input.action === "inspect") {
         return {ok:true, result:observe(api.window.activeTextEditor)};
+      }
+      if (fields(input,["action","instance_id","document_token","version","state_sha256"])
+          && input.action === "inspect_project_buffers" && !busy) {
+        return {ok:true,result:projectBuffers(input)};
       }
       if (fields(input,["action","original"]) && input.action === "recover") {
         const original=input.original;

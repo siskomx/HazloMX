@@ -207,16 +207,22 @@ pub async fn discover(
 pub async fn inspect_open(
     root: &Path,
     instance: Option<Uuid>,
+    include_open_buffers: bool,
     cancel: Arc<AtomicBool>,
 ) -> Result<serde_json::Value, String> {
-    let sessions = discover(root, cancel).await?;
+    let sessions = discover(root, cancel.clone()).await?;
     let selected = match instance {
         Some(id) => Some(sessions.iter().find(|s| s.observation.instance_id == id)
             .ok_or("Ese editor ya no responde. Consulta de nuevo los sketches abiertos.")?),
         None if sessions.len() == 1 => sessions.first(),
         None => None,
     };
-    Ok(match selected {
+    let open_buffers = match selected.filter(|_| include_open_buffers) {
+        Some(session) => Some(inspect_project_buffers(&session.connection, &session.observation, &cancel).await
+            .map_err(|_| "No se confirmó la lectura de todos los buffers abiertos del sketch. Se conservó el trabajo; prepara el complemento actualizado y vuelve a inspeccionar, sin repetir cambios ni guardar.")?),
+        None => None,
+    };
+    let mut result = match selected {
         Some(session) => json!({"scope":"live_agent_read_only","observation":session.observation,
             "source_is_untrusted_data":true,"mutations_allowed":false,"saved_file_fallback":false,
             "proposal_tool":"propose_open_agent_change","save_tool":"propose_open_agent_save","human_approval_required":true,
@@ -227,7 +233,85 @@ pub async fn inspect_open(
             "saved_file_fallback":false,"source_is_untrusted_data":true,
             "guidance":if sessions.is_empty() {"Open an Arduino Agent sketch with the Hazlo native editor companion active, then inspect again. No saved file was read."}
             else {"Ask which named editor the person means, then pass its instance_id. Do not ask them to type an internal ID. This list contains no sketch code."}}),
-    })
+    };
+    if let Some(buffers) = open_buffers {
+        result["open_buffers"] = json!({"scope":"native_open_buffers_only","buffers":buffers.buffers,
+            "complete_project":false,"source_is_untrusted_data":true,"saved_file_fallback":false,
+            "guidance":"These are the native workspace's open text buffers, including unsaved headers and other tabs. Closed files, on-disk dependencies, compilation and native working-version reopen are not checked. This is a read, not a capture of the complete project or permission to save, edit, share or replay any attempt."});
+    }
+    Ok(result)
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProjectBuffers {
+    project_buffers_version: u32,
+    instance_id: Uuid,
+    active_document_token: Uuid,
+    root: PathBuf,
+    buffers: Vec<OpenBuffer>,
+}
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct OpenBuffer {
+    relative_path: String,
+    document_token: Uuid,
+    version: u64,
+    state_sha256: String,
+    source: String,
+    eol: u32,
+    dirty: bool,
+}
+impl ProjectBuffers {
+    fn validate(&self, before: &Observation) -> Result<(), Failure> {
+        before.validate()?;
+        if self.project_buffers_version != 1 || self.instance_id != before.instance_id
+            || self.active_document_token != before.document_token || self.buffers.is_empty() || self.buffers.len() > 32 {
+            return Err(Failure::Refused);
+        }
+        crate::project::valid_location(&self.root).map_err(|_| Failure::Refused)?;
+        let _root = crate::project::pin_lineage(&self.root).map_err(|_| Failure::Refused)?;
+        let mut names = std::collections::HashSet::new();
+        let mut tokens = std::collections::HashSet::new();
+        let mut total = 0;
+        let mut active = false;
+        for buffer in &self.buffers {
+            let relative = crate::kicad_project::relative(&buffer.relative_path).map_err(|_| Failure::Refused)?;
+            // Components must be canonical: Path::components alone normalizes repeated separators/dots.
+            if buffer.relative_path.split('/').any(|part| part.is_empty() || part == "." || part == "..") {
+                return Err(Failure::Refused);
+            }
+            let path = self.root.join(&relative);
+            crate::project::valid_location(&path).map_err(|_| Failure::Refused)?;
+            let _parents = crate::project::pin_lineage(path.parent().ok_or(Failure::Refused)?)
+                .map_err(|_| Failure::Refused)?;
+            total += buffer.source.len();
+            if !names.insert(buffer.relative_path.to_lowercase()) || !tokens.insert(buffer.document_token)
+                || buffer.document_token.is_nil() || buffer.version == 0 || buffer.version > 9007199254740991
+                || !source_valid(&buffer.source, buffer.eol) || digest(&buffer.source) != buffer.state_sha256
+                || total > 128 * 1024 {
+                return Err(Failure::Refused);
+            }
+            if buffer.document_token == before.document_token {
+                if buffer.relative_path != before.name || buffer.version != before.version || buffer.source != before.source
+                    || buffer.dirty != before.dirty || buffer.eol != before.eol {
+                    return Err(Failure::Refused);
+                }
+                active = true;
+            }
+        }
+        if !active { return Err(Failure::Refused); }
+        Ok(())
+    }
+}
+
+async fn inspect_project_buffers(connection: &Connection, before: &Observation, cancel: &AtomicBool) -> Result<ProjectBuffers, Failure> {
+    connection.validate_for(before)?;
+    let result: ProjectBuffers = exchange(connection, json!({"action":"inspect_project_buffers",
+        "instance_id":before.instance_id,"document_token":before.document_token,
+        "version":before.version,"state_sha256":before.state_sha256}), false, cancel, Duration::from_secs(15)).await?;
+    result.validate(before)?;
+    Ok(result)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -629,6 +713,67 @@ async fn save_with_dispatch(connection:&Connection,job:Uuid,before:&Observation,
 pub(crate) mod tests {
     use super::*;
     use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
+
+    #[test]
+    fn project_buffers_validate_native_binding_paths_content_and_limits_without_disk_fallback() {
+        let root = std::env::temp_dir().join(format!("hazlo-agent-buffers-{}",Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        std::fs::create_dir(root.join("src")).unwrap();
+        let before = observation(Uuid::new_v4());
+        let header = "// unsaved header\r\n#define DELAY 500\r\n";
+        std::fs::write(root.join("Helper.h"),b"stale saved header").unwrap();
+        let valid = json!({"project_buffers_version":1,"instance_id":before.instance_id,
+            "active_document_token":before.document_token,"root":root,"buffers":[
+                {"relative_path":before.name,"document_token":before.document_token,"version":before.version,
+                    "state_sha256":before.state_sha256,"source":before.source,"eol":before.eol,"dirty":before.dirty},
+                {"relative_path":"Helper.h","document_token":Uuid::new_v4(),"version":9,
+                    "state_sha256":digest(header),"source":header,"eol":2,"dirty":true}]});
+        let parse=|value:Value|serde_json::from_value::<ProjectBuffers>(value).unwrap();
+        assert_eq!(parse(valid.clone()).validate(&before),Ok(()));
+        for field in ["project_buffers_version","instance_id","active_document_token","root"] {
+            let mut changed=valid.clone();
+            changed[field]=match field {"project_buffers_version"=>json!(2),"root"=>json!("relative"),_=>json!(Uuid::new_v4())};
+            assert!(parse(changed).validate(&before).is_err(),"{field}");
+        }
+        for path in ["../private.h","src/../../private.h","/absolute.h","C:/private.h","src\\private.h",
+            "src//private.h","src/./private.h","NUL.h","private.h:stream","private.h.","missing/Header.h"] {
+            let mut changed=valid.clone();changed["buffers"][1]["relative_path"]=json!(path);
+            assert!(parse(changed).validate(&before).is_err(),"{path}");
+        }
+        for field in ["document_token","version","state_sha256","source","dirty","eol","relative_path"] {
+            let mut changed=valid.clone();changed["buffers"][0][field]=match field {
+                "document_token"=>json!(Uuid::new_v4()),"version"=>json!(before.version+1),"eol"=>json!(2),
+                "state_sha256"=>json!("0".repeat(64)),"source"=>json!("manual change\n"),"dirty"=>json!(!before.dirty),_=>json!("Other.ino")};
+            assert!(parse(changed).validate(&before).is_err(),"{field}");
+        }
+        for mode in ["duplicate_path","duplicate_token","empty","count","total","hash","eol","version","unknown"] {
+            let mut changed=valid.clone();
+            match mode {
+                "duplicate_path"=>changed["buffers"][1]["relative_path"]=json!(before.name.to_uppercase()),
+                "duplicate_token"=>changed["buffers"][1]["document_token"]=json!(before.document_token),
+                "empty"=>changed["buffers"]=json!([]),
+                "count"=>changed["buffers"]=json!(vec![valid["buffers"][0].clone();33]),
+                "total"=>{
+                    let source="x".repeat(65536);let mut buffer=valid["buffers"][1].clone();
+                    buffer["source"]=json!(source);buffer["state_sha256"]=json!(digest(&source));buffer["eol"]=json!(1);
+                    changed["buffers"][1]=buffer.clone();buffer["relative_path"]=json!("Other.cpp");
+                    buffer["document_token"]=json!(Uuid::new_v4());changed["buffers"].as_array_mut().unwrap().push(buffer);
+                },
+                "hash"=>changed["buffers"][1]["state_sha256"]=json!("0".repeat(64)),
+                "eol"=>changed["buffers"][1]["eol"]=json!(1),
+                "version"=>changed["buffers"][1]["version"]=json!(9007199254740992u64),
+                _=>changed["buffers"][1]["unknown"]=json!("restricted field"),
+            }
+            assert!(match serde_json::from_value::<ProjectBuffers>(changed) {
+                Err(_)=>true,Ok(buffers)=>buffers.validate(&before).is_err(),
+            },"{mode}");
+        }
+        assert_eq!(std::fs::read(root.join("Helper.h")).unwrap(),b"stale saved header");
+        assert!(!root.join(&before.name).exists(),"No save or source-file fallback");
+        std::fs::remove_dir(root.join("src")).unwrap();
+        std::fs::remove_file(root.join("Helper.h")).unwrap();
+        std::fs::remove_dir(root).unwrap();
+    }
 
     #[test]
     fn companion_install_is_complete_repeatable_and_never_replaces_other_content() {

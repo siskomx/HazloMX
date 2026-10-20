@@ -91,6 +91,18 @@ fn main() {
     let read=host.call("inspect_open_agent_documents",args.clone()).unwrap();
     assert_eq!(read["observation"],serde_json::to_value(&before).unwrap());
     assert_eq!(read["mutations_allowed"],false);
+    {
+        let context=host.call("inspect_open_agent_documents",serde_json::json!({"instance_id":before.instance_id,"include_open_buffers":true})).unwrap();
+        assert_eq!(context["observation"],read["observation"]);
+        assert_eq!(context["open_buffers"]["complete_project"],false);
+        assert_eq!(context["open_buffers"]["scope"],"native_open_buffers_only");
+        let buffers=context["open_buffers"]["buffers"].as_array().unwrap();
+        assert!(buffers.len()>=2);
+        assert_eq!(buffers.iter().find(|buffer|buffer["relative_path"]=="Helper.h").unwrap()["source"],"// unsaved header stays local\n#define DELAY 500\n");
+        assert!(context["open_buffers"].get("root").is_none());
+        for private in ["\"token\":", "\"pipe\":",root.to_str().unwrap()] {assert!(!context.to_string().contains(private));}
+        assert_eq!(std::fs::read(saved_path.parent().unwrap().join("Helper.h")).unwrap(),b"// saved header is stale\n");
+    }
     for private in ["\"token\":", "\"pipe\":",root.to_str().unwrap()] {
         assert!(!read.to_string().contains(private));
     }

@@ -41,6 +41,7 @@ def main(launch, hold_for_conversation=False, with_hazlo=False):
     sketch = root / "sketchbook/OwnedSketch/OwnedSketch.ino"
     sketch.parent.mkdir(parents=True)
     sketch.write_text("#include <Arduino.h>\nvoid setup() {}\nvoid loop() { delay(1000); }\n", newline="\n")
+    (sketch.parent / "Helper.h").write_text("// saved header is stale\n", newline="\n")
     (sketch.parent / ".theia").mkdir()
     settings = json.dumps({"files.autoSave":"off"})
     (config / "settings.json").write_text(settings)
