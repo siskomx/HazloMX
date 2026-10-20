@@ -78,7 +78,8 @@ export function proposalFacts(run: Snapshot): string[] {
     for(const check of input.guard?.checks??[])facts.push(check.role==="identity"?`Mantener la identidad de ${check.label}.`:`Comprobar ${check.label}: ${JSON.stringify(check.expected)}.`);
     facts.push("Usar las herramientas nativas de " + input.program + ".", "Objetivo: " + input.description,
       "El programa ejecutará las llamadas del catálogo conectado; puedes revisar sus argumentos en los detalles.",
-      "Hazlo pedirá una lectura nativa al terminar. Las respuestas no son una certificación independiente de geometría.",
+      input.calls?.length?"Las comprobaciones previas y finales usan consultas que el programa declara de solo lectura. Esa declaración no garantiza que el lote esté protegido frente a cambios simultáneos.":"Se ejecutará una sola acción del programa para el objetivo indicado. Aprobarla no significa que sea de solo lectura.",
+      "Las respuestas del programa no son una certificación independiente de geometría ni del resultado completo de la tarea.",
       "Cancelar detiene la espera; no revierte cambios ya aceptados. Revisa el programa antes de repetir una llamada.");
     return facts;
   }

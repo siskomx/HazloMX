@@ -479,7 +479,11 @@ mod tests {
             let mut tool=json!({"name":"state","inputSchema":{"type":"object","additionalProperties":false}});
             if declared {tool["annotations"]=json!({"readOnlyHint":true,"destructiveHint":false,"openWorldHint":false});}
             let catalog=crate::native_tools::Catalog{connection_id:input.connection_id,program:input.program,transport:"mcp",server:json!({"name":"Owned fixture"}),catalog_sha256:input.catalog_sha256.clone(),tools:vec![serde_json::from_value(tool).unwrap(),serde_json::from_value(json!({"name":"edit","inputSchema":{"type":"object"}})).unwrap()],scope:"owned_local_fixture"};
-            let mut batch=Batch::start_with_catalog(&root,&input,&catalog).unwrap();batch.dispatch(0).unwrap();batch.observe(0,&Err("PRIVATE_QUERY_ERROR_SENTINEL".into())).unwrap();
+            let mut batch=if declared{Batch::start_with_catalog(&root,&input,&catalog).unwrap()}else{
+                assert!(Batch::start_with_catalog(&root,&input,&catalog).is_err());assert!(!root.join("dispatch.json").exists());
+                // Historical unclassified records still keep their conservative mutation hold.
+                Batch::start(&root,&input).unwrap()
+            };batch.dispatch(0).unwrap();batch.observe(0,&Err("PRIVATE_QUERY_ERROR_SENTINEL".into())).unwrap();
             assert_eq!(batch.journal.summary().needs_review,!declared);
             drop(batch);let saved=read(&root,&input).unwrap().unwrap();assert_eq!(saved.summary().needs_review,!declared);
             if declared {

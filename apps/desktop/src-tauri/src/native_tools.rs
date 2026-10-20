@@ -222,11 +222,20 @@ impl Catalog {
             a["readOnlyHint"]==true && a["destructiveHint"]==false && a["openWorldHint"]==false
         })
     }
+    pub(crate) fn validate_call_arguments(&self,input:&Input)->Result<(),String>{
+        for call in input.calls.iter().chain([&input.readback]).chain(input.guard.iter().map(|g| &g.call)){self.validate_arguments(call)?;}Ok(())
+    }
+    pub(crate) fn query_role_violation(&self,input:&Input)->Option<&'static str>{
+        if input.guard.as_ref().is_some_and(|guard|!self.local_read_only(&guard.call)){Some("guard")}
+        else if !input.calls.is_empty() && !self.local_read_only(&input.readback){Some("readback")}else{None}
+    }
     pub(crate) fn validate_calls(&self, input: &Input) -> Result<(), String> {
-        for call in input.calls.iter().chain([&input.readback]).chain(input.guard.iter().map(|g| &g.call)) {
-            self.validate_arguments(call)?;
+        self.validate_call_arguments(input)?;
+        match self.query_role_violation(input){
+            Some("guard")=>Err("La comprobación previa debe declarar una consulta local de solo lectura. Elige una consulta del catálogo o una ruta nativa compatible; no se ejecutó el lote.".into()),
+            Some(_)=>Err("La lectura final debe declarar una consulta local de solo lectura. Una acción adicional debe aparecer en los pasos aprobados, no como comprobación. No se ejecutó el lote.".into()),
+            None=>Ok(()),
         }
-        Ok(())
     }
     fn validate_arguments(&self, call: &Call) -> Result<(), String> {
         validate_call(call)?;
@@ -1030,7 +1039,7 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,directory:&Path,canc
     let mut journal=crate::native_journal::Batch::start_with_catalog(directory,input,&catalog)?;
     let offset=usize::from(input.guard.is_some());
     if let Some(guard) = &input.guard {
-        if !guard.checks.is_empty(){connection.read_catalog(&input.catalog_sha256,&guard.call,cancel.clone())?;}
+        connection.read_catalog(&input.catalog_sha256,&guard.call,cancel.clone())?;
         let permit=dispatch_permit(gate,&cancel,paused)?;
         journal.dispatch(0)?;
         let result=connection.call_permitted(&guard.call,cancel.clone(),Some(permit));
@@ -1054,7 +1063,7 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,directory:&Path,canc
         journal.observe(offset+index,&result)?;
         results.push(result.map_err(|_|"Una llamada nativa falló o tiene efectos inciertos. Su respuesta queda local; conserva los pasos confirmados y revisa el programa antes de continuar.")?);
     }
-    if input.guard.as_ref().is_some_and(|g|!g.checks.is_empty()){connection.read_catalog(&input.catalog_sha256,&input.readback,cancel.clone())?;}
+    if !input.calls.is_empty(){connection.read_catalog(&input.catalog_sha256,&input.readback,cancel.clone())?;}
     let permit=dispatch_permit(gate,&cancel,paused)?;
     journal.dispatch(offset+input.calls.len())?;
     let result=connection.call_permitted(&input.readback,cancel.clone(),Some(permit));
@@ -1260,10 +1269,21 @@ pub(crate) mod tests {
         }
     }
     #[test]
+    fn guard_and_final_query_roles_are_checked_even_without_outcome_conditions(){
+        let query:Tool=serde_json::from_value(json!({"name":"observe_native_state","inputSchema":{"type":"object"},"annotations":{"readOnlyHint":true,"destructiveHint":false,"openWorldHint":false}})).unwrap();
+        let edit:Tool=serde_json::from_value(json!({"name":"native_edit","inputSchema":{"type":"object"},"annotations":{"readOnlyHint":false,"destructiveHint":false,"openWorldHint":false}})).unwrap();
+        let mut catalog=catalog(Uuid::new_v4(),Program::Drawing,"mcp",json!({"name":"owned"}),vec![query,edit]).unwrap();let mut batch=input(&catalog);batch.calls=vec![call("native_edit",json!({}))];batch.guard=Some(Guard{call:batch.readback.clone(),result_sha256:"a".repeat(64),checks:vec![]});batch.validate().unwrap();catalog.validate_calls(&batch).unwrap();
+        let original=batch.clone();batch.guard.as_mut().unwrap().call=call("native_edit",json!({}));assert!(catalog.validate_calls(&batch).is_err());batch=original.clone();batch.readback=call("native_edit",json!({}));assert!(catalog.validate_calls(&batch).is_err());batch=original;
+        let query_index=catalog.tools.iter().position(|t|t.name=="observe_native_state").unwrap();let query=catalog.tools[query_index].clone();for annotations in [json!({}),json!({"readOnlyHint":true}),json!({"readOnlyHint":true,"destructiveHint":true,"openWorldHint":false}),json!({"readOnlyHint":true,"destructiveHint":false,"openWorldHint":true})]{let mut tool=serde_json::to_value(&query).unwrap();tool["annotations"]=annotations;catalog.tools[query_index]=serde_json::from_value(tool).unwrap();assert!(catalog.validate_calls(&batch).is_err());}
+        // A separately reviewed single action is not silently relabeled as a query.
+        batch.calls.clear();batch.guard=None;batch.readback=call("native_edit",json!({}));catalog.validate_calls(&batch).unwrap();
+    }
+    #[test]
     fn schema_preflight_checks_all_arguments_without_fetching_references() {
         let schema=json!({"type":"object","$defs":{"size":{"type":"integer","minimum":1,"maximum":20}},"properties":{"size":{"$ref":"#/$defs/size"},"units":{"enum":["mm","in"]},"points":{"type":"array","minItems":1,"items":{"type":"array","minItems":2,"maxItems":2,"items":{"type":"number"}}}},"required":["size","units","points"],"additionalProperties":false});
         let tool:Tool=serde_json::from_value(json!({"name":"native_edit","inputSchema":schema})).unwrap();
-        let mut catalog=catalog(Uuid::new_v4(),Program::Drawing,"mcp",json!({"name":"owned"}),vec![tool]).unwrap();
+        let query:Tool=serde_json::from_value(json!({"name":"native_query","inputSchema":{"type":"object","additionalProperties":false},"annotations":{"readOnlyHint":true,"destructiveHint":false,"openWorldHint":false}})).unwrap();
+        let mut catalog=catalog(Uuid::new_v4(),Program::Drawing,"mcp",json!({"name":"owned"}),vec![tool,query]).unwrap();
         let good=call("native_edit",json!({"size":3,"units":"in","points":[[1.5,2]]}));
         catalog.validate_arguments(&good).unwrap();
         for args in [json!({"size":0,"units":"mm","points":[[1,2]]}),json!({"size":3,"units":"cm","points":[[1,2]]}),json!({"size":3,"units":"mm","points":[[1]]}),json!({"size":3,"units":"mm"}),json!({"size":"RAW_PRIVATE_SENTINEL","units":"mm","points":[[1,2]]}),json!({"size":3,"units":"mm","points":[[1,2]],"extra":true})] {
@@ -1272,7 +1292,7 @@ pub(crate) mod tests {
         }
         let mut batch=input(&catalog);
         batch.calls=vec![good.clone(),call("native_edit",json!({}))];
-        batch.readback=good.clone();
+        batch.readback=call("native_query",json!({}));
         assert!(catalog.validate_calls(&batch).is_err());
         batch.calls.pop();catalog.validate_calls(&batch).unwrap();
         batch.guard=Some(Guard{call:call("native_edit",json!({})),result_sha256:"a".repeat(64),checks:vec![]});
@@ -1298,7 +1318,7 @@ pub(crate) mod tests {
         let (connection,catalog)=Connection::mcp(Program::Drawing,McpConfig{executable,args:vec![],env:BTreeMap::new(),url:None,authorization:None},root.clone(),cancel()).unwrap();
         let query=call("observe_native_state",json!({}));
         let before=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();
-        for scenario in ["later_step","readback","guard"] {
+        for scenario in ["later_step","readback","guard","guard_mutation","readback_mutation"] {
             let mut batch=input(&catalog);
             batch.calls=vec![call("program_owned_parameter_edit",json!({"value":7})),call("program_owned_parameter_edit",json!({"value":8}))];
             batch.guard=Some(Guard{call:query.clone(),result_sha256:before["readback_sha256"].as_str().unwrap().into(),checks:vec![]});
@@ -1306,6 +1326,8 @@ pub(crate) mod tests {
             match scenario {
                 "later_step"=>batch.calls[1]=call("program_owned_parameter_edit",json!({"value":"RAW_PRIVATE_SENTINEL"})),
                 "readback"=>batch.readback=invalid,
+                "guard_mutation"=>batch.guard.as_mut().unwrap().call=call("program_owned_parameter_edit",json!({"value":99})),
+                "readback_mutation"=>batch.readback=call("program_owned_parameter_edit",json!({"value":99})),
                 _=>batch.guard.as_mut().unwrap().call=invalid,
             }
             let folder=root.join(Uuid::new_v4().to_string());std::fs::create_dir(&folder).unwrap();
@@ -1911,17 +1933,12 @@ pub(crate) mod tests {
                 call: query,
                 result_sha256: crate::kicad_project::digest(&serde_json::to_vec(&state).unwrap()),
             });
-            run(
-                &edit,
-                &connection,
-                &folder,
-                Arc::new(AtomicBool::new(false)),
-            )
-            .unwrap();
-            assert_eq!(
-                std::fs::read_to_string(folder.join("native-fixture-state.txt")).unwrap(),
-                "17"
-            );
+            assert!(run(&edit,&connection,&folder,Arc::new(AtomicBool::new(false))).unwrap_err().contains("solo lectura"));
+            assert!(!folder.join("dispatch.json").exists());assert!(!folder.join("native-fixture-state.txt").exists());
+            // CLI argv has no query declaration: review this single native action explicitly.
+            let mut action=input(&catalog);action.readback=call("cli",json!({"args":["set","17"]}));
+            run(&action,&connection,&folder,Arc::new(AtomicBool::new(false))).unwrap();
+            assert_eq!(std::fs::read_to_string(folder.join("native-fixture-state.txt")).unwrap(),"17");
             assert!(connection
                 .call(
                     &call("cli", json!({"args":["upload"]})),
