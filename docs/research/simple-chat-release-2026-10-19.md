@@ -23,9 +23,11 @@ The final application fix reserves the existing native batch journal before capa
 
 Earlier per-program native acceptance records remain linked from the historical plan. This release does not claim a fresh real-provider conversation or physical-device test for every integration.
 
-## Pending check and limits
+## Final guest acceptance, 2026-10-20
 
-The clean Windows guest preparer refused to start below its existing 3-GiB free-memory requirement. The clean install/previous-version upgrade/startup/uninstall and guest data-preservation test remains pending. The successful host upgrade does not establish those guest results. Permission to stop unrelated WSL workloads was requested rather than assuming they were disposable.
+The user approved stopping Docker and WSL; the normal shutdown commands succeeded and available RAM rose above the existing 3-GiB guest requirement. A fresh disposable Windows guest then passed installation of the previous release, upgrade to this exact installer, installed binary identities, both 47-tool authenticated transport checks, application startup and uninstall. Project/chat/user-data preservation checks passed, and all eight independently exported project files matched their recorded hashes. The owned guest was stopped after verification. The [sanitized receipt](simple-chat-release-2026-10-20.guest.json) records the completed lifecycle. This did not rerun engineering workflows, external AI conversations or physical hardware inside the guest.
+
+## Limits
 
 KiCad 10 live schematic editing remains pending. Physical operation and firmware recovery require device-specific evidence; a compile, saved file, checksum or warning alone does not prove them. Unsupported hardware writes stay unavailable. General effect/concurrency/reconciliation frameworks in the historical plan are deferred beyond this release.
 

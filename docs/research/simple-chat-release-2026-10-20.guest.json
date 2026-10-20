@@ -1,0 +1,19 @@
+{
+  "pass": true,
+  "current_user_install": true,
+  "binaries_match_package_build": true,
+  "same_version_update": true,
+  "previous_build_update": true,
+  "app_alive": true,
+  "uninstalled": true,
+  "user_files_preserved": true,
+  "lifecycle_pass": true,
+  "source_commit": "3f9d4ff",
+  "installer_sha256": "2f16d9db8a5e1ad075c7638d2914fd8e5eff0534c237f0660d0602b891ec2db5",
+  "installed_and_updated_helper_tools": 47,
+  "independent_exported_files_match": 8,
+  "native_ui_automation": false,
+  "engineering_workflows_retested": false,
+  "chat_history_file_preserved": true,
+  "verified_on": "2026-10-20"
+}
