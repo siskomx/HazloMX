@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "desktop_enabled_library_and_binary_tests_passed_serially": 399,
+  "environment_tests_skipped": 76,
+  "all_target_desktop_clippy_passed": true,
+  "frontend_build_passed": true,
+  "approval_language_passed": true,
+  "headless_task_chat_passed": true,
+  "host_boundaries": {
+    "fresh_one_use_approval_required": true,
+    "changed_task_invalidates_pending_approval": true,
+    "stop_before_dispatch_preserves_edit_and_unused_attempts": true,
+    "immutable_target_and_checkpoint_bound": true,
+    "agreement_and_attempt_owner_bound": true,
+    "unconfirmed_attempt_not_replayed_under_consumed_approval": true,
+    "original_allowance_not_reset": true,
+    "automatic_chat_route_from_another_program_checked": true,
+    "raw_results_stay_behind_existing_sharing_boundary": true,
+    "owned_process_handles_and_empty_job_required_for_exit": true,
+    "independent_child_log_exit_cycles_checked": 16
+  },
+  "actual_kicad_fixture": {
+    "version": "10.0.7",
+    "actual_program_window": true,
+    "checked_native_copies": 2,
+    "imperial_followup": true,
+    "native_capture_over_stale_disk": true,
+    "originals_preserved": true,
+    "stopped_check_not_automatically_dispatched": true,
+    "fresh_proposal_detects_reader": true,
+    "fresh_check_only_approval_passed": true,
+    "original_source_editor_and_writer_unavailable_during_resume": true,
+    "resume_attempt_bound_to_new_approval": true,
+    "partial_files_and_original_edit_checkpoint_preserved": true,
+    "resume_report_reconstructed_offline": true,
+    "owned_editor_stopped": true
+  },
+  "scope_limits": {
+    "visual_resume_approval_checked": false,
+    "gui_copy_fidelity_checked": false,
+    "real_provider_conversation_checked": false,
+    "other_engines_check_resume_complete": false,
+    "expanded_resource_approval_complete": false,
+    "changed_copy_reconciliation_complete": false,
+    "general_mcp_concurrency_complete": false,
+    "overall_task_outcome_checked": false,
+    "physical_function_checked": false
+  },
+  "model_download_requested": false,
+  "installer_rebuilt": false,
+  "installed_app_updated": false,
+  "kicad_10_live_schematics_pending": true
+}

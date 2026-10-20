@@ -74,6 +74,7 @@ pub enum OperationInput {
     PublicDocument(crate::public_document::Input),
     Konnect(KonnectInput),
     KonnectPcb(crate::konnect_pcb::Input),
+    ResultChecks(crate::result_checks::Input),
 }
 
 impl From<SolidInput> for OperationInput {
@@ -92,7 +93,7 @@ impl From<EditInput> for OperationInput {
     }
 }
 impl OperationInput {
-    pub(crate) fn agreement(&self)->Option<&crate::native_tools::Agreement>{match self{Self::NativeTools(input)=>input.agreement.as_ref(),Self::LiveCad(input)=>input.agreement.as_ref(),Self::LiveAgent(input)=>input.agreement.as_ref(),Self::LivePcb(input)=>input.agreement.as_ref(),Self::LiveDrawing(input)=>input.agreement.as_ref(),Self::KonnectPcb(input)=>input.agreement.as_ref(),_=>None}}
+    pub(crate) fn agreement(&self)->Option<&crate::native_tools::Agreement>{match self{Self::NativeTools(input)=>input.agreement.as_ref(),Self::LiveCad(input)=>input.agreement.as_ref(),Self::LiveAgent(input)=>input.agreement.as_ref(),Self::LivePcb(input)=>input.agreement.as_ref(),Self::LiveDrawing(input)=>input.agreement.as_ref(),Self::KonnectPcb(input)=>input.agreement.as_ref(),Self::ResultChecks(input)=>Some(&input.agreement),_=>None}}
     pub(crate) fn native_program(&self)->Option<crate::host_tools::Program> {
         use crate::host_tools::Program;
         match self {
@@ -104,6 +105,7 @@ impl OperationInput {
     pub(crate) fn receipt_sha256(&self) -> Option<&str> {
         match self {
             Self::KonnectPcb(i)=>i.receipt_sha256.as_deref(),
+            Self::ResultChecks(i)=>i.receipt_sha256.as_deref(),
             Self::NativeTools(i)=>i.receipt_sha256.as_deref(),
             Self::PublicDocument(i)=>i.receipt_sha256.as_deref(),
             Self::LiveCad(i)=>i.receipt_sha256.as_deref(),
@@ -116,6 +118,7 @@ impl OperationInput {
     pub(crate) fn retain_receipt(&mut self, directory:&Path) -> io::Result<bool> {
         let (receipt,limit)=match self {
             Self::KonnectPcb(i) if i.copy_checkpoint_version.is_some()=>(&mut i.receipt_sha256,1024*1024),
+            Self::ResultChecks(i)=>(&mut i.receipt_sha256,65536),
             Self::NativeTools(i)=>(&mut i.receipt_sha256,crate::native_tools::REPORT_LIMIT),
             Self::PublicDocument(i)=>(&mut i.receipt_sha256,crate::public_document::REPORT_LIMIT),
             Self::LiveCad(i)=>(&mut i.receipt_sha256,65536),
@@ -145,6 +148,7 @@ impl OperationInput {
             Self::PublicDocument(_) => "public_document",
             Self::Konnect(_) => "konnect",
             Self::KonnectPcb(_) => "konnect_pcb",
+            Self::ResultChecks(_) => "result_checks",
         }
     }
     pub fn job_id(&self) -> Uuid {
@@ -164,6 +168,7 @@ impl OperationInput {
             Self::PublicDocument(input) => input.job_id,
             Self::Konnect(input) => input.job_id,
             Self::KonnectPcb(input) => input.job_id,
+            Self::ResultChecks(input) => input.job_id,
         }
     }
     pub fn validate(&self) -> Result<(), String> {
@@ -183,6 +188,7 @@ impl OperationInput {
             Self::PublicDocument(input) => input.validate(),
             Self::Konnect(input) => input.validate(),
             Self::KonnectPcb(input) => input.validate(),
+            Self::ResultChecks(input) => input.validate(),
         }
     }
     pub fn solid(&self) -> Result<&SolidInput, String> {
@@ -301,6 +307,7 @@ pub enum ArtifactFormat {
     KonnectOriginal,
     KonnectEdited,
     KonnectReport,
+    ResultChecksReport,
     KonnectNetlist,
 }
 
@@ -717,6 +724,7 @@ impl Project {
                 format!("{}/Checked/{}", crate::pcb_copy_recovery::verification_name(&directory,input).map_err(io::Error::other)?,input.source.entry)
             }
             (OperationInput::KonnectPcb(_), ArtifactFormat::KonnectReport) => "result.json".into(),
+            (OperationInput::ResultChecks(_), ArtifactFormat::ResultChecksReport) => "result.json".into(),
             (OperationInput::KonnectPcb(input), ArtifactFormat::KicadReport) => {
                 format!("{}/Check.json",crate::pcb_copy_recovery::verification_name(&directory,input).map_err(io::Error::other)?)
             }
@@ -784,6 +792,7 @@ impl Project {
                 OperationInput::PublicDocument(_) => 18,
                 OperationInput::Konnect(_) => 9,
                 OperationInput::KonnectPcb(_) => 11,
+                OperationInput::ResultChecks(_) => 19,
             },
             project_id: self.id,
             input,
@@ -818,7 +827,7 @@ impl Project {
             ));
         }
         if (snapshot.schema_version == 10
-            && matches!(snapshot.input, OperationInput::KonnectPcb(_) | OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_) | OperationInput::NativeTools(_) | OperationInput::PublicDocument(_)))
+            && matches!(snapshot.input, OperationInput::KonnectPcb(_) | OperationInput::LiveCad(_) | OperationInput::LivePcb(_) | OperationInput::LiveAgent(_) | OperationInput::LiveDrawing(_) | OperationInput::NativeTools(_) | OperationInput::PublicDocument(_) | OperationInput::ResultChecks(_)))
             || !matches!(
                 (&snapshot.input, snapshot.schema_version),
                 (OperationInput::Freecad(_), 1 | 2)
@@ -836,6 +845,7 @@ impl Project {
                     | (OperationInput::PublicDocument(_), 18)
                     | (OperationInput::Konnect(_), 9)
                     | (OperationInput::KonnectPcb(_), 11 | 12)
+                    | (OperationInput::ResultChecks(_), 19)
                     | (_, 10)
             )
             || snapshot.project_id != self.id
@@ -847,13 +857,13 @@ impl Project {
         }
         match (snapshot.schema_version, &snapshot.audit) {
             (1, None) => (),
-            (2..=18, Some(audit)) => {
+            (2..=19, Some(audit)) => {
                 if audit.task.as_ref().is_some_and(|task|task.id.is_nil() || task.revision==0) {
                     return Err(error("La identidad de tarea de la ejecución no es válida."));
                 }
                 if !crate::tasks::valid_instruction_sources(&audit.instruction_sources){return Err(error("Proveniencia de instrucciones de la ejecución no válida."));}
                 if matches!(audit.source, RunSource::Mcp)
-                    != matches!(snapshot.schema_version, 10 | 12 | 13 | 14 | 15 | 16 | 17 | 18)
+                    != matches!(snapshot.schema_version, 10 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19)
                 {
                     return Err(error(
                         "Origen de herramienta no compatible con la versión del estado.",
@@ -913,6 +923,7 @@ impl Project {
     }
 
     pub(crate) fn validate_outputs(&self, directory: &Path, input: &OperationInput) -> io::Result<()> {
+        if let OperationInput::ResultChecks(input)=input{return crate::result_checks::validate(self,directory,input).map_err(io::Error::other);}
         if let OperationInput::PublicDocument(input)=input {
             return crate::public_document::validate_artifacts(directory,input).map_err(io::Error::other);
         }
@@ -1086,10 +1097,22 @@ impl Project {
         Ok(summaries)
     }
     pub fn recover(&self) -> io::Result<Vec<Snapshot>> {
+        self.recover_except(None)
+    }
+    pub(crate) fn recover_except(&self,active:Option<Uuid>) -> io::Result<Vec<Snapshot>> {
         let mut results = Vec::new();
-        for mut snapshot in self.history()? {
+        let mut snapshots=self.history()?;snapshots.sort_by_key(|s|matches!(s.input,OperationInput::ResultChecks(_)));
+        for mut snapshot in snapshots {
+            if active==Some(snapshot.input.job_id()){results.push(snapshot);continue;}
             let published = self.artifact_directory(snapshot.input.job_id());
             let previous_phase = snapshot.phase;
+            if let OperationInput::ResultChecks(input)=&snapshot.input{
+                let directory=crate::result_checks::directory(self,input.job_id).map_err(io::Error::other)?;
+                if directory.try_exists()? && crate::result_checks::recover(self,&directory,input).is_ok(){
+                    let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;
+                    if self.validate_outputs(&directory,&checked).is_ok(){snapshot.input=checked;self.save(&snapshot)?;}
+                }
+            }
             if let OperationInput::KonnectPcb(input)=&snapshot.input{if input.copy_checkpoint_version.is_some(){
                 let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
                 if directory.try_exists()? && crate::pcb_copy_recovery::finish(&directory,input,None,&directory.join("unused-offline-profile"),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))).is_ok(){

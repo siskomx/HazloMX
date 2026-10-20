@@ -27,11 +27,14 @@ impl Drop for Exclusive{fn drop(&mut self){unsafe{windows_sys::Win32::System::Th
 struct Record{version:u32,input_sha256:String,attempt:Uuid,edit_sha256:Option<String>,checks:Vec<Check>,report_sha256:Option<String>}
 #[derive(Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Check{folder:String,input:source::KicadInput,report_sha256:Option<String>}
+struct Check{folder:String,input:source::KicadInput,report_sha256:Option<String>,#[serde(default,skip_serializing_if="Option::is_none")]approval:Option<Approval>}
+#[derive(Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Approval{job_id:Uuid,input_sha256:String}
 #[derive(Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Edit{version:u32,input_sha256:String,attempt:Uuid,directory:(u32,u32,u32),files:Vec<source::CapturedFile>}
-fn identity(input:&Input)->Result<String,String>{let mut input=input.clone();input.receipt_sha256=None;serde_json::to_vec(&input).map(|b|source::digest(&b)).map_err(|_|PAUSE.into())}
+pub(crate) fn identity(input:&Input)->Result<String,String>{let mut input=input.clone();input.receipt_sha256=None;serde_json::to_vec(&input).map(|b|source::digest(&b)).map_err(|_|PAUSE.into())}
 fn folder(value:&str)->Result<(),String>{let id=value.strip_prefix("Verification-").and_then(|s|Uuid::parse_str(s).ok()).ok_or(PAUSE)?;if value!=format!("Verification-{id}"){return Err(PAUSE.into());}Ok(())}
 fn read(stage:&Path,input:&Input)->Result<Record,String>{
     input.validate()?;
@@ -43,7 +46,8 @@ fn read(stage:&Path,input:&Input)->Result<Record,String>{
     let mut names=BTreeSet::new();
     for check in &record.checks{folder(&check.folder)?;check.input.validate()?;
         if !names.insert(&check.folder) || check.input.job_id!=input.job_id || check.input.entry!=input.source.entry || check.input.units!=input.source.units
-            || check.input.layers!=input.source.layers || check.report_sha256.as_ref().is_some_and(|h|!source::valid_hash(h)){return Err(PAUSE.into());}}
+            || check.input.layers!=input.source.layers || check.report_sha256.as_ref().is_some_and(|h|!source::valid_hash(h))
+            || check.approval.as_ref().is_some_and(|a|a.job_id.is_nil() || a.job_id==input.job_id || !source::valid_hash(&a.input_sha256)){return Err(PAUSE.into());}}
     Ok(record)
 }
 fn save(stage:&Path,record:&Record)->Result<(),String>{atomic_json(&stage.join(JOURNAL),record,true).map_err(|_|PAUSE.into())}
@@ -125,10 +129,22 @@ pub(crate) fn finish(stage:&Path,input:&Input,cli:Option<&Path>,profile:&Path,ca
     finish_gated(stage,input,cli,profile,cancel,None)
 }
 pub(crate) fn finish_gated(stage:&Path,input:&Input,cli:Option<&Path>,profile:&Path,cancel:Arc<AtomicBool>,gate:Option<crate::process::DispatchGate<'_>>)->Result<ResultDocument,String>{
+    finish_impl(stage,input,cli,profile,cancel,(gate,None))
+}
+pub(crate) fn finish_approved(stage:&Path,input:&Input,cli:&Path,profile:&Path,cancel:Arc<AtomicBool>,gate:crate::process::DispatchGate<'_>,approval:&crate::result_checks::Input)->Result<ResultDocument,String>{
+    finish_impl(stage,input,Some(cli),profile,cancel,(Some(gate),Some(approval)))
+}
+fn finish_impl(stage:&Path,input:&Input,cli:Option<&Path>,profile:&Path,cancel:Arc<AtomicBool>,control:(Option<crate::process::DispatchGate<'_>>,Option<&crate::result_checks::Input>))->Result<ResultDocument,String>{
+    let (gate,approval)=control;
     let _exclusive=Exclusive::acquire(input)?;
     let _stage_pins=pin_lineage(stage).map_err(|_|PAUSE)?;let stage=stage.canonicalize().map_err(|_|PAUSE)?;
     let mut record=read(&stage,input)?;let (_edit_pins,proof)=retained_edit(&stage,input,&record)?;
     let mut selected=record.checks.iter().find(|c|c.report_sha256.is_some()).map(|c|c.folder.clone());
+    if let Some(approval)=approval{
+        approval_target(input,&record,approval)?;
+        if record.checks.len()==approval.attempts_before && selected.is_none(){}
+        else{approved_check(&stage,input,approval)?;}
+    }
     if selected.is_none(){
         if let Some(gate)=gate{drop(gate.enter(&cancel)?);}
         let cli=cli.ok_or("La copia editada está conservada; falta comprobarla con KiCad CLI. No repitas el movimiento.")?;
@@ -138,7 +154,8 @@ pub(crate) fn finish_gated(stage:&Path,input:&Input,cli:Option<&Path>,profile:&P
         let native_source=plain(&stage.join("Edited"))?;
         let mut expected=input.source.clone();expected.schema_version=2;expected.source_root=native_source.to_str().ok_or(PAUSE)?.replace('\\',"/");expected.files=proof.files.clone();
         let name=format!("Verification-{}",Uuid::new_v4());let directory=stage.join(&name);
-        record.checks.push(Check{folder:name.clone(),input:expected.clone(),report_sha256:None});save(&stage,&record)?;
+        let owner=approval.map(|a|a.identity().map(|input_sha256|Approval{job_id:a.job_id,input_sha256})).transpose()?;
+        record.checks.push(Check{folder:name.clone(),input:expected.clone(),report_sha256:None,approval:owner});save(&stage,&record)?;
         fs::create_dir(&directory).map_err(|_|PAUSE)?;
         fs::create_dir(profile).map_err(|_|PAUSE)?;let _profile=pin_lineage(profile).map_err(|_|PAUSE)?;
         let source_input=source::capture(&native_source,&native_source.join(source::relative(&input.source.entry)?),&profile.join("import"),input.job_id,input.source.units,cancel.clone())?;
@@ -159,6 +176,25 @@ pub(crate) fn finish_gated(stage:&Path,input:&Input,cli:Option<&Path>,profile:&P
     if path.try_exists().map_err(|_|PAUSE)?{if source::read_regular(&path,LIMIT)?!=bytes{return Err(PAUSE.into());}}else{source::write_new(&path,&bytes)?;}
     let hash=source::digest(&bytes);if record.report_sha256.as_ref().is_some_and(|h|h!=&hash){return Err(PAUSE.into());}
     record.report_sha256=Some(hash);save(&stage,&record)?;Ok(result)
+}
+
+fn approval_target(input:&Input,record:&Record,approval:&crate::result_checks::Input)->Result<(),String>{
+    approval.validate()?;
+    if approval.target_job_id!=input.job_id || approval.target_input_sha256!=identity(input)? || record.edit_sha256.as_deref()!=Some(approval.edit_sha256.as_str()){return Err(PAUSE.into());}Ok(())
+}
+pub(crate) fn pending_checkpoint(stage:&Path,input:&Input)->Result<(String,usize),String>{
+    let _exclusive=Exclusive::acquire(input)?;let _pins=pin_lineage(stage).map_err(|_|PAUSE)?;
+    let stage=stage.canonicalize().map_err(|_|PAUSE)?;let record=read(&stage,input)?;let _edit=retained_edit(&stage,input,&record)?;
+    if record.checks.iter().any(|c|c.report_sha256.is_some()) || record.report_sha256.is_some(){return Err("La copia ya tiene comprobaciones vinculadas; recupera su informe local sin nuevos pasos.".into());}
+    if record.checks.len()>=2{return Err("Se agotaron los dos intentos. Se conserva la copia; hace falta revisar un alcance de recursos distinto.".into());}
+    Ok((record.edit_sha256.ok_or(PAUSE)?,record.checks.len()))
+}
+pub(crate) fn approved_check(stage:&Path,input:&Input,approval:&crate::result_checks::Input)->Result<(),String>{
+    let stage=stage.canonicalize().map_err(|_|PAUSE)?;let record=read(&stage,input)?;approval_target(input,&record,approval)?;
+    if record.checks.len()!=approval.attempts_before+1{return Err(PAUSE.into());}
+    let check=record.checks.last().ok_or(PAUSE)?;let owner=check.approval.as_ref().ok_or(PAUSE)?;
+    if owner.job_id!=approval.job_id || owner.input_sha256!=approval.identity()? || check.report_sha256.is_none(){return Err("La comprobación de esta aprobación no está confirmada; no se repetirá su intento.".into());}
+    checked_report(&stage,input,&record,&check.folder)?;Ok(())
 }
 
 #[cfg(test)]
@@ -208,9 +244,21 @@ pub(crate) mod tests{
     #[test]
     fn attempt_limit_prevents_native_start_and_keeps_partial_directories(){
         let (root,stage,input)=fixture();retain_edit(&stage,&input).unwrap();let mut record=read(&stage,&input).unwrap();
-        for _ in 0..2{let folder=format!("Verification-{}",Uuid::new_v4());fs::create_dir(stage.join(&folder)).unwrap();fs::write(stage.join(&folder).join("partial.native"),b"preserve partial").unwrap();record.checks.push(Check{folder,input:input.source.clone(),report_sha256:None});}
+        for _ in 0..2{let folder=format!("Verification-{}",Uuid::new_v4());fs::create_dir(stage.join(&folder)).unwrap();fs::write(stage.join(&folder).join("partial.native"),b"preserve partial").unwrap();record.checks.push(Check{folder,input:input.source.clone(),report_sha256:None,approval:None});}
         save(&stage,&record).unwrap();assert!(finish(&stage,&input,Some(&root.join("absent-cli.exe")),&root.join("unused"),Arc::new(AtomicBool::new(false))).unwrap_err().contains("dos intentos"));
         for check in record.checks{assert_eq!(fs::read(stage.join(check.folder).join("partial.native")).unwrap(),b"preserve partial");}assert!(!root.join("unused").exists());fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn check_resume_is_bound_to_one_attempt_and_never_replays_an_unconfirmed_check(){
+        let (root,stage,input)=fixture();retain_edit(&stage,&input).unwrap();let (edit_sha256,attempts_before)=pending_checkpoint(&stage,&input).unwrap();
+        let approval=crate::result_checks::Input{result_checks_version:1,job_id:Uuid::new_v4(),target_job_id:input.job_id,target_input_sha256:identity(&input).unwrap(),edit_sha256,attempts_before,agreement:crate::native_tools::tests::agreement_fixture(),receipt_sha256:None};
+        let proof=fs::read(stage.join(EDIT)).unwrap();let mut record=read(&stage,&input).unwrap();
+        record.checks.push(Check{folder:format!("Verification-{}",Uuid::new_v4()),input:input.source.clone(),report_sha256:None,approval:Some(Approval{job_id:approval.job_id,input_sha256:approval.identity().unwrap()})});save(&stage,&record).unwrap();
+        let gate=std::sync::Mutex::new(());let paused=AtomicBool::new(false);
+        assert!(finish_approved(&stage,&input,&root.join("must-not-start.exe"),&root.join("unused"),Arc::new(AtomicBool::new(false)),crate::process::DispatchGate{mutex:&gate,paused:&paused},&approval).unwrap_err().contains("no está confirmada"));
+        assert!(!root.join("unused").exists());assert_eq!(fs::read(stage.join(EDIT)).unwrap(),proof);assert_eq!(read(&stage,&input).unwrap().checks.len(),1);
+        let mut changed=approval.clone();changed.job_id=Uuid::new_v4();assert!(approved_check(&stage,&input,&changed).is_err());changed=approval.clone();changed.agreement.outcome="Changed result".into();assert!(approved_check(&stage,&input,&changed).is_err());
+        fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn paused_checks_preserve_the_edit_and_do_not_consume_an_attempt(){

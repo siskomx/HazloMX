@@ -24,18 +24,18 @@ use windows_sys::Win32::{
     System::{
         JobObjects::{
             AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
-            JobObjectBasicAccountingInformation, QueryInformationJobObject,
+            JobObjectBasicAccountingInformation, JobObjectBasicProcessIdList, QueryInformationJobObject, IsProcessInJob,
             SetInformationJobObject, TerminateJobObject, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
-            JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOBOBJECT_BASIC_PROCESS_ID_LIST,
             JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
         },
         Pipes::CreatePipe,
         Threading::{
-            CreateProcessW, DeleteProcThreadAttributeList, GetExitCodeProcess,
+            CreateProcessW, DeleteProcThreadAttributeList, GetExitCodeProcess, OpenProcess,
             InitializeProcThreadAttributeList, ResumeThread, TerminateProcess,
             UpdateProcThreadAttribute, WaitForSingleObject, CREATE_NO_WINDOW, CREATE_SUSPENDED,
             CREATE_UNICODE_ENVIRONMENT, EXTENDED_STARTUPINFO_PRESENT, PROCESS_INFORMATION,
-            PROC_THREAD_ATTRIBUTE_HANDLE_LIST, STARTF_USESTDHANDLES, STARTUPINFOEXW,
+            PROC_THREAD_ATTRIBUTE_HANDLE_LIST, STARTF_USESTDHANDLES, STARTUPINFOEXW, PROCESS_SYNCHRONIZE, PROCESS_QUERY_LIMITED_INFORMATION,
         },
     },
 };
@@ -68,6 +68,8 @@ pub struct ProcessOutput {
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
     pub truncated: bool,
+    // Retain stopped identities until the result is consumed; PIDs can otherwise be reused.
+    _stopped: Vec<OwnedHandle>,
 }
 
 fn wide(value: &OsStr) -> io::Result<Vec<u16>> {
@@ -218,20 +220,42 @@ impl Job {
         }
         Ok(job)
     }
-    fn stop(&self) -> io::Result<()> {
+    fn members(&self,known:&mut BTreeMap<usize,OwnedHandle>)->io::Result<()> {
+        const CAPACITY:usize=1024;
+        let header=size_of::<JOBOBJECT_BASIC_PROCESS_ID_LIST>()/size_of::<usize>()-1;
+        let mut buffer=vec![0usize;header+CAPACITY];let list=buffer.as_mut_ptr().cast::<JOBOBJECT_BASIC_PROCESS_ID_LIST>();
+        if unsafe{QueryInformationJobObject(self.0.as_raw_handle(),JobObjectBasicProcessIdList,list.cast(),std::mem::size_of_val(buffer.as_slice()) as u32,null_mut())}==0{return Err(io::Error::last_os_error());}
+        let count=unsafe{(*list).NumberOfProcessIdsInList} as usize;
+        if count>CAPACITY || unsafe{(*list).NumberOfAssignedProcesses} as usize!=count{return Err(io::Error::other("Owned job member limit exceeded"));}
+        // The native count is bounded by the allocated variable-length array above.
+        let ids=unsafe{std::slice::from_raw_parts(std::ptr::addr_of!((*list).ProcessIdList).cast::<usize>(),count)};
+        for &pid in ids{
+            if known.contains_key(&pid){continue;}
+            let raw=unsafe{OpenProcess(PROCESS_SYNCHRONIZE|PROCESS_QUERY_LIMITED_INFORMATION,0,pid.try_into().map_err(|_|io::Error::other("Invalid owned process identity"))?)};
+            if raw.is_null(){let error=io::Error::last_os_error();if error.raw_os_error()==Some(windows_sys::Win32::Foundation::ERROR_INVALID_PARAMETER as i32){continue;}return Err(error);}
+            let process=handle(raw)?;let mut member=0;
+            if unsafe{IsProcessInJob(process.as_raw_handle(),self.0.as_raw_handle(),&mut member)}==0{return Err(io::Error::last_os_error());}
+            if member!=0{known.insert(pid,process);}
+        }
+        Ok(())
+    }
+    fn stop(&self) -> io::Result<Vec<OwnedHandle>> {
+        let mut members=BTreeMap::new();self.members(&mut members)?;
         if unsafe { TerminateJobObject(self.0.as_raw_handle(), 1) } == 0 {
             return Err(io::Error::last_os_error());
         }
-        // Parent exit and closed log pipes do not establish descendant termination.
+        // Counts can clear during teardown; also wait on the original process identities.
         let started = Instant::now();
         loop {
+            self.members(&mut members)?;
             let mut accounting: JOBOBJECT_BASIC_ACCOUNTING_INFORMATION = unsafe { zeroed() };
             if unsafe {
                 QueryInformationJobObject(self.0.as_raw_handle(), JobObjectBasicAccountingInformation,
                     (&mut accounting as *mut JOBOBJECT_BASIC_ACCOUNTING_INFORMATION).cast(),
                     size_of::<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>() as u32, null_mut())
             } == 0 { return Err(io::Error::last_os_error()); }
-            if accounting.ActiveProcesses == 0 { return Ok(()); }
+            let stopped=members.values().all(|process|unsafe{WaitForSingleObject(process.as_raw_handle(),0)}==WAIT_OBJECT_0);
+            if accounting.ActiveProcesses == 0 && stopped { return Ok(members.into_values().collect()); }
             if started.elapsed() >= Duration::from_secs(5) {
                 return Err(io::Error::new(io::ErrorKind::TimedOut, "Owned process tree did not stop"));
             }
@@ -301,6 +325,7 @@ fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:
     }
     if cancelled.load(Ordering::SeqCst) {
         return Ok(ProcessOutput {
+            _stopped: Vec::new(),
             reason: StopReason::Cancelled,
             exit_code: None,
             stdout: Vec::new(),
@@ -422,7 +447,7 @@ fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:
         }
     };
     // A completed parent can still leave descendants holding our log pipes open.
-    job.stop()?;
+    let stopped=job.stop()?;
     if unsafe { WaitForSingleObject(process.as_raw_handle(), 5000) } != WAIT_OBJECT_0 {
         return Err(io::Error::new(
             io::ErrorKind::TimedOut,
@@ -447,6 +472,7 @@ fn run_owned_streams(executable:&Path,arguments:&[OsString],cwd:&Path,variables:
         .join()
         .map_err(|_| io::Error::other("Stderr reader panicked"))??;
     Ok(ProcessOutput {
+        _stopped: stopped,
         reason,
         exit_code: Some(exit_code),
         stdout,
@@ -688,10 +714,12 @@ pub(crate) mod tests {
     #[test]
     fn parent_completion_waits_for_descendants_without_shared_log_pipes() {
         let root=workspace();
-        let output=run_owned(probe(),&["tree-exit".into()],&root,&variables(),Arc::new(AtomicBool::new(false)),Duration::from_secs(10)).unwrap();
-        assert_eq!(output.reason,StopReason::Completed);
-        let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();
-        assert!(!is_alive(child));
+        for _ in 0..16{
+            let output=run_owned(probe(),&["tree-exit".into()],&root,&variables(),Arc::new(AtomicBool::new(false)),Duration::from_secs(10)).unwrap();
+            assert_eq!(output.reason,StopReason::Completed);
+            let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();
+            assert!(!is_alive(child));
+        }
         fs::remove_dir_all(root).unwrap();
     }
     #[test]

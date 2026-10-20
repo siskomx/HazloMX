@@ -540,6 +540,12 @@ The PCB copy writer and verifier now share the chat's dispatch gate at native st
 
 The [implementation and validation notes](../research/pcb-copy-correction-barrier-2026-10-19.md) distinguish owned synthetic-process/MCP transport checks, restart cases and the actual KiCad copy fixture from visual correction tests and arbitrary server atomicity. Other copy pipelines, explicit resume/expanded-scope approvals, changed-copy reconciliation, general MCP safeguards, task/hardware outcome boundaries and Windows release acceptance remain active. Hazlo remains a simple chat; no model is downloaded and the installed release is unchanged.
 
+## Fresh approval for retained-copy checks
+
+The chat can propose a fresh check-only approval for one unused KiCad verification attempt on a confirmed retained PCB copy after Stop or correction. It binds the current task/conditions to the original input, edit proof and attempt count; it never resets the original two-attempt allowance, repeats the movement or restores the old approval token. The reader is detected automatically and the chat follows the check's program without requiring manual selection. Partial files and changed/unlinked copies are preserved. A completed check has its own approval link and dependent report; recovery reconstructs only linked results offline, considering original jobs first and preserving any active stage.
+
+The [implementation and acceptance record](../research/pcb-check-only-resume-2026-10-19.md) distinguishes 399 passing desktop-enabled library/binary tests, owned transport/process and headless chat fixtures, and actual KiCad check-only resumption from a real-provider conversation or visual/physical certification. The shared synchronous Windows helper also verifies original member handles when stopping its owned job. Other engines' resume paths, expanded resource approval, changed-copy reconciliation, general MCP safeguards, task/hardware outcome boundaries and Windows release checks remain active. The installed application and installer are unchanged; no model is downloaded and KiCad 10 live schematics remains pending.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

@@ -91,10 +91,41 @@ fn main(){
     let offline=Project::open(&project_root).unwrap().recover().unwrap();
     assert_eq!(offline.iter().find(|s|s.input.job_id()==first).unwrap().phase,Phase::Completed);
     assert_eq!(fs::read(&report_path).unwrap(),report,"Offline recovery changed the linked final report");
+    // A stopped second copy needs a fresh, check-only approval, not the old edit token.
+    let second_id=second.snapshot.input.job_id();let project=Project::open(&project_root).unwrap();let directory=project.artifact_directory(second_id);
+    let mut journal:serde_json::Value=serde_json::from_slice(&fs::read(directory.join("pcb-copy.json")).unwrap()).unwrap();
+    let second_edit=journal["edit_sha256"].clone();let partial=journal["checks"][0]["folder"].as_str().unwrap().to_owned();
+    fs::write(directory.join(&partial).join("stopped-partial.native"),b"preserve stopped check").unwrap();journal["checks"][0]["report_sha256"]=serde_json::Value::Null;journal["report_sha256"]=serde_json::Value::Null;
+    fs::write(directory.join("pcb-copy.json"),serde_json::to_vec(&journal).unwrap()).unwrap();
+    let result=directory.join("result.json");assert!(result.starts_with(&root));fs::remove_file(result).unwrap();
+    let mut snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==second_id).unwrap();let OperationInput::KonnectPcb(input)=&mut snapshot.input else{panic!("Expected second copy")};
+    input.receipt_sha256=None;snapshot.phase=Phase::Cancelled;snapshot.audit.as_mut().unwrap().files_verified=false;project.save(&snapshot).unwrap();
+    let stage=project_root.join(".hazlomexa/staging").join(second_id.to_string());assert!(directory.starts_with(&root)&&stage.starts_with(&root)&&!stage.exists());fs::rename(&directory,&stage).unwrap();drop(project);
+    let resume=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("resume-profiles")).unwrap());resume.select_project(Project::open(&project_root).unwrap()).unwrap();
+    let resume_host=HostTools::new(resume.clone());resume_host.configure_native_discovery(root.join("resources"),root.join("host-data")).unwrap();
+    assert!(resume_host.call("recover_native_result",json!({"job_id":second_id})).unwrap_err().contains("fue detenida"));
+    drop(resume_host);drop(resume);
+    let resume=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("fresh-resume-profiles")).unwrap());resume.select_project(Project::open(&project_root).unwrap()).unwrap();
+    let resume_host=HostTools::new(resume.clone());resume_host.configure_native_discovery(root.join("resources"),root.join("host-data")).unwrap();assert!(resume.kicad_runtime().unwrap().is_none());
+    let prepared=resume_host.call("propose_result_checks",json!({"job_id":second_id,"agreement":{"kind":"software_operation","outcome":"Check the retained board copy without repeating its move","assumptions":["Physical function remains unverified"],"constraints":["Preserve the retained copy and original"],"losses":["Pending settings from other windows remain absent"],"verification":"One remaining isolated KiCad check and export attempt"}})).unwrap();
+    let resume_id=uuid::Uuid::parse_str(prepared["job_id"].as_str().unwrap()).unwrap();let pending=resume.current().unwrap().unwrap();
+    assert!(matches!(&pending.snapshot.input,OperationInput::ResultChecks(input) if input.target_job_id==second_id && input.attempts_before==1));
+    assert!(resume.konnect_runtime().unwrap().is_none());assert!(resume.kicad_runtime().unwrap().is_some());
+    assert_eq!(board.parent(),Some(root.as_path()));fs::remove_file(&board).unwrap();
+    let done=resume.execute(resume.begin(pending.approval_id.unwrap()).unwrap()).unwrap();assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);
+    assert!(!board.exists());fs::write(&board,disk).unwrap();assert!(resume.konnect_runtime().unwrap().is_none());
+    let checked=resume_host.call("recover_native_result",json!({"job_id":resume_id})).unwrap();assert_eq!(checked["checked_result_job_id"],json!(second_id));assert_eq!(checked["published"],true);
+    resume_host.call("read_verified_result",json!({"job_id":second_id})).unwrap();
+    let directory=project_root.join(".hazlomexa/artifacts").join(second_id.to_string());let journal:serde_json::Value=serde_json::from_slice(&fs::read(directory.join("pcb-copy.json")).unwrap()).unwrap();
+    assert_eq!(journal["edit_sha256"],second_edit);assert_eq!(journal["checks"].as_array().unwrap().len(),2);assert_eq!(journal["checks"][1]["approval"]["job_id"],json!(resume_id));
+    assert_eq!(fs::read(directory.join(partial).join("stopped-partial.native")).unwrap(),b"preserve stopped check");
+    let receipt=resume.artifact(resume_id,ArtifactFormat::ResultChecksReport).unwrap();let path=receipt.path.clone();let bytes=fs::read(&path).unwrap();drop(receipt);drop(resume_host);drop(resume);
+    assert!(path.starts_with(&root));fs::remove_file(&path).unwrap();let restored=Project::open(&project_root).unwrap().recover().unwrap();assert_eq!(restored.iter().find(|s|s.input.job_id()==resume_id).unwrap().phase,Phase::Completed);assert_eq!(fs::read(path).unwrap(),bytes);
     fs::write(root.join("acceptance.json"),serde_json::to_vec_pretty(&json!({"passed":true,"actual_program_window":true,"provider_used":false,"automatic_tool_detection":true,
         "native_capture_over_stale_disk":true,"native_original_unchanged":true,"saved_original_unchanged":true,"checked_copies":2,"imperial_followup":true,"recovered_jobs":2,"restored_followup_selection":true,
         "interrupted_check_recovered_without_editor_or_source":true,"copy_writer_unavailable_during_recovery":true,"partial_check_preserved":true,"same_edit_checkpoint_retained":true,
         "linked_report_reconstructed_offline":true,
+        "stopped_check_not_automatically_dispatched":true,"fresh_check_only_approval_passed":true,"resume_attempt_bound_to_new_approval":true,"resume_report_reconstructed_offline":true,
         "gui_copy_reopen_checked":false,"physical_function_checked":false})).unwrap()).unwrap();
     println!("Owned KiCad native capture, isolated copy/edit/readback, imperial follow-up and recovery passed; originals preserved.");
 }
