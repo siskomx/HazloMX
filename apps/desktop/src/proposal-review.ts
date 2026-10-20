@@ -52,6 +52,13 @@ export function proposalFacts(run: Snapshot): string[] {
     }else facts.push("Propuesta anterior sin resultado y supuestos estructurados; pide a Hazlo que la prepare de nuevo antes de continuar.");
   }
   if(input.result_checks_version){
+    if(input.program==="freecad"){
+      facts.push("Reanudar solo la comprobación de la misma copia nativa conservada mediante un lector FreeCAD compatible y detectado. No se repite la edición ni se recaptura el editor original.",
+        "Esta nueva aprobación autoriza un intento adicional de lectura independiente de hasta 90 segundos, con un máximo de dos comprobaciones registradas por copia. Los intentos históricos sin registro siguen desconocidos; no se reinician ni se convierten en permiso reutilizable.",
+        "El lector abre y recalcula la copia en un perfil local aislado y comprueba sus propiedades y geometría. El original, sus cambios manuales y la copia conservada quedan intactos.",
+        "Detener o corregir pausa los siguientes pasos; una llamada admitida puede terminar. Si cambió la copia o faltan sus vínculos, Hazlo conserva el trabajo y pausa. Este permiso no amplía el límite registrado.",
+        "El informe queda local; compartirlo con una IA requiere su permiso separado. Comprobar esta copia no certifica su estado visual, su función física ni el resultado completo de la tarea.");return facts;
+    }
     facts.push("Reanudar solo la comprobación de la misma copia conservada; esta aprobación no repite la edición ni consulta el editor original como sustituto.",
       input.program==="agent"?"Un intento nativo de comprobación mediante el lector Arduino CLI detectado y vinculado a la copia. Se mantiene el límite total original de dos intentos; los archivos parciales anteriores se conservan.":"Un intento nativo de comprobación y exportación mediante el lector KiCad detectado. Se mantiene el límite total original de dos intentos; los archivos parciales anteriores se conservan.",
       input.program==="agent"?"El lector crea un archivo de lectura en un perfil local aislado y compara los archivos de la misma copia. No vuelve a editar, guardar ni recapturar el editor original; no compila, sube código ni usa hardware. Los originales y la copia conservada quedan intactos.":"La revisión puede recalcular las zonas de cobre de otra copia de verificación y generar sus exportaciones. El original y la copia editada conservada quedan intactos.",

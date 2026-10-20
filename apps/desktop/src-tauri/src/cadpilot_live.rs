@@ -15,7 +15,7 @@ const SCRIPT: &str = include_str!("../resources/freecad/live.py");
 #[derive(Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeCompletion{version:u32,job_id:uuid::Uuid,input_sha256:String,result_sha256:String,result:Value}
-fn completion_input(input:&Input)->Result<String,String>{
+pub(crate) fn completion_input(input:&Input)->Result<String,String>{
     let mut value=serde_json::to_value(input).map_err(|_|INVALID)?;value.as_object_mut().ok_or(INVALID)?.remove("receipt_sha256");Ok(crate::kicad_project::digest(&serde_json::to_vec(&value).map_err(|_|INVALID)?))
 }
 pub(crate) fn read_native_completion(directory:&std::path::Path,input:&Input,expected_hash:&str)->Result<Option<Value>,String>{

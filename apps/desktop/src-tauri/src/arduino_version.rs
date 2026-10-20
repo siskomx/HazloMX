@@ -183,60 +183,32 @@ pub(crate) fn matches_capture(link:&Link,capture:&Capture)->Result<(),String>{
 }
 pub(crate) fn entry(plan:&Plan,stage:&Path,link:&Link)->PathBuf{stage.join(&link.folder).join(&plan.sketch_name).join(plan.main_name())}
 
-#[derive(Serialize,Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Owner{job_id:uuid::Uuid,input_sha256:String}
-#[derive(Serialize,Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Readback{version:u32,capture_sha256:String,
-    #[serde(default,skip_serializing_if="Option::is_none")]approval:Option<Owner>,
-    #[serde(default,skip_serializing_if="Option::is_none")]result_sha256:Option<String>}
-fn readbacks(destination:&Path)->Result<Vec<Readback>,String>{
-    let destination=destination.canonicalize().map_err(|_|ERROR)?;
-    let mut records=Vec::new();
-    for entry in fs::read_dir(&destination).map_err(|_|ERROR)?{
-        let entry=entry.map_err(|_|ERROR)?;let name=entry.file_name();let name=name.to_str().ok_or(ERROR)?;
-        if !name.starts_with("readback-"){continue;}
-        let id=name.strip_prefix("readback-").and_then(|s|s.strip_suffix(".json")).and_then(|s|uuid::Uuid::parse_str(s).ok()).ok_or(ERROR)?;
-        if name!=format!("readback-{id}.json"){return Err(ERROR.into());}
-        let record:Readback=serde_json::from_slice(&read_regular(&entry.path(),4096).map_err(|_|ERROR)?).map_err(|_|ERROR)?;
-        if record.version!=1 || !crate::kicad_project::valid_hash(&record.capture_sha256)
-            || record.result_sha256.as_ref().is_some_and(|h|!crate::kicad_project::valid_hash(h))
-            || record.approval.as_ref().is_some_and(|a|a.job_id.is_nil() || !crate::kicad_project::valid_hash(&a.input_sha256)){return Err(ERROR.into());}
-        records.push(record);if records.len()>2{return Err(ERROR.into());}
-    }Ok(records)
-}
 pub(crate) fn checkpoint(plan:&Plan,stage:&Path,link:&Link)->Result<(String,usize),String>{
     plan.validate()?;link.validate()?;let root=stage.join(&link.folder);let pins=pin_lineage(&root).map_err(|_|ERROR)?;let root=root.canonicalize().map_err(|_|ERROR)?;
     let sketch=pin_directory(&root.join(&plan.sketch_name),false).map_err(|_|ERROR)?;
     let hash=digest(&serde_json::to_vec(&json!({"capture":link,"directory":directory_identity(pins.last().ok_or(ERROR)?).map_err(|_|ERROR)?,"sketch":directory_identity(&sketch).map_err(|_|ERROR)?})).map_err(|_|ERROR)?);
-    let records=readbacks(&root)?;if records.iter().any(|r|r.capture_sha256!=link.sha256){return Err(ERROR.into());}
-    Ok((hash,records.len()))
+    Ok((hash,crate::native_readback::count(&root,&link.sha256)?))
 }
 pub(crate) fn reader_ready(plan:&Plan)->Result<(),String>{verifier_pins(plan).map(|_|())}
 pub(crate) fn approved_check(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,approval:&crate::result_checks::Input)->Result<String,String>{
     approval.validate()?;
     let (hash,count)=checkpoint(plan,stage,link)?;
     if approval.program!=Some(crate::host_tools::Program::Agent) || approval.target_input_sha256!=scope.input_sha256 || hash!=approval.edit_sha256 || count!=approval.attempts_before+1{return Err(ERROR.into());}
-    let identity=approval.identity()?;let records=readbacks(&stage.join(&link.folder))?;
-    let owned=records.iter().filter(|r|r.approval.as_ref().is_some_and(|a|a.job_id==approval.job_id && a.input_sha256==identity)).collect::<Vec<_>>();
-    if owned.len()!=1{return Err(ERROR.into());}let result=owned[0].result_sha256.as_deref().ok_or(ERROR)?;
-    validate_check(plan,stage,link,scope,result)?;Ok(result.into())
+    let result=crate::native_readback::approved(&stage.join(&link.folder),&link.sha256,approval)?;
+    validate_check(plan,stage,link,scope,&result)?;Ok(result)
 }
 pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_profile:&Path,control:(Arc<AtomicBool>,Option<crate::process::DispatchGate<'_>>),approval:Option<&crate::result_checks::Input>)->Result<String,String>{
     let (cancel,gate)=control;
     stop(&cancel)?;drop(gate.map(|g|g.enter(&cancel)).transpose()?);let (_,snapshot)=load(plan,stage,link,scope)?;let _verifier=verifier_pins(plan)?;
     let destination=stage.join(&link.folder).canonicalize().map_err(|_|ERROR)?;
-    let attempts=readbacks(&destination)?.len();
+    let attempts=crate::native_readback::count(&destination,&link.sha256)?;
     if let Some(approval)=approval{
         approval.validate()?;
         if checkpoint(plan,stage,link)?!=(approval.edit_sha256.clone(),approval.attempts_before)
             || approval.program!=Some(crate::host_tools::Program::Agent) || approval.target_input_sha256!=scope.input_sha256{return Err(ERROR.into());}
     }
     if attempts>=2{return Err("Se alcanzó el límite de dos comprobaciones nativas de la copia. Se conservó el trabajo; no repitas la edición.".into());}
-    let ticket=destination.join(format!("readback-{}.json",uuid::Uuid::new_v4()));
-    let mut readback=Readback{version:1,capture_sha256:link.sha256.clone(),approval:approval.map(|a|a.identity().map(|identity|Owner{job_id:a.job_id,input_sha256:identity})).transpose()?,result_sha256:None};
-    write_new(&ticket,&serde_json::to_vec(&readback).map_err(|_|ERROR)?)?;
+    let ticket=crate::native_readback::begin(&destination,&link.sha256,approval)?;
     let (env,_profile_pins)=profile(private_profile)?;let archive=private_profile.join("native-readback.zip");
     let sketch=stage.join(&link.folder).join(&plan.sketch_name).canonicalize().map_err(|_|ERROR)?;
     let args=["--config-file".into(),private_profile.join("arduino-cli.yaml").into_os_string(),"sketch".into(),"archive".into(),
@@ -261,7 +233,7 @@ pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_
     if path.try_exists().map_err(|_|ERROR)?{if read_regular(&path,65536).map_err(|_|ERROR)?!=bytes{return Err(ERROR.into());}}
     else{write_new(&path,&bytes).map_err(|_|ERROR)?;}
     let hash=digest(&bytes);validate_check(plan,stage,link,scope,&hash)?;
-    readback.result_sha256=Some(hash.clone());crate::project::atomic_json(&ticket,&readback,true).map_err(|_|ERROR)?;Ok(hash)
+    crate::native_readback::complete(ticket,&hash)?;Ok(hash)
 }
 pub(crate) fn validate_check(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,hash:&str)->Result<Value,String>{
     let (capture,_snapshot)=load(plan,stage,link,scope)?;
@@ -277,6 +249,7 @@ pub(crate) fn validate_check(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,
 #[cfg(test)]
 mod tests{
     use super::*;
+    use crate::native_readback::{Owner,Readback,read as readbacks};
     struct Fixture{root:PathBuf,source:PathBuf,stage:PathBuf,plan:Plan,buffers:Vec<(String,String)>}
     impl Fixture{
         fn new()->Self{

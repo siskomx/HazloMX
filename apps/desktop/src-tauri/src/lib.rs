@@ -116,6 +116,8 @@ pub mod jobs;
 #[cfg(windows)]
 pub mod native_working_version;
 #[cfg(windows)]
+mod native_readback;
+#[cfg(windows)]
 mod cadcraft_dxf;
 
 pub mod ollama;

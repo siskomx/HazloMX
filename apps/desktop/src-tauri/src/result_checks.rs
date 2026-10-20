@@ -20,7 +20,7 @@ pub struct Input{
 impl Input{
     pub fn validate(&self)->Result<(),String>{
         self.agreement.validate()?;
-        if !matches!((self.result_checks_version,self.program),(1,None)|(2,Some(crate::host_tools::Program::Agent))) || self.job_id.is_nil() || self.target_job_id.is_nil() || self.job_id==self.target_job_id
+        if !matches!((self.result_checks_version,self.program),(1,None)|(2,Some(crate::host_tools::Program::Agent))|(3,Some(crate::host_tools::Program::Freecad))) || self.job_id.is_nil() || self.target_job_id.is_nil() || self.job_id==self.target_job_id
             || !source::valid_hash(&self.target_input_sha256) || !source::valid_hash(&self.edit_sha256) || self.attempts_before>=2
             || self.receipt_sha256.as_ref().is_some_and(|h|!source::valid_hash(h)){return Err(PAUSE.into());}Ok(())
     }
@@ -34,13 +34,14 @@ pub(crate) fn directory(project:&Project,id:Uuid)->Result<PathBuf,String>{let st
 fn original_identity(input:&OperationInput)->Result<String,String>{match input{
     OperationInput::KonnectPcb(original)=>copy::identity(original),
     OperationInput::LiveAgent(original)=>crate::agent_editor::completion_identity(original),
+    OperationInput::LiveCad(original)=>crate::cadpilot_live::completion_input(original),
     _=>Err(PAUSE.into()),
 }}
 fn target(project:&Project,input:&Input)->Result<(Snapshot,PathBuf),String>{
     input.validate()?;
     let snapshot=project.history().map_err(|_|PAUSE)?.into_iter().find(|s|s.input.job_id()==input.target_job_id).ok_or(PAUSE)?;
     if original_identity(&snapshot.input)?!=input.target_input_sha256
-        || !matches!((&snapshot.input,input.program),(OperationInput::KonnectPcb(_),None)|(OperationInput::LiveAgent(_),Some(crate::host_tools::Program::Agent))){return Err(PAUSE.into());}
+        || !matches!((&snapshot.input,input.program),(OperationInput::KonnectPcb(_),None)|(OperationInput::LiveAgent(_),Some(crate::host_tools::Program::Agent))|(OperationInput::LiveCad(_),Some(crate::host_tools::Program::Freecad))){return Err(PAUSE.into());}
     Ok((snapshot,directory(project,input.target_job_id)?))
 }
 pub(crate) fn prepare(project:&Project,target_job_id:Uuid,agreement:crate::native_tools::Agreement)->Result<Input,String>{
@@ -50,9 +51,10 @@ pub(crate) fn prepare(project:&Project,target_job_id:Uuid,agreement:crate::nativ
     let (program,(edit_sha256,attempts_before))=match &snapshot.input{
         OperationInput::KonnectPcb(original)=>(None,copy::pending_checkpoint(&directory,original)?),
         OperationInput::LiveAgent(original)=>(Some(crate::host_tools::Program::Agent),crate::agent_editor::pending_copy_check(&directory,original)?),
+        OperationInput::LiveCad(original)=>(Some(crate::host_tools::Program::Freecad),crate::native_working_version::pending_copy_check(&directory,original)?),
         _=>return Err("Este resultado todavía necesita su ruta específica de revisión.".into()),
     };
-    let input=Input{result_checks_version:if program.is_some(){2}else{1},program,job_id:Uuid::new_v4(),target_job_id,target_input_sha256:original_identity(&snapshot.input)?,edit_sha256,attempts_before,agreement,receipt_sha256:None};input.validate()?;Ok(input)
+    let input=Input{result_checks_version:match program{Some(crate::host_tools::Program::Freecad)=>3,Some(_)=>2,None=>1},program,job_id:Uuid::new_v4(),target_job_id,target_input_sha256:original_identity(&snapshot.input)?,edit_sha256,attempts_before,agreement,receipt_sha256:None};input.validate()?;Ok(input)
 }
 fn publish_target(project:&Project,input:&Input)->Result<(),String>{
     let (mut snapshot,directory)=target(project,input)?;snapshot.input.retain_receipt(&directory).map_err(|_|PAUSE)?;
@@ -66,6 +68,7 @@ pub(crate) fn run(project:&Project,input:&Input,cli:Option<&Path>,stage:&Path,pr
     match &snapshot.input{
         OperationInput::KonnectPcb(original)=>{copy::finish_approved(&directory,original,cli.ok_or("Falta el lector KiCad compatible." )?,profile,cancel,gate,input)?;},
         OperationInput::LiveAgent(original)=>crate::agent_editor::finish_approved_copy_check(&directory,original,profile,cancel,gate,input)?,
+        OperationInput::LiveCad(original)=>crate::native_working_version::finish_approved_copy_check(cli.ok_or("Falta el lector FreeCAD compatible.")?,&directory,original,profile,(cancel,gate),input)?,
         _=>return Err(PAUSE.into()),
     }
     publish_target(project,input)?;recover(project,stage,input)
@@ -76,6 +79,8 @@ pub(crate) fn recover_target(project:&Project,input:&Input)->Result<(),String>{
     if let OperationInput::LiveAgent(original)=&snapshot.input{
         crate::agent_editor::recover_approved_copy_check(&directory,original,input)?;
         publish_target(project,input)?;
+    }else if let OperationInput::LiveCad(original)=&snapshot.input{
+        crate::native_working_version::recover_approved_copy_check(&directory,original,input)?;publish_target(project,input)?;
     }Ok(())
 }
 fn report(project:&Project,input:&Input)->Result<Report,String>{
@@ -85,6 +90,7 @@ fn report(project:&Project,input:&Input)->Result<Report,String>{
     match &snapshot.input{
         OperationInput::KonnectPcb(original)=>copy::approved_check(&directory,original,input)?,
         OperationInput::LiveAgent(original)=>{crate::agent_editor::approved_copy_check(&directory,original,input)?;},
+        OperationInput::LiveCad(original)=>{crate::native_working_version::approved_copy_check(&directory,original,input)?;},
         _=>return Err(PAUSE.into()),
     }
     let bytes=source::read_regular(&directory.join("result.json"),1024*1024)?;

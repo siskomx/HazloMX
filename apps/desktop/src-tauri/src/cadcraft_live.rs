@@ -1618,7 +1618,11 @@ pub(crate) mod tests {
         let (sent,received)=std::sync::mpsc::channel();let (release,wait)=std::sync::mpsc::channel();
         let server_task=std::thread::spawn(move||{let mut reader=std::io::BufReader::new(&mut server);let mut frame=String::new();reader.read_line(&mut frame).unwrap();let request:Value=serde_json::from_str(&frame).unwrap();sent.send(()).unwrap();wait.recv().unwrap();let reply=json!({"id":request["id"],"ok":true,"result":{"accepted":true}});reader.get_mut().write_all(format!("{reply}\n").as_bytes()).unwrap();});
         let worker=std::thread::spawn(move||{let value=session.call_with_dispatch("engine.execute_checked",json!({}),&AtomicBool::new(false),Some(&selected)).unwrap();assert!(!session.failed);value});
-        received.recv_timeout(Duration::from_secs(5)).unwrap();let permit=gate.try_lock().expect("Correction must not wait for the native reply");paused.store(true,Ordering::SeqCst);drop(permit);
+        received.recv_timeout(Duration::from_secs(5)).unwrap();
+        // Receipt can race the sender's return from write_all; the reply stays withheld.
+        let (corrected,done)=std::sync::mpsc::channel();
+        let correction=std::thread::spawn(move||{let permit=gate.lock().unwrap();paused.store(true,Ordering::SeqCst);drop(permit);corrected.send(()).unwrap();});
+        done.recv_timeout(Duration::from_secs(5)).expect("Correction must not wait for the native reply");correction.join().unwrap();
         release.send(()).unwrap();assert_eq!(worker.join().unwrap()["accepted"],true);server_task.join().unwrap();
         assert!(crate::live_dispatch::read(&next,&input).unwrap().unwrap().summary(&input).needs_review,"An acknowledgment alone is not a checked native result");
         std::fs::remove_dir_all(root).unwrap();

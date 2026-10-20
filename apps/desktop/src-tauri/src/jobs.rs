@@ -237,6 +237,7 @@ impl Workflow {
         let task=crate::tasks::Store::new(project).and_then(|s|s.active()).map_err(|e|e.to_string())?;
         if task.as_ref().is_some_and(|task|original.audit.as_ref().and_then(|a|a.task.as_ref()).map_or(!task.legacy,|binding|binding.id!=task.id)){return Err("La copia pertenece a otra conversación; vuelve a su tarea antes de revisarla.".into());}
         let input=crate::result_checks::prepare(project,target,agreement)?;
+        if let OperationInput::LiveCad(original)=&original.input{crate::native_working_version::pin_verifier(&self.executable.lock().map_err(|_|"No se pudo comprobar el lector FreeCAD.")?,original.working_version.as_ref().ok_or("Falta el plan de copia original.")?)?;}
         Self::propose_operation_locked(&mut state,OperationInput::ResultChecks(input),RunSource::Mcp)
     }
     fn begin_recovery_check(&self,project:&Project,snapshot:&Snapshot,cancel:Arc<AtomicBool>)->Result<RecoveryCheck<'_>,String>{
@@ -408,7 +409,7 @@ impl Workflow {
             };
             if !recovered{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
         }
-        if let OperationInput::LiveCad(input)=&snapshot.input{if input.working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío original.")?;if record.working_version_sha256.is_none(){if recovery_check.is_none(){recovery_check=Some(self.begin_recovery_check(&project,&snapshot,cancel.clone())?);}let result:serde_json::Value=crate::project::read_json(&directory.join("result.json")).map_err(|_|"Falta la captura nativa conservada.")?;let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();let hash=crate::native_working_version::verify(&executable,input.working_version.as_ref().unwrap(),&directory,&self.profiles.join(format!("native-version-recovery-{}",Uuid::new_v4())),&result,(cancel.clone(),recovery_check.as_ref().map(|run|run.gate())))?;crate::live_dispatch::retain_working_version(&directory,input,&hash)?;}}}
+        if let OperationInput::LiveCad(input)=&snapshot.input{if input.working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío original.")?;if record.working_version_sha256.is_none(){let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;if recovery_check.is_none(){recovery_check=Some(self.begin_recovery_check(&project,&snapshot,cancel.clone())?);}let result:serde_json::Value=crate::project::read_json(&directory.join("result.json")).map_err(|_|"Falta la captura nativa conservada.")?;let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();let hash=crate::native_working_version::verify(&executable,input.working_version.as_ref().unwrap(),&directory,&self.profiles.join(format!("native-version-recovery-{}",Uuid::new_v4())),&result,(cancel.clone(),recovery_check.as_ref().map(|run|run.gate())),None)?;crate::live_dispatch::retain_working_version(&directory,input,&hash)?;}}}
         if let OperationInput::LiveDrawing(input)=&snapshot.input{if input.native_working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío CADCraft original.")?;if record.drawing_copy_check_sha256.is_none() && recovery_check.is_none(){recovery_check=Some(self.begin_recovery_check(&project,&snapshot,cancel.clone())?);}let hash=crate::cadcraft_live::recover_working_version(&directory,input,&self.profiles.join(format!("drawing-version-recovery-{}",Uuid::new_v4())),(cancel.clone(),recovery_check.as_ref().map(|run|run.gate())))?;crate::live_dispatch::retain_drawing_copy_check(&directory,input,&hash)?;}}
         if let OperationInput::LiveAgent(input)=&snapshot.input{if crate::agent_editor::working_plan(input).is_some(){
             let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envio original del proyecto.")?;
@@ -477,7 +478,7 @@ impl Workflow {
         let mut jobs=project.history().map_err(|_|"No se pudo comprobar el trabajo guardado.")?;jobs.retain(|job|job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map_or(task.legacy,|binding|binding.id==task.id));
         jobs.sort_by_key(|job|(job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),job.input.job_id()));
         if offset>jobs.len(){return Err("Página de progreso no válida.".into());}let next=offset.saturating_add(32).min(jobs.len());
-        Ok(serde_json::json!({"task_id":task.id,"operations":jobs[offset..next].iter().map(|job|serde_json::json!({"job_id":job.input.job_id(),"operation_kind":job.input.integration(),"check_only_resume_supported":(matches!(&job.input,OperationInput::KonnectPcb(input) if input.copy_checkpoint_version==Some(1)) || matches!(&job.input,OperationInput::LiveAgent(input) if crate::agent_editor::working_plan(input).is_some())),"checked_result_job_id":match &job.input{OperationInput::ResultChecks(input)=>Some(input.target_job_id),_=>None},"task_revision":job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),"program":job.input.native_program(),"phase":job.phase,"output_check_recorded":job.audit.as_ref().is_some_and(|audit|audit.files_verified),"current_artifacts_rechecked":false,"conditions_available":job.input.agreement().is_some()})).collect::<Vec<_>>(),"next_offset":if next<jobs.len(){Some(next)}else{None},"read_tool":"read_task_progress","guidance":"These are saved operation records. An operation's completed phase or prior output check does not prove the task complete, current document state, saved-version reopen, or physical function. Use original receipts and fresh native checks; never replay uncertain edits."}))
+        Ok(serde_json::json!({"task_id":task.id,"operations":jobs[offset..next].iter().map(|job|serde_json::json!({"job_id":job.input.job_id(),"operation_kind":job.input.integration(),"check_only_resume_supported":(matches!(&job.input,OperationInput::KonnectPcb(input) if input.copy_checkpoint_version==Some(1)) || matches!(&job.input,OperationInput::LiveAgent(input) if crate::agent_editor::working_plan(input).is_some()) || matches!(&job.input,OperationInput::LiveCad(input) if input.working_version.is_some())),"checked_result_job_id":match &job.input{OperationInput::ResultChecks(input)=>Some(input.target_job_id),_=>None},"task_revision":job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),"program":job.input.native_program(),"phase":job.phase,"output_check_recorded":job.audit.as_ref().is_some_and(|audit|audit.files_verified),"current_artifacts_rechecked":false,"conditions_available":job.input.agreement().is_some()})).collect::<Vec<_>>(),"next_offset":if next<jobs.len(){Some(next)}else{None},"read_tool":"read_task_progress","guidance":"These are saved operation records. An operation's completed phase or prior output check does not prove the task complete, current document state, saved-version reopen, or physical function. Use original receipts and fresh native checks; never replay uncertain edits."}))
     }
     pub fn task_state(&self) -> Result<Option<crate::tasks::State>, String> {
         let state=self.state.lock().map_err(|e|e.to_string())?;
@@ -2919,7 +2920,7 @@ impl Workflow {
             }
             match &dispatch.snapshot.input {
                 OperationInput::ResultChecks(input)=>{
-                    let cli=if input.program.is_none(){self.kicad_runtime()?}else{None};
+                    let cli=match input.program{None=>self.kicad_runtime()?,Some(crate::host_tools::Program::Freecad)=>Some(self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone()),_=>None};
                     crate::result_checks::run(&dispatch.project,input,cli.as_deref(),&stage.path,&profile,dispatch.cancelled.clone(),crate::process::DispatchGate{mutex:&dispatch.dispatch_gate,paused:&dispatch.dispatch_paused})?;
                 }
                 OperationInput::Freecad(input) => {
@@ -2951,9 +2952,10 @@ impl Workflow {
                 }
                 OperationInput::LiveCad(input) => {
                     let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();
+                    let _exclusive=input.working_version.as_ref().map(|_|crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)).transpose()?;
                     let _verifier_pin=input.working_version.as_ref().map(|plan|crate::native_working_version::pin_verifier(&executable,plan)).transpose()?;
                     crate::cadpilot_live::run_gated(input, &stage.path, &dispatch.cancelled,live_dispatch.as_ref().unwrap())?;
-                    if let Some(plan)=&input.working_version{let result:serde_json::Value=crate::project::read_json(&stage.path.join("result.json")).map_err(|_|"Falta el recibo de captura de la nueva versión.")?;let hash=crate::native_working_version::verify(&executable,plan,&stage.path,&profile,&result,(dispatch.cancelled.clone(),live_dispatch.as_ref().map(|d|d.gate())))?;live_dispatch.as_ref().unwrap().retain_working_version(input,&hash)?;}
+                    if let Some(plan)=&input.working_version{let result:serde_json::Value=crate::project::read_json(&stage.path.join("result.json")).map_err(|_|"Falta el recibo de captura de la nueva versión.")?;let hash=crate::native_working_version::verify(&executable,plan,&stage.path,&profile,&result,(dispatch.cancelled.clone(),live_dispatch.as_ref().map(|d|d.gate())),None)?;live_dispatch.as_ref().unwrap().retain_working_version(input,&hash)?;}
                 }
                 OperationInput::Cadpilot(input) => {
                     cadpilot::run(
@@ -3193,6 +3195,60 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+
+
+    #[test]
+    #[ignore = "Requires an owned native-copy fixture and its explicitly identified FreeCADCmd; original edit admission is synthetic"]
+    fn real_freecad_check_resume_detects_reader_and_repairs_links_offline(){
+        use crate::host_tools::{HostTools,Program};
+        let source=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_COPY_FIXTURE").expect("Set the owned native-copy fixture"));
+        let workspace=Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(3).unwrap();
+        assert_eq!(source.canonicalize().unwrap().parent(),Some(workspace.join("target").canonicalize().unwrap().as_path()));
+        assert!(source.file_name().unwrap().to_str().unwrap().starts_with("native-copy-"));
+        let proof:serde_json::Value=crate::project::read_json(&source.join("capture-proof.json")).unwrap();assert_eq!(proof["original_unchanged"],true);
+        let capture:serde_json::Value=crate::project::read_json(&source.join("capture.json")).unwrap();assert_eq!(capture["expected"]["objects"].as_object().unwrap().len(),5);
+        let reader=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_COPY_VERIFIER").expect("Set the identified reader"));
+        let(root,stage,input,reader)=crate::native_working_version::tests::retained_fixture(Some(&source),Some(&reader));
+        let canonical=root.canonicalize().unwrap();let folder=root.join("task");fs::create_dir(&folder).unwrap();let project=Project::create(&folder).unwrap();let task=crate::tasks::Store::new(&project).unwrap().state().unwrap().active;
+        let target=project.store("staging").join(input.job_id.to_string());assert!(stage.canonicalize().unwrap().starts_with(&canonical)&&target.parent().unwrap().canonicalize().unwrap().starts_with(&canonical));fs::rename(stage,&target).unwrap();
+        let mut snapshot=project.snapshot(OperationInput::LiveCad(input.clone()),Phase::Cancelled).unwrap();snapshot.audit.as_mut().unwrap().task=Some(task.binding());snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();
+        let native_name=capture["file"]["name"].as_str().unwrap();let original_capture=fs::read(target.join("NativeVersion/capture.json")).unwrap();let original_file=fs::read(target.join("NativeVersion").join(native_name)).unwrap();let original_completion=fs::read(target.join("native-completion.json")).unwrap();
+        fs::write(target.join("NativeVersion/preserved-partial.native"),b"preserve previous check output").unwrap();
+        let workflow=Arc::new(Workflow::new(root.join("missing-reader/FreeCADCmd.exe"),root.join("profiles")).unwrap());workflow.select_project(project).unwrap();
+        let host=HostTools::new(workflow.clone());host.configure_native_discovery(root.clone(),root.join("data")).unwrap();
+        crate::native_setup::remember(&root.join("data/program-locations"),Program::Freecad,"cli",&reader,&folder).unwrap();
+        let proposed=host.call("propose_result_checks",serde_json::json!({"job_id":input.job_id,"agreement":crate::native_tools::tests::agreement_fixture()})).unwrap();assert!(proposed.get("approval_id").is_none());
+        let pending=workflow.current().unwrap().unwrap();let id=pending.snapshot.input.job_id();assert!(matches!(&pending.snapshot.input,OperationInput::ResultChecks(i) if i.result_checks_version==3 && i.program==Some(Program::Freecad) && i.attempts_before==0));
+        let token=pending.approval_id.unwrap();let done=workflow.execute(workflow.begin(token).unwrap()).unwrap();assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);assert!(workflow.begin(token).is_err());
+        let status=host.call("recover_native_result",serde_json::json!({"job_id":id})).unwrap();assert_eq!(status["published"],true);assert_eq!(status["checked_result_job_id"],serde_json::json!(input.job_id));
+        let parent=folder.join(".hazlomexa/artifacts").join(input.job_id.to_string());let native=parent.join("NativeVersion");
+        assert_eq!(fs::read(native.join("capture.json")).unwrap(),original_capture);assert_eq!(fs::read(native.join(native_name)).unwrap(),original_file);assert_eq!(fs::read(parent.join("native-completion.json")).unwrap(),original_completion);assert_eq!(fs::read(native.join("preserved-partial.native")).unwrap(),b"preserve previous check output");
+        let records=crate::native_readback::read(&native).unwrap();assert_eq!(records.len(),1);assert_eq!(records[0].approval.as_ref().unwrap().job_id,id);assert!(records[0].result_sha256.is_some());
+        let artifact=workflow.artifact(id,ArtifactFormat::ResultChecksReport).unwrap();let report_path=artifact.path.clone();let report_bytes=fs::read(&report_path).unwrap();drop(artifact);drop(host);drop(workflow);
+        // Simulate loss of parent-link bookkeeping after the actual reader completed.
+        let project=Project::open(&folder).unwrap();let journal=parent.join("live-dispatch.json");let mut record:serde_json::Value=crate::project::read_json(&journal).unwrap();record["outcome"]=serde_json::json!("uncertain");record.as_object_mut().unwrap().remove("receipt_sha256");record.as_object_mut().unwrap().remove("working_version_sha256");fs::write(journal,serde_json::to_vec(&record).unwrap()).unwrap();
+        for job in [input.job_id,id]{
+            let mut snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==job).unwrap();match &mut snapshot.input{OperationInput::LiveCad(i)=>i.receipt_sha256=None,OperationInput::ResultChecks(i)=>i.receipt_sha256=None,_=>panic!("Unexpected retained job")};snapshot.phase=Phase::Interrupted;snapshot.audit.as_mut().unwrap().files_verified=false;project.save(&snapshot).unwrap();
+            let from=project.artifact_directory(job);let to=project.store("staging").join(job.to_string());assert!(from.canonicalize().unwrap().starts_with(&canonical)&&to.parent().unwrap().canonicalize().unwrap().starts_with(&canonical)&&!to.exists());fs::rename(from,to).unwrap();
+        }drop(project);
+        // No native reader or discovery configuration is available during link repair.
+        let repair=Arc::new(Workflow::new(root.join("offline/FreeCADCmd.exe"),root.join("offline-profiles")).unwrap());repair.select_project(Project::open(&folder).unwrap()).unwrap();let host=HostTools::new(repair.clone());
+        let status=host.call("recover_native_result",serde_json::json!({"job_id":id})).unwrap();assert_eq!(status["published"],true);assert_eq!(status["checked_result_job_id"],serde_json::json!(input.job_id));assert_eq!(fs::read_dir(root.join("offline-profiles")).unwrap().count(),0);assert_eq!(crate::native_readback::read(&native).unwrap().len(),1);assert_eq!(fs::read(native.join(native_name)).unwrap(),original_file);drop(host);drop(repair);
+        assert!(report_path.canonicalize().unwrap().starts_with(&canonical));fs::remove_file(&report_path).unwrap();let project=Project::open(&folder).unwrap();let restored=project.recover().unwrap();assert_eq!(restored.iter().find(|s|s.input.job_id()==id).unwrap().phase,Phase::Completed);assert_eq!(fs::read(&report_path).unwrap(),report_bytes);assert_eq!(crate::native_readback::read(&native).unwrap().len(),1);drop(project);
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn freecad_check_resume_needs_current_scope_and_matching_reader_and_stop_spends_no_attempt(){
+        let(root,stage,input,reader)=crate::native_working_version::tests::retained_fixture(None,None);let folder=root.join("task");fs::create_dir(&folder).unwrap();let project=Project::create(&folder).unwrap();let task=crate::tasks::Store::new(&project).unwrap().state().unwrap().active;
+        let destination=project.store("staging").join(input.job_id.to_string());assert!(stage.canonicalize().unwrap().starts_with(root.canonicalize().unwrap())&&destination.parent().unwrap().canonicalize().unwrap().starts_with(project.root.canonicalize().unwrap()));fs::rename(stage,&destination).unwrap();
+        let mut snapshot=project.snapshot(OperationInput::LiveCad(input.clone()),Phase::Cancelled).unwrap();snapshot.audit.as_mut().unwrap().task=Some(task.binding());snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();let selected=(project.id,project.root.clone());
+        let wrong=root.join("wrong");fs::create_dir(&wrong).unwrap();fs::write(wrong.join("FreeCADCmd.exe"),b"different reader").unwrap();let workflow=Workflow::new(wrong.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(project).unwrap();assert!(workflow.propose_result_checks(selected.clone(),input.job_id,crate::native_tools::tests::agreement_fixture()).is_err());workflow.set_executable(reader).unwrap();
+        let pending=workflow.propose_result_checks(selected.clone(),input.job_id,crate::native_tools::tests::agreement_fixture()).unwrap();assert!(matches!(&pending.snapshot.input,OperationInput::ResultChecks(i) if i.result_checks_version==3 && i.program==Some(crate::host_tools::Program::Freecad)));
+        let task=workflow.task_state().unwrap().unwrap().active;workflow.task_request(selected.clone(),crate::tasks::Request::Message{id:task.id,revision:task.revision,text:"Keep the retained native model; only check it.".into(),history:serde_json::json!({"version":1,"turns":[]}).to_string(),correction_of:None}).unwrap();assert!(workflow.begin(pending.approval_id.unwrap()).is_err());
+        let fresh=workflow.propose_result_checks(selected,input.job_id,crate::native_tools::tests::agreement_fixture()).unwrap();let id=fresh.snapshot.input.job_id();let dispatch=workflow.begin(fresh.approval_id.unwrap()).unwrap();workflow.cancel(id).unwrap();assert_eq!(workflow.execute(dispatch).unwrap().snapshot.phase,Phase::Cancelled);
+        assert_eq!(crate::native_working_version::pending_copy_check(&destination,&input).unwrap().1,0);drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn arduino_check_only_approval_is_fresh_and_stop_preserves_the_original_copy(){

@@ -67,6 +67,7 @@ fn file_name(value: &Value) -> Result<&str, String> {
     Ok(name)
 }
 fn receipt(directory: &Path, result: &Value) -> Result<(Value, Value), String> {
+    let canonical=directory.canonicalize().map_err(|_|"Falta la carpeta de la copia conservada.")?;let directory=canonical.as_path();
     let info = &result["working_version"];
     if info["state"] != "captured" {
         return Err("La edición nativa está confirmada, pero no se capturó una versión verificable. Conserva el trabajo; no repitas la edición.".into());
@@ -101,7 +102,7 @@ pub(crate) fn validate_artifacts(
     result: &Value,
     expected_hash: &str,
 ) -> Result<Value, String> {
-    let root = directory.join("NativeVersion");
+    let root = directory.join("NativeVersion").canonicalize().map_err(|_|"Falta la copia nativa conservada.")?;
     let (capture, _) = receipt(&root, result)?;
     let bytes =
         crate::kicad_project::read_regular(&root.join("verification.json"), 2 * 1024 * 1024)?;
@@ -150,6 +151,48 @@ pub(crate) fn pin_verifier(executable: &Path, plan: &Plan) -> Result<Vec<fs::Fil
     }
     Ok(pins)
 }
+
+pub(crate) fn checkpoint(directory:&Path,result:&Value)->Result<(String,usize),String>{
+    let root=directory.join("NativeVersion");let pins=crate::project::pin_lineage(&root).map_err(|_|"No se pudo fijar la copia conservada.")?;
+    let (capture,_)=receipt(&root,result)?;let captured=result["working_version"]["capture_sha256"].as_str().ok_or("Falta la captura original.")?;
+    let identity=crate::project::directory_identity(pins.last().ok_or("Falta la carpeta nativa.")?).map_err(|_|"No se pudo comprobar la identidad de la copia.")?;
+    let hash=crate::kicad_project::digest(&serde_json::to_vec(&json!({"capture_sha256":captured,"directory":identity,"file":capture["file"]})).map_err(|_|"La captura no es válida.")?);
+    Ok((hash,crate::native_readback::count(&root,captured)?))
+}
+fn original(directory:&Path,input:&crate::cadpilot_live::Input)->Result<(crate::live_dispatch::Record,Value),String>{
+    input.working_version.as_ref().ok_or("La operación no incluía una copia nativa.")?.validate()?;
+    let record=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveCad(input.clone()))?.ok_or("Falta el envío original.")?;
+    let result=crate::cadpilot_live::read_native_completion(directory,input,record.native_completion_sha256.as_deref().ok_or("Falta el vínculo de finalización original.")?)?.ok_or("Falta el recibo original.")?;
+    checkpoint(directory,&result)?;Ok((record,result))
+}
+pub(crate) fn pending_copy_check(directory:&Path,input:&crate::cadpilot_live::Input)->Result<(String,usize),String>{
+    let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;let (record,result)=original(directory,input)?;
+    if record.working_version_sha256.is_some(){return Err("La copia ya tiene una comprobación vinculada; recupera su resultado local.".into());}
+    if !matches!(record.outcome,crate::native_journal::Outcome::Dispatched|crate::native_journal::Outcome::Uncertain){return Err("Falta reconciliar el envío original; no se adoptó otra comprobación.".into());}
+    let checkpoint=checkpoint(directory,&result)?;if checkpoint.1>=2{return Err("Se agotaron las dos comprobaciones registradas. Se conserva la copia; una ampliación necesita otra aprobación.".into());}Ok(checkpoint)
+}
+pub(crate) fn approved_copy_check(directory:&Path,input:&crate::cadpilot_live::Input,approval:&crate::result_checks::Input)->Result<String,String>{
+    approval.validate()?;let (_,result)=original(directory,input)?;let (identity,count)=checkpoint(directory,&result)?;
+    if approval.program!=Some(crate::host_tools::Program::Freecad) || approval.target_job_id!=input.job_id || approval.target_input_sha256!=crate::cadpilot_live::completion_input(input)? || identity!=approval.edit_sha256 || count!=approval.attempts_before+1{return Err("La comprobación no pertenece a esta copia y aprobación.".into());}
+    let hash=crate::native_readback::approved(&directory.join("NativeVersion"),result["working_version"]["capture_sha256"].as_str().ok_or("Falta la captura original.")?,approval)?;
+    validate_artifacts(directory,&result,&hash)?;Ok(hash)
+}
+fn retain_approved(directory:&Path,input:&crate::cadpilot_live::Input,hash:&str)->Result<(),String>{
+    let (record,_)=original(directory,input)?;
+    if record.working_version_sha256.as_deref()!=Some(hash){crate::live_dispatch::retain_working_version(directory,input,hash)?;}
+    if !crate::cadpilot_live::recover_recorded_result(directory,input)?{return Err("Falta recuperar el informe original de la copia comprobada.".into());}
+    let mut checked=crate::project::OperationInput::LiveCad(input.clone());checked.retain_receipt(directory).map_err(|_|"Falta el informe original.")?;crate::live_dispatch::recover_checked(directory,&checked)
+}
+pub(crate) fn finish_approved_copy_check(executable:&Path,directory:&Path,input:&crate::cadpilot_live::Input,profile:&Path,control:(Arc<AtomicBool>,crate::process::DispatchGate<'_>),approval:&crate::result_checks::Input)->Result<(),String>{
+    let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;approval.validate()?;let (record,result)=original(directory,input)?;
+    if approval.program!=Some(crate::host_tools::Program::Freecad) || approval.target_job_id!=input.job_id || approval.target_input_sha256!=crate::cadpilot_live::completion_input(input)?{return Err("La aprobación no pertenece a esta copia.".into());}
+    let (identity,count)=checkpoint(directory,&result)?;if identity!=approval.edit_sha256{return Err("La copia cambió; se conserva sin reemplazarla.".into());}
+    let hash=if count==approval.attempts_before && record.working_version_sha256.is_none(){verify(executable,input.working_version.as_ref().unwrap(),directory,profile,&result,(control.0,Some(control.1)),Some(approval))?}else{approved_copy_check(directory,input,approval)?};
+    retain_approved(directory,input,&hash)
+}
+pub(crate) fn recover_approved_copy_check(directory:&Path,input:&crate::cadpilot_live::Input,approval:&crate::result_checks::Input)->Result<(),String>{
+    let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;let hash=approved_copy_check(directory,input,approval)?;retain_approved(directory,input,&hash)
+}
 pub(crate) fn verify(
     executable: &Path,
     plan: &Plan,
@@ -157,6 +200,7 @@ pub(crate) fn verify(
     profile: &Path,
     result: &Value,
     control: (Arc<AtomicBool>,Option<crate::process::DispatchGate<'_>>),
+    approval:Option<&crate::result_checks::Input>,
 ) -> Result<String, String> {
     let (cancel,gate)=control;
     drop(gate.map(|g|g.enter(&cancel)).transpose()?);
@@ -167,7 +211,7 @@ pub(crate) fn verify(
         return Err("La verificación necesita ubicaciones locales reservadas por Hazlo.".into());
     }
     plan.validate()?;
-    let root = directory.join("NativeVersion");
+    let root = directory.join("NativeVersion").canonicalize().map_err(|_|"Falta la copia nativa conservada.")?;
     let mut pins =
         crate::project::pin_lineage(&root).map_err(|_| "No se pudo fijar la versión nativa.")?;
     pins.push(crate::kicad_project::open_regular(
@@ -180,6 +224,9 @@ pub(crate) fn verify(
         LIMIT,
     )?);
     pins.extend(pin_verifier(executable, plan)?);
+    if let Some(approval)=approval{approval.validate()?;if approval.program!=Some(crate::host_tools::Program::Freecad) || checkpoint(directory,result)?!=(approval.edit_sha256.clone(),approval.attempts_before){return Err("La copia o los intentos cambiaron; no se envió otra comprobación.".into());}}
+    let capture_hash=result["working_version"]["capture_sha256"].as_str().ok_or("Falta el vínculo original de captura.")?;
+    let ticket=crate::native_readback::begin(&root,capture_hash,approval)?;
     fs::create_dir(profile)
         .map_err(|_| "No se pudo reservar el perfil de verificación; el trabajo sigue local.")?;
     let profile = crate::freecad::configuration_path(profile)
@@ -235,10 +282,12 @@ pub(crate) fn verify(
         profile.join("verify-copy.FCMacro").into_os_string(),
     ];
     let permit=gate.map(|g|g.enter(&cancel)).transpose()?;
+    // The installed launcher rejects verbatim drive cwd spelling; file pins keep it fixed.
+    let native_root=if matches!(root.components().next(),Some(std::path::Component::Prefix(p)) if matches!(p.kind(),std::path::Prefix::VerbatimDisk(_))){std::path::PathBuf::from(root.to_str().and_then(|p|p.strip_prefix("\\\\?\\")).ok_or("No se pudo preparar la carpeta nativa.")?)}else{root.clone()};
     let response = crate::process::run_owned_permitted(
         executable,
         &args,
-        &root,
+        &native_root,
         &env,
         cancel.clone(),
         Duration::from_secs(90),
@@ -278,12 +327,35 @@ pub(crate) fn verify(
         crate::kicad_project::write_new(&path, &bytes)?;
     }
     validate_artifacts(directory, result, &hash)?;
+    crate::native_readback::complete(ticket,&hash)?;
     Ok(hash)
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+
+    pub(crate) fn retained_fixture(source:Option<&Path>,reader:Option<&Path>)->(std::path::PathBuf,std::path::PathBuf,crate::cadpilot_live::Input,std::path::PathBuf){
+        use crate::{project::OperationInput,live_dispatch::Dispatch};use std::sync::Mutex;
+        let root=std::env::temp_dir().join(format!("hazlo-freecad-resume-{}",uuid::Uuid::new_v4()));fs::create_dir(&root).unwrap();let stage=root.join("stage");fs::create_dir(&stage).unwrap();let native=stage.join("NativeVersion");fs::create_dir(&native).unwrap();
+        let executable=if let Some(reader)=reader{reader.to_owned()}else{let reader=root.join("FreeCADCmd.exe");fs::write(&reader,b"owned placeholder, never execute").unwrap();reader};
+        let capture=if let Some(source)=source{let bytes=crate::kicad_project::read_regular(&source.join("capture.json"),2*1024*1024).unwrap();let capture:Value=serde_json::from_slice(&bytes).unwrap();let name=file_name(&capture["file"]["name"]).unwrap();fs::copy(source.join("version").join(name),native.join(name)).unwrap();fs::write(native.join("capture.json"),&bytes).unwrap();capture}else{
+            let bytes=b"owned native fixture bytes";fs::write(native.join("Owned.FCStd"),bytes).unwrap();let capture=json!({"version":1,"source_preserved":true,"reopen_checked":false,"file":{"name":"Owned.FCStd","bytes":bytes.len(),"sha256":crate::kicad_project::digest(bytes)}});fs::write(native.join("capture.json"),serde_json::to_vec(&capture).unwrap()).unwrap();capture};
+        let (mut input,mut result)=crate::cadpilot_live::tests::completed_fixture();input.working_version=Some(plan(&executable).unwrap());
+        result["working_version"]=json!({"state":"captured","capture_sha256":crate::kicad_project::digest(&fs::read(native.join("capture.json")).unwrap()),"file":capture["file"]});
+        let operation=OperationInput::LiveCad(input.clone());let fence=Dispatch::start(&stage,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());fence.retain_native_completion(&input,&result).unwrap();drop(fence);
+        (root,stage,input,executable)
+    }
+    #[test]
+    fn retained_native_copy_binds_identity_and_unknown_attempts_cannot_be_replayed(){
+        let(root,stage,input,executable)=retained_fixture(None,None);let (identity,attempts)=pending_copy_check(&stage,&input).unwrap();assert_eq!(attempts,0);
+        let plan=crate::result_checks::Input{result_checks_version:3,program:Some(crate::host_tools::Program::Freecad),job_id:uuid::Uuid::new_v4(),target_job_id:input.job_id,target_input_sha256:crate::cadpilot_live::completion_input(&input).unwrap(),edit_sha256:identity.clone(),attempts_before:0,agreement:crate::native_tools::tests::agreement_fixture(),receipt_sha256:None};
+        let(_,result)=original(&stage,&input).unwrap();let capture=result["working_version"]["capture_sha256"].as_str().unwrap();let _unknown=crate::native_readback::begin(&stage.join("NativeVersion"),capture,Some(&plan)).unwrap();
+        let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(false);let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};let profile=root.join("not-started");assert!(finish_approved_copy_check(&executable,&stage,&input,&profile,(Arc::new(AtomicBool::new(false)),gate),&plan).is_err());assert!(!profile.exists());assert_eq!(crate::native_readback::count(&stage.join("NativeVersion"),capture).unwrap(),1);
+        let moved=root.join("moved-stage");assert!(stage.canonicalize().unwrap().starts_with(root.canonicalize().unwrap())&&moved.parent().unwrap().canonicalize().unwrap()==root.canonicalize().unwrap());fs::rename(&stage,&moved).unwrap();assert_eq!(checkpoint(&moved,&result).unwrap().0,identity);
+        fs::write(moved.join("NativeVersion/Owned.FCStd"),b"preserve manual native changes").unwrap();assert!(pending_copy_check(&moved,&input).is_err());assert_eq!(fs::read(moved.join("NativeVersion/Owned.FCStd")).unwrap(),b"preserve manual native changes");assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     #[ignore = "Requires the identified portable FreeCAD GUI and Cmd; creates only an owned offscreen fixture"]
     fn real_gui_copy_preserves_modified_undo_and_original_then_reopens() {
@@ -380,6 +452,7 @@ mod tests {
             &root.join("check-profile"),
             &result,
             (Arc::new(AtomicBool::new(false)),Some(gate)),
+            None,
         )
         .unwrap();
         validate_artifacts(&root, &result, &hash).unwrap();
@@ -396,7 +469,7 @@ mod tests {
         let exe=root.join("FreeCADCmd.exe");fs::write(&exe,b"owned verifier identity").unwrap();let plan=plan(&exe).unwrap();
         fs::write(root.join("retained.FCStd"),b"preserve native copy").unwrap();let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(true);
         let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};let profile=root.join("not-started");
-        let error=verify(&exe,&plan,&root,&profile,&json!({}),(Arc::new(AtomicBool::new(false)),Some(gate))).unwrap_err();
+        let error=verify(&exe,&plan,&root,&profile,&json!({}),(Arc::new(AtomicBool::new(false)),Some(gate)),None).unwrap_err();
         assert!(error.contains("pausados"));assert!(!profile.exists());assert_eq!(fs::read(root.join("retained.FCStd")).unwrap(),b"preserve native copy");
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
@@ -432,7 +505,8 @@ mod tests {
             &root,
             &profile,
             &json!({}),
-            (Arc::new(AtomicBool::new(true)),None)
+            (Arc::new(AtomicBool::new(true)),None),
+            None,
         )
         .is_err());
         assert!(!profile.exists());
@@ -495,6 +569,7 @@ mod tests {
             &root.join("profile"),
             &result,
             (Arc::new(AtomicBool::new(false)),Some(gate)),
+            None,
         )
         .unwrap();
         validate_artifacts(&root, &result, &hash).unwrap();
@@ -510,7 +585,7 @@ mod tests {
         )
         .unwrap();
         assert!(validate_artifacts(&root, &result, &hash).is_err());
-        assert!(verify(&executable,&plan,&root,&root.join("read-only-recheck"),&result,(Arc::new(AtomicBool::new(false)),None)).is_err());
+        assert!(verify(&executable,&plan,&root,&root.join("read-only-recheck"),&result,(Arc::new(AtomicBool::new(false)),None),None).is_err());
         assert_eq!(fs::read(native.join("verification.json")).unwrap(),b"preserve changed verification");
         assert_eq!(
             crate::kicad_project::read_regular(&native.join(name), LIMIT).unwrap(),

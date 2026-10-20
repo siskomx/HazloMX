@@ -260,6 +260,33 @@ pub(crate) fn pcb_copy_runtimes(locations:&Path)->Result<(Option<PathBuf>,Option
     roots.extend(roots.clone().into_iter().map(|p|p.join("bin")));roots.extend(folders());
     Ok((find_in(&roots,&["konnect.exe"]),cli(Program::Kicad,&roots)))
 }
+
+pub(crate) fn freecad_copy_reader(locations:&Path,expected:&crate::native_working_version::Plan)->Result<Option<PathBuf>,String>{
+    let mut roots=portable_folders(locations,Program::Freecad)?;
+    if let Some(Setup::Cli(reader))=remembered(locations,Program::Freecad,locations)?{if let Some(parent)=reader.parent(){roots.insert(0,parent.to_owned());}}
+    roots.extend(folders());
+    if let Some(local)=std::env::var_os("LOCALAPPDATA"){roots.push(PathBuf::from(local).join("HazloMexa/runtimes/FreeCAD-1.1.4/FreeCAD_1.1.4-Windows-x86_64-py311"));}
+    matching_freecad_reader(&roots,expected)
+}
+
+#[cfg(test)]
+#[test]
+fn copy_reader_detection_skips_different_binaries_instead_of_guessing_compatibility(){
+    let root=std::env::temp_dir().join(format!("hazlo-freecad-reader-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();
+    let wrong=root.join("wrong");let correct=root.join("correct");for folder in [&wrong,&correct]{std::fs::create_dir(folder).unwrap();}
+    std::fs::write(wrong.join("FreeCADCmd.exe"),b"different reader").unwrap();std::fs::write(correct.join("FreeCADCmd.exe"),b"owned matching reader").unwrap();let plan=crate::native_working_version::plan(&correct.join("FreeCADCmd.exe")).unwrap();
+    assert_eq!(matching_freecad_reader(&[wrong.clone(),correct.clone()],&plan).unwrap(),Some(correct.join("FreeCADCmd.exe")));assert!(matching_freecad_reader(&[wrong],&plan).unwrap().is_none());
+    assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+}
+
+fn matching_freecad_reader(roots:&[PathBuf],expected:&crate::native_working_version::Plan)->Result<Option<PathBuf>,String>{
+    expected.validate()?;
+    for root in roots.iter().take(2048){
+        for candidate in [root.join("FreeCADCmd.exe"),root.join("bin/FreeCADCmd.exe")]{
+            if candidate.is_file() && crate::native_working_version::pin_verifier(&candidate,expected).is_ok(){return Ok(Some(candidate));}
+        }
+    }Ok(None)
+}
 fn portable_folders(locations: &Path, program: Program) -> Result<Vec<PathBuf>, String> {
     let path = locations.join("portable-folders.json");
     if !path.exists() {
