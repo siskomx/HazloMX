@@ -21,6 +21,8 @@ pub mod freecad;
 
 #[cfg(windows)]
 pub mod arduino;
+#[cfg(windows)]
+pub mod arduino_version;
 
 #[cfg(windows)]
 pub mod cadcraft;

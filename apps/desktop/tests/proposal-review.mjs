@@ -109,6 +109,8 @@ assert.match(nativeAgent,/cambios sin guardar/);
 assert.match(nativeAgent,/preferencias de guardado/);
 assert.match(nativeAgent,/No se carga código a una placa/);
 assert(!nativeAgent.includes("Guardar una copia") && !nativeAgent.includes("archivos originales se conservan"));
+const projectAgent=review({live_agent_version:1,before:{name:"Sketch.ino",dirty:true},description:"Ajustar el sketch",buffer_checkpoint:{version:1,working_version:{version:1}}});
+for(const fact of [/nueva copia del proyecto/,/UTF-8/,/bytes originales/,/Arduino CLI reabre/,/bibliotecas externas/,/dos intentos/,/No se carga código/]) assert.match(projectAgent,fact);
 for (const [unit,label] of [["mm","milímetros"],["cm","centímetros"],["m","metros"],["in","pulgadas"],["ft","pies"]]) {
   const request={operation:"add_cylinder",object:"Cylinder",units:unit,parameters:{radius:0.5,height:2,x:0,y:-1,z:3}};
   const facts=review({cadpilot_version:"0.7.7",source_name:"Part.FCStd",request});

@@ -133,6 +133,12 @@ fn stop(cancel: &AtomicBool) -> Result<(), String> {
     }
 }
 pub(crate) fn open_regular(path: &Path, limit: u64) -> Result<File, String> {
+    open_regular_with_empty(path,limit,false)
+}
+pub(crate) fn open_regular_allow_empty(path:&Path,limit:u64)->Result<File,String>{
+    open_regular_with_empty(path,limit,true)
+}
+fn open_regular_with_empty(path: &Path, limit: u64, allow_empty:bool) -> Result<File, String> {
     use windows_sys::{
         Wdk::{
             Foundation::OBJECT_ATTRIBUTES,
@@ -217,7 +223,7 @@ pub(crate) fn open_regular(path: &Path, limit: u64) -> Result<File, String> {
     }
     let meta = file.metadata().map_err(|e| e.to_string())?;
     if !meta.is_file()
-        || meta.len() == 0
+        || (!allow_empty && meta.len() == 0)
         || meta.len() > limit
         || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
     {

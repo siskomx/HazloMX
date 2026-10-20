@@ -138,14 +138,19 @@ async function runProbe() {
     result.header_disk_unchanged=true;result.native_open_buffer_count=buffers.result.buffers.length;
     result.stage = "native edit and undo"; save();
     const beforeUndo = await apply(original);
+    // The application Undo command follows editor focus after switching header tabs.
+    await api.window.showTextDocument(doc,{preserveFocus:false,preview:false});
     const undoTarget = await inspect();
     assert.equal(undoTarget.document_token, original.document_token);
     assert.equal(undoTarget.source, beforeUndo.source);
     await api.commands.executeCommand("core.undo");
     let restored = await inspect();
-    for (let attempt = 0; attempt < 100 && restored.document_token === original.document_token && restored.source !== original.source; attempt++) {
+    const undoDeadline=Date.now()+10000;
+    while (Date.now()<undoDeadline && restored.document_token === original.document_token && (restored.version<=beforeUndo.version || restored.source !== original.source)) {
       await new Promise(resolve => setTimeout(resolve, 20)); restored = await inspect();
     }
+    result.undo_before_version=beforeUndo.version;result.undo_after_version=restored.version;
+    result.undo_restored_original_source=restored.source===original.source;save();
     assert.equal(restored.document_token, original.document_token);
     assert(restored.version > beforeUndo.version);
     assert.equal(restored.source, original.source, "Native undo must preserve the earlier user note");

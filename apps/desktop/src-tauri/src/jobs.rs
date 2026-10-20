@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::{
     fs,
     io::Read,
-    path::PathBuf,
+    path::{Path,PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -211,6 +211,12 @@ pub struct Dispatch {
 }
 
 impl Workflow {
+    pub(crate) fn prepare_agent_version(&self,executable:&Path,root:&Path,before_name:&str,cancel:Arc<AtomicBool>)->Result<crate::arduino_version::Plan,String>{
+        let project=self.view()?.project.ok_or("Abre el proyecto de esta conversación.")?;
+        std::fs::create_dir_all(&self.profiles).map_err(|_|"No se pudo preparar el perfil privado del lector.")?;
+        let _pins=crate::project::pin_lineage(&self.profiles).map_err(|_|"No se pudo fijar el perfil privado del lector.")?;
+        crate::arduino_version::prepare(executable,root,&project.1,before_name,&self.profiles.join(format!("agent-version-plan-{}",Uuid::new_v4())),cancel)
+    }
     pub(crate) fn native_version_plan(&self)->Result<crate::native_working_version::Plan,String>{crate::native_working_version::plan(&self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?)}
     pub fn correct_chat(&self,scope:&ConversationScope,input:&crate::tasks::ChatCorrectionInput,draft:&str)->Result<(),String>{
         self.interrupt_chat(scope,Some(input),input.chat_id,draft,None)
@@ -321,7 +327,7 @@ impl Workflow {
             let recovered=match &snapshot.input{
                 OperationInput::LiveCad(input)=>crate::cadpilot_live::recover_result(input,&directory,&cancel)?,
                 OperationInput::LiveAgent(input)=>{
-                    let connection=if let Some(connection)=agent_connection{connection}else{crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id))).map_err(|_|"La instancia original del editor ya no está conectada. Se conserva el trabajo y la pausa.")?};
+                    let connection=if let Some(connection)=agent_connection.clone(){connection}else{crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id))).map_err(|_|"La instancia original del editor ya no está conectada. Se conserva el trabajo y la pausa.")?};
                     crate::agent_editor::recover_result(input,&connection,&directory,&cancel)?
                 },
                 OperationInput::LivePcb(input)=>crate::kicad_live::recover_result(input,&directory)?,
@@ -334,6 +340,13 @@ impl Workflow {
         }
         if let OperationInput::LiveCad(input)=&snapshot.input{if input.working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío original.")?;if record.working_version_sha256.is_none(){let result:serde_json::Value=crate::project::read_json(&directory.join("result.json")).map_err(|_|"Falta la captura nativa conservada.")?;let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();let hash=crate::native_working_version::verify(&executable,input.working_version.as_ref().unwrap(),&directory,&self.profiles.join(format!("native-version-recovery-{}",Uuid::new_v4())),&result,cancel.clone())?;crate::live_dispatch::retain_working_version(&directory,input,&hash)?;}}}
         if let OperationInput::LiveDrawing(input)=&snapshot.input{if input.native_working_version.is_some(){let hash=crate::cadcraft_live::recover_working_version(&directory,input,&self.profiles.join(format!("drawing-version-recovery-{}",Uuid::new_v4())),cancel.clone())?;crate::live_dispatch::retain_drawing_copy_check(&directory,input,&hash)?;}}
+        if let OperationInput::LiveAgent(input)=&snapshot.input{if crate::agent_editor::working_plan(input).is_some(){
+            let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envio original del proyecto.")?;
+            let connection=if record.agent_project_capture.is_none(){Some(if let Some(connection)=agent_connection.clone(){connection}else{
+                crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id)))
+                    .map_err(|_|"La copia necesita la instancia original conectada; no se repitio la edicion.")?})}else{None};
+            crate::agent_editor::finish_working_version(&directory,input,connection.as_ref(),&self.profiles.join(format!("agent-version-recovery-{}",Uuid::new_v4())),cancel.clone(),None)?;
+        }}
         checked.retain_receipt(&directory).map_err(|_|"El resultado sigue local, pero no se pudo conservar su recibo.")?;
         project.validate_outputs(&directory,&checked).map_err(|_|"El resultado nativo no pasó sus comprobaciones; se conserva la pausa.")?;
         crate::live_dispatch::recover_checked(&directory,&checked)?;
@@ -2816,7 +2829,7 @@ impl Workflow {
                 }
                 OperationInput::LiveAgent(input) => {
                     crate::agent_editor::run_gated(input,dispatch.live_agent.as_ref().ok_or("La conexión al sketch venció.")?,
-                        &stage.path,&dispatch.cancelled,live_dispatch.as_ref().unwrap())?;
+                        &stage.path,&profile,dispatch.cancelled.clone(),live_dispatch.as_ref().unwrap())?;
                 }
                 OperationInput::LivePcb(input) => {
                     crate::kicad_live::run_gated(input,dispatch.live_pcb.as_ref().ok_or("La conexión PCB venció.")?,

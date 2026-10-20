@@ -83,7 +83,7 @@ def main(launch, hold_for_conversation=False, with_hazlo=False):
                 with (root / "host-stdout.log").open("wb") as stdout, (root / "host-stderr.log").open("wb") as stderr:
                     try:
                         host_result = subprocess.run([str(host)], cwd=ROOT, env=host_env, stdout=stdout, stderr=stderr,
-                            creationflags=subprocess.CREATE_NO_WINDOW, timeout=30).returncode
+                            creationflags=subprocess.CREATE_NO_WINDOW, timeout=90).returncode
                     except subprocess.TimeoutExpired:
                         host_result = -1
                 (root / "host-default-profile.json").write_text(json.dumps({

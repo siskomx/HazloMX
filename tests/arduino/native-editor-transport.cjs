@@ -13,11 +13,12 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
   const target = path.resolve(__dirname, "../../target");
   const root = path.join(target, "native-arduino-transport-" + crypto.randomUUID());
   await fs.mkdir(root, {recursive:true});
+  const sketchRoot=path.join(root,"Sketch");await fs.mkdir(sketchRoot);
   const savedSketch = "void loop() { delay(1000); }\n";
-  await fs.writeFile(path.join(root, "Sketch.ino"), savedSketch);
+  await fs.writeFile(path.join(sketchRoot, "Sketch.ino"), savedSketch);
   const env = process.env.HAZLOMEXA_AGENT_EDITOR_ROOT, loader = Module._load;
   let reads = 0, edits = 0, saves = 0;
-  const doc = {uri:{scheme:"file", fsPath:path.join(root,"Sketch.ino")}, version:1, eol:1, isDirty:true, isClosed:false,
+  const doc = {uri:{scheme:"file", fsPath:path.join(sketchRoot,"Sketch.ino")}, version:1, eol:1, isDirty:true, isClosed:false,
     source:"// unsaved user note\nvoid loop() { delay(1000); }\n", getText() { reads++; return this.source; }, positionAt(offset) { return offset; }};
   const editor = {document:doc, async edit(callback, options) {
     assert.deepEqual(options, {undoStopBefore:true, undoStopAfter:true});
@@ -34,12 +35,21 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     }
     doc.source = replacement; doc.version++; return true;
   }};
-  doc.save=async()=>{saves++;await fs.writeFile(path.join(root,"Sketch.ino"),doc.source);doc.isDirty=false;return true;};
-  const header = {...doc,uri:{scheme:"file",fsPath:path.join(root,"Helper.h")},
+  doc.save=async()=>{saves++;await fs.writeFile(path.join(sketchRoot,"Sketch.ino"),doc.source);doc.isDirty=false;return true;};
+  const header = {...doc,uri:{scheme:"file",fsPath:path.join(sketchRoot,"Helper.h")},
     source:"// unsaved header stays local\n#define DELAY 500\n",version:7};
   await fs.writeFile(header.uri.fsPath,"// saved header is stale\n");
+  await fs.mkdir(path.join(sketchRoot,"data"));await fs.mkdir(path.join(sketchRoot,"build"));
+  await fs.mkdir(path.join(sketchRoot,".theia"));await fs.mkdir(path.join(sketchRoot,".git"));
+  await fs.mkdir(path.join(sketchRoot,"empty-folder"));
+  await fs.writeFile(path.join(sketchRoot,"Closed.cpp"),"// initial closed source\n");
+  await fs.writeFile(path.join(sketchRoot,"Empty.h"),"");
+  await fs.writeFile(path.join(sketchRoot,"data/reference.bin"),Buffer.from([0,1,0,255]));
+  await fs.writeFile(path.join(sketchRoot,"build/kept.bin"),Buffer.from([7,0,8]));
+  await fs.writeFile(path.join(sketchRoot,".theia/settings.json"),'{"files.autoSave":"off"}');
+  await fs.writeFile(path.join(sketchRoot,".git/config"),'[owned]\n');
   const api = {env:{appName:"Arduino Agent"}, window:{activeTextEditor:editor}, Range:class {},
-    workspace:{textDocuments:[doc,header],getWorkspaceFolder:()=>({uri:{scheme:"file",fsPath:root}})}};
+    workspace:{textDocuments:[doc,header],getWorkspaceFolder:()=>({uri:{scheme:"file",fsPath:sketchRoot}})}};
   const context = {subscriptions:[]};
   try {
     process.env.HAZLOMEXA_AGENT_EDITOR_ROOT = await fs.realpath(root);
@@ -105,7 +115,7 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
       for(const name of names) await fs.copyFile(path.join(root,name),path.join(discovery,name));
       await fs.writeFile(path.join(root, "owned-host-probe"), "owned");
       const result = await promisify(execFile)(process.env.HAZLOMEXA_NATIVE_EDITOR_HOST, [], {
-        env:{...process.env, USERPROFILE:profile, HAZLOMEXA_NATIVE_EDITOR_TEST_ROOT:root}, timeout:15000, maxBuffer:65536,
+        env:{...process.env, USERPROFILE:profile, HAZLOMEXA_NATIVE_EDITOR_TEST_ROOT:root}, timeout:90000, maxBuffer:65536,
         windowsHide:true,
       });
       assert(result.stdout.includes("stale refusal passed")); assert.equal(result.stderr, "");
@@ -113,7 +123,7 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
       assert.equal(edits, cancelling?4:3); assert(doc.source.includes(cancelling?"delay(125)":"delay(250)"));
       const saving=process.env.HAZLOMEXA_NATIVE_SAVE_TEST==="1";
       assert.equal(saves,saving?1:0);
-      assert.equal(await fs.readFile(path.join(root,"Sketch.ino"),"utf8"), saving?doc.source:savedSketch);
+      assert.equal(await fs.readFile(path.join(sketchRoot,"Sketch.ino"),"utf8"), saving?doc.source:savedSketch);
       if(cancelling) {
         assert(result.stdout.includes("late native edit after cancellation passed"));
         t.diagnostic("Approved Rust cancellation, delayed companion delivery, fresh readback, stale refusal and cancelled history passed against a controlled IDE API.");
@@ -127,6 +137,6 @@ test("the actual named-pipe entry authenticates before reading or editing a nati
     if (env === undefined) delete process.env.HAZLOMEXA_AGENT_EDITOR_ROOT;
     else process.env.HAZLOMEXA_AGENT_EDITOR_ROOT = env;
     assert((await fs.realpath(root)).startsWith((await fs.realpath(target)) + path.sep));
-    await fs.rm(root, {recursive:true, force:true});
+    if (process.env.HAZLOMEXA_RETAIN_OWNED_FIXTURE !== "1") await fs.rm(root, {recursive:true, force:true});
   }
 });

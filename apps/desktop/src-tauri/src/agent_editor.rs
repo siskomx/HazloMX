@@ -255,7 +255,7 @@ struct ProjectBuffers {
     root: PathBuf,
     buffers: Vec<OpenBuffer>,
 }
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct OpenBuffer {
     relative_path: String,
@@ -320,17 +320,21 @@ impl ProjectBuffers {
 pub struct BufferCheckpointPlan {
     version:u32,
     root:PathBuf,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub working_version:Option<crate::arduino_version::Plan>,
 }
 impl BufferCheckpointPlan {
     fn validate(&self)->Result<(),String>{
+        if let Some(plan)=&self.working_version{plan.validate()?;}
         if self.version!=1{return Err("La captura de buffers no es compatible.".into());}
         crate::project::valid_location(&self.root).map_err(|_|"La carpeta nativa de captura no es válida.".into())
     }
+    pub(crate) fn root(&self)->&Path{&self.root}
 }
 pub async fn buffer_checkpoint_plan(connection:&Connection,before:&Observation,cancel:&AtomicBool)->Result<BufferCheckpointPlan,String>{
     let buffers=inspect_project_buffers(connection,before,cancel).await.map_err(|_|"No se confirmó el contexto del sketch; prepara el complemento actualizado antes de editar. No se cambió ni guardó el documento.")?;
     if buffers.completion_checkpoint_version!=Some(1) || buffers.checkpoint_capacity_available!=Some(true){return Err("El complemento no puede conservar otro checkpoint de buffers. Conserva el trabajo y prepara su versión actual antes de editar.".into());}
-    Ok(BufferCheckpointPlan{version:1,root:buffers.root})
+    Ok(BufferCheckpointPlan{version:1,root:buffers.root,working_version:None})
 }
 
 async fn inspect_project_buffers(connection: &Connection, before: &Observation, cancel: &AtomicBool) -> Result<ProjectBuffers, Failure> {
@@ -489,8 +493,9 @@ pub fn validate_report(input: &Input, report: &serde_json::Value) -> Result<(), 
         .map_err(|error| error.message().into())
 }
 
-pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,cancel:&AtomicBool,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
+pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,profile:&Path,cancel:Arc<AtomicBool>,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
     let _root_pin=input.buffer_checkpoint.as_ref().map(|plan|crate::project::pin_lineage(&plan.root).map_err(|_|"No se pudo fijar la carpeta aprobada del sketch.")).transpose()?;
+    let _version_pins=input.buffer_checkpoint.as_ref().and_then(|p|p.working_version.as_ref().map(|v|(p,v))).map(|(p,v)|crate::arduino_version::pin_source(v,&p.root)).transpose()?;
     let dispatch=Some(dispatch);
     input.validate()?;
     connection
@@ -501,21 +506,22 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,cancel:&
         .build()
         .map_err(|_| "No se pudo iniciar la conexión al editor.")?;
     let receipt = if input.save {
-        runtime.block_on(save_with_dispatch(connection,input.job_id,&input.before,cancel,dispatch))
+        runtime.block_on(save_with_dispatch(connection,input.job_id,&input.before,&cancel,dispatch))
     } else { runtime.block_on(apply_with_dispatch(
             connection,
             input.job_id,
             &input.before,
             &input.source,
-            cancel,
+            &cancel,
             dispatch,
         )) }.map_err(|error| error.message())?;
     let report=normalized_report(input,receipt)?;
     dispatch.ok_or("Falta el envío original del editor.")?.retain_agent_completion(input,&report)?;
     if input.buffer_checkpoint.is_some(){
-        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel))?;
+        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,&cancel))?;
         dispatch.ok_or("Falta el envío original del editor.")?.retain_agent_buffers(input,&buffers)?;
     }
+    finish_working_version(stage,input,Some(connection),profile,cancel,dispatch)?;
     retain_report(&report,stage,false)
 }
 fn original_request(input:&Input)->Value{
@@ -558,17 +564,54 @@ pub(crate) fn write_buffer_checkpoint(directory:&Path,input:&Input,core_hash:&st
     }else{crate::kicad_project::write_new(&path,&bytes).map_err(|_|"El recibo nativo se conserva; falta almacenar su checkpoint. No repitas la edición.")?;}
     Ok(crate::kicad_project::digest(&bytes))
 }
-pub(crate) fn confirmed_buffer_checkpoint(directory:&Path,input:&Input,core_hash:&str,hash:&str)->Result<Value,String>{
+fn read_buffer_checkpoint(directory:&Path,input:&Input,core_hash:&str,hash:&str)->Result<ProjectBuffers,String>{
     let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el checkpoint local.")?;
     let bytes=crate::kicad_project::read_regular(&directory.join("agent-buffers.json"),FRAME_LIMIT as u64)?;
     if !crate::kicad_project::valid_hash(hash) || crate::kicad_project::digest(&bytes)!=hash{return Err("El checkpoint de buffers cambió; se conserva la pausa.".into());}
     let proof:BufferCheckpoint=serde_json::from_slice(&bytes).map_err(|_|"El checkpoint de buffers no es válido.")?;
     if proof.version!=1 || proof.input_sha256!=completion_identity(input)? || proof.completion_sha256!=core_hash{return Err("El checkpoint no está vinculado al recibo original del editor.".into());}
     let report=confirmed_completion(directory,input,core_hash)?;validate_buffer_checkpoint(input,&report,&proof.buffers)?;
-    Ok(json!({"scope":"historical_native_open_buffers_checkpoint","buffer_count":proof.buffers.buffers.len(),
-        "dirty_buffer_count":proof.buffers.buffers.iter().filter(|b|b.dirty).count(),"sha256":hash,
+    Ok(proof.buffers)
+}
+pub(crate) fn confirmed_buffer_checkpoint(directory:&Path,input:&Input,core_hash:&str,hash:&str)->Result<Value,String>{
+    let buffers=read_buffer_checkpoint(directory,input,core_hash,hash)?;
+    Ok(json!({"scope":"historical_native_open_buffers_checkpoint","buffer_count":buffers.buffers.len(),
+        "dirty_buffer_count":buffers.buffers.iter().filter(|b|b.dirty).count(),"sha256":hash,
         "complete_project":false,"disk_dependencies_checked":false,"working_version_reopen_checked":false,
         "current_live_document_checked":false,"agreed_task_outcome_checked":false,"physical_function_checked":false}))
+}
+pub(crate) fn working_plan(input:&Input)->Option<&crate::arduino_version::Plan>{input.buffer_checkpoint.as_ref().and_then(|p|p.working_version.as_ref())}
+pub(crate) fn checked_working_version(directory:&Path,input:&Input,core:&str,buffers:&str,link:&crate::arduino_version::Link,check:Option<&str>)->Result<Value,String>{
+    let plan=working_plan(input).ok_or("La propuesta no incluía una versión de proyecto.")?;
+    let frame=read_buffer_checkpoint(directory,input,core,buffers)?;let data=frame.buffers.into_iter().map(|b|(b.relative_path,b.source)).collect::<Vec<_>>();
+    let identity=completion_identity(input)?;let scope=crate::arduino_version::Scope{input_sha256:&identity,buffer_sha256:buffers,buffers:&data};
+    if let Some(hash)=check{crate::arduino_version::validate_check(plan,directory,link,&scope,hash)}
+    else{crate::arduino_version::validate_capture(plan,directory,link,&scope)?;Ok(json!({"capture_checked":true}))}
+}
+pub(crate) fn finish_working_version(directory:&Path,input:&Input,connection:Option<&Connection>,profile:&Path,cancel:Arc<AtomicBool>,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<(),String>{
+    let Some(plan)=working_plan(input) else{return Ok(());};
+    let operation=crate::project::OperationInput::LiveAgent(input.clone());let record=crate::live_dispatch::read(directory,&operation)?.ok_or("Falta el envío original del proyecto.")?;
+    let core=record.agent_completion_sha256.as_deref().ok_or("Falta el recibo original del editor.")?;
+    let buffers=record.agent_buffers_sha256.as_deref().ok_or("Falta el checkpoint original de buffers.")?;
+    let frame=read_buffer_checkpoint(directory,input,core,buffers)?;let data=frame.buffers.iter().map(|b|(b.relative_path.clone(),b.source.clone())).collect::<Vec<_>>();
+    let identity=completion_identity(input)?;let scope=crate::arduino_version::Scope{input_sha256:&identity,buffer_sha256:buffers,buffers:&data};
+    let link=if let Some(link)=record.agent_project_capture {link}else{
+        let connection=connection.ok_or("La copia necesita comprobar la misma instancia nativa; no se repitió la edición.")?;
+        let after=report_after(input,&confirmed_completion(directory,input,core)?)?;
+        let runtime=tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_|"No se pudo iniciar la lectura nativa de la copia.")?;
+        let (link,capture)=crate::arduino_version::capture(plan,&frame.root,directory,&scope,&cancel,||{
+            let current=runtime.block_on(inspect_project_buffers(connection,&after,&cancel)).map_err(|_|"No se confirmó el estado nativo para copiar el proyecto. Se conservó la edición.")?;
+            if current.instance_id!=frame.instance_id || current.active_document_token!=frame.active_document_token || current.buffers!=frame.buffers
+                || !current.root.as_os_str().eq_ignore_ascii_case(frame.root.as_os_str()) {return Err("Las pestañas cambiaron después de la edición. Se conservó tu trabajo; la copia necesita una revisión nueva, sin repetir la edición.".into());}Ok(())
+        })?;
+        if let Some(dispatch)=dispatch{dispatch.retain_agent_project_capture(input,&link,&capture)?;}
+        else{crate::live_dispatch::retain_agent_project_capture(directory,input,&link,&capture)?;}
+        link
+    };
+    if let Some(hash)=record.agent_project_check_sha256{crate::arduino_version::validate_check(plan,directory,&link,&scope,&hash)?;return Ok(());}
+    let hash=crate::arduino_version::verify(plan,directory,&link,&scope,profile,cancel)?;
+    if let Some(dispatch)=dispatch{dispatch.retain_agent_project_check(input,&hash)?;}
+    else{crate::live_dispatch::retain_agent_project_check(directory,input,&hash)?;}Ok(())
 }
 fn normalized_report(input:&Input,receipt:Receipt)->Result<Value,String>{
     receipt.validate_operation(input.job_id,&input.before,&input.source,input.save).map_err(|error|error.message())?;
@@ -824,7 +867,7 @@ pub(crate) mod tests {
         use std::os::windows::fs::OpenOptionsExt;
         let root=std::env::temp_dir().join(format!("hazlo-buffer-anchor-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
         let native=root.join("native-sketch");fs::create_dir(&native).unwrap();
-        let mut input=job_fixture();input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native.clone()});
+        let mut input=job_fixture();input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native.clone(),working_version:None});
         input.validate().unwrap();let frame=checkpoint_fixture(&input);let report=report_fixture(&input);
         assert!(crate::live_dispatch::retain_agent_buffers(&root,&input,&frame).is_err());assert!(!root.join("agent-buffers.json").exists());
         let op=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&op,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
@@ -863,7 +906,7 @@ pub(crate) mod tests {
         let root=std::env::temp_dir().join(format!("hazlo-buffer-recovery-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
         let native=root.join("native-sketch");fs::create_dir(&native).unwrap();let (connection,mut server)=fixture();
         let mut input=job_fixture();input.before=observation(connection.instance_id);input.source=input.before.source.replace("1000","500");
-        input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native.clone()});
+        input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native.clone(),working_version:None});
         let op=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&op,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
         drop(fence.enter().unwrap());fence.retain_agent_completion(&input,&report_fixture(&input)).unwrap();
         let frame=checkpoint_fixture(&input);let expected=original_request(&input);
@@ -883,7 +926,7 @@ pub(crate) mod tests {
             let native=root.join("native-sketch");fs::create_dir(&native).unwrap();let (connection,mut server)=fixture();
             let mut input=job_fixture();input.before=observation(connection.instance_id);input.save=saving;
             input.source=if saving{input.before.source.clone()}else{input.before.source.replace("1000","500")};
-            input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native});
+            input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native,working_version:None});
             let mut reply=report_fixture(&input);reply["after"]["source"]=json!(input.source);let expected=input.clone();let pipe=connection.pipe.clone();
             let worker=tokio::spawn(async move{
                 let request=receive(&mut server).await;assert_eq!(request["request"]["action"],if saving{"save"}else{"apply"});
@@ -894,7 +937,7 @@ pub(crate) mod tests {
             });
             let op=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&op,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
             let checked=input.clone();let directory=root.clone();let dispatch=fence.clone();let connected=connection.clone();
-            assert!(tokio::task::spawn_blocking(move||run_gated(&checked,&connected,&directory,&AtomicBool::new(false),&dispatch)).await.unwrap().is_err());worker.await.unwrap();
+            assert!(tokio::task::spawn_blocking(move||run_gated(&checked,&connected,&directory,&directory.join("copy-profile"),Arc::new(AtomicBool::new(false)),&dispatch)).await.unwrap().is_err());worker.await.unwrap();
             let record=crate::live_dispatch::read(&root,&op).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert!(record.agent_buffers_sha256.is_none());
             assert_eq!(record.summary(&op).acknowledged,1);assert_eq!(record.summary(&op).uncertain,0);assert!(record.summary(&op).needs_review);
             assert!(!root.join("result.json").exists());assert!(fence.enter().is_err());assert!(!recover_recorded_result(&root,&input).unwrap());
@@ -1328,7 +1371,7 @@ pub(crate) mod tests {
         for saving in [false,true]{
             let root=std::env::temp_dir().join(format!("hazlo-agent-completion-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let(connection,mut server)=fixture();let mut input=job_fixture();input.native_completion_version=Some(1);input.before=observation(connection.instance_id);input.save=saving;input.source=if saving{input.before.source.clone()}else{input.before.source.replace("1000","500")+"// PRIVATE_NATIVE_SOURCE_SENTINEL\n"};let mut reply=report_fixture(&input);reply["after"]["source"]=json!(input.source);let expected=input.clone();let writes=Arc::new(AtomicUsize::new(0));let count=writes.clone();
             let native=tokio::spawn(async move{let message=receive(&mut server).await;assert_eq!(message["request"]["action"],if saving{"save"}else{"apply"});assert_eq!(message["request"]["job_id"],json!(expected.job_id));count.fetch_add(1,Ordering::SeqCst);server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":reply})).unwrap()).await.unwrap();});
-            let operation=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();fs::write(root.join("result.json"),b"preserve occupied report").unwrap();let directory=root.clone();let checked=input.clone();let connected=connection.clone();let dispatch=fence.clone();let result=tokio::task::spawn_blocking(move||run_gated(&checked,&connected,&directory,&AtomicBool::new(false),&dispatch)).await.unwrap();native.await.unwrap();assert!(result.is_err());assert_eq!(writes.load(Ordering::SeqCst),1);assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert_eq!(record.summary(&operation).acknowledged,1);assert_eq!(record.summary(&operation).uncertain,0);assert!(record.summary(&operation).needs_review);assert!(fence.enter().is_err());
+            let operation=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();fs::write(root.join("result.json"),b"preserve occupied report").unwrap();let directory=root.clone();let checked=input.clone();let connected=connection.clone();let dispatch=fence.clone();let result=tokio::task::spawn_blocking(move||run_gated(&checked,&connected,&directory,&directory.join("copy-profile"),Arc::new(AtomicBool::new(false)),&dispatch)).await.unwrap();native.await.unwrap();assert!(result.is_err());assert_eq!(writes.load(Ordering::SeqCst),1);assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert_eq!(record.summary(&operation).acknowledged,1);assert_eq!(record.summary(&operation).uncertain,0);assert!(record.summary(&operation).needs_review);assert!(fence.enter().is_err());
             let proof=fs::read_to_string(root.join("agent-completion.json")).unwrap();assert!(!proof.contains("PRIVATE_NATIVE_SOURCE_SENTINEL")&&!proof.contains(&connection.token));fs::rename(root.join("result.json"),root.join("preserved.native")).unwrap();let mut disconnected=connection;disconnected.editor_version=0;assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false)).unwrap());assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false)).unwrap());assert_eq!(writes.load(Ordering::SeqCst),1);let report:Value=crate::project::read_json(&root.join("result.json")).unwrap();validate_report(&input,&report).unwrap();assert_eq!(fs::read(root.join("preserved.native")).unwrap(),b"preserve occupied report");drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
         }
     }

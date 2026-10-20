@@ -68,7 +68,7 @@ fn main() {
     assert_eq!(before.name, if actual {"OwnedSketch.ino"} else {"Sketch.ino"});
     assert!(before.source.contains("// unsaved user note\n") && before.dirty);
     assert_eq!(before.source.matches(if actual {"delay(250)"} else {"delay(1000)"}).count(), 1);
-    let saved_path=if actual {root.join("sketchbook/OwnedSketch/OwnedSketch.ino")} else {root.join("Sketch.ino")};
+    let saved_path=if actual {root.join("sketchbook/OwnedSketch/OwnedSketch.ino")} else {root.join("Sketch/Sketch.ino")};
     let saved = std::fs::read(&saved_path).unwrap();
     let project_root = root.join(format!("project-{}",Uuid::new_v4()));
     std::fs::create_dir(&project_root).unwrap();
@@ -78,6 +78,13 @@ fn main() {
         .select_project(Project::create(&project_root).unwrap())
         .unwrap();
     let host = HostTools::new(workflow.clone());
+    let detection=root.join("host-data");std::fs::create_dir_all(detection.join("program-locations")).unwrap();
+    let catalog=if actual {serde_json::json!({"agent":[root.join("runtime")]})}else{
+        let cli=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_EDITOR_CLI").expect("Provide the identified CLI for the owned project-copy check"));
+        serde_json::json!({"arduino":[cli.parent().unwrap()]})
+    };
+    std::fs::write(detection.join("program-locations/portable-folders.json"),serde_json::to_vec(&catalog).unwrap()).unwrap();
+    host.configure_native_discovery(root.join("resources"),detection).unwrap();
     let listed=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
     if actual {
         assert_eq!(listed["observation"]["state_sha256"],before.state_sha256);
@@ -114,6 +121,7 @@ fn main() {
     let automatic=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
     assert_eq!(automatic["observation"],read["observation"]);
     let mut current = before.clone();
+    let mut copies=Vec::new();
     let changes=if actual {[("delay(250)","delay(200)"),("delay(200)","delay(100)")]}
         else {[("delay(1000)","delay(500)"),("delay(500)","delay(250)")]};
     for (old, new) in changes {
@@ -153,10 +161,26 @@ fn main() {
         assert!(verified["checks"]["native_buffer_checkpoint"]["buffer_count"].as_u64().unwrap()>=2);
         assert_eq!(verified["checks"]["native_buffer_checkpoint"]["complete_project"],false);
         assert_eq!(verified["checks"]["native_buffer_checkpoint"]["working_version_reopen_checked"],false);
+        assert_eq!(verified["scope"],"verified_native_working_version_report");
+        assert_eq!(verified["checks"]["native_working_version"]["native_reader_reopened"],true);
+        assert_eq!(verified["checks"]["native_working_version"]["external_dependencies_checked"],false);
+        let version=workflow.artifact(job_id,ArtifactFormat::NativeWorkingVersion).unwrap();
+        assert!(version.path.is_dir());
+        assert_eq!(std::fs::read_to_string(version.path.join(if actual{"OwnedSketch.ino"}else{"Sketch.ino"})).unwrap(),source);
+        assert_eq!(std::fs::read_to_string(version.path.join("Helper.h")).unwrap(),"// unsaved header stays local\n#define DELAY 500\n");
+        if !actual {
+            assert_eq!(std::fs::read(version.path.join("Empty.h")).unwrap(),b"");
+            assert!(version.path.join("empty-folder").is_dir());
+            assert_eq!(std::fs::read(version.path.join("data/reference.bin")).unwrap(),[0,1,0,255]);
+            assert_eq!(std::fs::read(version.path.join("build/kept.bin")).unwrap(),[7,0,8]);
+            assert_eq!(std::fs::read_to_string(version.path.join("Closed.cpp")).unwrap(),if old=="delay(1000)"{"// initial closed source\n"}else{"// later closed manual change\n"});
+            if old=="delay(1000)"{std::fs::write(saved_path.parent().unwrap().join("Closed.cpp"),b"// later closed manual change\n").unwrap();}
+        }
         let published=workflow.current().unwrap().unwrap();
         // Use the artifact's actual directory; workspace storage paths are host-owned.
         let checkpoint=workflow.artifact(job_id,ArtifactFormat::LiveAgentReport).unwrap().path.parent().unwrap().join("agent-buffers.json");
         let retained:serde_json::Value=serde_json::from_slice(&std::fs::read(&checkpoint).unwrap()).unwrap();
+        copies.push((job_id,version.path.clone(),checkpoint.parent().unwrap().to_owned()));
         assert!(retained.to_string().contains("unsaved header stays local"));
         assert!(matches!(&published.snapshot.input,hazlomexa::project::OperationInput::LiveAgent(input) if input.buffer_checkpoint.is_some()));
         assert!(!verified
@@ -259,6 +283,21 @@ fn main() {
         let disconnected=host.call("inspect_open_agent_documents",serde_json::json!({})).unwrap();
         assert!(disconnected["documents"].as_array().unwrap().is_empty());
         assert!(disconnected.get("observation").is_none());
+        let (job_id,copy,directory)=&copies[0];
+        let journal=directory.join("live-dispatch.json");
+        let mut record:serde_json::Value=serde_json::from_slice(&std::fs::read(&journal).unwrap()).unwrap();
+        record["outcome"]=serde_json::json!("uncertain");
+        record.as_object_mut().unwrap().remove("receipt_sha256");
+        record.as_object_mut().unwrap().remove("agent_project_check_sha256");
+        std::fs::write(&journal,serde_json::to_vec(&record).unwrap()).unwrap();
+        let offline=root.join("offline-original");std::fs::rename(saved_path.parent().unwrap(),&offline).unwrap();
+        let recovered=host.call("recover_native_result",serde_json::json!({"job_id":job_id})).unwrap();
+        assert_eq!(recovered["published"],true);
+        std::fs::rename(&offline,saved_path.parent().unwrap()).unwrap();
+        assert_eq!(std::fs::read_dir(directory).unwrap().filter_map(Result::ok).filter(|e|e.file_name().to_string_lossy().starts_with("SketchVersion-")).count(),1,"Recovery recaptured today's source");
+        let closed=copy.join("Closed.cpp");let original=std::fs::read(&closed).unwrap();std::fs::write(&closed,b"// later edit to the preserved copy\n").unwrap();
+        assert!(host.call("recover_native_result",serde_json::json!({"job_id":job_id})).is_err(),"A modified copy was silently replaced");
+        assert_eq!(std::fs::read(&closed).unwrap(),b"// later edit to the preserved copy\n");std::fs::write(&closed,original).unwrap();
     }
     drop(host);
     drop(workflow);

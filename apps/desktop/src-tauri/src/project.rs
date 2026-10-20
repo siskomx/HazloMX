@@ -397,7 +397,7 @@ pub(crate) fn pin_directory(path: &Path, rename: bool) -> io::Result<File> {
     Ok(handle)
 }
 
-fn directory_identity(handle: &File) -> io::Result<(u32, u32, u32)> {
+pub(crate) fn directory_identity(handle: &File) -> io::Result<(u32, u32, u32)> {
     let mut info: BY_HANDLE_FILE_INFORMATION = unsafe { std::mem::zeroed() };
     if unsafe { GetFileInformationByHandle(handle.as_raw_handle(), &mut info) } == 0 {
         return Err(io::Error::last_os_error());
@@ -697,6 +697,12 @@ impl Project {
             (OperationInput::LivePcb(input), ArtifactFormat::KicadSource) if input.export_copy => "Board.kicad_pcb".into(),
             (OperationInput::LivePcb(_), ArtifactFormat::LivePcbReport) => "result.json".into(),
             (OperationInput::LiveAgent(_), ArtifactFormat::LiveAgentReport) => "result.json".into(),
+            (OperationInput::LiveAgent(input),ArtifactFormat::NativeWorkingVersion) if crate::agent_editor::working_plan(input).is_some()=>{
+                let record=crate::live_dispatch::read(&directory,&OperationInput::LiveAgent(input.clone())).map_err(io::Error::other)?.ok_or_else(||error("Falta la captura del proyecto."))?;
+                let link=record.agent_project_capture.as_ref().ok_or_else(||error("Falta la captura del proyecto."))?;
+                crate::arduino_version::entry(crate::agent_editor::working_plan(input).unwrap(),&directory,link).parent().ok_or_else(||error("Falta la carpeta del proyecto."))?
+                    .strip_prefix(&directory).map_err(io::Error::other)?.to_str().ok_or_else(||error("La carpeta no es compatible."))?.to_owned()
+            },
             (OperationInput::LiveDrawing(crate::cadcraft_live::Input {operation:crate::cadcraft_live::Operation::ExportDxf {},..}), ArtifactFormat::Drawing) => "Drawing.dxf".into(),
             (OperationInput::LiveDrawing(input), ArtifactFormat::NativeWorkingVersion) if input.native_working_version.is_some() => "DrawingVersion".into(),
             (OperationInput::LiveDrawing(_), ArtifactFormat::LiveDrawingReport) => "result.json".into(),
@@ -937,6 +943,7 @@ impl Project {
             let record=crate::live_dispatch::read(directory,&OperationInput::LiveAgent(input.clone())).map_err(io::Error::other)?;
             if input.native_completion_version==Some(1) && record.as_ref().is_none_or(|record|record.agent_completion_sha256.is_none()){return Err(error("Falta el recibo original del editor; el resultado sigue pendiente."));}
             if input.buffer_checkpoint.is_some() && record.as_ref().is_none_or(|record|record.agent_buffers_sha256.is_none()){return Err(error("La edición se conserva; falta su checkpoint de buffers."));}
+            if crate::agent_editor::working_plan(input).is_some() && record.as_ref().is_none_or(|record|record.agent_project_check_sha256.is_none()){return Err(error("La edición se conserva; su nueva copia todavía no está comprobada."));}
             let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),65536).map_err(io::Error::other)?;
             if input.receipt_sha256.as_deref()!=Some(&crate::kicad_project::digest(&bytes)) {
                 return Err(error("El informe de la edición del sketch cambió."));

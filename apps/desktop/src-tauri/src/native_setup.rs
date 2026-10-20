@@ -249,6 +249,12 @@ fn cli(program: Program, roots: &[PathBuf]) -> Option<PathBuf> {
     };
     find_in(roots, names)
 }
+pub(crate) fn arduino_copy_cli(locations:&Path)->Result<Option<PathBuf>,String>{
+    let mut roots=portable_folders(locations,Program::Arduino)?;
+    roots.extend(portable_folders(locations,Program::Agent)?.into_iter().map(|root|root.join("resources/app/lib/backend/resources")));
+    roots.extend(folders());
+    Ok(cli(Program::Arduino,&roots))
+}
 fn portable_folders(locations: &Path, program: Program) -> Result<Vec<PathBuf>, String> {
     let path = locations.join("portable-folders.json");
     if !path.exists() {

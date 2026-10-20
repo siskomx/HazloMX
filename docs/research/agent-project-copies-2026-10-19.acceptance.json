@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "desktop_enabled_rust_tests_passed_serially": 380,
+  "environment_tests_skipped": 76,
+  "all_target_desktop_clippy_passed": true,
+  "companion_profile_transport_tests_passed": 33,
+  "frontend_build_passed": true,
+  "approval_facts_passed": true,
+  "headless_task_chat_passed": true,
+  "controlled_editor_api": {
+    "rebuilt_production_rust_host_passed": true,
+    "real_authenticated_named_pipe": true,
+    "edit_followup_save_checked": true,
+    "closed_binary_empty_hidden_build_files_checked": true,
+    "empty_directories_checked": true,
+    "later_closed_manual_change_preserved": true,
+    "linked_copy_readback_recovery_without_original_connection_or_source": true,
+    "modified_copy_refused_and_preserved": true
+  },
+  "actual_program_window": {
+    "disposable_portable_profile": true,
+    "native_api_probe_passed": true,
+    "native_edit_undo_and_historical_buffers_passed": true,
+    "production_host_default_profile_passed": true,
+    "automatic_bundled_cli_detection_passed": true,
+    "native_working_copies_checked": 2,
+    "visual_screenshot_checked": false,
+    "hardware_mutations": false
+  },
+  "native_reader": {
+    "program": "arduino-cli",
+    "version": "1.5.1",
+    "executable_sha256": "1017de89179c3167e6b8a38ca6cc4091fa69a3cf97aafa7810f01423003f5571",
+    "command": "sketch archive --include-build-dir",
+    "isolated_profile": true,
+    "exact_entry_and_file_bytes_required": true,
+    "external_dependencies_checked": false,
+    "compilation_checked": false,
+    "gui_reopen_checked": false,
+    "physical_function_checked": false,
+    "agreed_task_outcome_checked": false
+  },
+  "legacy_input_identities_preserved": true,
+  "uncertain_mutation_replay_allowed": false,
+  "unlinked_plausible_copy_adoption_allowed": false,
+  "new_capture_attempt_limit": 2,
+  "native_readback_attempt_limit_per_copy": 2,
+  "real_provider_checked": false,
+  "model_download_requested": false,
+  "installer_rebuilt": false,
+  "installed_app_updated": false
+}
