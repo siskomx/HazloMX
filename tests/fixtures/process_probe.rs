@@ -3,6 +3,11 @@ use std::{env, fs, io::{self, Read, Write}, process::Command, thread, time::Dura
 fn main() {
     let arguments: Vec<_> = env::args().skip(1).collect();
     match arguments[0].as_str() {
+        "tick" => {
+            use std::fs::OpenOptions;
+            OpenOptions::new().append(true).create(true).open("dispatches.log").unwrap().write_all(b"x").unwrap();
+            thread::sleep(Duration::from_millis(150));
+        }
         "input" => {
             let mut bytes = Vec::new();
             io::stdin().lock().take(256 * 1024 + 1).read_to_end(&mut bytes).unwrap();

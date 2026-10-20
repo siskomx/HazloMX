@@ -298,24 +298,29 @@ async fn ceased(process: &OwnedHandle) -> Result<(), String> {
     Ok(())
 }
 type Session = RunningService<RoleClient, ()>;
+#[allow(clippy::await_holding_lock)] // Hold only until SDK admission, never while awaiting the native reply.
 async fn tool(
     service: &Session,
+    gate: Option<crate::process::DispatchGate<'_>>,
+    cancel: &AtomicBool,
     name: &str,
     args: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
-    let reply = service
-        .call_tool(
-            CallToolRequestParams::new(name.to_owned()).with_arguments(
+    let permit=gate.map(|gate|gate.enter(cancel)).transpose()?;
+    let request=rmcp::model::ClientRequest::CallToolRequest(rmcp::model::CallToolRequest::new(
+        CallToolRequestParams::new(name.to_owned()).with_arguments(
                 args.as_object()
                     .ok_or("Argumentos de Konnect no válidos.")?
                     .clone(),
-            ),
-        )
-        .await
+            )));
+    let pending=service.send_cancellable_request(request,rmcp::service::PeerRequestOptions::no_options()).await.map_err(|_|"Konnect no admitió la llamada; conserva la copia.")?;
+    drop(permit);
+    let reply = pending.await_response().await
         .map_err(|_| {
             "Konnect no confirmó la respuesta. Revisa la copia antes de repetir la operación."
                 .to_string()
         })?;
+    let rmcp::model::ServerResult::CallToolResult(reply)=reply else{return Err("Konnect devolvió una respuesta no compatible.".into());};
     if reply.is_error.unwrap_or(false) || reply.content.len() != 1 {
         return Err("Konnect rechazó la operación sobre la copia; revisa la referencia y los bloqueos del editor.".into());
     }
@@ -348,6 +353,7 @@ pub(crate) async fn dispatch(
     profile: &Path,
     input: Operation<'_>,
     cancel: Arc<AtomicBool>,
+    gate: Option<crate::process::DispatchGate<'_>>,
 ) -> Result<serde_json::Value, String> {
     use process_wrap::tokio::{CommandWrap, CreationFlags, JobObject, KillOnDrop};
     let endpoint = format!("ipc://{}", profile.join("no-editor-socket").display());
@@ -390,10 +396,12 @@ pub(crate) async fn dispatch(
     if cancel.load(Ordering::SeqCst) {
         return Err("Edición cancelada antes de iniciar Konnect.".into());
     }
+    let permit=gate.map(|gate|gate.enter(&cancel)).transpose()?;
     let (transport, _) = TokioChildProcess::builder(wrapped)
         .stderr(Stdio::null())
         .spawn()
         .map_err(|_| "No se pudo iniciar el servidor Konnect identificado.".to_string())?;
+    drop(permit);
     let pid = transport.id().ok_or("Konnect no confirmó su proceso.")?;
     let raw = unsafe {
         OpenProcess(
@@ -436,7 +444,7 @@ pub(crate) async fn dispatch(
         match input {
             Operation::Value(input) => {
                 tool(
-                    &service,
+                    &service,gate,&cancel,
                     "load_toolset",
                     serde_json::json!({"name":["sch_components"]}),
                 )
@@ -468,7 +476,7 @@ pub(crate) async fn dispatch(
                 }
                 let path = edited.join(source::relative(&input.source.entry)?);
                 let before = tool(
-                    &service,
+                    &service,gate,&cancel,
                     "get_schematic_component",
                     serde_json::json!({"schematic":path,"reference":input.edit.reference}),
                 )
@@ -480,9 +488,9 @@ pub(crate) async fn dispatch(
                 {
                     return Err("El valor actual cambió. Inspecciona de nuevo la propuesta.".into());
                 }
-                tool(&service,"edit_schematic_component",serde_json::json!({"schematic":path,"reference":input.edit.reference,"value":input.edit.value})).await?;
+                tool(&service,gate,&cancel,"edit_schematic_component",serde_json::json!({"schematic":path,"reference":input.edit.reference,"value":input.edit.value})).await?;
                 let after = tool(
-                    &service,
+                    &service,gate,&cancel,
                     "get_schematic_component",
                     serde_json::json!({"schematic":path,"reference":input.edit.reference}),
                 )
@@ -499,7 +507,7 @@ pub(crate) async fn dispatch(
             }
             Operation::Move(input) => {
                 tool(
-                    &service,
+                    &service,gate,&cancel,
                     "load_toolset",
                     serde_json::json!({"name":["pcb_board","pcb_components"]}),
                 )
@@ -540,7 +548,7 @@ pub(crate) async fn dispatch(
                     }
                 }
                 let before = tool(
-                    &service,
+                    &service,gate,&cancel,
                     "get_board_info",
                     serde_json::json!({"board":path}),
                 )
@@ -548,7 +556,7 @@ pub(crate) async fn dispatch(
                 if before["source"] != "file" {
                     return Err("La copia PCB no está cerrada; no se editará.".into());
                 }
-                let applied=tool(&service,"move_component",serde_json::json!({"board":path,"reference":input.pcb_move.reference,"x":input.pcb_move.x_mm,"y":input.pcb_move.y_mm})).await?;
+                let applied=tool(&service,gate,&cancel,"move_component",serde_json::json!({"board":path,"reference":input.pcb_move.reference,"x":input.pcb_move.x_mm,"y":input.pcb_move.y_mm})).await?;
                 if applied["source"] != "file" || applied["moved"] != input.pcb_move.reference {
                     return Err("Konnect no confirmó el movimiento en la copia cerrada.".into());
                 }
@@ -558,7 +566,7 @@ pub(crate) async fn dispatch(
                     &input.pcb_move,
                 )?;
                 if tool(
-                    &service,
+                    &service,gate,&cancel,
                     "get_board_info",
                     serde_json::json!({"board":path}),
                 )
@@ -637,6 +645,7 @@ pub fn run(
         profile,
         Operation::Value(input),
         cancel.clone(),
+        None,
     ))?;
     native_readback(cli, &edited, stage, profile, input, cancel.clone())?;
     if cancel.load(Ordering::SeqCst) {
@@ -775,6 +784,33 @@ pub fn validate_artifacts(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn correction_releases_at_sdk_admission_and_blocks_the_next_mcp_call(){
+        use rmcp::{ServerHandler,RoleServer,model::{ServerConfig,ServerCapabilities,CallToolResponse,CallToolResult,ContentBlock},service::RequestContext,ErrorData};
+        use std::sync::{Mutex,atomic::AtomicUsize};
+        #[derive(Clone)]
+        struct Server{started:Arc<tokio::sync::Notify>,release:Arc<tokio::sync::Notify>,calls:Arc<AtomicUsize>}
+        impl ServerHandler for Server{
+            fn get_info(&self)->ServerConfig{ServerConfig::new(ServerCapabilities::builder().enable_tools().build())}
+            async fn call_tool(&self,_:CallToolRequestParams,_:RequestContext<RoleServer>)->Result<CallToolResponse,ErrorData>{
+                self.calls.fetch_add(1,Ordering::SeqCst);self.started.notify_one();self.release.notified().await;
+                Ok(CallToolResult::success(vec![ContentBlock::text("{\"ok\":true}")]).into())
+            }
+        }
+        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async{
+            let server=Server{started:Arc::new(tokio::sync::Notify::new()),release:Arc::new(tokio::sync::Notify::new()),calls:Arc::new(AtomicUsize::new(0))};
+            let observed=server.clone();let (server_io,client_io)=tokio::io::duplex(65536);
+            let pending=tokio::spawn(async move{server.serve(server_io).await.unwrap()});let client=().serve(client_io).await.unwrap();let server=pending.await.unwrap();
+            let gate=Mutex::new(());let paused=AtomicBool::new(false);let cancel=AtomicBool::new(false);
+            let control=crate::process::DispatchGate{mutex:&gate,paused:&paused};
+            let pause=async{tokio::time::timeout(Duration::from_secs(5),observed.started.notified()).await.unwrap();
+                let permit=gate.try_lock().expect("Correction must not wait for an MCP reply");paused.store(true,Ordering::SeqCst);drop(permit);observed.release.notify_one();};
+            let (result,_)=tokio::join!(tool(&client,Some(control),&cancel,"test",serde_json::json!({})),pause);
+            assert_eq!(result.unwrap(),serde_json::json!({"ok":true}));assert!(!cancel.load(Ordering::SeqCst));
+            assert!(tool(&client,Some(control),&cancel,"test",serde_json::json!({})).await.unwrap_err().contains("pausados"));
+            assert_eq!(observed.calls.load(Ordering::SeqCst),1);client.cancel().await.unwrap();server.cancel().await.unwrap();
+        });
+    }
     #[allow(dead_code)]
     mod read_barrier {
         include!(concat!(
@@ -1112,6 +1148,7 @@ mod tests {
                 &profile,
                 Operation::Value(&input),
                 worker_cancel,
+                None,
             ));
             sender.send(result).unwrap();
         });

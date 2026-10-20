@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "desktop_enabled_library_and_binary_tests_passed_serially": 396,
+  "environment_tests_skipped": 76,
+  "all_target_desktop_clippy_passed": true,
+  "targeted_checks": {
+    "in_process_mcp_transport_admission_and_pause": true,
+    "owned_cli_process_admission_and_pause": true,
+    "admitted_call_can_finish_without_correction_waiting_for_reply": true,
+    "next_call_not_admitted": true,
+    "pause_before_check_admission_consumes_no_attempt": true,
+    "operation_correction_preserved_after_restart": true,
+    "operation_stop_preserved_after_restart": true,
+    "chat_correction_preserved_after_restart": true,
+    "chat_stop_preserved_after_restart": true,
+    "edit_checkpoint_preserved": true
+  },
+  "actual_kicad_copy_fixture": {
+    "version": "10.0.7",
+    "actual_program_window": true,
+    "automatically_detected_copy_tools": true,
+    "checked_copies": 2,
+    "native_capture_over_stale_disk": true,
+    "imperial_followup": true,
+    "originals_preserved": true,
+    "interrupted_check_recovered_without_editor_or_source": true,
+    "copy_writer_unavailable_during_recovery": true,
+    "partial_check_preserved": true,
+    "same_edit_checkpoint_retained": true,
+    "linked_report_reconstructed_offline": true,
+    "restored_followup_selection": true,
+    "owned_editor_stopped": true
+  },
+  "scope_limits": {
+    "visual_correction_input_tested": false,
+    "arbitrary_native_server_atomicity_proven": false,
+    "other_typed_copy_pipelines_fully_wired": false,
+    "explicit_resume_approval_implemented": false,
+    "changed_copy_reconciliation_complete": false,
+    "gui_copy_reopen_checked": false,
+    "physical_function_checked": false,
+    "overall_task_outcome_checked": false,
+    "real_provider_conversation_checked": false
+  },
+  "model_download_requested": false,
+  "installer_rebuilt": false,
+  "installed_app_updated": false,
+  "kicad_10_live_schematics_pending": true
+}

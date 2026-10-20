@@ -534,6 +534,12 @@ Startup only reconstructs/publishes already linked results without native calls.
 
 The [implementation and acceptance notes](../research/pcb-copy-forward-recovery-2026-10-19.md) distinguish real native-window/CLI work and controlled interruption injection from general crash or provider guarantees. Missing edit/process-confirmation links, later manual changes, explicit Stop resumption and expanded bounds still need their separate reconciliation/approval paths. Other program pipelines, general MCP safeguards, task outcome/hardware boundaries and Windows release acceptance remain active. No model is downloaded; the installed app and installer remain unchanged.
 
+## PCB copy correction and check-dispatch barrier
+
+The PCB copy writer and verifier now share the chat's dispatch gate at native startup, SDK tool admission and each verification/export process startup. Corrections pause later calls while admitted requests may finish. Pending-check recovery becomes visible busy work under the original job; operation/chat Stop and corrections reach its gate. Durable task pauses and newer user instructions prevent new checks after restart. Linked offline result recovery remains available, and no edit is replayed or old approval token restored.
+
+The [implementation and validation notes](../research/pcb-copy-correction-barrier-2026-10-19.md) distinguish owned synthetic-process/MCP transport checks, restart cases and the actual KiCad copy fixture from visual correction tests and arbitrary server atomicity. Other copy pipelines, explicit resume/expanded-scope approvals, changed-copy reconciliation, general MCP safeguards, task/hardware outcome boundaries and Windows release acceptance remain active. Hazlo remains a simple chat; no model is downloaded and the installed release is unchanged.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

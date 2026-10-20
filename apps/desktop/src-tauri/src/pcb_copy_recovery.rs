@@ -122,11 +122,15 @@ pub(crate) fn validate(stage:&Path,input:&Input,result:&ResultDocument)->Result<
     }else if input.receipt_sha256.is_some(){return Err(PAUSE.into());}Ok(())
 }
 pub(crate) fn finish(stage:&Path,input:&Input,cli:Option<&Path>,profile:&Path,cancel:Arc<AtomicBool>)->Result<ResultDocument,String>{
+    finish_gated(stage,input,cli,profile,cancel,None)
+}
+pub(crate) fn finish_gated(stage:&Path,input:&Input,cli:Option<&Path>,profile:&Path,cancel:Arc<AtomicBool>,gate:Option<crate::process::DispatchGate<'_>>)->Result<ResultDocument,String>{
     let _exclusive=Exclusive::acquire(input)?;
     let _stage_pins=pin_lineage(stage).map_err(|_|PAUSE)?;let stage=stage.canonicalize().map_err(|_|PAUSE)?;
     let mut record=read(&stage,input)?;let (_edit_pins,proof)=retained_edit(&stage,input,&record)?;
     let mut selected=record.checks.iter().find(|c|c.report_sha256.is_some()).map(|c|c.folder.clone());
     if selected.is_none(){
+        if let Some(gate)=gate{drop(gate.enter(&cancel)?);}
         let cli=cli.ok_or("La copia editada está conservada; falta comprobarla con KiCad CLI. No repitas el movimiento.")?;
         if cancel.load(Ordering::SeqCst){return Err(PAUSE.into());}
         if record.checks.len()>=2{return Err("Se agotaron los dos intentos de comprobación. Se conservaron las copias; amplía el alcance en el chat sin repetir el movimiento.".into());}
@@ -139,7 +143,7 @@ pub(crate) fn finish(stage:&Path,input:&Input,cli:Option<&Path>,profile:&Path,ca
         fs::create_dir(profile).map_err(|_|PAUSE)?;let _profile=pin_lineage(profile).map_err(|_|PAUSE)?;
         let source_input=source::capture(&native_source,&native_source.join(source::relative(&input.source.entry)?),&profile.join("import"),input.job_id,input.source.units,cancel.clone())?;
         if serde_json::to_value(&source_input).map_err(|_|PAUSE)?!=serde_json::to_value(&expected).map_err(|_|PAUSE)?{return Err(PAUSE.into());}
-        let result=kicad_run::run(cli,&profile.join("import"),&directory,&profile.join("native"),&source_input,cancel)?;
+        let result=kicad_run::run_gated(cli,&profile.join("import"),&directory,&profile.join("native"),&source_input,cancel,gate)?;
         kicad_run::validate_artifacts(&directory,&source_input,&result)?;
         let bytes=source::read_regular(&directory.join("result.json"),LIMIT)?;
         if serde_json::from_slice::<serde_json::Value>(&bytes).map_err(|_|PAUSE)?!=serde_json::to_value(&result).map_err(|_|PAUSE)?{return Err(PAUSE.into());}
@@ -207,6 +211,13 @@ pub(crate) mod tests{
         for _ in 0..2{let folder=format!("Verification-{}",Uuid::new_v4());fs::create_dir(stage.join(&folder)).unwrap();fs::write(stage.join(&folder).join("partial.native"),b"preserve partial").unwrap();record.checks.push(Check{folder,input:input.source.clone(),report_sha256:None});}
         save(&stage,&record).unwrap();assert!(finish(&stage,&input,Some(&root.join("absent-cli.exe")),&root.join("unused"),Arc::new(AtomicBool::new(false))).unwrap_err().contains("dos intentos"));
         for check in record.checks{assert_eq!(fs::read(stage.join(check.folder).join("partial.native")).unwrap(),b"preserve partial");}assert!(!root.join("unused").exists());fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn paused_checks_preserve_the_edit_and_do_not_consume_an_attempt(){
+        let (root,stage,input)=fixture();retain_edit(&stage,&input).unwrap();let proof=fs::read(stage.join(EDIT)).unwrap();
+        let gate=std::sync::Mutex::new(());let paused=AtomicBool::new(true);
+        assert!(finish_gated(&stage,&input,Some(&root.join("must-not-start.exe")),&root.join("unused"),Arc::new(AtomicBool::new(false)),Some(crate::process::DispatchGate{mutex:&gate,paused:&paused})).unwrap_err().contains("pausados"));
+        assert!(read(&stage,&input).unwrap().checks.is_empty());assert_eq!(fs::read(stage.join(EDIT)).unwrap(),proof);assert!(!root.join("unused").exists());fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn concurrent_recovery_is_refused_without_waiting_or_consuming_attempts(){

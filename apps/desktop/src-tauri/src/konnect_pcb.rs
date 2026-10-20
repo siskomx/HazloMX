@@ -74,6 +74,11 @@ pub fn run(
     input: &Input,
     cancel: Arc<AtomicBool>,
 ) -> Result<ResultDocument, String> {
+    run_gated(executable,cli,imported,stage,profile,input,(cancel,None))
+}
+pub(crate) fn run_gated(executable:&Path,cli:&Path,imported:&Path,stage:&Path,profile:&Path,input:&Input,control:(Arc<AtomicBool>,Option<crate::process::DispatchGate<'_>>))->Result<ResultDocument,String>{
+    let (cancel,gate)=control;
+    if let Some(gate)=gate{drop(gate.enter(&cancel)?);}
     input.validate()?;
     if cancel.load(Ordering::SeqCst) {
         return Err("Edición PCB cancelada antes de iniciar.".into());
@@ -118,10 +123,11 @@ pub fn run(
         profile,
         konnect_run::Operation::Move(input),
         cancel.clone(),
+        gate,
     ))?;
     if input.copy_checkpoint_version.is_some(){
         crate::pcb_copy_recovery::retain_edit(stage,input)?;
-        return crate::pcb_copy_recovery::finish(stage,input,Some(cli),&profile.join("check"),cancel);
+        return crate::pcb_copy_recovery::finish_gated(stage,input,Some(cli),&profile.join("check"),cancel,gate);
     }
     let verification_input = source::capture(
         &edited,
@@ -133,13 +139,14 @@ pub fn run(
     )?;
     let verification_dir = stage.join("Verification");
     fs::create_dir(&verification_dir).map_err(|e| e.to_string())?;
-    let verification = kicad_run::run(
+    let verification = kicad_run::run_gated(
         cli,
         &profile.join("verification-import"),
         &verification_dir,
         &profile.join("verification-profile"),
         &verification_input,
         cancel.clone(),
+        gate,
     )?;
     if cancel.load(Ordering::SeqCst) {
         return Err("Edición PCB cancelada; no se publicarán resultados.".into());

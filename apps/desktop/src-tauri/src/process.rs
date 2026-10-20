@@ -13,7 +13,7 @@ use std::{
     ptr::{null, null_mut},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, MutexGuard,
+        Arc, Mutex, MutexGuard,
     },
     thread,
     time::{Duration, Instant},
@@ -41,6 +41,18 @@ use windows_sys::Win32::{
 };
 
 const LOG_LIMIT: usize = 256 * 1024;
+
+#[derive(Clone, Copy)]
+pub(crate) struct DispatchGate<'a> { pub mutex: &'a Mutex<()>, pub paused: &'a AtomicBool }
+impl<'a> DispatchGate<'a> {
+    pub(crate) fn enter(self, cancelled: &AtomicBool) -> Result<MutexGuard<'a, ()>, String> {
+        let permit=self.mutex.lock().map_err(|_|"No se pudo comprobar la pausa de despacho.")?;
+        if cancelled.load(Ordering::SeqCst) || self.paused.load(Ordering::SeqCst) {
+            return Err("Los pasos pendientes están pausados. Se conserva el trabajo; no se envían más llamadas.".into());
+        }
+        Ok(permit)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum StopReason {
@@ -497,7 +509,7 @@ pub(crate) mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
-    fn probe() -> &'static Path {
+    pub(crate) fn probe() -> &'static Path {
         static PROBE: OnceLock<std::path::PathBuf> = OnceLock::new();
         PROBE.get_or_init(|| {
             if let Some(path) = std::env::var_os("HAZLOMEXA_PROCESS_PROBE_EXE") {

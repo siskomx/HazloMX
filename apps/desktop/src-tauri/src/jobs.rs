@@ -210,7 +210,46 @@ pub struct Dispatch {
     agent: Option<agent::Connection>,
 }
 
+struct RecoveryCheck<'a>{workflow:&'a Workflow,id:Uuid,gate:Arc<Mutex<()>>,paused:Arc<AtomicBool>,recorded:bool}
+impl RecoveryCheck<'_>{fn gate(&self)->crate::process::DispatchGate<'_>{crate::process::DispatchGate{mutex:&self.gate,paused:&self.paused}}}
+impl Drop for RecoveryCheck<'_>{fn drop(&mut self){
+    if let Ok(mut state)=self.workflow.state.lock(){
+        let project=state.project.clone();
+        if let Some(job)=state.job.as_mut().filter(|job|job.view.snapshot.input.job_id()==self.id){
+            job.view.busy=false;
+            if job.view.snapshot.phase==Phase::Running{
+                job.view.snapshot.phase=Phase::Interrupted;
+                if !self.recorded{
+                    job.view.error=Some("La comprobación quedó pendiente. Se conserva la copia; no repitas la edición.".into());
+                    if let Some(project)=project{let _=project.save(&job.view.snapshot);}
+                }
+            }
+            job.view.advance();
+        }
+    }
+}}
+
 impl Workflow {
+    fn begin_recovery_check(&self,project:&Project,snapshot:&Snapshot,cancel:Arc<AtomicBool>)->Result<RecoveryCheck<'_>,String>{
+        let mut state=self.state.lock().map_err(|_|"No se pudo comprobar la pausa de recuperación.")?;inference_idle(&state)?;check_tool_scope(&state)?;
+        if state.project.as_ref().is_none_or(|p|p.id!=project.id || p.root!=project.root)
+            || state.job.as_ref().is_some_and(|job|job.view.busy || job.view.snapshot.phase==Phase::AwaitingApproval){return Err("El trabajo activo cambió; no se iniciaron nuevas comprobaciones.".into());}
+        let binding=snapshot.audit.as_ref().and_then(|a|a.task.as_ref());
+        let task=crate::tasks::Store::new(project).and_then(|store|store.active()).map_err(|_|"No se pudo comprobar la tarea conservada.")?;
+        if snapshot.phase==Phase::Cancelled || cancel.load(Ordering::SeqCst)
+            || state.job.as_ref().is_some_and(|job|job.view.snapshot.input.job_id()==snapshot.input.job_id() && job.dispatch_paused.load(Ordering::SeqCst))
+            || task.as_ref().is_some_and(|task|task.latest_correction.as_ref().is_some_and(|c|c.job_id==snapshot.input.job_id())
+                || binding.is_some_and(|binding|binding.id!=task.id || task.last_user_revision>binding.revision
+                    || task.chat_correction.as_ref().is_some_and(|c|c.revision>binding.revision)
+                    || task.chat_stop.as_ref().is_some_and(|c|c.revision>=binding.revision))){return Err("La tarea fue detenida o cambió desde la aprobación. Se conserva la copia; revisa la corrección antes de aprobar nuevos pasos.".into());}
+        let (gate,paused)=state.job.as_ref().filter(|job|job.view.snapshot.input.job_id()==snapshot.input.job_id())
+            .map(|job|(job.dispatch_gate.clone(),job.dispatch_paused.clone())).unwrap_or_else(||(Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false))));
+        let sequence=state.job.as_ref().map_or(1,|job|job.view.sequence+1);
+        let mut snapshot=snapshot.clone();snapshot.phase=Phase::Running;project.save(&snapshot).map_err(|_|"No se confirmó el inicio de comprobación; no se enviaron pasos.")?;
+        state.job=Some(Job{dispatch_gate:gate.clone(),dispatch_paused:paused.clone(),live_agent:None,live_pcb:None,live_drawing:None,native_tools:None,
+            view:JobView{sequence,snapshot,approval_id:None,error:None,busy:true},cancelled:cancel});
+        Ok(RecoveryCheck{workflow:self,id:state.job.as_ref().unwrap().view.snapshot.input.job_id(),gate,paused,recorded:false})
+    }
     pub(crate) fn prepare_agent_version(&self,executable:&Path,root:&Path,before_name:&str,cancel:Arc<AtomicBool>)->Result<crate::arduino_version::Plan,String>{
         let project=self.view()?.project.ok_or("Abre el proyecto de esta conversación.")?;
         std::fs::create_dir_all(&self.profiles).map_err(|_|"No se pudo preparar el perfil privado del lector.")?;
@@ -309,14 +348,20 @@ impl Workflow {
         let stage=project.store("staging").join(job_id.to_string());let directory=if stage.try_exists().map_err(|_|"No se pudo comprobar el trabajo local.")?{stage}else{project.artifact_directory(job_id)};
         let _pins=crate::project::pin_lineage(&directory).map_err(|_|"No se pudo fijar el resultado local para recuperación.")?;
         let mut checked=snapshot.input.clone();
+        let mut recovery_check=None;
         if let OperationInput::KonnectPcb(input)=&snapshot.input{
             let cli=self.kicad_runtime()?;
             let profile=self.profiles.join(format!("pcb-copy-recovery-{}",Uuid::new_v4()));
             if snapshot.phase==Phase::Cancelled{crate::pcb_copy_recovery::finish(&directory,input,None,&profile,cancel.clone()).map_err(|_|"La revisión fue detenida. Se conserva la copia y su vínculo original; no se envían nuevos pasos sin reanudación explícita.")?;}
-            else{crate::pcb_copy_recovery::finish(&directory,input,cli.as_deref(),&profile,cancel.clone())?;}
+            else if crate::pcb_copy_recovery::finish(&directory,input,None,&profile,cancel.clone()).is_err(){
+                let run=self.begin_recovery_check(&project,&snapshot,cancel.clone())?;
+                crate::pcb_copy_recovery::finish_gated(&directory,input,cli.as_deref(),&profile,cancel.clone(),Some(run.gate()))?;
+                recovery_check=Some(run);
+            }
             checked.retain_receipt(&directory).map_err(|_|"La copia comprobada se conserva; falta vincular su informe.")?;
             project.validate_outputs(&directory,&checked).map_err(|_|"La copia o su informe cambió; no se reemplazó.")?;
-            let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|_|"La copia se conserva; falta registrar el informe.")?;
+            let mut saved=snapshot.clone();saved.input=checked.clone();if cancel.load(Ordering::SeqCst){saved.phase=Phase::Cancelled;}project.save(&saved).map_err(|_|"La copia se conserva; falta registrar el informe.")?;
+            if let Some(run)=recovery_check.as_mut(){run.recorded=true;}
         }else if let OperationInput::NativeTools(input)=&snapshot.input{
             checked=OperationInput::NativeTools(crate::native_tools::recover_recorded_result(&directory,input)?);
             let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|_|"El resultado sigue local; no se pudo registrar su recibo recuperado.")?;
@@ -360,6 +405,7 @@ impl Workflow {
         crate::live_dispatch::recover_checked(&directory,&checked)?;
         }
         drop(_pins);
+        drop(recovery_check);
         let recovered=project.recover().map_err(|_|"El resultado se conservó, pero su publicación local sigue pendiente. No repitas la operación.")?;
         let saved=recovered.into_iter().find(|s|s.input.job_id()==job_id).ok_or("El resultado sigue local; vuelve a comprobar su publicación.")?;let published=saved.phase==Phase::Completed;
         let mut state=self.state.lock().map_err(|_|"El resultado se conservó; vuelve a leer el estado local.")?;
@@ -448,7 +494,7 @@ impl Workflow {
         let store=crate::tasks::Store::new(&project).map_err(|e|e.to_string())?;
         let gate=if let Some((job_id,binding))=&correction {
             if store.binding().map_err(|e|e.to_string())?.as_ref()!=Some(binding){return Err("La tarea cambió; vuelve a leerla antes de corregir.".into());}
-            let job=state.job.as_ref().filter(|j|j.view.snapshot.input.job_id()==*job_id && j.view.snapshot.input.native_program().is_some() && j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==binding.id)).ok_or("La operación nativa cambió; conserva tu corrección y vuelve a leer el estado.")?;
+            let job=state.job.as_ref().filter(|j|j.view.snapshot.input.job_id()==*job_id && (j.view.snapshot.input.native_program().is_some() || matches!(&j.view.snapshot.input,OperationInput::KonnectPcb(_))) && j.view.snapshot.audit.as_ref().and_then(|a|a.task.as_ref()).is_some_and(|t|t.id==binding.id)).ok_or("La operación nativa cambió; conserva tu corrección y vuelve a leer el estado.")?;
             Some(job.dispatch_gate.clone())
         }else{None};
         let permit=gate.as_ref().map(|g|g.lock().map_err(|_|"No se pudo confirmar la pausa de despacho.")).transpose()?;
@@ -2953,14 +2999,14 @@ impl Workflow {
                     let cli = self
                         .kicad_runtime()?
                         .ok_or("Seleccione KiCad CLI antes de aprobar.")?;
-                    crate::konnect_pcb::run(
+                    crate::konnect_pcb::run_gated(
                         &runtime,
                         &cli,
                         &dispatch.project.captured_source(input.job_id),
                         &stage.path,
                         &profile,
                         input,
-                        dispatch.cancelled.clone(),
+                        (dispatch.cancelled.clone(),Some(crate::process::DispatchGate{mutex:&dispatch.dispatch_gate,paused:&dispatch.dispatch_paused})),
                     )?;
                 }
                 OperationInput::Konnect(input) => {
@@ -3122,6 +3168,37 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn recovered_copy_checks_pause_on_correction_or_stop_and_remain_paused_after_restart(){
+        use crate::{project::{Project,OperationInput,Phase},tasks::{Store,Request}};
+        use std::sync::{Arc,atomic::{AtomicBool,Ordering}};
+        for mode in ["correction","stop","chat-correction","chat-stop"]{
+            let (root,stage,input)=crate::pcb_copy_recovery::tests::fixture();crate::pcb_copy_recovery::retain_edit(&stage,&input).unwrap();
+            let proof=std::fs::read(stage.join("pcb-copy-edit.json")).unwrap();
+            let folder=root.join("task");std::fs::create_dir(&folder).unwrap();let project=Project::create(&folder).unwrap();let task=Store::new(&project).unwrap().state().unwrap().active;
+            let target=project.store("staging").join(input.job_id.to_string());
+            assert!(stage.canonicalize().unwrap().starts_with(root.canonicalize().unwrap())&&target.parent().unwrap().canonicalize().unwrap().starts_with(project.root.canonicalize().unwrap()));std::fs::rename(&stage,&target).unwrap();
+            let snapshot=project.snapshot(OperationInput::KonnectPcb(input.clone()),Phase::Interrupted).unwrap();project.save(&snapshot).unwrap();
+            let selected=(project.id,project.root.clone());let workflow=super::Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(project).unwrap();
+            let project=workflow.state.lock().unwrap().project.clone().unwrap();let cancel=Arc::new(AtomicBool::new(false));
+            let run=workflow.begin_recovery_check(&project,&snapshot,cancel.clone()).unwrap();assert!(workflow.current().unwrap().unwrap().busy);
+            match mode{
+                "correction"=>{workflow.task_request(selected.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve that change; stop the remaining exports.".into(),history:serde_json::json!({"version":1,"turns":[]}).to_string(),correction_of:Some(input.job_id)}).unwrap();},
+                "stop"=>{workflow.cancel(input.job_id).unwrap();assert!(cancel.load(Ordering::SeqCst));},
+                _=>{let scope=workflow.conversation_scope().unwrap().unwrap();let chat_id=uuid::Uuid::new_v4();
+                    if mode=="chat-stop"{workflow.stop_chat(&scope,chat_id,"").unwrap();}
+                    else{workflow.correct_chat(&scope,&crate::tasks::ChatCorrectionInput{id:task.id,revision:task.revision,chat_id,correction_id:uuid::Uuid::new_v4(),text:"Keep the copy and stop further checks.".into()},"").unwrap();}
+                }
+            }
+            assert!(run.gate().enter(&cancel).is_err());drop(run);assert!(!workflow.current().unwrap().unwrap().busy);
+            assert_eq!(std::fs::read(target.join("pcb-copy-edit.json")).unwrap(),proof);drop(project);drop(workflow);
+            let reopened=super::Workflow::new(root.join("FreeCADCmd.exe"),root.join("reopened-profiles")).unwrap();reopened.select_project(Project::open(&folder).unwrap()).unwrap();
+            let project=reopened.state.lock().unwrap().project.clone().unwrap();let snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==input.job_id).unwrap();
+            assert!(reopened.begin_recovery_check(&project,&snapshot,Arc::new(AtomicBool::new(false))).is_err(),"{mode}");
+            let journal:serde_json::Value=serde_json::from_slice(&std::fs::read(target.join("pcb-copy.json")).unwrap()).unwrap();assert!(journal["checks"].as_array().unwrap().is_empty());
+            drop(project);drop(reopened);std::fs::remove_dir_all(root).unwrap();
+        }
+    }
     #[test]
     fn cancelled_pcb_copy_does_not_start_a_new_native_check(){
         let (root,stage,input)=crate::pcb_copy_recovery::tests::fixture();crate::pcb_copy_recovery::retain_edit(&stage,&input).unwrap();
