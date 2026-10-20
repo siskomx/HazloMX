@@ -130,14 +130,23 @@ impl Batch {
             .map_err(|_| "No se pudo reservar el registro nativo; no se enviaron llamadas.")?;
         Ok(batch)
     }
+    #[cfg(test)]
     pub(crate) fn start_with_catalog(directory:&Path,input:&Input,catalog:&crate::native_tools::Catalog)->Result<Self,String> {
-        if catalog.connection_id!=input.connection_id || catalog.catalog_sha256!=input.catalog_sha256 || catalog.program!=input.program {return Err("El catálogo cambió antes de registrar el lote.".into());}
         catalog.validate_calls(input)?;
-        let mut batch=Self::start(directory,input)?;
-        if input.guard.as_ref().is_some_and(|g|catalog.local_read_only(&g.call)){batch.journal.read_only_steps.push(0);}
-        if catalog.local_read_only(&input.readback){batch.journal.read_only_steps.push(usize::from(input.guard.is_some())+input.calls.len());}
-        batch.save()?;
-        Ok(batch)
+        if catalog.connection_id!=input.connection_id || catalog.catalog_sha256!=input.catalog_sha256 || catalog.program!=input.program{return Err("El catálogo cambió antes de registrar el lote.".into());}
+        let mut batch=Self::start(directory,input)?;batch.bind_catalog(input,catalog)?;Ok(batch)
+    }
+    pub(crate) fn bind_catalog(&mut self,input:&Input,catalog:&crate::native_tools::Catalog)->Result<(),String>{
+        if catalog.connection_id!=input.connection_id || catalog.catalog_sha256!=input.catalog_sha256 || catalog.program!=input.program
+            || self.journal.input_sha256.as_ref()!=Some(&input_digest(input)?) || self.journal.finished || self.journal.reconciliation.is_some()
+            || self.journal.steps.iter().any(|step|step.outcome!=Outcome::Pending){return Err("El lote o su catálogo cambió; no se reclasificó ningún paso iniciado.".into());}
+        catalog.validate_calls(input)?;
+        let directory=self.path.parent().ok_or("Falta la carpeta del registro nativo.")?.canonicalize().map_err(|_|"Falta la carpeta del registro nativo.")?;
+        if crate::kicad_project::read_regular(&directory.join("dispatch.json"),1024*1024)?!=serde_json::to_vec_pretty(&self.journal).map_err(|_|"Registro nativo no válido.")?{return Err("El registro nativo cambió; se conservó sin reemplazarlo.".into());}
+        self.journal.read_only_steps.clear();
+        if input.guard.as_ref().is_some_and(|g|catalog.local_read_only(&g.call)){self.journal.read_only_steps.push(0);}
+        if catalog.local_read_only(&input.readback){self.journal.read_only_steps.push(usize::from(input.guard.is_some())+input.calls.len());}
+        self.save()
     }
     pub fn dispatch(&mut self, index: usize) -> Result<(), String> {
         let step = self.journal.steps.get_mut(index).ok_or("Paso no válido.")?;
@@ -469,6 +478,21 @@ mod tests {
         assert!(batch.dispatch(1).is_err());
         assert!(batch.complete().is_err());
         std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn pending_preflight_survives_restart_without_clearing_missing_or_dispatched_uncertainty(){
+        let root=std::env::temp_dir().join(format!("hazlo-native-preflight-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let project=Project::create(&root).unwrap();let mut input=input();input.calls=vec![Call{tool:"edit".into(),arguments:Default::default()}];input.guard=Some(crate::native_tools::Guard{call:input.readback.clone(),result_sha256:"b".repeat(64),checks:vec![]});
+        let mut snapshot=project.snapshot(OperationInput::NativeTools(input.clone()),Phase::Failed).unwrap();snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();let stage=project.reserve_stage(input.job_id).unwrap();let path=stage.path.clone();let batch=Batch::start(&path,&input).unwrap();let bytes=std::fs::read(path.join("dispatch.json")).unwrap();assert!(Batch::start(&path,&input).is_err());drop(batch);drop(stage);assert!(!project.native_recovery(None).unwrap()[0].needs_review);drop(project);
+        let project=Project::open(&root).unwrap();let recovered=project.recover().unwrap();assert_eq!(recovered[0].phase,Phase::Failed);let summary=project.native_recovery(None).unwrap().remove(0);assert_eq!(summary.not_dispatched,3);assert_eq!(summary.acknowledged,0);assert_eq!(summary.uncertain,0);assert!(!summary.finished&&!summary.needs_review);assert_eq!(std::fs::read(path.join("dispatch.json")).unwrap(),bytes);
+        assert!(path.canonicalize().unwrap().starts_with(root.canonicalize().unwrap()));std::fs::remove_file(path.join("dispatch.json")).unwrap();assert!(project.native_recovery(None).unwrap()[0].needs_review);drop(project);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn catalog_binding_cannot_replace_changed_journals_or_reclassify_started_steps(){
+        for changed in [false,true]{
+            let root=std::env::temp_dir().join(format!("hazlo-preflight-bind-{}",Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let input=input();let catalog=crate::native_tools::Catalog{connection_id:input.connection_id,program:input.program,transport:"mcp",server:json!({"name":"owned"}),catalog_sha256:input.catalog_sha256.clone(),tools:vec![serde_json::from_value(json!({"name":"state","inputSchema":{"type":"object"},"annotations":{"readOnlyHint":true,"destructiveHint":false,"openWorldHint":false}})).unwrap()],scope:"owned_fixture"};
+            let mut batch=Batch::start(&root,&input).unwrap();if changed{std::fs::write(root.join("dispatch.json"),b"preserve changed preflight journal").unwrap();}else{batch.bind_catalog(&input,&catalog).unwrap();assert_eq!(read(&root,&input).unwrap().unwrap().read_only_steps,vec![0]);batch.dispatch(0).unwrap();}
+            let bytes=std::fs::read(root.join("dispatch.json")).unwrap();assert!(batch.bind_catalog(&input,&catalog).is_err());assert_eq!(std::fs::read(root.join("dispatch.json")).unwrap(),bytes);if !changed{assert_eq!(read(&root,&input).unwrap().unwrap().steps[0].outcome,Outcome::Dispatched);}drop(batch);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+        }
     }
     #[test]
     fn only_catalog_declared_local_queries_can_avoid_a_mutation_hold() {

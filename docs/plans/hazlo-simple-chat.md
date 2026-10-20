@@ -1,4 +1,36 @@
-# Hazlo: simple chat that owns the task
+# Hazlo: simple chat release
+
+## Current scope — approved 2026-10-19
+
+This release scope supersedes the expanded implementation requirements and remaining-work lists in the historical plan below. The user explicitly chose the simpler approach: backups, clear warnings and one approval per software batch. Finish the release; do not expand the scope or build a general recovery/workflow framework.
+
+Hazlo is a natural-language chat. It discovers and connects installed native tools, helps clarify the intended result, proposes a batch, runs it after approval in the native programs, and checks and explains the result. The programs remain the editors. Existing program support, local references, durable chats, discovery, setup and native routing stay in place.
+
+- Preserve originals and user work with a native working copy or suitable backup. Save the new result and check it through the native program where supported. Explain limitations or missing dependencies plainly; never describe an unchecked physical result as verified.
+- Show the intended changes, output location, important assumptions and relevant warnings in one batch approval. Do not request approval for each internal native call. Changed destructive scope needs a new approval.
+- On failure, preserve valid work, inspect what happened and offer the next useful action in chat. Never automatically repeat an uncertain write. Keep existing recovery protections; do not add general reconciliation machinery for this release.
+- Keep references and raw captures/firmware local with the task. External sharing and changing AI services retain their explicit consent. No AI model downloads or automatic program upgrades.
+- Hardware writes require a separate device/action approval and a suitable backup or documented recovery method. Ask for missing backup/recovery information in chat and warn clearly. A random .bin file is not proof of recoverability. Unsupported physical operations remain unavailable; no new hardware framework is required for this release.
+- Keep KiCad 10. Live schematic editing remains pending. Do not hardcode the Roborock scenario or any other device into the product.
+
+## Release checklist
+
+- [x] Replace the broad goal with this release scope and preserve the earlier plan as history.
+- [x] Finish the small pending native preflight fix so a batch rejected before dispatch does not falsely become an uncertain edit. Validate it with the existing disposable fixture.
+- [x] Run the existing source, chat/approval and applicable native workflow checks; fix concrete release failures only. Distinguish actual native tests from fixtures and physical claims. Validation: 424 regular Rust tests, all-target desktop Clippy, frontend build, chat/approval fixtures and three explicit MCP/CLI fixture cases pass. These fixtures do not claim fresh engineering-window, provider or physical-device acceptance; earlier per-program native records remain available below.
+- [ ] Rebuild the production Windows installer and verify its packaged helper/resources.
+- [ ] Test clean install, upgrade, startup, uninstall and saved-data preservation in the disposable Windows guest. Record environmental blockers honestly.
+- [ ] Upgrade the installed app, verify existing task/reference preservation, visually check the simple chat and leave the latest Hazlo open.
+- [ ] Publish sanitized source changes to the existing GitHub branch and record the exact installer identity and remaining limitations.
+
+## Deferred beyond this release
+
+General effect envelopes, atomic concurrency across every program, automatic reconciliation of arbitrary changed/unlinked working copies, expanded recovery budgets, exhaustive evidence-lineage/cache removal, new cross-program dependency orchestration and additional hardware-write support are not release requirements. Existing safeguards stay; limitations are explained with warnings, backups/working copies and focused questions. Do not turn these deferred items into another implementation loop.
+
+## Historical plan and implementation record
+
+The material below records the previous expanded scope and completed work. Its unfinished requirements and acceptance matrices are historical, not additional gates for the current release.
+
 
 Plan clarified 2026-10-18 after the user grill and Clef boundary review; implementation authorized by the user and continued as an active goal on 2026-10-19. This document defines the intended behavior. Implementation remains incomplete; the status below distinguishes completed slices from remaining work.
 

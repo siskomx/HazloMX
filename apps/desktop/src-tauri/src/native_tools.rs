@@ -1026,6 +1026,8 @@ pub fn run(
 }
 pub(crate) fn run_gated(input:&Input,connection:&Connection,directory:&Path,cancel:Arc<AtomicBool>,gate:&Mutex<()>,paused:&AtomicBool)->Result<(),String>{
     input.validate()?;
+    // Reserve all steps before metadata preflight; no call can start without durable admission.
+    let mut journal=crate::native_journal::Batch::start(directory,input)?;
     if connection.id != input.connection_id || connection.program != input.program {
         return Err("La conexión nativa cambió. Prepara otra propuesta.".into());
     }
@@ -1035,8 +1037,7 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,directory:&Path,canc
             "El catálogo nativo cambió. Descubre sus herramientas y prepara otra propuesta.".into(),
         );
     }
-    catalog.validate_calls(input)?;
-    let mut journal=crate::native_journal::Batch::start_with_catalog(directory,input,&catalog)?;
+    journal.bind_catalog(input,&catalog)?;
     let offset=usize::from(input.guard.is_some());
     if let Some(guard) = &input.guard {
         connection.read_catalog(&input.catalog_sha256,&guard.call,cancel.clone())?;
@@ -1332,7 +1333,7 @@ pub(crate) mod tests {
             }
             let folder=root.join(Uuid::new_v4().to_string());std::fs::create_dir(&folder).unwrap();
             assert!(!run(&batch,&connection,&folder,cancel()).unwrap_err().contains("RAW_PRIVATE_SENTINEL"));
-            assert_eq!(std::fs::read_dir(&folder).unwrap().count(),0);
+            let journal=crate::native_journal::read(&folder,&batch).unwrap().unwrap();assert!(journal.steps.iter().all(|step|step.outcome==crate::native_journal::Outcome::Pending));assert!(!journal.summary().needs_review);assert!(!folder.join("result.json").exists());assert_eq!(std::fs::read_dir(&folder).unwrap().count(),1);
             let actual=connection.read(&catalog.catalog_sha256,&query,cancel()).unwrap();
             assert_eq!(actual["readback"]["structuredContent"]["native_value"],0);
             assert_eq!(actual["readback"]["structuredContent"]["native_writes"],0);
@@ -1839,10 +1840,12 @@ pub(crate) mod tests {
                     .catalog_sha256,
                 catalog.catalog_sha256
             );
+            let changed_catalog = root.join(Uuid::new_v4().to_string());
+            std::fs::create_dir(&changed_catalog).unwrap();
             assert!(run(
                 &initial,
                 &connection,
-                &stale,
+                &changed_catalog,
                 Arc::new(AtomicBool::new(false))
             )
             .unwrap_err()
@@ -1934,10 +1937,11 @@ pub(crate) mod tests {
                 result_sha256: crate::kicad_project::digest(&serde_json::to_vec(&state).unwrap()),
             });
             assert!(run(&edit,&connection,&folder,Arc::new(AtomicBool::new(false))).unwrap_err().contains("solo lectura"));
-            assert!(!folder.join("dispatch.json").exists());assert!(!folder.join("native-fixture-state.txt").exists());
+            let rejected=crate::native_journal::read(&folder,&edit).unwrap().unwrap();assert!(!rejected.summary().needs_review);assert!(rejected.steps.iter().all(|step|step.outcome==crate::native_journal::Outcome::Pending));assert!(!folder.join("native-fixture-state.txt").exists());
+            let action_folder=folder.join("explicit-action");std::fs::create_dir(&action_folder).unwrap();
             // CLI argv has no query declaration: review this single native action explicitly.
             let mut action=input(&catalog);action.readback=call("cli",json!({"args":["set","17"]}));
-            run(&action,&connection,&folder,Arc::new(AtomicBool::new(false))).unwrap();
+            run(&action,&connection,&action_folder,Arc::new(AtomicBool::new(false))).unwrap();
             assert_eq!(std::fs::read_to_string(folder.join("native-fixture-state.txt")).unwrap(),"17");
             assert!(connection
                 .call(
