@@ -182,8 +182,9 @@ pub(crate) fn matches_capture(link:&Link,capture:&Capture)->Result<(),String>{
     link.validate()?;if digest(&serde_json::to_vec(capture).map_err(|_|ERROR)?)!=link.sha256{return Err(ERROR.into());}Ok(())
 }
 pub(crate) fn entry(plan:&Plan,stage:&Path,link:&Link)->PathBuf{stage.join(&link.folder).join(&plan.sketch_name).join(plan.main_name())}
-pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_profile:&Path,cancel:Arc<AtomicBool>)->Result<String,String>{
-    stop(&cancel)?;let (_,snapshot)=load(plan,stage,link,scope)?;let _verifier=verifier_pins(plan)?;
+pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_profile:&Path,control:(Arc<AtomicBool>,Option<crate::process::DispatchGate<'_>>))->Result<String,String>{
+    let (cancel,gate)=control;
+    stop(&cancel)?;drop(gate.map(|g|g.enter(&cancel)).transpose()?);let (_,snapshot)=load(plan,stage,link,scope)?;let _verifier=verifier_pins(plan)?;
     let destination=stage.join(&link.folder).canonicalize().map_err(|_|ERROR)?;
     let attempts=fs::read_dir(&destination).map_err(|_|ERROR)?.filter_map(Result::ok).filter(|e|e.file_name().to_string_lossy().starts_with("readback-")).count();
     if attempts>=2{return Err("Se alcanzó el límite de dos comprobaciones nativas de la copia. Se conservó el trabajo; no repitas la edición.".into());}
@@ -192,7 +193,8 @@ pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_
     let sketch=stage.join(&link.folder).join(&plan.sketch_name).canonicalize().map_err(|_|ERROR)?;
     let args=["--config-file".into(),private_profile.join("arduino-cli.yaml").into_os_string(),"sketch".into(),"archive".into(),
         sketch.into_os_string(),archive.clone().into_os_string(),"--include-build-dir".into(),"--json".into()];
-    let output=crate::process::run_owned(&plan.verifier,&args,private_profile,&env,cancel.clone(),Duration::from_secs(60)).map_err(|_|ERROR)?;
+    let permit=gate.map(|g|g.enter(&cancel)).transpose()?;
+    let output=crate::process::run_owned_permitted(&plan.verifier,&args,private_profile,&env,cancel.clone(),Duration::from_secs(60),(false,permit)).map_err(|_|ERROR)?;
     write_new(&private_profile.join("stdout.private"),&output.stdout).map_err(|_|ERROR)?;write_new(&private_profile.join("stderr.private"),&output.stderr).map_err(|_|ERROR)?;
     if output.reason!=crate::process::StopReason::Completed || output.exit_code!=Some(0) || output.truncated{return Err(ERROR.into());}
     let mut native=zip::ZipArchive::new(crate::kicad_project::open_regular(&archive,64*1024*1024).map_err(|_|ERROR)?).map_err(|_|ERROR)?;
@@ -243,6 +245,18 @@ mod tests{
         fn capture(&self)->(Link,Capture){capture(&self.plan,&self.source,&self.stage,&self.scope(),&AtomicBool::new(false),||Ok(())).unwrap()}
     }
     impl Drop for Fixture{fn drop(&mut self){fs::remove_dir_all(&self.root).unwrap();}}
+
+    #[test]
+    fn paused_reader_keeps_the_copy_and_does_not_consume_a_check_attempt(){
+        let f=Fixture::new();let (link,_)=f.capture();let before=fs::read(entry(&f.plan,&f.stage,&link)).unwrap();
+        let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(true);
+        let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};let private=f.root.join("never-started-reader");
+        assert!(verify(&f.plan,&f.stage,&link,&f.scope(),&private,(Arc::new(AtomicBool::new(false)),Some(gate))).is_err());
+        assert!(!private.exists());assert!(!f.stage.join(&link.folder).join("verification.json").exists());
+        assert_eq!(fs::read_dir(f.stage.join(&link.folder)).unwrap().count(),2);
+        assert_eq!(fs::read(entry(&f.plan,&f.stage,&link)).unwrap(),before);validate_capture(&f.plan,&f.stage,&link,&f.scope()).unwrap();
+    }
+
     #[test]
     fn copy_preserves_closed_bytes_and_originals_with_native_text_overlay(){
         let f=Fixture::new();let (link,captured)=f.capture();

@@ -311,6 +311,7 @@ impl Dispatch {
         })?;
         Ok(permit)
     }
+    pub(crate) fn gate(&self)->crate::process::DispatchGate<'_>{crate::process::DispatchGate{mutex:&self.gate,paused:&self.paused}}
     pub fn was_dispatched(&self) -> bool {
         self.record
             .lock()

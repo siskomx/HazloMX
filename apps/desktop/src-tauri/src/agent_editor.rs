@@ -338,10 +338,13 @@ pub async fn buffer_checkpoint_plan(connection:&Connection,before:&Observation,c
 }
 
 async fn inspect_project_buffers(connection: &Connection, before: &Observation, cancel: &AtomicBool) -> Result<ProjectBuffers, Failure> {
+    inspect_project_buffers_gated(connection,before,cancel,None).await
+}
+async fn inspect_project_buffers_gated(connection:&Connection,before:&Observation,cancel:&AtomicBool,gate:Option<crate::process::DispatchGate<'_>>)->Result<ProjectBuffers,Failure>{
     connection.validate_for(before)?;
-    let result: ProjectBuffers = exchange(connection, json!({"action":"inspect_project_buffers",
+    let result: ProjectBuffers = exchange_control(connection, json!({"action":"inspect_project_buffers",
         "instance_id":before.instance_id,"document_token":before.document_token,
-        "version":before.version,"state_sha256":before.state_sha256}), false, cancel, Duration::from_secs(15)).await?;
+        "version":before.version,"state_sha256":before.state_sha256}), false, cancel, Duration::from_secs(15),(None,gate)).await?;
     result.validate(before)?;
     Ok(result)
 }
@@ -518,10 +521,10 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,profile:
     let report=normalized_report(input,receipt)?;
     dispatch.ok_or("Falta el envío original del editor.")?.retain_agent_completion(input,&report)?;
     if input.buffer_checkpoint.is_some(){
-        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,&cancel))?;
+        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,&cancel,dispatch.map(|d|d.gate())))?;
         dispatch.ok_or("Falta el envío original del editor.")?.retain_agent_buffers(input,&buffers)?;
     }
-    finish_working_version(stage,input,Some(connection),profile,cancel,dispatch)?;
+    finish_working_version(stage,input,Some(connection),profile,cancel,(dispatch,dispatch.map(|d|d.gate())))?;
     retain_report(&report,stage,false)
 }
 fn original_request(input:&Input)->Value{
@@ -542,8 +545,8 @@ fn validate_buffer_checkpoint(input:&Input,report:&Value,buffers:&ProjectBuffers
         return Err("El checkpoint no pertenece a la carpeta aprobada del sketch.".into());
     }Ok(())
 }
-async fn recover_buffer_checkpoint(connection:&Connection,input:&Input,report:&Value,cancel:&AtomicBool)->Result<Value,String>{
-    let buffers:ProjectBuffers=exchange(connection,json!({"action":"recover_project_buffers","original":original_request(input)}),false,cancel,Duration::from_secs(15)).await
+async fn recover_buffer_checkpoint(connection:&Connection,input:&Input,report:&Value,cancel:&AtomicBool,gate:Option<crate::process::DispatchGate<'_>>)->Result<Value,String>{
+    let buffers:ProjectBuffers=exchange_control(connection,json!({"action":"recover_project_buffers","original":original_request(input)}),false,cancel,Duration::from_secs(15),(None,gate)).await
         .map_err(|_|"La edición está confirmada, pero falta su checkpoint nativo de buffers. Conserva el trabajo; no repitas la edición ni captures el estado actual como si fuera el original.")?;
     validate_buffer_checkpoint(input,report,&buffers)?;
     serde_json::to_value(buffers).map_err(|_|"No se pudo conservar el checkpoint nativo.".into())
@@ -588,7 +591,8 @@ pub(crate) fn checked_working_version(directory:&Path,input:&Input,core:&str,buf
     if let Some(hash)=check{crate::arduino_version::validate_check(plan,directory,link,&scope,hash)}
     else{crate::arduino_version::validate_capture(plan,directory,link,&scope)?;Ok(json!({"capture_checked":true}))}
 }
-pub(crate) fn finish_working_version(directory:&Path,input:&Input,connection:Option<&Connection>,profile:&Path,cancel:Arc<AtomicBool>,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<(),String>{
+pub(crate) fn finish_working_version(directory:&Path,input:&Input,connection:Option<&Connection>,profile:&Path,cancel:Arc<AtomicBool>,control:(Option<&Arc<crate::live_dispatch::Dispatch>>,Option<crate::process::DispatchGate<'_>>))->Result<(),String>{
+    let (dispatch,gate)=control;
     let Some(plan)=working_plan(input) else{return Ok(());};
     let operation=crate::project::OperationInput::LiveAgent(input.clone());let record=crate::live_dispatch::read(directory,&operation)?.ok_or("Falta el envío original del proyecto.")?;
     let core=record.agent_completion_sha256.as_deref().ok_or("Falta el recibo original del editor.")?;
@@ -596,11 +600,12 @@ pub(crate) fn finish_working_version(directory:&Path,input:&Input,connection:Opt
     let frame=read_buffer_checkpoint(directory,input,core,buffers)?;let data=frame.buffers.iter().map(|b|(b.relative_path.clone(),b.source.clone())).collect::<Vec<_>>();
     let identity=completion_identity(input)?;let scope=crate::arduino_version::Scope{input_sha256:&identity,buffer_sha256:buffers,buffers:&data};
     let link=if let Some(link)=record.agent_project_capture {link}else{
+        drop(gate.map(|g|g.enter(&cancel)).transpose()?);
         let connection=connection.ok_or("La copia necesita comprobar la misma instancia nativa; no se repitió la edición.")?;
         let after=report_after(input,&confirmed_completion(directory,input,core)?)?;
         let runtime=tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_|"No se pudo iniciar la lectura nativa de la copia.")?;
         let (link,capture)=crate::arduino_version::capture(plan,&frame.root,directory,&scope,&cancel,||{
-            let current=runtime.block_on(inspect_project_buffers(connection,&after,&cancel)).map_err(|_|"No se confirmó el estado nativo para copiar el proyecto. Se conservó la edición.")?;
+            let current=runtime.block_on(inspect_project_buffers_gated(connection,&after,&cancel,gate)).map_err(|_|"No se confirmó el estado nativo para copiar el proyecto. Se conservó la edición.")?;
             if current.instance_id!=frame.instance_id || current.active_document_token!=frame.active_document_token || current.buffers!=frame.buffers
                 || !current.root.as_os_str().eq_ignore_ascii_case(frame.root.as_os_str()) {return Err("Las pestañas cambiaron después de la edición. Se conservó tu trabajo; la copia necesita una revisión nueva, sin repetir la edición.".into());}Ok(())
         })?;
@@ -609,7 +614,7 @@ pub(crate) fn finish_working_version(directory:&Path,input:&Input,connection:Opt
         link
     };
     if let Some(hash)=record.agent_project_check_sha256{crate::arduino_version::validate_check(plan,directory,&link,&scope,&hash)?;return Ok(());}
-    let hash=crate::arduino_version::verify(plan,directory,&link,&scope,profile,cancel)?;
+    let hash=crate::arduino_version::verify(plan,directory,&link,&scope,profile,(cancel,gate))?;
     if let Some(dispatch)=dispatch{dispatch.retain_agent_project_check(input,&hash)?;}
     else{crate::live_dispatch::retain_agent_project_check(directory,input,&hash)?;}Ok(())
 }
@@ -632,7 +637,7 @@ fn retain_report(report:&Value,stage:&Path,recovery:bool)->Result<(),String>{
     crate::kicad_project::write_new(&stage.join("result.json"), &bytes)
         .map_err(|_| Failure::Uncertain.message().to_string())
 }
-pub(crate) fn recover_result(input:&Input,connection:&Connection,stage:&Path,cancel:&AtomicBool)->Result<bool,String>{
+pub(crate) fn recover_result(input:&Input,connection:&Connection,stage:&Path,cancel:&AtomicBool,gate:Option<crate::process::DispatchGate<'_>>)->Result<bool,String>{
     input.validate()?;
     if recover_recorded_result(stage,input)?{return Ok(true);}
     let record=crate::live_dispatch::read(stage,&crate::project::OperationInput::LiveAgent(input.clone()))?;
@@ -641,16 +646,16 @@ pub(crate) fn recover_result(input:&Input,connection:&Connection,stage:&Path,can
     let runtime=tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_|"No se pudo iniciar la recuperación nativa.")?;
     if let Some(core_hash)=record.as_ref().and_then(|r|r.agent_completion_sha256.as_deref()){
         let report=confirmed_completion(stage,input,core_hash)?;
-        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel))?;
+        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel,gate))?;
         crate::live_dispatch::retain_agent_buffers(stage,input,&buffers)?;
         retain_report(&report,stage,true)?;return Ok(true);
     }
-    let value:serde_json::Value=runtime.block_on(exchange(connection,json!({"action":"recover","original":original_request(input)}),false,cancel,Duration::from_secs(15))).map_err(|_|"El editor no conserva un resultado comprobado de esa operación. Se conserva el trabajo y la pausa; no repitas la edición.")?;
+    let value:serde_json::Value=runtime.block_on(exchange_control(connection,json!({"action":"recover","original":original_request(input)}),false,cancel,Duration::from_secs(15),(None,gate))).map_err(|_|"El editor no conserva un resultado comprobado de esa operación. Se conserva el trabajo y la pausa; no repitas la edición.")?;
     if value==json!({"editor_recovery_version":1,"status":"running"}){return Ok(false);}
     let receipt:Receipt=serde_json::from_value(value).map_err(|_|"El recibo nativo no es compatible; se conserva la pausa.")?;
     let report=normalized_report(input,receipt)?;
     if record.is_some(){crate::live_dispatch::retain_agent_completion(stage,input,&report)?;}
-    if input.buffer_checkpoint.is_some(){let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel))?;crate::live_dispatch::retain_agent_buffers(stage,input,&buffers)?;}
+    if input.buffer_checkpoint.is_some(){let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel,gate))?;crate::live_dispatch::retain_agent_buffers(stage,input,&buffers)?;}
     retain_report(&report,stage,true)?;Ok(true)
 }
 
@@ -735,6 +740,10 @@ async fn exchange<T: DeserializeOwned>(
     exchange_with_dispatch(connection,request,mutation,cancel,timeout,None).await
 }
 async fn exchange_with_dispatch<T:DeserializeOwned>(connection:&Connection,request:serde_json::Value,mutation:bool,cancel:&AtomicBool,timeout:Duration,dispatch:Option<&Arc<crate::live_dispatch::Dispatch>>)->Result<T,Failure>{
+    exchange_control(connection,request,mutation,cancel,timeout,(dispatch,None)).await
+}
+async fn exchange_control<T:DeserializeOwned>(connection:&Connection,request:serde_json::Value,mutation:bool,cancel:&AtomicBool,timeout:Duration,control:(Option<&Arc<crate::live_dispatch::Dispatch>>,Option<crate::process::DispatchGate<'_>>))->Result<T,Failure>{
+    let (dispatch,gate)=control;
     connection.validate()?;
     if cancel.load(Ordering::SeqCst) {
         return Err(Failure::Refused);
@@ -745,9 +754,10 @@ async fn exchange_with_dispatch<T:DeserializeOwned>(connection:&Connection,reque
     if frame.len() > FRAME_LIMIT {
         return Err(Failure::Refused);
     }
+    drop(dispatch.map(|d|d.gate()).or(gate).map(|g|g.enter(cancel)).transpose().map_err(|_|Failure::Refused)?);
     let mut pipe=ClientOptions::new().open(&connection.pipe).map_err(|_|Failure::Refused)?;
     let mut transfer={
-        let permit=dispatch.map(|d|d.enter()).transpose().map_err(|_|Failure::Refused)?;
+        let permit=if let Some(dispatch)=dispatch{Some(dispatch.enter().map_err(|_|Failure::Refused)?)}else{gate.map(|g|g.enter(cancel)).transpose().map_err(|_|Failure::Refused)?};
         let transfer=tokio::spawn(async move {
             pipe.write_all(&frame).await.map_err(|_|())?;
             let mut bytes=Vec::new();
@@ -851,6 +861,61 @@ pub(crate) mod tests {
     use super::*;
     use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
 
+
+    #[tokio::test]
+    async fn paused_followup_never_connects_or_sends_a_native_frame(){
+        use std::sync::Mutex;
+        for stopped in [false,true]{
+            let (connection,server)=fixture();let mutex=Mutex::new(());let paused=AtomicBool::new(!stopped);let cancel=AtomicBool::new(stopped);
+            let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};
+            let reply:Result<Value,Failure>=exchange_control(&connection,json!({"action":"inspect"}),false,&cancel,Duration::from_secs(1),(None,Some(gate))).await;
+            assert_eq!(reply.unwrap_err(),Failure::Refused);
+            assert!(tokio::time::timeout(Duration::from_millis(80),server.connect()).await.is_err(),"A paused follow-up opened the native transport");
+        }
+    }
+    #[tokio::test]
+    async fn an_admitted_followup_finishes_but_correction_blocks_the_next_one(){
+        use std::sync::Mutex;
+        let (connection,mut server)=fixture();let mutex=Arc::new(Mutex::new(()));let paused=Arc::new(AtomicBool::new(false));let cancel=AtomicBool::new(false);
+        let native_gate=mutex.clone();let native_pause=paused.clone();
+        let worker=tokio::spawn(async move{
+            let request=receive(&mut server).await;assert_eq!(request["request"]["action"],"inspect");
+            {let _permit=native_gate.lock().unwrap();native_pause.store(true,Ordering::SeqCst);}
+            server.write_all(br#"{"ok":true,"result":{"retained":true}}"#).await.unwrap();
+        });
+        let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};
+        let reply:Value=exchange_control(&connection,json!({"action":"inspect"}),false,&cancel,Duration::from_secs(2),(None,Some(gate))).await.unwrap();
+        assert_eq!(reply["retained"],true);worker.await.unwrap();
+        let next:Result<Value,Failure>=exchange_control(&connection,json!({"action":"inspect"}),false,&cancel,Duration::from_secs(1),(None,Some(gate))).await;
+        assert_eq!(next.unwrap_err(),Failure::Refused);
+    }
+
+
+    #[tokio::test]
+    async fn correction_after_native_edit_preserves_its_receipt_and_blocks_checkpoint_fetch(){
+        use std::{fs,sync::Mutex};
+        let root=std::env::temp_dir().join(format!("hazlo-agent-followup-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
+        let (connection,mut server)=fixture();let mut input=job_fixture();input.before=observation(connection.instance_id);
+        input.source=input.before.source.replace("1000","500");input.native_completion_version=Some(1);
+        input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:root.clone(),working_version:None});
+        let operation=crate::project::OperationInput::LiveAgent(input.clone());let mutex=Arc::new(Mutex::new(()));let paused=Arc::new(AtomicBool::new(false));let cancel=Arc::new(AtomicBool::new(false));
+        let fence=crate::live_dispatch::Dispatch::start(&root,&operation,mutex.clone(),paused.clone(),cancel.clone()).unwrap();
+        let native_gate=mutex.clone();let native_pause=paused.clone();let pipe=connection.pipe.clone();let expected=input.clone();
+        let worker=tokio::spawn(async move{
+            let request=receive(&mut server).await;assert_eq!(request["request"]["action"],"apply");
+            let next=ServerOptions::new().create(&pipe).unwrap();
+            {let _permit=native_gate.lock().unwrap();native_pause.store(true,Ordering::SeqCst);}
+            server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":receipt(expected.job_id,&expected.before,&expected.source)})).unwrap()).await.unwrap();drop(server);
+            assert!(tokio::time::timeout(Duration::from_millis(200),next.connect()).await.is_err(),"Checkpoint lookup continued after the correction");
+        });
+        let directory=root.clone();let checked=input.clone();let dispatch=fence.clone();
+        let result=tokio::task::spawn_blocking(move||run_gated(&checked,&connection,&directory,&directory.join("not-launched"),cancel,&dispatch)).await.unwrap();
+        assert!(result.is_err());worker.await.unwrap();
+        let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert!(record.agent_buffers_sha256.is_none());
+        assert!(!root.join("agent-buffers.json").exists());assert!(!root.join("result.json").exists());assert!(!root.join("not-launched").exists());
+        drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
     fn checkpoint_fixture(input:&Input)->Value{
         let report=report_fixture(input);let after=report_after(input,&report).unwrap();
         json!({"project_buffers_version":1,"completion_checkpoint_version":1,"checkpoint_capacity_available":true,
@@ -912,10 +977,10 @@ pub(crate) mod tests {
         let frame=checkpoint_fixture(&input);let expected=original_request(&input);
         let worker=tokio::spawn(async move{let request=receive(&mut server).await;assert_eq!(request["request"],json!({"action":"recover_project_buffers","original":expected}));server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":frame})).unwrap()).await.unwrap();});
         fs::write(native.join("manual.h"),b"later manual work").unwrap();let checked=input.clone();let directory=root.clone();let connected=connection.clone();
-        assert!(tokio::task::spawn_blocking(move||recover_result(&checked,&connected,&directory,&AtomicBool::new(false))).await.unwrap().unwrap());worker.await.unwrap();
+        assert!(tokio::task::spawn_blocking(move||recover_result(&checked,&connected,&directory,&AtomicBool::new(false),None)).await.unwrap().unwrap());worker.await.unwrap();
         let record=crate::live_dispatch::read(&root,&op).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some() && record.agent_buffers_sha256.is_some());
         assert_eq!(fs::read(native.join("manual.h")).unwrap(),b"later manual work");
-        let mut closed=connection;closed.editor_version=0;fs::remove_file(root.join("result.json")).unwrap();assert!(recover_result(&input,&closed,&root,&AtomicBool::new(false)).unwrap());
+        let mut closed=connection;closed.editor_version=0;fs::remove_file(root.join("result.json")).unwrap();assert!(recover_result(&input,&closed,&root,&AtomicBool::new(false),None).unwrap());
         drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
     }
     #[tokio::test]
@@ -1372,7 +1437,7 @@ pub(crate) mod tests {
             let root=std::env::temp_dir().join(format!("hazlo-agent-completion-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();let(connection,mut server)=fixture();let mut input=job_fixture();input.native_completion_version=Some(1);input.before=observation(connection.instance_id);input.save=saving;input.source=if saving{input.before.source.clone()}else{input.before.source.replace("1000","500")+"// PRIVATE_NATIVE_SOURCE_SENTINEL\n"};let mut reply=report_fixture(&input);reply["after"]["source"]=json!(input.source);let expected=input.clone();let writes=Arc::new(AtomicUsize::new(0));let count=writes.clone();
             let native=tokio::spawn(async move{let message=receive(&mut server).await;assert_eq!(message["request"]["action"],if saving{"save"}else{"apply"});assert_eq!(message["request"]["job_id"],json!(expected.job_id));count.fetch_add(1,Ordering::SeqCst);server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":reply})).unwrap()).await.unwrap();});
             let operation=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();fs::write(root.join("result.json"),b"preserve occupied report").unwrap();let directory=root.clone();let checked=input.clone();let connected=connection.clone();let dispatch=fence.clone();let result=tokio::task::spawn_blocking(move||run_gated(&checked,&connected,&directory,&directory.join("copy-profile"),Arc::new(AtomicBool::new(false)),&dispatch)).await.unwrap();native.await.unwrap();assert!(result.is_err());assert_eq!(writes.load(Ordering::SeqCst),1);assert_eq!(fs::read(root.join("result.json")).unwrap(),b"preserve occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert_eq!(record.summary(&operation).acknowledged,1);assert_eq!(record.summary(&operation).uncertain,0);assert!(record.summary(&operation).needs_review);assert!(fence.enter().is_err());
-            let proof=fs::read_to_string(root.join("agent-completion.json")).unwrap();assert!(!proof.contains("PRIVATE_NATIVE_SOURCE_SENTINEL")&&!proof.contains(&connection.token));fs::rename(root.join("result.json"),root.join("preserved.native")).unwrap();let mut disconnected=connection;disconnected.editor_version=0;assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false)).unwrap());assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false)).unwrap());assert_eq!(writes.load(Ordering::SeqCst),1);let report:Value=crate::project::read_json(&root.join("result.json")).unwrap();validate_report(&input,&report).unwrap();assert_eq!(fs::read(root.join("preserved.native")).unwrap(),b"preserve occupied report");drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+            let proof=fs::read_to_string(root.join("agent-completion.json")).unwrap();assert!(!proof.contains("PRIVATE_NATIVE_SOURCE_SENTINEL")&&!proof.contains(&connection.token));fs::rename(root.join("result.json"),root.join("preserved.native")).unwrap();let mut disconnected=connection;disconnected.editor_version=0;assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false),None).unwrap());assert!(recover_result(&input,&disconnected,&root,&AtomicBool::new(false),None).unwrap());assert_eq!(writes.load(Ordering::SeqCst),1);let report:Value=crate::project::read_json(&root.join("result.json")).unwrap();validate_report(&input,&report).unwrap();assert_eq!(fs::read(root.join("preserved.native")).unwrap(),b"preserve occupied report");drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
         }
     }
     #[test]
@@ -1397,7 +1462,7 @@ pub(crate) mod tests {
                 assert_eq!(message,json!({"token":token,"request":{"action":"recover","original":original}}));
                 let result=if scenario=="running"{json!({"editor_recovery_version":1,"status":"running"})}else{raw};server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":result})).unwrap()).await.unwrap();
             });
-            let directory=root.clone();let checked=input.clone();let result=tokio::task::spawn_blocking(move||recover_result(&checked,&connection,&directory,&AtomicBool::new(false))).await.unwrap();worker.await.unwrap();
+            let directory=root.clone();let checked=input.clone();let result=tokio::task::spawn_blocking(move||recover_result(&checked,&connection,&directory,&AtomicBool::new(false),None)).await.unwrap();worker.await.unwrap();
             match scenario{
                 "running"=>{assert!(!result.unwrap());assert!(!root.join("result.json").exists());},
                 "wrong_job"=>{assert!(result.is_err());assert!(!root.join("result.json").exists());},
@@ -1498,7 +1563,7 @@ pub(crate) mod tests {
             }
             let done=tokio::time::timeout(Duration::from_secs(5),worker).await.unwrap().unwrap().unwrap();
             assert_eq!(done.snapshot.phase,if scenario=="during"{Phase::Completed}else{Phase::Cancelled});
-            assert_eq!(writes.load(Ordering::SeqCst),usize::from(scenario!="before"));drop(release);server_task.await.unwrap();
+            assert_eq!(writes.load(Ordering::SeqCst),usize::from(scenario!="before"));drop(release);if scenario=="before"{server_task.abort();let _=server_task.await;}else{tokio::time::timeout(Duration::from_secs(5),server_task).await.unwrap().unwrap();}
             let summary=workflow.native_recovery().unwrap();assert_eq!(summary[0].needs_review,scenario=="stop");assert_eq!(summary[0].not_dispatched,usize::from(scenario=="before"));
             assert_eq!(workflow.task_state().unwrap().unwrap().active.latest_correction.unwrap().text,correction);
             assert!(workflow.begin(pending.approval_id.unwrap()).is_err());

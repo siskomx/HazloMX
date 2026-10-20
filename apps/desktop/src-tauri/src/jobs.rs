@@ -393,8 +393,10 @@ impl Workflow {
             let recovered=match &snapshot.input{
                 OperationInput::LiveCad(input)=>crate::cadpilot_live::recover_result(input,&directory,&cancel)?,
                 OperationInput::LiveAgent(input)=>{
+                    let run=self.begin_recovery_check(&project,&snapshot,cancel.clone())?;
                     let connection=if let Some(connection)=agent_connection.clone(){connection}else{crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id))).map_err(|_|"La instancia original del editor ya no está conectada. Se conserva el trabajo y la pausa.")?};
-                    crate::agent_editor::recover_result(input,&connection,&directory,&cancel)?
+                    let result=crate::agent_editor::recover_result(input,&connection,&directory,&cancel,Some(run.gate()))?;
+                    recovery_check=Some(run);result
                 },
                 OperationInput::LivePcb(input)=>crate::kicad_live::recover_result(input,&directory)?,
                 OperationInput::LiveDrawing(input)=>{
@@ -408,14 +410,16 @@ impl Workflow {
         if let OperationInput::LiveDrawing(input)=&snapshot.input{if input.native_working_version.is_some(){let hash=crate::cadcraft_live::recover_working_version(&directory,input,&self.profiles.join(format!("drawing-version-recovery-{}",Uuid::new_v4())),cancel.clone())?;crate::live_dispatch::retain_drawing_copy_check(&directory,input,&hash)?;}}
         if let OperationInput::LiveAgent(input)=&snapshot.input{if crate::agent_editor::working_plan(input).is_some(){
             let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envio original del proyecto.")?;
+            if record.agent_project_check_sha256.is_none() && recovery_check.is_none(){recovery_check=Some(self.begin_recovery_check(&project,&snapshot,cancel.clone())?);}
             let connection=if record.agent_project_capture.is_none(){Some(if let Some(connection)=agent_connection.clone(){connection}else{
                 crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id)))
                     .map_err(|_|"La copia necesita la instancia original conectada; no se repitio la edicion.")?})}else{None};
-            crate::agent_editor::finish_working_version(&directory,input,connection.as_ref(),&self.profiles.join(format!("agent-version-recovery-{}",Uuid::new_v4())),cancel.clone(),None)?;
+            crate::agent_editor::finish_working_version(&directory,input,connection.as_ref(),&self.profiles.join(format!("agent-version-recovery-{}",Uuid::new_v4())),cancel.clone(),(None,recovery_check.as_ref().map(|run|run.gate())))?;
         }}
         checked.retain_receipt(&directory).map_err(|_|"El resultado sigue local, pero no se pudo conservar su recibo.")?;
         project.validate_outputs(&directory,&checked).map_err(|_|"El resultado nativo no pasó sus comprobaciones; se conserva la pausa.")?;
         crate::live_dispatch::recover_checked(&directory,&checked)?;
+        if let Some(run)=recovery_check.as_mut(){let mut saved=snapshot.clone();saved.input=checked.clone();if cancel.load(Ordering::SeqCst){saved.phase=Phase::Cancelled;}project.save(&saved).map_err(|_|"El resultado se conserva; falta registrar su comprobación.")?;run.recorded=true;}
         }
         drop(_pins);
         drop(recovery_check);
@@ -3905,6 +3909,36 @@ mod tests {
         assert_eq!(history[0].phase,Phase::Cancelled);
         assert!(history[0].audit.as_ref().unwrap().error.as_ref().unwrap().contains("Cancelar no deshace"));drop(project);
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
+
+    #[test]
+    fn agent_recovery_obeys_stop_and_correction_before_any_native_followup(){
+        use crate::tasks::Request;
+        for mode in ["stop","correction"]{
+            let(root,workflow)=setup();let selected=workflow.view().unwrap().project.unwrap();let task=workflow.task_state().unwrap().unwrap().active;
+            let mut value=serde_json::to_value(crate::agent_editor::tests::job_fixture()).unwrap();value["native_completion_version"]=serde_json::json!(1);
+            value["buffer_checkpoint"]=serde_json::json!({"version":1,"root":root,"working_version":null});
+            let input:crate::agent_editor::Input=serde_json::from_value(value).unwrap();let id=input.job_id;
+            let pending=workflow.propose_live_agent(selected.clone(),input.clone(),crate::agent_editor::tests::connection_fixture(&input)).unwrap();
+            let mut dispatch=workflow.begin(pending.approval_id.unwrap()).unwrap();dispatch.snapshot.audit.as_mut().unwrap().native_attempted=Some(true);dispatch.project.save(&dispatch.snapshot).unwrap();
+            let stage=dispatch.project.reserve_stage(id).unwrap();let fence=crate::live_dispatch::Dispatch::start(&stage.path,&dispatch.snapshot.input,dispatch.dispatch_gate.clone(),dispatch.dispatch_paused.clone(),dispatch.cancelled.clone()).unwrap();
+            drop(fence.enter().unwrap());fence.retain_agent_completion(&input,&crate::agent_editor::tests::report_fixture(&input)).unwrap();drop(fence);drop(stage);
+            workflow.finish(dispatch,Err("original reply retained; checkpoint pending".into())).unwrap();
+            let project=workflow.state.lock().unwrap().project.clone().unwrap();let snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==id).unwrap();
+            let cancel=Arc::new(AtomicBool::new(false));let run=workflow.begin_recovery_check(&project,&snapshot,cancel.clone()).unwrap();
+            assert!(workflow.current().unwrap().unwrap().busy);
+            if mode=="stop"{workflow.cancel(id).unwrap();}else{workflow.task_request(selected.clone(),Request::Message{id:task.id,revision:task.revision,text:"Preserve my sketch; stop remaining work.".into(),history:serde_json::json!({"version":1,"turns":[]}).to_string(),correction_of:Some(id)}).unwrap();}
+            assert!(run.gate().enter(&cancel).is_err());drop(run);assert!(!workflow.current().unwrap().unwrap().busy);
+            let directory=project.store("staging").join(id.to_string());let bytes=fs::read(directory.join("agent-completion.json")).unwrap();
+            assert!(workflow.recover_native_result(selected.clone(),id,Arc::new(AtomicBool::new(false))).unwrap_err().contains("detenida"));
+            assert_eq!(fs::read(directory.join("agent-completion.json")).unwrap(),bytes);assert!(!directory.join("agent-buffers.json").exists());
+            let snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==id).unwrap();drop(project);drop(workflow);
+            let reopened=Workflow::new(root.join("FreeCADCmd.exe"),root.join("reopened-profiles")).unwrap();reopened.select_project(Project::open(&root).unwrap()).unwrap();
+            let project=reopened.state.lock().unwrap().project.clone().unwrap();assert!(reopened.begin_recovery_check(&project,&snapshot,Arc::new(AtomicBool::new(false))).is_err());
+            assert_eq!(fs::read(directory.join("agent-completion.json")).unwrap(),bytes);drop(project);drop(reopened);
+            assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
     }
 
     #[test]

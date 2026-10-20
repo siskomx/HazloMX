@@ -546,6 +546,12 @@ The chat can propose a fresh check-only approval for one unused KiCad verificati
 
 The [implementation and acceptance record](../research/pcb-check-only-resume-2026-10-19.md) distinguishes 399 passing desktop-enabled library/binary tests, owned transport/process and headless chat fixtures, and actual KiCad check-only resumption from a real-provider conversation or visual/physical certification. The shared synchronous Windows helper also verifies original member handles when stopping its owned job. Other engines' resume paths, expanded resource approval, changed-copy reconciliation, general MCP safeguards, task/hardware outcome boundaries and Windows release checks remain active. The installed application and installer are unchanged; no model is downloaded and KiCad 10 live schematics remains pending.
 
+## Arduino follow-up and recovery dispatch barrier
+
+Original Arduino edit/save follow-ups and explicit native recovery now share the chat's dispatch gate for cached-buffer retrieval, fresh native-buffer inspection and project-reader startup. Native recovery becomes durable visible busy work; Stop/corrections block later dispatch across restart while confirmed receipts and linked offline recovery remain available. No editing interface or new operation is added.
+
+The [implementation and acceptance notes](../research/agent-copy-dispatch-barrier-2026-10-19.md) record 404 passing desktop-enabled library/binary tests, all-target desktop Clippy and the rebuilt production host against an owned actual Arduino window with two checked native copies and automatic CLI detection. Visual correction/provider/hardware checks, Arduino fresh check-only approval, other integrations' remaining gates, changed-copy reconciliation, task/outcome/privacy/hardware requirements and Windows release acceptance remain active. The installer and installed app are unchanged; no model is downloaded and KiCad 10 live schematics stays pending.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.
