@@ -802,7 +802,7 @@ pub(crate) mod tests {
     #[test]
     fn working_version_checkpoint_binds_runtime_and_excludes_file_dialogs(){
         let(mut input,mut result)=completed_fixture();assert!(serde_json::to_value(&input).unwrap().get("working_version").is_none());
-        input.operations.clear();assert!(input.validate_for_dispatch().is_err());input.working_version=Some(crate::native_working_version::Plan{verifier_sha256:"a".repeat(64)});input.validate_for_dispatch().unwrap();
+        input.operations.clear();assert!(input.validate_for_dispatch().is_err());input.working_version=Some(crate::native_working_version::Plan{verifier_sha256:"a".repeat(64),reader_budget_version:None});input.validate_for_dispatch().unwrap();
         result["operations"]=json!([]);assert!(validate_result(&input,&result).is_err());result["working_version"]=json!({"state":"blocked","reason":"native_working_copy_unverified"});validate_result(&input,&result).unwrap();
         let original=crate::kicad_project::digest(&serde_json::to_vec(&input).unwrap());input.working_version.as_mut().unwrap().verifier_sha256="b".repeat(64);assert_ne!(original,crate::kicad_project::digest(&serde_json::to_vec(&input).unwrap()));
         for op in [json!({"action":"save_as"}),json!({"action":"export_step","obj_name":"Box"})]{input.operations=vec![op];assert!(input.validate_for_dispatch().is_err());}

@@ -20,17 +20,19 @@ const CHECK:&str="import json,hashlib,sys\nfrom pathlib import Path\nprofile=Pat
 #[serde(deny_unknown_fields)]
 pub struct Plan {
     pub verifier_sha256: String,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub reader_budget_version:Option<u32>,
 }
 impl Plan {
     pub fn validate(&self) -> Result<(), String> {
-        if !crate::kicad_project::valid_hash(&self.verifier_sha256) {
+        if !crate::kicad_project::valid_hash(&self.verifier_sha256) || self.reader_budget_version.is_some_and(|version|version!=1) {
             return Err("El verificador nativo no tiene una identidad válida.".into());
         }
         Ok(())
     }
 }
 pub fn plan(executable: &Path) -> Result<Plan, String> {
-    Ok(Plan{verifier_sha256:crate::kicad_project::digest(&crate::kicad_project::read_regular(executable,LIMIT).map_err(|_|"No se encontró FreeCADCmd para comprobar la nueva versión nativa; conserva el trabajo y revisa la instalación detectada.")?)})
+    Ok(Plan{verifier_sha256:crate::kicad_project::digest(&crate::kicad_project::read_regular(executable,LIMIT).map_err(|_|"No se encontró FreeCADCmd para comprobar la nueva versión nativa; conserva el trabajo y revisa la instalación detectada.")?),reader_budget_version:Some(1)})
 }
 pub(crate) fn glue() -> String {
     CORE.replace(
@@ -211,6 +213,7 @@ pub(crate) fn verify(
         return Err("La verificación necesita ubicaciones locales reservadas por Hazlo.".into());
     }
     plan.validate()?;
+    if approval.is_none() && plan.reader_budget_version.is_none(){return Err("Esta aprobación anterior no registra un presupuesto de comprobaciones. Conserva la copia y prepara una nueva aprobación solo para comprobarla.".into());}
     let root = directory.join("NativeVersion").canonicalize().map_err(|_|"Falta la copia nativa conservada.")?;
     let mut pins =
         crate::project::pin_lineage(&root).map_err(|_| "No se pudo fijar la versión nativa.")?;
@@ -335,20 +338,31 @@ pub(crate) fn verify(
 pub(crate) mod tests {
     use super::*;
 
-    pub(crate) fn retained_fixture(source:Option<&Path>,reader:Option<&Path>)->(std::path::PathBuf,std::path::PathBuf,crate::cadpilot_live::Input,std::path::PathBuf){
+    pub(crate) fn retained_fixture(source:Option<&Path>,reader:Option<&Path>,recorded_budget:bool)->(std::path::PathBuf,std::path::PathBuf,crate::cadpilot_live::Input,std::path::PathBuf){
         use crate::{project::OperationInput,live_dispatch::Dispatch};use std::sync::Mutex;
         let root=std::env::temp_dir().join(format!("hazlo-freecad-resume-{}",uuid::Uuid::new_v4()));fs::create_dir(&root).unwrap();let stage=root.join("stage");fs::create_dir(&stage).unwrap();let native=stage.join("NativeVersion");fs::create_dir(&native).unwrap();
         let executable=if let Some(reader)=reader{reader.to_owned()}else{let reader=root.join("FreeCADCmd.exe");fs::write(&reader,b"owned placeholder, never execute").unwrap();reader};
         let capture=if let Some(source)=source{let bytes=crate::kicad_project::read_regular(&source.join("capture.json"),2*1024*1024).unwrap();let capture:Value=serde_json::from_slice(&bytes).unwrap();let name=file_name(&capture["file"]["name"]).unwrap();fs::copy(source.join("version").join(name),native.join(name)).unwrap();fs::write(native.join("capture.json"),&bytes).unwrap();capture}else{
             let bytes=b"owned native fixture bytes";fs::write(native.join("Owned.FCStd"),bytes).unwrap();let capture=json!({"version":1,"source_preserved":true,"reopen_checked":false,"file":{"name":"Owned.FCStd","bytes":bytes.len(),"sha256":crate::kicad_project::digest(bytes)}});fs::write(native.join("capture.json"),serde_json::to_vec(&capture).unwrap()).unwrap();capture};
-        let (mut input,mut result)=crate::cadpilot_live::tests::completed_fixture();input.working_version=Some(plan(&executable).unwrap());
+        let (mut input,mut result)=crate::cadpilot_live::tests::completed_fixture();input.working_version=Some(plan(&executable).unwrap());if !recorded_budget{input.working_version.as_mut().unwrap().reader_budget_version=None;}
         result["working_version"]=json!({"state":"captured","capture_sha256":crate::kicad_project::digest(&fs::read(native.join("capture.json")).unwrap()),"file":capture["file"]});
         let operation=OperationInput::LiveCad(input.clone());let fence=Dispatch::start(&stage,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());fence.retain_native_completion(&input,&result).unwrap();drop(fence);
         (root,stage,input,executable)
     }
     #[test]
+    fn legacy_reader_budget_stays_absent_and_unknown_versions_are_refused(){
+        let bytes=serde_json::to_vec(&json!({"verifier_sha256":"a".repeat(64)})).unwrap();let mut old:Plan=serde_json::from_slice(&bytes).unwrap();old.validate().unwrap();assert!(old.reader_budget_version.is_none());assert_eq!(serde_json::to_vec(&old).unwrap(),bytes);
+        old.reader_budget_version=Some(1);old.validate().unwrap();assert_ne!(serde_json::to_vec(&old).unwrap(),bytes);for version in [0,2,u32::MAX]{old.reader_budget_version=Some(version);assert!(old.validate().is_err());}
+    }
+    #[test]
+    fn legacy_freecad_check_requires_fresh_scope_and_cannot_retrofit_the_original_input(){
+        let(root,stage,mut input,reader)=retained_fixture(None,None,false);let profile=root.join("not-started-reader");let (_,result)=original(&stage,&input).unwrap();
+        let error=verify(&reader,input.working_version.as_ref().unwrap(),&stage,&profile,&result,(Arc::new(AtomicBool::new(false)),None),None).unwrap_err();assert!(error.contains("nueva aprobación"));assert!(!profile.exists());assert_eq!(pending_copy_check(&stage,&input).unwrap().1,0);
+        let original=fs::read(stage.join("native-completion.json")).unwrap();input.working_version.as_mut().unwrap().reader_budget_version=Some(1);assert!(pending_copy_check(&stage,&input).is_err());assert_eq!(fs::read(stage.join("native-completion.json")).unwrap(),original);assert_eq!(fs::read(stage.join("NativeVersion/Owned.FCStd")).unwrap(),b"owned native fixture bytes");assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
     fn retained_native_copy_binds_identity_and_unknown_attempts_cannot_be_replayed(){
-        let(root,stage,input,executable)=retained_fixture(None,None);let (identity,attempts)=pending_copy_check(&stage,&input).unwrap();assert_eq!(attempts,0);
+        let(root,stage,input,executable)=retained_fixture(None,None,true);let (identity,attempts)=pending_copy_check(&stage,&input).unwrap();assert_eq!(attempts,0);
         let plan=crate::result_checks::Input{result_checks_version:3,program:Some(crate::host_tools::Program::Freecad),job_id:uuid::Uuid::new_v4(),target_job_id:input.job_id,target_input_sha256:crate::cadpilot_live::completion_input(&input).unwrap(),edit_sha256:identity.clone(),attempts_before:0,agreement:crate::native_tools::tests::agreement_fixture(),receipt_sha256:None};
         let(_,result)=original(&stage,&input).unwrap();let capture=result["working_version"]["capture_sha256"].as_str().unwrap();let _unknown=crate::native_readback::begin(&stage.join("NativeVersion"),capture,Some(&plan)).unwrap();
         let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(false);let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};let profile=root.join("not-started");assert!(finish_approved_copy_check(&executable,&stage,&input,&profile,(Arc::new(AtomicBool::new(false)),gate),&plan).is_err());assert!(!profile.exists());assert_eq!(crate::native_readback::count(&stage.join("NativeVersion"),capture).unwrap(),1);

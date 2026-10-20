@@ -3244,22 +3244,28 @@ mod tests {
         let proof:serde_json::Value=crate::project::read_json(&source.join("capture-proof.json")).unwrap();assert_eq!(proof["original_unchanged"],true);
         let capture:serde_json::Value=crate::project::read_json(&source.join("capture.json")).unwrap();assert_eq!(capture["expected"]["objects"].as_object().unwrap().len(),5);
         let reader=PathBuf::from(std::env::var_os("HAZLOMEXA_NATIVE_COPY_VERIFIER").expect("Set the identified reader"));
-        let(root,stage,input,reader)=crate::native_working_version::tests::retained_fixture(Some(&source),Some(&reader));
+        for recorded_budget in [true,false]{
+        let(root,stage,input,reader)=crate::native_working_version::tests::retained_fixture(Some(&source),Some(&reader),recorded_budget);
         let canonical=root.canonicalize().unwrap();let folder=root.join("task");fs::create_dir(&folder).unwrap();let project=Project::create(&folder).unwrap();let task=crate::tasks::Store::new(&project).unwrap().state().unwrap().active;
         let target=project.store("staging").join(input.job_id.to_string());assert!(stage.canonicalize().unwrap().starts_with(&canonical)&&target.parent().unwrap().canonicalize().unwrap().starts_with(&canonical));fs::rename(stage,&target).unwrap();
         let mut snapshot=project.snapshot(OperationInput::LiveCad(input.clone()),Phase::Cancelled).unwrap();snapshot.audit.as_mut().unwrap().task=Some(task.binding());snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();
         let native_name=capture["file"]["name"].as_str().unwrap();let original_capture=fs::read(target.join("NativeVersion/capture.json")).unwrap();let original_file=fs::read(target.join("NativeVersion").join(native_name)).unwrap();let original_completion=fs::read(target.join("native-completion.json")).unwrap();
         fs::write(target.join("NativeVersion/preserved-partial.native"),b"preserve previous check output").unwrap();
+        let attempts_before=usize::from(recorded_budget);
+        if recorded_budget{
+            let operation=OperationInput::LiveCad(input.clone());let record=crate::live_dispatch::read(&target,&operation).unwrap().unwrap();let result=crate::cadpilot_live::read_native_completion(&target,&input,record.native_completion_sha256.as_deref().unwrap()).unwrap().unwrap();
+            crate::native_working_version::verify(&reader,input.working_version.as_ref().unwrap(),&target,&root.join("original-check-profile"),&result,(Arc::new(AtomicBool::new(false)),None),None).unwrap();
+        }
         let workflow=Arc::new(Workflow::new(root.join("missing-reader/FreeCADCmd.exe"),root.join("profiles")).unwrap());workflow.select_project(project).unwrap();
         let host=HostTools::new(workflow.clone());host.configure_native_discovery(root.clone(),root.join("data")).unwrap();
         crate::native_setup::remember(&root.join("data/program-locations"),Program::Freecad,"cli",&reader,&folder).unwrap();
         let proposed=host.call("propose_result_checks",serde_json::json!({"job_id":input.job_id,"agreement":crate::native_tools::tests::agreement_fixture()})).unwrap();assert!(proposed.get("approval_id").is_none());
-        let pending=workflow.current().unwrap().unwrap();let id=pending.snapshot.input.job_id();assert!(matches!(&pending.snapshot.input,OperationInput::ResultChecks(i) if i.result_checks_version==3 && i.program==Some(Program::Freecad) && i.attempts_before==0));
+        let pending=workflow.current().unwrap().unwrap();let id=pending.snapshot.input.job_id();assert!(matches!(&pending.snapshot.input,OperationInput::ResultChecks(i) if i.result_checks_version==3 && i.program==Some(Program::Freecad) && i.attempts_before==attempts_before));
         let token=pending.approval_id.unwrap();let done=workflow.execute(workflow.begin(token).unwrap()).unwrap();assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);assert!(workflow.begin(token).is_err());
         let status=host.call("recover_native_result",serde_json::json!({"job_id":id})).unwrap();assert_eq!(status["published"],true);assert_eq!(status["checked_result_job_id"],serde_json::json!(input.job_id));
         let parent=folder.join(".hazlomexa/artifacts").join(input.job_id.to_string());let native=parent.join("NativeVersion");
         assert_eq!(fs::read(native.join("capture.json")).unwrap(),original_capture);assert_eq!(fs::read(native.join(native_name)).unwrap(),original_file);assert_eq!(fs::read(parent.join("native-completion.json")).unwrap(),original_completion);assert_eq!(fs::read(native.join("preserved-partial.native")).unwrap(),b"preserve previous check output");
-        let records=crate::native_readback::read(&native).unwrap();assert_eq!(records.len(),1);assert_eq!(records[0].approval.as_ref().unwrap().job_id,id);assert!(records[0].result_sha256.is_some());
+        let records=crate::native_readback::read(&native).unwrap();assert_eq!(records.len(),attempts_before+1);assert_eq!(records.iter().filter(|r|r.approval.as_ref().is_some_and(|a|a.job_id==id)&&r.result_sha256.is_some()).count(),1);
         let artifact=workflow.artifact(id,ArtifactFormat::ResultChecksReport).unwrap();let report_path=artifact.path.clone();let report_bytes=fs::read(&report_path).unwrap();drop(artifact);drop(host);drop(workflow);
         // Simulate loss of parent-link bookkeeping after the actual reader completed.
         let project=Project::open(&folder).unwrap();let journal=parent.join("live-dispatch.json");let mut record:serde_json::Value=crate::project::read_json(&journal).unwrap();record["outcome"]=serde_json::json!("uncertain");record.as_object_mut().unwrap().remove("receipt_sha256");record.as_object_mut().unwrap().remove("working_version_sha256");fs::write(journal,serde_json::to_vec(&record).unwrap()).unwrap();
@@ -3269,14 +3275,15 @@ mod tests {
         }drop(project);
         // No native reader or discovery configuration is available during link repair.
         let repair=Arc::new(Workflow::new(root.join("offline/FreeCADCmd.exe"),root.join("offline-profiles")).unwrap());repair.select_project(Project::open(&folder).unwrap()).unwrap();let host=HostTools::new(repair.clone());
-        let status=host.call("recover_native_result",serde_json::json!({"job_id":id})).unwrap();assert_eq!(status["published"],true);assert_eq!(status["checked_result_job_id"],serde_json::json!(input.job_id));assert_eq!(fs::read_dir(root.join("offline-profiles")).unwrap().count(),0);assert_eq!(crate::native_readback::read(&native).unwrap().len(),1);assert_eq!(fs::read(native.join(native_name)).unwrap(),original_file);drop(host);drop(repair);
-        assert!(report_path.canonicalize().unwrap().starts_with(&canonical));fs::remove_file(&report_path).unwrap();let project=Project::open(&folder).unwrap();let restored=project.recover().unwrap();assert_eq!(restored.iter().find(|s|s.input.job_id()==id).unwrap().phase,Phase::Completed);assert_eq!(fs::read(&report_path).unwrap(),report_bytes);assert_eq!(crate::native_readback::read(&native).unwrap().len(),1);drop(project);
+        let status=host.call("recover_native_result",serde_json::json!({"job_id":id})).unwrap();assert_eq!(status["published"],true);assert_eq!(status["checked_result_job_id"],serde_json::json!(input.job_id));assert_eq!(fs::read_dir(root.join("offline-profiles")).unwrap().count(),0);assert_eq!(crate::native_readback::read(&native).unwrap().len(),attempts_before+1);assert_eq!(fs::read(native.join(native_name)).unwrap(),original_file);drop(host);drop(repair);
+        assert!(report_path.canonicalize().unwrap().starts_with(&canonical));fs::remove_file(&report_path).unwrap();let project=Project::open(&folder).unwrap();let restored=project.recover().unwrap();assert_eq!(restored.iter().find(|s|s.input.job_id()==id).unwrap().phase,Phase::Completed);assert_eq!(fs::read(&report_path).unwrap(),report_bytes);assert_eq!(crate::native_readback::read(&native).unwrap().len(),attempts_before+1);drop(project);
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
     }
 
     #[test]
     fn freecad_check_resume_needs_current_scope_and_matching_reader_and_stop_spends_no_attempt(){
-        let(root,stage,input,reader)=crate::native_working_version::tests::retained_fixture(None,None);let folder=root.join("task");fs::create_dir(&folder).unwrap();let project=Project::create(&folder).unwrap();let task=crate::tasks::Store::new(&project).unwrap().state().unwrap().active;
+        let(root,stage,input,reader)=crate::native_working_version::tests::retained_fixture(None,None,true);let folder=root.join("task");fs::create_dir(&folder).unwrap();let project=Project::create(&folder).unwrap();let task=crate::tasks::Store::new(&project).unwrap().state().unwrap().active;
         let destination=project.store("staging").join(input.job_id.to_string());assert!(stage.canonicalize().unwrap().starts_with(root.canonicalize().unwrap())&&destination.parent().unwrap().canonicalize().unwrap().starts_with(project.root.canonicalize().unwrap()));fs::rename(stage,&destination).unwrap();
         let mut snapshot=project.snapshot(OperationInput::LiveCad(input.clone()),Phase::Cancelled).unwrap();snapshot.audit.as_mut().unwrap().task=Some(task.binding());snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;snapshot.audit.as_mut().unwrap().native_attempted=Some(true);project.save(&snapshot).unwrap();let selected=(project.id,project.root.clone());
         let wrong=root.join("wrong");fs::create_dir(&wrong).unwrap();fs::write(wrong.join("FreeCADCmd.exe"),b"different reader").unwrap();let workflow=Workflow::new(wrong.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(project).unwrap();assert!(workflow.propose_result_checks(selected.clone(),input.job_id,crate::native_tools::tests::agreement_fixture()).is_err());workflow.set_executable(reader).unwrap();

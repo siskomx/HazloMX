@@ -1,0 +1,19 @@
+# Bind FreeCAD reader resources to the approved input
+
+Hazlo continues to coordinate native tools through its simple chat. The new optional `reader_budget_version` belongs to the existing host-owned FreeCAD working-version plan; no editor interface, native mutation, software selector or model download is added.
+
+New proposals set budget version 1. Their existing approval explains at most two recorded native reader attempts of up to 90 seconds each, preserving partial files and consuming uncertain attempts. The full original input and its budget are bound by the existing dispatch/completion identity. Changing that input after approval does not retrofit or downgrade its permission.
+
+Legacy plans omit the field unchanged. They remain valid for reading/recovering their original history and already linked completed reports. An unfinished independent native check cannot launch under that older approval: Hazlo preserves the copy and directs chat to the existing fresh check-only proposal. That new approval explicitly grants its additional bounded check against the original capture and current task. Historical unrecorded attempts remain unknown rather than being invented as unused resources. Unknown budget versions are refused. A default or migration never inserts permission into an old input.
+
+The existing reader ledger, immutable copy identity, compatible reader detection, Stop/correction gates, local report/link recovery and task/service evidence-sharing boundary remain in use. No edit, capture or original file is repeated/replaced to repair a result. The original and captured evidence stay local; resource approval grants no external sharing permission.
+
+## Validation scope
+
+Validation passes 420 regular desktop-enabled library/binary tests (418 library and two desktop tests), with 78 environment/subprocess cases skipped in the regular run. All-target desktop Clippy with warnings denied, the frontend build, source-derived approval checks and headless task-chat fixture pass. Regular tests check exact legacy-plan serialization, accepted/current and refused/unknown budget versions, refusal before profile/attempt admission, retained original/native-file preservation and refusal to retrofit budget fields into an admitted legacy input. Existing legacy native-copy report recovery remains covered by the project suite. The browser approval fixture checks the new budget details in the existing chat.
+
+The existing opt-in FreeCAD acceptance is extended to both new and legacy plans. It uses a real owned five-primitive capture and the identified existing native reader, with synthetic original edit admission/completion and backend human approval. The new plan performs a normal reader check, then its freshly approved additional check; the legacy plan performs only its explicitly approved fresh check. Each case checks retained native/capture/completion bytes, exact attempt ownership, offline parent-link repair without reader availability and identical report reconstruction without another attempt. This is not a fresh visual or real-provider conversation test.
+
+The explicit native acceptance passes both current and legacy plans. It executes three actual native reader checks in total: one normal and one freshly approved check for the current plan, plus one freshly approved legacy check. Both copies preserve original capture/native/completion evidence and recover their parent link and dependent report offline without another reader attempt. Synthetic original admission/backend approvals are not a real AI conversation or visual acceptance.
+
+The complete plan remains active: expanded bounds and changed/unlinked-copy reconciliation, remaining native-tool concurrency/dependency/setup/outcome/evidence/hardware requirements, fresh application/window/provider acceptance and the Windows release lifecycle. KiCad 10 live schematics stays pending; the installed app and installer are unchanged.
