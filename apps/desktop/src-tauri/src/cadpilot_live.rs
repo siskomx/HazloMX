@@ -625,10 +625,10 @@ pub fn run(
 ) -> Result<(), String> {
     run_impl(input,directory,cancelled,None,"http://127.0.0.1:9875")
 }
-async fn submit_native(client:reqwest::Client,endpoint:String,request:Value,dispatch:Option<&std::sync::Arc<crate::live_dispatch::Dispatch>>)->Result<Value,String>{
+async fn submit_native(client:reqwest::Client,endpoint:String,request:Value,dispatch:Option<&std::sync::Arc<crate::live_dispatch::Dispatch>>,gate:Option<(crate::process::DispatchGate<'_>,&AtomicBool)>)->Result<Value,String>{
     let mut tasks=tokio::task::JoinSet::new();
     {
-        let _permit=dispatch.map(|d|d.enter()).transpose()?;
+        let _permit=if let Some(dispatch)=dispatch{Some(dispatch.enter()?)}else{gate.map(|(gate,cancel)|gate.enter(cancel)).transpose()?};
         tasks.spawn(async move {native_request(&client,&endpoint,request).await});
     }
     tasks.join_next().await.ok_or(INVALID)?.map_err(|_|INVALID)?
@@ -653,7 +653,7 @@ fn run_impl(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,dispat
             .timeout(Duration::from_secs(if input.uses_file_dialog() { 600 } else { 15 }))
             .build()
             .map_err(|_| INVALID)?;
-        submit_native(client,endpoint.into(),request,dispatch).await
+        submit_native(client,endpoint.into(),request,dispatch,None).await
     })?;
     normalize_result(input,&mut result)?;
     if let Some(dispatch)=dispatch{dispatch.retain_native_completion(input,&result)?;}
@@ -669,17 +669,17 @@ fn normalize_result(input:&Input,result:&mut Value)->Result<(),String>{
     result["live_cad_version"] = json!(1);
     validate_result(input, result)
 }
-pub(crate) fn recover_result(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool)->Result<bool,String>{
-    recover_result_at(input,directory,cancelled,"http://127.0.0.1:9875")
+pub(crate) fn recover_result(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,gate:Option<crate::process::DispatchGate<'_>>)->Result<bool,String>{
+    recover_result_at(input,directory,cancelled,"http://127.0.0.1:9875",gate)
 }
-fn recover_result_at(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,endpoint:&str)->Result<bool,String>{
+fn recover_result_at(input:&Input,directory:&std::path::Path,cancelled:&AtomicBool,endpoint:&str,gate:Option<crate::process::DispatchGate<'_>>)->Result<bool,String>{
     input.validate()?;
     if recover_recorded_result(directory,input)?{return Ok(true);}
     let path=directory.join("result.json");
     let mut request=json!({"action":"recover","job_id":input.job_id,"document_token":input.document_token,"state_sha256":input.state_sha256,"operations":input.operations});if input.working_version.is_some(){request["keep_working_version"]=json!(true);}
     let mut result=wait(cancelled,async {
         let client=reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none()).timeout(Duration::from_secs(15)).build().map_err(|_|INVALID)?;
-        native_request(&client,endpoint,request).await
+        submit_native(client,endpoint.into(),request,None,gate.map(|g|(g,cancelled))).await
     })?;
     if result==json!({"recovery_status":"running"}){return Ok(false);}
     normalize_result(input,&mut result)?;
@@ -770,7 +770,7 @@ pub(crate) mod tests {
             if scenario=="changed_report_with_receipt"{let mut changed=result.clone();changed["after"]["state_sha256"]=json!("c".repeat(64));crate::project::atomic_json(&root.join("result.json"),&changed,false).unwrap();input.receipt_sha256=Some(crate::kicad_project::digest(&std::fs::read(root.join("result.json")).unwrap()));}
             if scenario=="changed_agreement"{input.agreement.as_mut().unwrap().outcome="Different outcome".into();}
             if scenario=="changed_expected_hash"{input.receipt_sha256=Some("c".repeat(64));}
-            let journal=std::fs::read(root.join("live-dispatch.json")).unwrap();let recovered=recover_result_at(&input,&root,&AtomicBool::new(false),"http://127.0.0.1:9");
+            let journal=std::fs::read(root.join("live-dispatch.json")).unwrap();let recovered=recover_result_at(&input,&root,&AtomicBool::new(false),"http://127.0.0.1:9",None);
             if matches!(scenario,"missing_report"|"acknowledged_missing_report"|"same_report"){
                 assert!(recovered.unwrap());let bytes=std::fs::read(root.join("result.json")).unwrap();assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap(),result);assert!(recover_recorded_result(&root,&input).unwrap());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),bytes);
             }else{assert!(recovered.is_err());if scenario=="changed_report"{assert_eq!(std::fs::read(root.join("result.json")).unwrap(),b"preserve changed report");}else if scenario=="changed_report_with_receipt"{assert_eq!(crate::project::read_json::<Value>(&root.join("result.json")).unwrap()["after"]["state_sha256"],"c".repeat(64));}else{assert!(!root.join("result.json").exists());}}
@@ -782,7 +782,7 @@ pub(crate) mod tests {
         use std::{os::windows::fs::OpenOptionsExt,sync::{Arc,Mutex}};use crate::{live_dispatch::Dispatch,project::OperationInput};
         let root=std::env::temp_dir().join(format!("hazlo-native-anchor-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&root).unwrap();let(input,result)=completed_fixture();let operation=OperationInput::LiveCad(input.clone());let fence=Dispatch::start(&root,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());let path=root.join("live-dispatch.json");let before=std::fs::read(&path).unwrap();
         let lock=std::fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(&path).unwrap();assert!(fence.retain_native_completion(&input,&result).is_err());let receipt=std::fs::read(root.join("native-completion.json")).unwrap();assert_eq!(std::fs::read(&path).unwrap(),before);assert!(!recover_recorded_result(&root,&input).unwrap());assert!(!root.join("result.json").exists());assert!(fence.enter().is_err());drop(lock);
-        fence.retain_native_completion(&input,&result).unwrap();assert_eq!(std::fs::read(root.join("native-completion.json")).unwrap(),receipt);assert!(recover_result_at(&input,&root,&AtomicBool::new(false),"http://127.0.0.1:9").unwrap());assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+        fence.retain_native_completion(&input,&result).unwrap();assert_eq!(std::fs::read(root.join("native-completion.json")).unwrap(),receipt);assert!(recover_result_at(&input,&root,&AtomicBool::new(false),"http://127.0.0.1:9",None).unwrap());assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn admitted_native_reply_is_retained_before_an_occupied_final_report_can_fail(){
@@ -794,9 +794,9 @@ pub(crate) mod tests {
                 let request=String::from_utf8(request).unwrap();assert!(request.contains(&format!("<methodName>{method}</methodName>")));let value=if method=="execute_code_async"{count.fetch_add(1,Ordering::SeqCst);json!({"success":true,"task_id":"faceb00c"})}else{json!({"success":true,"task_id":"faceb00c","status":"done","output":json!({"ok":true,"result":native}).to_string()})};let body=format!("<methodResponse><params><param>{}</param></params></methodResponse>",xml(&value));stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/xml\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}",body.len()).as_bytes()).unwrap();
             }
         });
-        let error=run_impl(&input,&root,&AtomicBool::new(false),Some(&fence),&endpoint).unwrap_err();assert!(error.contains("confirmó la operación"));server.join().unwrap();assert_eq!(calls.load(Ordering::SeqCst),1);assert_eq!(std::fs::read(root.join("result.json")).unwrap(),b"preserve the occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert_eq!(read_native_completion(&root,&input,record.native_completion_sha256.as_ref().unwrap()).unwrap().unwrap(),expected);assert!(recover_result_at(&input,&root,&AtomicBool::new(false),&endpoint).is_err());
+        let error=run_impl(&input,&root,&AtomicBool::new(false),Some(&fence),&endpoint).unwrap_err();assert!(error.contains("confirmó la operación"));server.join().unwrap();assert_eq!(calls.load(Ordering::SeqCst),1);assert_eq!(std::fs::read(root.join("result.json")).unwrap(),b"preserve the occupied report");let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert_eq!(read_native_completion(&root,&input,record.native_completion_sha256.as_ref().unwrap()).unwrap().unwrap(),expected);assert!(recover_result_at(&input,&root,&AtomicBool::new(false),&endpoint,None).is_err());
         // Resolve only the fixture's file clash; recovering afterward must not contact its closed server.
-        std::fs::rename(root.join("result.json"),root.join("preserved-report.txt")).unwrap();assert!(recover_result_at(&input,&root,&AtomicBool::new(false),&endpoint).unwrap());assert_eq!(std::fs::read(root.join("preserved-report.txt")).unwrap(),b"preserve the occupied report");assert_eq!(calls.load(Ordering::SeqCst),1);assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
+        std::fs::rename(root.join("result.json"),root.join("preserved-report.txt")).unwrap();assert!(recover_result_at(&input,&root,&AtomicBool::new(false),&endpoint,None).unwrap());assert_eq!(std::fs::read(root.join("preserved-report.txt")).unwrap(),b"preserve the occupied report");assert_eq!(calls.load(Ordering::SeqCst),1);assert!(fence.enter().is_err());drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1103,7 +1103,7 @@ pub(crate) mod tests {
         let dispatch=crate::live_dispatch::Dispatch::start(&root,&input,gate.clone(),paused,Arc::new(AtomicBool::new(false))).unwrap();
         let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());
         let client=reqwest::Client::builder().no_proxy().timeout(Duration::from_secs(5)).build().unwrap();
-        assert!(submit_native(client.clone(),endpoint.clone(),json!({"action":"apply"}),Some(&dispatch)).await.is_err());
+        assert!(submit_native(client.clone(),endpoint.clone(),json!({"action":"apply"}),Some(&dispatch),None).await.is_err());
         assert!(tokio::time::timeout(Duration::from_millis(50),listener.accept()).await.is_err());
         let next=root.join("admitted");std::fs::create_dir(&next).unwrap();let paused=Arc::new(AtomicBool::new(false));
         let dispatch=crate::live_dispatch::Dispatch::start(&next,&input,gate.clone(),paused.clone(),Arc::new(AtomicBool::new(false))).unwrap();
@@ -1122,12 +1122,23 @@ pub(crate) mod tests {
                 stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/xml\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}",body.len()).as_bytes()).await.unwrap();
             }
         });
-        let selected=dispatch.clone();let operation=tokio::spawn(async move {submit_native(client,endpoint,json!({"action":"apply"}),Some(&selected)).await});
+        let selected=dispatch.clone();let operation=tokio::spawn(async move {submit_native(client,endpoint,json!({"action":"apply"}),Some(&selected),None).await});
         tokio::time::timeout(Duration::from_secs(5),poll_seen).await.unwrap().unwrap();
         let permit=gate.try_lock().expect("Correction waited for native task completion");paused.store(true,Ordering::SeqCst);drop(permit);release.send(()).unwrap();
         assert_eq!(operation.await.unwrap().unwrap()["native_reply"],true);server.await.unwrap();
         assert!(crate::live_dispatch::read(&next,&input).unwrap().unwrap().summary(&input).needs_review,"Transport success alone must not release the write hold");
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+
+    #[tokio::test]
+    async fn paused_recovery_submission_never_contacts_the_native_server(){
+        use std::sync::Mutex;
+        let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();let endpoint=format!("http://{}",listener.local_addr().unwrap());
+        let mutex=Mutex::new(());let paused=AtomicBool::new(true);let cancel=AtomicBool::new(false);
+        let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};let client=reqwest::Client::builder().no_proxy().timeout(Duration::from_secs(1)).build().unwrap();
+        let error=submit_native(client,endpoint,json!({"action":"recover"}),None,Some((gate,&cancel))).await.unwrap_err();
+        assert!(error.contains("pausados"));assert!(tokio::time::timeout(Duration::from_millis(80),listener.accept()).await.is_err());
     }
 
     #[test]
@@ -1161,11 +1172,11 @@ pub(crate) mod tests {
                 }
             }
         });
-        let cancel=AtomicBool::new(false);assert!(!recover_result_at(&input,&root,&cancel,&endpoint).unwrap());assert!(!root.join("result.json").exists());
-        assert!(recover_result_at(&input,&root,&cancel,&endpoint).unwrap());let bytes=std::fs::read(root.join("result.json")).unwrap();
-        assert!(recover_result_at(&input,&root,&cancel,&endpoint).unwrap());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),bytes);
+        let cancel=AtomicBool::new(false);assert!(!recover_result_at(&input,&root,&cancel,&endpoint,None).unwrap());assert!(!root.join("result.json").exists());
+        assert!(recover_result_at(&input,&root,&cancel,&endpoint,None).unwrap());let bytes=std::fs::read(root.join("result.json")).unwrap();
+        assert!(recover_result_at(&input,&root,&cancel,&endpoint,None).unwrap());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),bytes);
         let mut changed:Value=serde_json::from_slice(&bytes).unwrap();changed["after"]["state_sha256"]=json!("c".repeat(64));let manual=serde_json::to_vec_pretty(&changed).unwrap();std::fs::write(root.join("result.json"),&manual).unwrap();
-        assert!(recover_result_at(&input,&root,&cancel,&endpoint).is_err());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),manual);
-        let other=root.join("wrong-reply");std::fs::create_dir(&other).unwrap();assert!(recover_result_at(&input,&other,&cancel,&endpoint).is_err());assert!(!other.join("result.json").exists());server.join().unwrap();std::fs::remove_dir_all(root).unwrap();
+        assert!(recover_result_at(&input,&root,&cancel,&endpoint,None).is_err());assert_eq!(std::fs::read(root.join("result.json")).unwrap(),manual);
+        let other=root.join("wrong-reply");std::fs::create_dir(&other).unwrap();assert!(recover_result_at(&input,&other,&cancel,&endpoint,None).is_err());assert!(!other.join("result.json").exists());server.join().unwrap();std::fs::remove_dir_all(root).unwrap();
     }
 }

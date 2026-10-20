@@ -552,6 +552,12 @@ Original Arduino edit/save follow-ups and explicit native recovery now share the
 
 The [implementation and acceptance notes](../research/agent-copy-dispatch-barrier-2026-10-19.md) record 404 passing desktop-enabled library/binary tests, all-target desktop Clippy and the rebuilt production host against an owned actual Arduino window with two checked native copies and automatic CLI detection. Visual correction/provider/hardware checks, Arduino fresh check-only approval, other integrations' remaining gates, changed-copy reconciliation, task/outcome/privacy/hardware requirements and Windows release acceptance remain active. The installer and installed app are unchanged; no model is downloaded and KiCad 10 live schematics stays pending.
 
+## CAD follow-up and recovery dispatch barrier
+
+FreeCAD working-version verification, its original native-result lookup, and CADCraft copy capture/export verification now share the chat's Stop/correction gate. Native recovery uses the existing durable busy/task/revision checks; linked offline result restoration can still finish without new native calls. Original edits and retained files remain preserved. This adds no editor interface or new serialized operation.
+
+The [implementation and acceptance notes](../research/cad-copy-dispatch-barrier-2026-10-19.md) record 408 passing desktop-enabled library/binary tests, all-target desktop Clippy, and three explicit native tests: FreeCAD retained-copy verification, offscreen GUI state/Undo/original preservation plus reopen, and CADCraft metric/imperial native roundtrips. Visual/provider/physical acceptance, fresh check-only resume approvals for these engines, expanded bounds and changed/unlinked-copy reconciliation, remaining integration/concurrency/privacy/task/hardware requirements and Windows release checks stay active. No models or runtimes are downloaded/upgraded; the installer and installed application are unchanged. KiCad 10 live schematics remains pending.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

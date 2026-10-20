@@ -379,8 +379,8 @@ impl Workflow {
             checked=OperationInput::NativeTools(crate::native_tools::recover_recorded_result(&directory,input)?);
             let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|_|"El resultado sigue local; no se pudo registrar su recibo recuperado.")?;
         }else{
-        if let OperationInput::LiveCad(input)=&snapshot.input{crate::cadpilot_live::recover_recorded_result(&directory,input)?;}
-        if let OperationInput::LiveDrawing(input)=&snapshot.input{crate::cadcraft_live::recover_recorded_result(&directory,input)?;}
+        let cad_recovered=if let OperationInput::LiveCad(input)=&snapshot.input{crate::cadpilot_live::recover_recorded_result(&directory,input)?}else{false};
+        let drawing_recovered=if let OperationInput::LiveDrawing(input)=&snapshot.input{crate::cadcraft_live::recover_recorded_result(&directory,input)?}else{false};
         let agent_recovered=if let OperationInput::LiveAgent(input)=&snapshot.input{crate::agent_editor::recover_recorded_result(&directory,input)?}else{false};
         if let OperationInput::LivePcb(input)=&snapshot.input{crate::kicad_live::recover_recorded_result(&directory,input)?;}
         let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el registro de la llamada; se conserva la pausa.")?;
@@ -389,9 +389,9 @@ impl Workflow {
             crate::live_dispatch::recover_refused(&directory,&snapshot.input)?;
             return Ok(serde_json::json!({"job_id":job_id,"recovered":true,"published":false,"native_operation_rejected":true,"edit_repeated":false,"guidance":"The original native receipt proves that the edit did not start. Preserve current work and inspect fresh state before a new proposal; this is not task completion."}));
         }
-        if record.outcome!=crate::native_journal::Outcome::Acknowledged && !agent_recovered{
+        if record.outcome!=crate::native_journal::Outcome::Acknowledged && !agent_recovered && !cad_recovered && !drawing_recovered{
             let recovered=match &snapshot.input{
-                OperationInput::LiveCad(input)=>crate::cadpilot_live::recover_result(input,&directory,&cancel)?,
+                OperationInput::LiveCad(input)=>{let run=self.begin_recovery_check(&project,&snapshot,cancel.clone())?;let result=crate::cadpilot_live::recover_result(input,&directory,&cancel,Some(run.gate()))?;recovery_check=Some(run);result},
                 OperationInput::LiveAgent(input)=>{
                     let run=self.begin_recovery_check(&project,&snapshot,cancel.clone())?;
                     let connection=if let Some(connection)=agent_connection.clone(){connection}else{crate::agent_editor::Connection::load(&crate::agent_editor::default_directory()?.join(format!("{}.json",input.before.instance_id))).map_err(|_|"La instancia original del editor ya no está conectada. Se conserva el trabajo y la pausa.")?};
@@ -400,14 +400,15 @@ impl Workflow {
                 },
                 OperationInput::LivePcb(input)=>crate::kicad_live::recover_result(input,&directory)?,
                 OperationInput::LiveDrawing(input)=>{
-                    crate::cadcraft_live::recover_result(input,&directory,&self.profiles.join(format!("drawing-recovery-{}",Uuid::new_v4())),cancel.clone())?
+                    let run=self.begin_recovery_check(&project,&snapshot,cancel.clone())?;
+                    let result=crate::cadcraft_live::recover_result(input,&directory,&self.profiles.join(format!("drawing-recovery-{}",Uuid::new_v4())),(cancel.clone(),Some(run.gate())))?;recovery_check=Some(run);result
                 },
                 _=>return Err("Este programa todavía necesita su evidencia nativa de finalización. Se conserva el trabajo y la pausa.".into()),
             };
             if !recovered{return Ok(serde_json::json!({"job_id":job_id,"recovered":false,"native_operation_running":true,"edit_repeated":false}));}
         }
-        if let OperationInput::LiveCad(input)=&snapshot.input{if input.working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío original.")?;if record.working_version_sha256.is_none(){let result:serde_json::Value=crate::project::read_json(&directory.join("result.json")).map_err(|_|"Falta la captura nativa conservada.")?;let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();let hash=crate::native_working_version::verify(&executable,input.working_version.as_ref().unwrap(),&directory,&self.profiles.join(format!("native-version-recovery-{}",Uuid::new_v4())),&result,cancel.clone())?;crate::live_dispatch::retain_working_version(&directory,input,&hash)?;}}}
-        if let OperationInput::LiveDrawing(input)=&snapshot.input{if input.native_working_version.is_some(){let hash=crate::cadcraft_live::recover_working_version(&directory,input,&self.profiles.join(format!("drawing-version-recovery-{}",Uuid::new_v4())),cancel.clone())?;crate::live_dispatch::retain_drawing_copy_check(&directory,input,&hash)?;}}
+        if let OperationInput::LiveCad(input)=&snapshot.input{if input.working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío original.")?;if record.working_version_sha256.is_none(){if recovery_check.is_none(){recovery_check=Some(self.begin_recovery_check(&project,&snapshot,cancel.clone())?);}let result:serde_json::Value=crate::project::read_json(&directory.join("result.json")).map_err(|_|"Falta la captura nativa conservada.")?;let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();let hash=crate::native_working_version::verify(&executable,input.working_version.as_ref().unwrap(),&directory,&self.profiles.join(format!("native-version-recovery-{}",Uuid::new_v4())),&result,(cancel.clone(),recovery_check.as_ref().map(|run|run.gate())))?;crate::live_dispatch::retain_working_version(&directory,input,&hash)?;}}}
+        if let OperationInput::LiveDrawing(input)=&snapshot.input{if input.native_working_version.is_some(){let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envío CADCraft original.")?;if record.drawing_copy_check_sha256.is_none() && recovery_check.is_none(){recovery_check=Some(self.begin_recovery_check(&project,&snapshot,cancel.clone())?);}let hash=crate::cadcraft_live::recover_working_version(&directory,input,&self.profiles.join(format!("drawing-version-recovery-{}",Uuid::new_v4())),(cancel.clone(),recovery_check.as_ref().map(|run|run.gate())))?;crate::live_dispatch::retain_drawing_copy_check(&directory,input,&hash)?;}}
         if let OperationInput::LiveAgent(input)=&snapshot.input{if crate::agent_editor::working_plan(input).is_some(){
             let record=crate::live_dispatch::read(&directory,&snapshot.input)?.ok_or("Falta el envio original del proyecto.")?;
             if record.agent_project_check_sha256.is_none() && recovery_check.is_none(){recovery_check=Some(self.begin_recovery_check(&project,&snapshot,cancel.clone())?);}
@@ -2951,7 +2952,7 @@ impl Workflow {
                     let executable=self.executable.lock().map_err(|_|"No se pudo comprobar FreeCADCmd.")?.clone();
                     let _verifier_pin=input.working_version.as_ref().map(|plan|crate::native_working_version::pin_verifier(&executable,plan)).transpose()?;
                     crate::cadpilot_live::run_gated(input, &stage.path, &dispatch.cancelled,live_dispatch.as_ref().unwrap())?;
-                    if let Some(plan)=&input.working_version{let result:serde_json::Value=crate::project::read_json(&stage.path.join("result.json")).map_err(|_|"Falta el recibo de captura de la nueva versión.")?;let hash=crate::native_working_version::verify(&executable,plan,&stage.path,&profile,&result,dispatch.cancelled.clone())?;live_dispatch.as_ref().unwrap().retain_working_version(input,&hash)?;}
+                    if let Some(plan)=&input.working_version{let result:serde_json::Value=crate::project::read_json(&stage.path.join("result.json")).map_err(|_|"Falta el recibo de captura de la nueva versión.")?;let hash=crate::native_working_version::verify(&executable,plan,&stage.path,&profile,&result,(dispatch.cancelled.clone(),live_dispatch.as_ref().map(|d|d.gate())))?;live_dispatch.as_ref().unwrap().retain_working_version(input,&hash)?;}
                 }
                 OperationInput::Cadpilot(input) => {
                     cadpilot::run(

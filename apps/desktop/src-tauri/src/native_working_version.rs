@@ -156,8 +156,10 @@ pub(crate) fn verify(
     directory: &Path,
     profile: &Path,
     result: &Value,
-    cancel: Arc<AtomicBool>,
+    control: (Arc<AtomicBool>,Option<crate::process::DispatchGate<'_>>),
 ) -> Result<String, String> {
+    let (cancel,gate)=control;
+    drop(gate.map(|g|g.enter(&cancel)).transpose()?);
     if cancel.load(Ordering::SeqCst) {
         return Err("Se detuvo la comprobación; la copia y la edición se conservan.".into());
     }
@@ -232,13 +234,15 @@ pub(crate) fn verify(
         profile.join("system.cfg").into_os_string(),
         profile.join("verify-copy.FCMacro").into_os_string(),
     ];
-    let response = crate::process::run_owned(
+    let permit=gate.map(|g|g.enter(&cancel)).transpose()?;
+    let response = crate::process::run_owned_permitted(
         executable,
         &args,
         &root,
         &env,
         cancel.clone(),
         Duration::from_secs(90),
+        (false,permit),
     )
     .map_err(|_| "No se pudo comprobar la copia; la edición no se repitió.")?;
     if cancel.load(Ordering::SeqCst)
@@ -367,13 +371,15 @@ mod tests {
         .unwrap();
         let captured: Value = serde_json::from_slice(&capture).unwrap();
         let result = json!({"working_version":{"state":"captured","capture_sha256":crate::kicad_project::digest(&capture),"file":captured["file"]}});
+        let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(false);
+        let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};
         let hash = verify(
             &executable,
             &plan(&executable).unwrap(),
             &root,
             &root.join("check-profile"),
             &result,
-            Arc::new(AtomicBool::new(false)),
+            (Arc::new(AtomicBool::new(false)),Some(gate)),
         )
         .unwrap();
         validate_artifacts(&root, &result, &hash).unwrap();
@@ -383,6 +389,18 @@ mod tests {
             .starts_with(std::env::temp_dir().canonicalize().unwrap()));
         fs::remove_dir_all(root).unwrap();
     }
+
+    #[test]
+    fn paused_native_reader_does_not_touch_the_retained_version_or_start_a_profile(){
+        let root=std::env::temp_dir().join(format!("hazlo-cad-reader-pause-{}",uuid::Uuid::new_v4()));fs::create_dir(&root).unwrap();
+        let exe=root.join("FreeCADCmd.exe");fs::write(&exe,b"owned verifier identity").unwrap();let plan=plan(&exe).unwrap();
+        fs::write(root.join("retained.FCStd"),b"preserve native copy").unwrap();let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(true);
+        let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};let profile=root.join("not-started");
+        let error=verify(&exe,&plan,&root,&profile,&json!({}),(Arc::new(AtomicBool::new(false)),Some(gate))).unwrap_err();
+        assert!(error.contains("pausados"));assert!(!profile.exists());assert_eq!(fs::read(root.join("retained.FCStd")).unwrap(),b"preserve native copy");
+        assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn names_runtime_and_cancellation_are_checked_before_native_execution() {
         for value in [
@@ -414,7 +432,7 @@ mod tests {
             &root,
             &profile,
             &json!({}),
-            Arc::new(AtomicBool::new(true))
+            (Arc::new(AtomicBool::new(true)),None)
         )
         .is_err());
         assert!(!profile.exists());
@@ -468,13 +486,15 @@ mod tests {
         fs::copy(source.join("version").join(name), native.join(name)).unwrap();
         let result = json!({"working_version":{"state":"captured","capture_sha256":crate::kicad_project::digest(&capture),"file":captured["file"]}});
         let plan = plan(&executable).unwrap();
+        let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(false);
+        let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};
         let hash = verify(
             &executable,
             &plan,
             &root,
             &root.join("profile"),
             &result,
-            Arc::new(AtomicBool::new(false)),
+            (Arc::new(AtomicBool::new(false)),Some(gate)),
         )
         .unwrap();
         validate_artifacts(&root, &result, &hash).unwrap();
@@ -490,7 +510,7 @@ mod tests {
         )
         .unwrap();
         assert!(validate_artifacts(&root, &result, &hash).is_err());
-        assert!(verify(&executable,&plan,&root,&root.join("read-only-recheck"),&result,Arc::new(AtomicBool::new(false))).is_err());
+        assert!(verify(&executable,&plan,&root,&root.join("read-only-recheck"),&result,(Arc::new(AtomicBool::new(false)),None)).is_err());
         assert_eq!(fs::read(native.join("verification.json")).unwrap(),b"preserve changed verification");
         assert_eq!(
             crate::kicad_project::read_regular(&native.join(name), LIMIT).unwrap(),
