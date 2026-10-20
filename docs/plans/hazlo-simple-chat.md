@@ -18,10 +18,10 @@ Hazlo is a natural-language chat. It discovers and connects installed native too
 - [x] Replace the broad goal with this release scope and preserve the earlier plan as history.
 - [x] Finish the small pending native preflight fix so a batch rejected before dispatch does not falsely become an uncertain edit. Validate it with the existing disposable fixture.
 - [x] Run the existing source, chat/approval and applicable native workflow checks; fix concrete release failures only. Distinguish actual native tests from fixtures and physical claims. Validation: 424 regular Rust tests, all-target desktop Clippy, frontend build, chat/approval fixtures and three explicit MCP/CLI fixture cases pass. These fixtures do not claim fresh engineering-window, provider or physical-device acceptance; earlier per-program native records remain available below.
-- [ ] Rebuild the production Windows installer and verify its packaged helper/resources.
-- [ ] Test clean install, upgrade, startup, uninstall and saved-data preservation in the disposable Windows guest. Record environmental blockers honestly.
-- [ ] Upgrade the installed app, verify existing task/reference preservation, visually check the simple chat and leave the latest Hazlo open.
-- [ ] Publish sanitized source changes to the existing GitHub branch and record the exact installer identity and remaining limitations.
+- [x] Rebuild the production Windows installer and verify its packaged helper/resources. Source `3f9d4ff`; installer SHA-256 `2f16d9db8a5e1ad075c7638d2914fd8e5eff0534c237f0660d0602b891ec2db5`. The task-bound packaged transport exposes the expected 47-tool catalog in the owned unrestricted-program fixture. No model or engineering action ran in that check.
+- [ ] Test clean install, upgrade, startup, uninstall and saved-data preservation in the disposable Windows guest. Preparation was refused below the existing 3-GiB memory requirement. Host upgrade passed; guest acceptance is pending, not inferred from it.
+- [x] Upgrade the installed app, verify existing task/reference preservation, visually check the simple chat and leave the latest Hazlo open. Installed app/helper and bundled Rea match the build; 983 existing project/app-data files were preserved byte-for-byte. Visual checks confirmed the chat, attachments, optional connections and default agent choice of program.
+- [x] Publish sanitized source changes to the existing GitHub branch and record the exact installer identity and remaining limitations. Source `3f9d4ff` is pushed to main; see [release notes](../research/simple-chat-release-2026-10-19.md). The acceptance-harness correction and release record follow separately without changing shipped application inputs.
 
 ## Deferred beyond this release
 

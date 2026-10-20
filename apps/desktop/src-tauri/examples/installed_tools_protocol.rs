@@ -34,8 +34,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         root.join("profiles"),
     )?);
     workflow.select_project(project)?;
+    workflow.task_state()?;
+    let selected = workflow.view()?.project.ok_or("Owned task project required")?;
     let host = Arc::new(HostTools::new(workflow.clone()));
-    let bridge = ToolBridge::start_project(host, &helper, id)?;
+    let bridge = ToolBridge::start_chat(host, &helper, selected, None, "codex")?;
     let config = bridge.config()?;
     let mut command = tokio::process::Command::new(&config.command);
     command
@@ -84,7 +86,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ),
         )
         .await?;
-    assert_eq!(refused.is_error, Some(true));
+    assert_eq!(refused.structured_content.as_ref().unwrap()["local_evidence_pending"], true);
+    assert_eq!(refused.structured_content.as_ref().unwrap()["content_withheld"], true);
     let approval = service
         .call_tool(
             CallToolRequestParams::new("approve_operation").with_arguments(Default::default()),
