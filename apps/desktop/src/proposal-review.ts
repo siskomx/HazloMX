@@ -144,7 +144,9 @@ export function proposalFacts(run: Snapshot): string[] {
     facts.push(`Documento: ${input.source.entry}.`);
     if (input.pcb_move) {
       const move = input.pcb_move;
+      if(input.native_origin) facts.push("Editar una nueva copia de la PCB abierta, incluidos sus cambios sin guardar. El documento abierto y su archivo original se conservan.","KiCad 10 no protege una actualización del original frente a cambios simultáneos. El movimiento se hará en una copia separada, que KiCad reabrirá y comprobará antes de publicarla.","La geometría procede de la captura nativa; los ajustes y recursos del proyecto proceden de los archivos guardados. Los ajustes pendientes en otras ventanas no se capturan. Los modelos 3D, la vista y la función física quedan sin comprobar.","Las pistas conservan su posición; mover el componente puede desconectarlas. Hazlo mostrará los hallazgos de KiCad sin llamarlos una reparación eléctrica.");
       facts.push(`Mover el componente ${move.reference}.`, `Posición actual: ${position(move.expected_x_mm,move.expected_y_mm)}.`, `Nueva posición: ${position(move.x_mm,move.y_mm)}.`, "Las posiciones son absolutas en la placa; se muestran en milímetros.");
+      facts.push("KiCad recalculará las zonas de cobre en la copia comprobada y conservará los informes de reglas. Las pistas mantienen su posición; los errores detectados se muestran para revisión.");
     } else facts.push(`Cambiar el valor del componente ${input.edit.reference}: ${input.edit.expected_value} → ${input.edit.value}.`);
   } else if (input.cadpilot_version) {
     const {request} = input, p = request.parameters;

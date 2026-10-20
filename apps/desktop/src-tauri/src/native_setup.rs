@@ -255,6 +255,11 @@ pub(crate) fn arduino_copy_cli(locations:&Path)->Result<Option<PathBuf>,String>{
     roots.extend(folders());
     Ok(cli(Program::Arduino,&roots))
 }
+pub(crate) fn pcb_copy_runtimes(locations:&Path)->Result<(Option<PathBuf>,Option<PathBuf>),String>{
+    let mut roots=portable_folders(locations,Program::Kicad)?;
+    roots.extend(roots.clone().into_iter().map(|p|p.join("bin")));roots.extend(folders());
+    Ok((find_in(&roots,&["konnect.exe"]),cli(Program::Kicad,&roots)))
+}
 fn portable_folders(locations: &Path, program: Program) -> Result<Vec<PathBuf>, String> {
     let path = locations.join("portable-folders.json");
     if !path.exists() {

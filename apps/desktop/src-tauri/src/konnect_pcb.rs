@@ -20,11 +20,22 @@ pub struct Input {
     pub konnect_version: String,
     pub source: source::KicadInput,
     pub pcb_move: konnect::FootprintMove,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub native_origin:Option<crate::kicad_live::Observation>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub agreement:Option<crate::native_tools::Agreement>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
         self.source.validate()?;
         self.pcb_move.validate()?;
+        if let Some(agreement)=&self.agreement{agreement.validate()?;}
+        if let Some(origin)=&self.native_origin{
+            origin.validate(origin.job_id)?;
+            let entry=self.source.files.iter().find(|f|f.path==self.source.entry).ok_or("Falta la captura nativa de la PCB.")?;
+            let target=origin.components.iter().find(|c|c.uuid==self.pcb_move.uuid && c.reference==self.pcb_move.reference).ok_or("El componente no pertenece a la captura nativa.")?;
+            if self.agreement.is_none() || entry.sha256!=origin.state_sha256 || target.locked || target.x_mm!=self.pcb_move.expected_x_mm || target.y_mm!=self.pcb_move.expected_y_mm{return Err("La copia no coincide con el estado nativo aprobado.".into());}
+        }
         if self.schema_version != 1
             || self.job_id.is_nil()
             || self.source.job_id != self.job_id
@@ -269,6 +280,19 @@ pub fn validate_artifacts(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_copy_origin_binds_board_bytes_position_and_agreement(){
+        let original=crate::kicad_live::tests::move_fixture();let job=Uuid::new_v4();
+        let mut input=Input{schema_version:1,job_id:job,konnect_version:konnect_run::VERSION.into(),
+            source:source::KicadInput{schema_version:2,job_id:job,kicad_version:crate::kicad::VERSION.into(),source_root:"C:/owned".into(),entry:"Board.kicad_pcb".into(),
+                files:vec![source::CapturedFile{path:"Board.kicad_pcb".into(),sha256:original.before.state_sha256.clone(),bytes:100}],units:crate::kicad::Units::Mm,layers:vec!["Edge.Cuts".into()]},
+            pcb_move:original.movement.unwrap(),native_origin:Some(original.before),agreement:Some(crate::native_tools::tests::agreement_fixture())};
+        input.validate().unwrap();let bytes=serde_json::to_vec(&input).unwrap();
+        input.native_origin.as_mut().unwrap().state_sha256="d".repeat(64);assert!(input.validate().is_err());
+        input=serde_json::from_slice(&bytes).unwrap();input.native_origin.as_mut().unwrap().components[0].locked=true;assert!(input.validate().is_err());
+        input=serde_json::from_slice(&bytes).unwrap();input.agreement=None;assert!(input.validate().is_err());
+        input.native_origin=None;input.validate().unwrap();let legacy=serde_json::to_value(&input).unwrap();assert!(legacy.get("native_origin").is_none()&&legacy.get("agreement").is_none());
+    }
     #[test]
     fn imperial_proposal_coordinates_survive_json_recovery_exactly() {
         let original = crate::konnect::FootprintMove {

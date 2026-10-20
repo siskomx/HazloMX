@@ -518,6 +518,14 @@ The host pins the original root/verifier and checks fresh native buffers against
 
 The [implementation and acceptance notes](../research/agent-project-copies-2026-10-19.md) distinguish project-tree/byte checks from external dependency resolution, compilation, GUI fidelity, physical behavior and overall task completion. Those checks, broader remaining integration/concurrency and outcome boundaries, and the Windows release lifecycle remain active. This checkpoint does not update the installed application or installer. KiCad 10 live schematics remain pending; no model is downloaded.
 
+## KiCad native-state working-copy fallback
+
+The typed PCB move proposal now captures the exact open-board serialization before approval and routes the approved move through the existing native Konnect/KiCad copy workflow. Its copy is saved and independently checked while the live original and saved source stay untouched. New typed original-board moves are refused before dispatch because their observation/commit interval has no established atomic native condition. Historical receipt recovery remains supported; this does not establish concurrency isolation for arbitrary discovered MCP calls.
+
+The chat approval explains the fallback, current native-board provenance, separately captured saved project settings/dependencies, pending settings from other windows, disconnected-track risk and unchecked 3D/GUI/physical outcomes. The host detects compatible existing copy runtimes and checks the task/revision across capture. Verified results restore a follow-up PCB selection when needed, keeping file location and setup out of the person's task. Legacy inputs omit the new native-origin/agreement fields and retain their identities.
+
+The [implementation and acceptance notes](../research/kicad-native-working-copy-2026-10-19.md) distinguish the actual native-window capture/copy/follow-up/recovery checks from backend/browser fixtures. General MCP concurrency and effect-envelope work, forward recovery of incomplete file-copy pipelines, remaining program/dependency/outcome boundaries, supported hardware actions and Windows first-use/release checks remain active. The installed application and installer are unchanged; KiCad 10 live schematics remain pending and no model is downloaded.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

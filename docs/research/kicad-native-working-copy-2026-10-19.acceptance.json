@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "desktop_enabled_rust_tests_passed_serially": 384,
+  "environment_tests_skipped": 76,
+  "all_target_desktop_clippy_passed": true,
+  "frontend_build_passed": true,
+  "approval_facts_passed": true,
+  "headless_task_chat_passed": true,
+  "actual_program_window": {
+    "runtime": "KiCad",
+    "version": "10.0.7",
+    "disposable_profile_and_project": true,
+    "existing_copy_tool_detection_passed": true,
+    "native_capture_over_deliberately_stale_disk_passed": true,
+    "approved_checked_copies": 2,
+    "imperial_followup_passed": true,
+    "live_original_preserved": true,
+    "saved_original_preserved": true,
+    "recovered_completed_jobs": 2,
+    "fresh_host_followup_selection_restored": true,
+    "owned_editor_stopped": true,
+    "gui_copy_reopen_checked": false
+  },
+  "host_boundaries": {
+    "typed_original_move_refused_before_native_dispatch": true,
+    "historical_receipt_recovery_retained": true,
+    "native_capture_never_substitutes_saved_board": true,
+    "task_revision_revalidated_after_capture": true,
+    "native_origin_binds_captured_digest_position_and_agreement": true,
+    "external_dependency_escape_refused": true,
+    "legacy_optional_fields_omitted": true,
+    "raw_results_remain_behind_existing_sharing_gate": true
+  },
+  "scope_limits": {
+    "arbitrary_native_mcp_concurrency_isolation_checked": false,
+    "incomplete_copy_forward_recovery_complete": false,
+    "pending_other_window_settings_captured": false,
+    "three_dimensional_resources_checked": false,
+    "physical_function_checked": false,
+    "overall_agreed_task_outcome_checked": false,
+    "real_provider_conversation_checked": false
+  },
+  "model_download_requested": false,
+  "installer_rebuilt": false,
+  "installed_app_updated": false,
+  "kicad_10_live_schematics_pending": true
+}

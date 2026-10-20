@@ -959,6 +959,39 @@ impl Workflow {
     ) -> Result<JobView, String> {
         self.propose_konnect_pcb_bound(root, entry, units, pcb_move, None, RunSource::Manual)
     }
+    pub(crate) fn propose_native_pcb_copy(&self,expected:(Uuid,PathBuf),input:crate::kicad_live::Input,binding:crate::kicad_live::Binding,cancel:Arc<AtomicBool>)->Result<JobView,String>{
+        input.validate()?;
+        let agreement=input.agreement.clone().ok_or("Explica las condiciones de la copia antes de pedir aprobación.")?;
+        let runtime=self.konnect_runtime()?.ok_or("Hazlo necesita preparar Konnect para editar la copia nativa; no se cambió el original.")?;
+        let cli=self.kicad_runtime()?.ok_or("Hazlo necesita preparar KiCad CLI para comprobar la copia; no se cambió el original.")?;
+        crate::konnect_run::verify_runtime(&runtime)?;crate::kicad_run::runtime(&cli,&cancel)?;
+        let project={let state=self.state.lock().map_err(|_|"No se pudo comprobar la tarea.")?;inference_idle(&state)?;
+            if state.job.as_ref().is_some_and(|j|j.view.busy || j.view.snapshot.phase==Phase::AwaitingApproval){return Err("Termina la propuesta actual antes de preparar la copia.".into());}
+            state.project.clone().filter(|p|(p.id,p.root.clone())==expected).ok_or("La tarea cambió antes de la captura.")?};
+        let task=crate::tasks::Store::new(&project).and_then(|s|s.binding()).map_err(|_|"No se pudo fijar la revisión de la captura.")?;
+        std::fs::create_dir_all(&self.profiles).map_err(|_|"No se pudo preparar la captura nativa.")?;
+        let _profiles=crate::project::pin_lineage(&self.profiles).map_err(|_|"No se pudo fijar la captura nativa.")?;
+        let bytes=crate::kicad_live::capture_board(&binding.board,&binding.connection,&input.before,
+            &self.profiles.join(format!("native-board-capture-{}",Uuid::new_v4())),cancel.clone())?;
+        let root=binding.board.parent().ok_or("Falta la carpeta de la PCB.")?;
+        let source=kicad_project::capture_native_board(root,&binding.board,&project.captured_source(input.job_id),input.job_id,input.units,cancel.clone(),&bytes)?;
+        let pcb_move=input.movement.ok_or("Falta el movimiento de la copia.")?;
+        crate::konnect::validate_current_position(&bytes,&pcb_move)?;
+        let copy=crate::konnect_pcb::Input{schema_version:1,job_id:input.job_id,konnect_version:konnect_run::VERSION.into(),source,pcb_move,
+            native_origin:Some(input.before),agreement:Some(agreement)};
+        copy.validate()?;
+        let mut state=self.state.lock().map_err(|_|"No se pudo conservar la propuesta de copia.")?;inference_idle(&state)?;
+        if cancel.load(Ordering::SeqCst) || state.project.as_ref().is_none_or(|p|(p.id,p.root.clone())!=expected)
+            || crate::tasks::Store::new(&project).and_then(|s|s.binding()).map_err(|_|"No se pudo comprobar la revisión de la captura.")?!=task
+            || self.konnect_runtime()?.as_ref()!=Some(&runtime) || self.kicad_runtime()?.as_ref()!=Some(&cli){return Err("La tarea o sus herramientas cambiaron; la captura se conservó sin editar.".into());}
+        Self::propose_operation_locked(&mut state,OperationInput::KonnectPcb(copy),RunSource::Mcp)
+    }
+    pub(crate) fn native_pcb_capture_directory(&self,expected:(Uuid,PathBuf),job_id:Uuid)->Result<PathBuf,String>{
+        let state=self.state.lock().map_err(|_|"No se pudo comprobar la captura nativa.")?;
+        let project=state.project.as_ref().filter(|p|(p.id,p.root.clone())==expected).ok_or("La tarea cambió después de capturar la PCB.")?;
+        if state.job.as_ref().is_none_or(|j|j.view.snapshot.input.job_id()!=job_id || !matches!(&j.view.snapshot.input,OperationInput::KonnectPcb(i) if i.native_origin.is_some())){return Err("La captura no corresponde a la propuesta de PCB actual.".into());}
+        Ok(project.captured_source(job_id))
+    }
     pub fn propose_discovered_konnect_pcb(
         &self,
         root: PathBuf,
@@ -1043,6 +1076,7 @@ impl Workflow {
             Arc::new(AtomicBool::new(false)),
         )?;
         let input = crate::konnect_pcb::Input {
+            native_origin:None,agreement:None,
             schema_version: 1,
             job_id: id,
             konnect_version: konnect_run::VERSION.into(),

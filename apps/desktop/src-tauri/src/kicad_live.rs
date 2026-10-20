@@ -53,7 +53,7 @@ pub struct Observation {
     pub source_is_untrusted_data: bool,
 }
 impl Observation {
-    fn validate(&self, job: Uuid) -> Result<(), String> {
+    pub(crate) fn validate(&self, job: Uuid) -> Result<(), String> {
         let mut ids = BTreeSet::new();
         let mut references = BTreeSet::new();
         if self.job_id != job || job.is_nil() || self.native_pcb_version != 1
@@ -208,6 +208,21 @@ fn inspect_with_worker(
 }
 
 struct Execution<'a>{verifier:&'a Path,stage:&'a Path,input:&'a Input}
+pub(crate) fn capture_board(board:&Path,connection:&Connection,before:&Observation,profile:&Path,cancel:Arc<AtomicBool>)->Result<Vec<u8>,String>{
+    fs::create_dir(profile).map_err(|_|"No se pudo preparar la captura local de la PCB.")?;
+    let input=Input{schema_version:1,live_pcb_version:1,job_id:Uuid::new_v4(),board_name:board.file_name().and_then(|n|n.to_str()).ok_or("Falta el nombre de la PCB.")?.into(),
+        description:"Captura local de la PCB abierta sin modificarla".into(),units:crate::kicad::Units::Mm,before:before.clone(),movement:None,export_copy:true,receipt_sha256:None,agreement:None,native_completion_version:None};
+    let request=serde_json::json!({"action":"export","job_id":input.job_id,"board_path":board,"destination":profile.join("Board.kicad_pcb"),
+        "instance_sha256":before.instance_sha256,"document_sha256":before.document_sha256,"state_sha256":before.state_sha256});
+    let bytes=invoke(bundled_worker()?,&request,connection,profile,cancel,None,None)?;
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Reply{ok:bool,result:Receipt}
+    let reply:Reply=serde_json::from_slice(&bytes).map_err(|_|"KiCad no confirmó la captura local de la PCB.")?;
+    if !reply.ok{return Err("KiCad no confirmó la captura local de la PCB.".into());}
+    validate_artifacts(profile,&input,&reply.result)?;
+    crate::kicad_project::read_regular(&profile.join("Board.kicad_pcb"),2*1024*1024)
+}
 fn completion_identity(input:&Input)->Result<String,String>{
     let mut input=input.clone();input.receipt_sha256=None;
     serde_json::to_vec(&input).map(|bytes|crate::kicad_project::digest(&bytes)).map_err(|_|"No se pudo identificar la operación PCB.".into())
@@ -289,6 +304,7 @@ pub(crate) struct Binding {
 }
 pub(crate) fn run_gated(input:&Input,binding:&Binding,stage:&Path,profile:&Path,cancel:Arc<AtomicBool>,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
     input.validate()?;
+    if !input.export_copy{return Err("KiCad 10 no garantiza una edición condicional del original. Conserva el trabajo y prepara una copia de su estado nativo con una nueva aprobación; no se envió el movimiento.".into());}
     binding.connection.validate()?;
     crate::project::valid_location(&binding.board).map_err(|_|"La PCB seleccionada cambió.")?;
     fs::create_dir(profile).map_err(|_|"No se pudo preparar la operación nativa.")?;
@@ -393,6 +409,17 @@ fn parse_observation(bytes: &[u8], job: Uuid) -> Result<Observation, String> {
 pub(crate) mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn live_original_move_refuses_before_any_native_dispatch(){
+        let root=std::env::temp_dir().join(format!("hazlo-pcb-original-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
+        let input=move_fixture();let operation=crate::project::OperationInput::LivePcb(input.clone());
+        let fence=crate::live_dispatch::Dispatch::start(&root,&operation,Arc::new(std::sync::Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
+        let binding=Binding{board:root.join("Owned.kicad_pcb"),connection:Connection{endpoint:format!("ipc://{}",root.join("never-connect.sock").display()),token:String::new()}};
+        let result=run_gated(&input,&binding,&root,&root.join("unused-profile"),Arc::new(AtomicBool::new(false)),&fence);
+        assert!(result.unwrap_err().contains("no se envió el movimiento"));assert!(!root.join("unused-profile").exists());
+        assert_eq!(crate::live_dispatch::read(&root,&operation).unwrap().unwrap().outcome,crate::native_journal::Outcome::Pending);
+        fs::remove_dir_all(root).unwrap();
+    }
     pub(crate) fn fixture() -> Observation {
         serde_json::from_value(json!({"job_id":Uuid::new_v4(),"native_pcb_version":1,
             "instance_sha256":"a".repeat(64),"document_sha256":"b".repeat(64),

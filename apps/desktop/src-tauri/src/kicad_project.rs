@@ -649,7 +649,11 @@ pub fn capture(
     units: Units,
     cancel: Arc<AtomicBool>,
 ) -> Result<KicadInput, String> {
-    source(root, entry, Some(destination), job_id, units, cancel)
+    source(root, entry, Some(destination), job_id, units, cancel,None)
+}
+pub(crate) fn capture_native_board(root:&Path,entry:&Path,destination:&Path,job_id:Uuid,units:Units,cancel:Arc<AtomicBool>,board:&[u8])->Result<KicadInput,String>{
+    if entry.extension().is_none_or(|e|e!="kicad_pcb") || board.is_empty() || board.len() as u64>FILE_LIMIT{return Err("La captura nativa de PCB no es compatible.".into());}
+    source(root,entry,Some(destination),job_id,units,cancel,Some(board))
 }
 pub(crate) fn inspect(
     root: &Path,
@@ -657,7 +661,7 @@ pub(crate) fn inspect(
     cancel: Arc<AtomicBool>,
 ) -> Result<KicadInput, String> {
     // This unit is internal metadata only; native geometry/source bytes are never scaled.
-    source(root, entry, None, Uuid::new_v4(), Units::Mm, cancel)
+    source(root, entry, None, Uuid::new_v4(), Units::Mm, cancel,None)
 }
 fn source(
     root: &Path,
@@ -666,6 +670,7 @@ fn source(
     job_id: Uuid,
     units: Units,
     cancel: Arc<AtomicBool>,
+    native_board:Option<&[u8]>,
 ) -> Result<KicadInput, String> {
     stop(&cancel)?;
     let _root_pins = pin_lineage(root).map_err(|e| e.to_string())?;
@@ -755,8 +760,10 @@ fn source(
             )
             .map_err(|e| e.to_string())?,
         );
-        pins.push(open_regular(&path, FILE_LIMIT)?);
-        let data = read_regular(&path, FILE_LIMIT)?;
+        let data=if let Some(native)=native_board.filter(|_|path==entry){native.to_vec()}else{
+            pins.push(open_regular(&path, FILE_LIMIT)?);
+            read_regular(&path, FILE_LIMIT)?
+        };
         total += data.len() as u64;
         if total > TOTAL_LIMIT {
             return Err("Las fuentes superan 256 MiB.".into());
@@ -913,6 +920,27 @@ pub(crate) fn portable_files(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_board_capture_uses_unsaved_bytes_and_preserves_saved_dependencies(){
+        let temp=root();let source=temp.join("sources");fs::create_dir(&source).unwrap();
+        let entry=source.join("Board.kicad_pcb");let disk=b"saved board must never substitute native state";fs::write(&entry,disk).unwrap();
+        fs::write(source.join("Board.kicad_pro"),br#"{"text_variables":{"OWNER":"preserved"}}"#).unwrap();
+        let native=br#"(kicad_pcb (layers (0 "F.Cu" signal) (44 "Edge.Cuts" user)) (gr_text "unsaved user note"))"#;
+        let destination=temp.join("capture");let input=capture_native_board(&source,&entry,&destination,Uuid::new_v4(),Units::Mm,Arc::new(AtomicBool::new(false)),native).unwrap();
+        assert_eq!(read_regular(&destination.join("Board.kicad_pcb"),FILE_LIMIT).unwrap(),native);
+        assert_eq!(fs::read(&entry).unwrap(),disk);assert_eq!(input.files.len(),2);
+        validate_capture(&destination,&input).unwrap();
+        fs::write(destination.join("Board.kicad_pcb"),disk).unwrap();assert!(validate_capture(&destination,&input).is_err());
+        fs::remove_dir_all(temp).unwrap();
+    }
+    #[test]
+    fn native_capture_refuses_unapproved_external_dependencies_without_saved_fallback(){
+        let temp=root();let entry=temp.join("Board.kicad_pcb");fs::write(&entry,b"saved").unwrap();
+        let native=br#"(kicad_pcb (layers (44 "Edge.Cuts" user)) (image (file "../outside.png")))"#;
+        let destination=temp.join("capture");
+        assert!(capture_native_board(&temp,&entry,&destination,Uuid::new_v4(),Units::Mm,Arc::new(AtomicBool::new(false)),native).is_err());
+        assert!(!destination.exists());assert_eq!(fs::read(&entry).unwrap(),b"saved");fs::remove_dir_all(temp).unwrap();
+    }
     fn root() -> PathBuf {
         let path = std::env::temp_dir().join(format!("hazlomexa-kicad-capture-{}", Uuid::new_v4()));
         fs::create_dir(&path).unwrap();

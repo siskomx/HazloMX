@@ -92,7 +92,7 @@ impl From<EditInput> for OperationInput {
     }
 }
 impl OperationInput {
-    pub(crate) fn agreement(&self)->Option<&crate::native_tools::Agreement>{match self{Self::NativeTools(input)=>input.agreement.as_ref(),Self::LiveCad(input)=>input.agreement.as_ref(),Self::LiveAgent(input)=>input.agreement.as_ref(),Self::LivePcb(input)=>input.agreement.as_ref(),Self::LiveDrawing(input)=>input.agreement.as_ref(),_=>None}}
+    pub(crate) fn agreement(&self)->Option<&crate::native_tools::Agreement>{match self{Self::NativeTools(input)=>input.agreement.as_ref(),Self::LiveCad(input)=>input.agreement.as_ref(),Self::LiveAgent(input)=>input.agreement.as_ref(),Self::LivePcb(input)=>input.agreement.as_ref(),Self::LiveDrawing(input)=>input.agreement.as_ref(),Self::KonnectPcb(input)=>input.agreement.as_ref(),_=>None}}
     pub(crate) fn native_program(&self)->Option<crate::host_tools::Program> {
         use crate::host_tools::Program;
         match self {

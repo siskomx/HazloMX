@@ -336,6 +336,7 @@ function artifactButtons(job: Snapshot, parent: HTMLElement) {
   if (job.input.konnect_version) {
     formats=[["konnect_original","Mostrar esquema original"],["konnect_edited","Mostrar copia editada"]];
     if(job.input.pcb_move)formats=[["konnect_original","Mostrar PCB original"],["konnect_edited","Mostrar PCB guardada y revisada"],["kicad_report","Ver errores y advertencias DRC"],["kicad_outputs","Mostrar exportaciones"]];
+    if(job.input.pcb_move && job.input.native_origin)formats[0]=["konnect_original","Mostrar captura original de KiCad"];
     if (job.input.schema_version===2) formats.push(["konnect_netlist","Mostrar netlist KiCad"]);
     formats.push(["konnect_report","Ver informe de edición"]);
   }
