@@ -83,6 +83,8 @@ pub mod konnect_run;
 
 #[cfg(windows)]
 pub mod konnect_pcb;
+#[cfg(windows)]
+mod pcb_copy_recovery;
 
 #[cfg(windows)]
 pub mod kicad_project;

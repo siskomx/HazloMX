@@ -526,6 +526,14 @@ The chat approval explains the fallback, current native-board provenance, separa
 
 The [implementation and acceptance notes](../research/kicad-native-working-copy-2026-10-19.md) distinguish the actual native-window capture/copy/follow-up/recovery checks from backend/browser fixtures. General MCP concurrency and effect-envelope work, forward recovery of incomplete file-copy pipelines, remaining program/dependency/outcome boundaries, supported hardware actions and Windows first-use/release checks remain active. The installed application and installer are unchanged; KiCad 10 live schematics remain pending and no model is downloaded.
 
+## Forward recovery of PCB copy checks
+
+New PCB copies retain separate admission, confirmed-edit and native-check/report links. The edit checkpoint is created after acknowledgment, full move/dependency validation and owned process closure. Recovery checks the same immutable edited files through KiCad CLI in a new bounded attempt directory and never invokes the copy writer again. Partial check outputs remain local; changed or unlinked copies and exhausted bounds stay paused. Artifact/follow-up paths select the linked checked version. A per-job OS mutex serializes recovery.
+
+Startup only reconstructs/publishes already linked results without native calls. Explicit recovery can automatically detect a compatible installed CLI for pending checks. Stop permits only offline completion and does not trigger automatic new verification. The chat approval explains the two-attempt bound, preservation and native check effects; raw output continues through the existing sharing boundary.
+
+The [implementation and acceptance notes](../research/pcb-copy-forward-recovery-2026-10-19.md) distinguish real native-window/CLI work and controlled interruption injection from general crash or provider guarantees. Missing edit/process-confirmation links, later manual changes, explicit Stop resumption and expanded bounds still need their separate reconciliation/approval paths. Other program pipelines, general MCP safeguards, task outcome/hardware boundaries and Windows release acceptance remain active. No model is downloaded; the installed app and installer remain unchanged.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

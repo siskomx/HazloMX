@@ -141,8 +141,9 @@ for (const [units,x,y,expected] of [["mm",201,198,"1 milímetro a la derecha y 2
 assert.match(pcb,/actual: horizontal 20, vertical -10 mm/);
 assert.match(pcb,/Nueva posición: horizontal 45.4, vertical -10 mm/);
 assert.match(pcb,/posiciones son absolutas/);
-const nativePcbCopy=review({konnect_version:"0.13.0",source:{entry:"Board.kicad_pcb"},pcb_move:{reference:"J1",expected_x_mm:20,expected_y_mm:10,x_mm:21,y_mm:10},native_origin:{state_sha256:"a".repeat(64)}});
+const nativePcbCopy=review({konnect_version:"0.13.0",copy_checkpoint_version:1,source:{entry:"Board.kicad_pcb"},pcb_move:{reference:"J1",expected_x_mm:20,expected_y_mm:10,x_mm:21,y_mm:10},native_origin:{state_sha256:"a".repeat(64)}});
 for(const fact of [/cambios sin guardar/,/original se conservan/,/copia separada/,/ajustes pendientes/i,/modelos 3D/,/puede desconectarlas/,/zonas de cobre/])assert.match(nativePcbCopy,fact);
+assert.match(nativePcbCopy,/dos intentos/);assert.match(nativePcbCopy,/nunca repite el movimiento/);
 for (const [unit,label] of [["mm","milímetros"],["in","pulgadas"],["mils","milésimas de pulgada"]]) {
   const facts=review({kicad_version:"10.0.7",entry:"Board.kicad_pcb",units:unit});
   assert(facts.includes(`Unidades del informe: ${label}. No cambian la escala`));

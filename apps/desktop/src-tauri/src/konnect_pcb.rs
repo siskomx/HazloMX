@@ -24,11 +24,16 @@ pub struct Input {
     pub native_origin:Option<crate::kicad_live::Observation>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub agreement:Option<crate::native_tools::Agreement>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub copy_checkpoint_version:Option<u32>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub receipt_sha256:Option<String>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
         self.source.validate()?;
         self.pcb_move.validate()?;
+        if self.copy_checkpoint_version.is_some_and(|v|v!=1) || self.receipt_sha256.as_ref().is_some_and(|h|self.copy_checkpoint_version.is_none() || !source::valid_hash(h)){return Err("El checkpoint de la copia PCB no es compatible.".into());}
         if let Some(agreement)=&self.agreement{agreement.validate()?;}
         if let Some(origin)=&self.native_origin{
             origin.validate(origin.job_id)?;
@@ -57,6 +62,8 @@ pub struct ResultDocument {
     pub verification_input: source::KicadInput,
     pub verification: kicad_run::KicadResult,
     pub files: Vec<kicad_run::OutputFile>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub verification_directory:Option<String>,
 }
 pub fn run(
     executable: &Path,
@@ -71,6 +78,7 @@ pub fn run(
     if cancel.load(Ordering::SeqCst) {
         return Err("Edición PCB cancelada antes de iniciar.".into());
     }
+    let _exclusive=input.copy_checkpoint_version.map(|_|crate::pcb_copy_recovery::Exclusive::acquire(input)).transpose()?;
     let _runtime = konnect_run::runtime(executable)?;
     let _kicad_runtime = kicad_run::runtime(cli, &cancel)?;
     source::validate_capture(imported, &input.source)?;
@@ -84,9 +92,10 @@ pub fn run(
     }
     fs::create_dir(profile).map_err(|e| e.to_string())?;
     let _profile = crate::project::pin_lineage(profile).map_err(|e| e.to_string())?;
+    let mut approved=input.clone();approved.receipt_sha256=None;
     source::write_new(
         &stage.join("input.json"),
-        &serde_json::to_vec(input).map_err(|e| e.to_string())?,
+        &serde_json::to_vec(&approved).map_err(|e| e.to_string())?,
     )?;
     for file in &input.source.files {
         let rel = source::relative(&file.path)?;
@@ -101,6 +110,7 @@ pub fn run(
         .enable_all()
         .build()
         .map_err(|e| e.to_string())?;
+    if input.copy_checkpoint_version.is_some(){crate::pcb_copy_recovery::begin(stage,input)?;}
     runtime.block_on(konnect_run::dispatch(
         executable,
         cli,
@@ -109,6 +119,10 @@ pub fn run(
         konnect_run::Operation::Move(input),
         cancel.clone(),
     ))?;
+    if input.copy_checkpoint_version.is_some(){
+        crate::pcb_copy_recovery::retain_edit(stage,input)?;
+        return crate::pcb_copy_recovery::finish(stage,input,Some(cli),&profile.join("check"),cancel);
+    }
     let verification_input = source::capture(
         &edited,
         &edited.join(source::relative(&input.source.entry)?),
@@ -131,6 +145,7 @@ pub fn run(
         return Err("Edición PCB cancelada; no se publicarán resultados.".into());
     }
     let result = ResultDocument {
+        verification_directory:None,
         schema_version: 1,
         job_id: input.job_id,
         konnect_version: konnect_run::VERSION.into(),
@@ -178,8 +193,9 @@ pub fn validate_artifacts(
     {
         return Err("El resultado PCB no corresponde a la propuesta.".into());
     }
+    let mut approved=input.clone();approved.receipt_sha256=None;
     if source::read_regular(&directory.join("input.json"), 1024 * 1024)?
-        != serde_json::to_vec(input).map_err(|e| e.to_string())?
+        != serde_json::to_vec(&approved).map_err(|e| e.to_string())?
     {
         return Err("La solicitud PCB cambió.".into());
     }
@@ -208,7 +224,10 @@ pub fn validate_artifacts(
     if paths(&result.verification_input.files) != paths(&input.source.files) {
         return Err("La verificación PCB cambió sus dependencias.".into());
     }
-    let verification = directory.join("Verification");
+    let name=result.verification_directory.as_deref().unwrap_or("Verification");
+    if input.copy_checkpoint_version.is_some(){crate::pcb_copy_recovery::validate(directory,input,result)?;}
+    else if name!="Verification"{return Err("La verificación PCB no corresponde a la propuesta.".into());}
+    let verification = directory.join(name);
     kicad_run::validate_artifacts(
         &verification,
         &result.verification_input,
@@ -225,7 +244,8 @@ pub fn validate_artifacts(
         return Err("El resultado KiCad cambió.".into());
     }
     let mut expected =
-        BTreeSet::from(["input.json".to_string(), "Verification/result.json".into()]);
+        BTreeSet::from(["input.json".to_string(), format!("{name}/result.json")]);
+    if input.copy_checkpoint_version.is_some(){expected.insert("pcb-copy-edit.json".into());}
     for file in &input.source.files {
         expected.insert(format!("Original/{}", file.path));
         expected.insert(format!("Edited/{}", file.path));
@@ -237,7 +257,7 @@ pub fn validate_artifacts(
         }
     }
     for file in &result.verification.files {
-        expected.insert(format!("Verification/{}", file.path));
+        expected.insert(format!("{name}/{}", file.path));
     }
     let rel = source::relative(&input.source.entry)?;
     if konnect::footprints(&source::read_regular(
@@ -261,7 +281,7 @@ pub fn validate_artifacts(
             return Err("Los archivos PCB cambiaron o contienen una salida inesperada.".into());
         }
     }
-    let actual = kicad_run::files(directory)?
+    let actual = if input.copy_checkpoint_version.is_some(){crate::pcb_copy_recovery::filtered_files(directory,input,name)?}else{kicad_run::files(directory)?}
         .into_iter()
         .map(|path| {
             path.strip_prefix(directory)
@@ -286,7 +306,7 @@ mod tests {
         let mut input=Input{schema_version:1,job_id:job,konnect_version:konnect_run::VERSION.into(),
             source:source::KicadInput{schema_version:2,job_id:job,kicad_version:crate::kicad::VERSION.into(),source_root:"C:/owned".into(),entry:"Board.kicad_pcb".into(),
                 files:vec![source::CapturedFile{path:"Board.kicad_pcb".into(),sha256:original.before.state_sha256.clone(),bytes:100}],units:crate::kicad::Units::Mm,layers:vec!["Edge.Cuts".into()]},
-            pcb_move:original.movement.unwrap(),native_origin:Some(original.before),agreement:Some(crate::native_tools::tests::agreement_fixture())};
+            pcb_move:original.movement.unwrap(),native_origin:Some(original.before),agreement:Some(crate::native_tools::tests::agreement_fixture()),copy_checkpoint_version:None,receipt_sha256:None};
         input.validate().unwrap();let bytes=serde_json::to_vec(&input).unwrap();
         input.native_origin.as_mut().unwrap().state_sha256="d".repeat(64);assert!(input.validate().is_err());
         input=serde_json::from_slice(&bytes).unwrap();input.native_origin.as_mut().unwrap().components[0].locked=true;assert!(input.validate().is_err());

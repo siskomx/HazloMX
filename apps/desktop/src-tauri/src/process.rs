@@ -24,7 +24,9 @@ use windows_sys::Win32::{
     System::{
         JobObjects::{
             AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
-            SetInformationJobObject, TerminateJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+            JobObjectBasicAccountingInformation, QueryInformationJobObject,
+            SetInformationJobObject, TerminateJobObject, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
             JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
         },
         Pipes::CreatePipe,
@@ -208,7 +210,21 @@ impl Job {
         if unsafe { TerminateJobObject(self.0.as_raw_handle(), 1) } == 0 {
             return Err(io::Error::last_os_error());
         }
-        Ok(())
+        // Parent exit and closed log pipes do not establish descendant termination.
+        let started = Instant::now();
+        loop {
+            let mut accounting: JOBOBJECT_BASIC_ACCOUNTING_INFORMATION = unsafe { zeroed() };
+            if unsafe {
+                QueryInformationJobObject(self.0.as_raw_handle(), JobObjectBasicAccountingInformation,
+                    (&mut accounting as *mut JOBOBJECT_BASIC_ACCOUNTING_INFORMATION).cast(),
+                    size_of::<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>() as u32, null_mut())
+            } == 0 { return Err(io::Error::last_os_error()); }
+            if accounting.ActiveProcesses == 0 { return Ok(()); }
+            if started.elapsed() >= Duration::from_secs(5) {
+                return Err(io::Error::new(io::ErrorKind::TimedOut, "Owned process tree did not stop"));
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
     }
 }
 
@@ -655,6 +671,15 @@ pub(crate) mod tests {
         let stopped=Instant::now();while is_alive(child)&&stopped.elapsed()<Duration::from_secs(5){thread::sleep(Duration::from_millis(10));}
         assert!(!is_alive(child));
         assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn parent_completion_waits_for_descendants_without_shared_log_pipes() {
+        let root=workspace();
+        let output=run_owned(probe(),&["tree-exit".into()],&root,&variables(),Arc::new(AtomicBool::new(false)),Duration::from_secs(10)).unwrap();
+        assert_eq!(output.reason,StopReason::Completed);
+        let child:u32=fs::read_to_string(root.join("child.pid")).unwrap().parse().unwrap();
+        assert!(!is_alive(child));
         fs::remove_dir_all(root).unwrap();
     }
     #[test]

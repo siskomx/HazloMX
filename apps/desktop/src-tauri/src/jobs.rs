@@ -305,11 +305,19 @@ impl Workflow {
             (project,state.job.as_ref().filter(|job|job.view.snapshot.input.job_id()==job_id).and_then(|job|job.live_agent.clone()))};
         let snapshot=project.history().map_err(|_|"No se pudo leer el registro local.")?.into_iter().find(|s|s.input.job_id()==job_id).ok_or("No se encontró la operación en este proyecto.")?;
         if !self.task_allows_snapshot(&snapshot)?{return Err("Vuelve a la conversación de la operación para recuperar su resultado.".into());}
-        if !matches!(&snapshot.input,OperationInput::NativeTools(_)|OperationInput::LiveCad(_)|OperationInput::LiveAgent(_)|OperationInput::LivePcb(_)|OperationInput::LiveDrawing(_)){return Err("Este programa todavía necesita su revisión nativa específica. No se repitió ninguna operación.".into());}
+        if !matches!(&snapshot.input,OperationInput::KonnectPcb(i) if i.copy_checkpoint_version.is_some()) && !matches!(&snapshot.input,OperationInput::NativeTools(_)|OperationInput::LiveCad(_)|OperationInput::LiveAgent(_)|OperationInput::LivePcb(_)|OperationInput::LiveDrawing(_)){return Err("Este programa todavía necesita su revisión nativa específica. No se repitió ninguna operación.".into());}
         let stage=project.store("staging").join(job_id.to_string());let directory=if stage.try_exists().map_err(|_|"No se pudo comprobar el trabajo local.")?{stage}else{project.artifact_directory(job_id)};
         let _pins=crate::project::pin_lineage(&directory).map_err(|_|"No se pudo fijar el resultado local para recuperación.")?;
         let mut checked=snapshot.input.clone();
-        if let OperationInput::NativeTools(input)=&snapshot.input{
+        if let OperationInput::KonnectPcb(input)=&snapshot.input{
+            let cli=self.kicad_runtime()?;
+            let profile=self.profiles.join(format!("pcb-copy-recovery-{}",Uuid::new_v4()));
+            if snapshot.phase==Phase::Cancelled{crate::pcb_copy_recovery::finish(&directory,input,None,&profile,cancel.clone()).map_err(|_|"La revisión fue detenida. Se conserva la copia y su vínculo original; no se envían nuevos pasos sin reanudación explícita.")?;}
+            else{crate::pcb_copy_recovery::finish(&directory,input,cli.as_deref(),&profile,cancel.clone())?;}
+            checked.retain_receipt(&directory).map_err(|_|"La copia comprobada se conserva; falta vincular su informe.")?;
+            project.validate_outputs(&directory,&checked).map_err(|_|"La copia o su informe cambió; no se reemplazó.")?;
+            let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|_|"La copia se conserva; falta registrar el informe.")?;
+        }else if let OperationInput::NativeTools(input)=&snapshot.input{
             checked=OperationInput::NativeTools(crate::native_tools::recover_recorded_result(&directory,input)?);
             let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|_|"El resultado sigue local; no se pudo registrar su recibo recuperado.")?;
         }else{
@@ -978,7 +986,7 @@ impl Workflow {
         let pcb_move=input.movement.ok_or("Falta el movimiento de la copia.")?;
         crate::konnect::validate_current_position(&bytes,&pcb_move)?;
         let copy=crate::konnect_pcb::Input{schema_version:1,job_id:input.job_id,konnect_version:konnect_run::VERSION.into(),source,pcb_move,
-            native_origin:Some(input.before),agreement:Some(agreement)};
+            native_origin:Some(input.before),agreement:Some(agreement),copy_checkpoint_version:Some(1),receipt_sha256:None};
         copy.validate()?;
         let mut state=self.state.lock().map_err(|_|"No se pudo conservar la propuesta de copia.")?;inference_idle(&state)?;
         if cancel.load(Ordering::SeqCst) || state.project.as_ref().is_none_or(|p|(p.id,p.root.clone())!=expected)
@@ -1076,6 +1084,7 @@ impl Workflow {
             Arc::new(AtomicBool::new(false)),
         )?;
         let input = crate::konnect_pcb::Input {
+            copy_checkpoint_version:Some(1),receipt_sha256:None,
             native_origin:None,agreement:None,
             schema_version: 1,
             job_id: id,
@@ -3113,6 +3122,20 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn cancelled_pcb_copy_does_not_start_a_new_native_check(){
+        let (root,stage,input)=crate::pcb_copy_recovery::tests::fixture();crate::pcb_copy_recovery::retain_edit(&stage,&input).unwrap();
+        let folder=root.join("task");std::fs::create_dir(&folder).unwrap();let project=crate::project::Project::create(&folder).unwrap();
+        let target=project.store("staging").join(input.job_id.to_string());
+        assert!(stage.canonicalize().unwrap().starts_with(root.canonicalize().unwrap())&&target.parent().unwrap().canonicalize().unwrap().starts_with(project.root.canonicalize().unwrap()));std::fs::rename(&stage,&target).unwrap();
+        let snapshot=project.snapshot(crate::project::OperationInput::KonnectPcb(input.clone()),crate::project::Phase::Cancelled).unwrap();project.save(&snapshot).unwrap();
+        let identity=(project.id,project.root.clone());
+        let workflow=super::Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(project).unwrap();
+        *workflow.kicad.lock().unwrap()=Some(root.join("must-not-start/kicad-cli.exe"));
+        let error=workflow.recover_native_result(identity,input.job_id,std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))).unwrap_err();
+        assert!(error.contains("fue detenida"));let journal:serde_json::Value=serde_json::from_slice(&std::fs::read(target.join("pcb-copy.json")).unwrap()).unwrap();assert!(journal["checks"].as_array().unwrap().is_empty());
+        assert!(!target.join("result.json").exists());drop(workflow);std::fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn durable_user_context_withholds_revoked_goals_and_recovers_long_statements_by_page(){
         use crate::tasks::Request;

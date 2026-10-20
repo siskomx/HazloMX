@@ -59,8 +59,42 @@ fn main(){
     let context=result["pcb_followup"].clone();assert!(context["selection"].is_string());
     let final_board=restored.call("inspect_selected_pcb",json!({"selection":context["selection"],"base_job_id":context["base_job_id"],"result_sha256":context["result_sha256"]})).unwrap();
     let final_component=final_board["components"].as_array().unwrap().iter().find(|c|c["reference"]=="R1").unwrap();assert_eq!(final_component["x_mm"],component.x_mm+3.54);
+    drop(restored);drop(_editor);
+    // Model an interrupted first check using the real retained edit; keep its partial bytes.
+    let project=Project::open(&project_root).unwrap();let directory=project.artifact_directory(first);
+    let mut journal:serde_json::Value=serde_json::from_slice(&fs::read(directory.join("pcb-copy.json")).unwrap()).unwrap();
+    let edit_link=journal["edit_sha256"].clone();assert!(edit_link.is_string());assert_eq!(journal["checks"].as_array().unwrap().len(),1);
+    let partial=journal["checks"][0]["folder"].as_str().unwrap().to_owned();
+    fs::write(directory.join(&partial).join("retained-partial.native"),b"keep the earlier check attempt").unwrap();
+    journal["checks"][0]["report_sha256"]=serde_json::Value::Null;journal["report_sha256"]=serde_json::Value::Null;
+    fs::write(directory.join("pcb-copy.json"),serde_json::to_vec(&journal).unwrap()).unwrap();
+    let retained=root.join("retained-first-report.json");let report_path=directory.join("result.json");assert!(report_path.starts_with(&root)&&retained.starts_with(&root));fs::rename(report_path,&retained).unwrap();
+    let mut snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==first).unwrap();
+    let OperationInput::KonnectPcb(input)=&mut snapshot.input else{panic!("Expected retained copy")};input.receipt_sha256=None;snapshot.phase=Phase::Interrupted;
+    if let Some(audit)=&mut snapshot.audit{audit.files_verified=false;}project.save(&snapshot).unwrap();
+    let stage=project_root.join(".hazlomexa/staging").join(first.to_string());assert!(directory.starts_with(&root)&&stage.starts_with(&root)&&!stage.exists());fs::rename(&directory,&stage).unwrap();
+    assert_eq!(project.recover().unwrap().into_iter().find(|s|s.input.job_id()==first).unwrap().phase,Phase::Interrupted,"Startup adopted an unlinked native check");drop(project);
+    let recovery=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("recovery-profiles")).unwrap());recovery.select_project(Project::open(&project_root).unwrap()).unwrap();
+    assert!(recovery.konnect_runtime().unwrap().is_none()&&recovery.kicad_runtime().unwrap().is_none());
+    let recovery_host=HostTools::new(recovery.clone());recovery_host.configure_native_discovery(root.join("resources"),root.join("host-data")).unwrap();
+    fs::write(root.join("retained-original-disk.bin"),disk).unwrap();assert_eq!(board.parent(),Some(root.as_path()));fs::remove_file(&board).unwrap();
+    let recovered=recovery_host.call("recover_native_result",json!({"job_id":first})).unwrap();assert_eq!(recovered["published"],true);assert_eq!(recovered["edit_repeated"],false);
+    assert!(recovery.konnect_runtime().unwrap().is_none(),"Recovery acquired a native editor writer");assert!(!board.exists());fs::write(&board,disk).unwrap();
+    let directory=project_root.join(".hazlomexa/artifacts").join(first.to_string());
+    let journal:serde_json::Value=serde_json::from_slice(&fs::read(directory.join("pcb-copy.json")).unwrap()).unwrap();
+    assert_eq!(journal["edit_sha256"],edit_link);assert_eq!(journal["checks"].as_array().unwrap().len(),2);
+    assert_eq!(fs::read(directory.join(partial).join("retained-partial.native")).unwrap(),b"keep the earlier check attempt");
+    recovery_host.call("read_verified_result",json!({"job_id":first})).unwrap();assert!(retained.is_file());
+    drop(recovery_host);drop(recovery);
+    let report_path=directory.join("result.json");let report=fs::read(&report_path).unwrap();
+    assert!(report_path.starts_with(&root));fs::remove_file(&report_path).unwrap();
+    let offline=Project::open(&project_root).unwrap().recover().unwrap();
+    assert_eq!(offline.iter().find(|s|s.input.job_id()==first).unwrap().phase,Phase::Completed);
+    assert_eq!(fs::read(&report_path).unwrap(),report,"Offline recovery changed the linked final report");
     fs::write(root.join("acceptance.json"),serde_json::to_vec_pretty(&json!({"passed":true,"actual_program_window":true,"provider_used":false,"automatic_tool_detection":true,
         "native_capture_over_stale_disk":true,"native_original_unchanged":true,"saved_original_unchanged":true,"checked_copies":2,"imperial_followup":true,"recovered_jobs":2,"restored_followup_selection":true,
+        "interrupted_check_recovered_without_editor_or_source":true,"copy_writer_unavailable_during_recovery":true,"partial_check_preserved":true,"same_edit_checkpoint_retained":true,
+        "linked_report_reconstructed_offline":true,
         "gui_copy_reopen_checked":false,"physical_function_checked":false})).unwrap()).unwrap();
     println!("Owned KiCad native capture, isolated copy/edit/readback, imperial follow-up and recovery passed; originals preserved.");
 }

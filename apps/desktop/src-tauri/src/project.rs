@@ -103,6 +103,7 @@ impl OperationInput {
     }
     pub(crate) fn receipt_sha256(&self) -> Option<&str> {
         match self {
+            Self::KonnectPcb(i)=>i.receipt_sha256.as_deref(),
             Self::NativeTools(i)=>i.receipt_sha256.as_deref(),
             Self::PublicDocument(i)=>i.receipt_sha256.as_deref(),
             Self::LiveCad(i)=>i.receipt_sha256.as_deref(),
@@ -114,6 +115,7 @@ impl OperationInput {
     }
     pub(crate) fn retain_receipt(&mut self, directory:&Path) -> io::Result<bool> {
         let (receipt,limit)=match self {
+            Self::KonnectPcb(i) if i.copy_checkpoint_version.is_some()=>(&mut i.receipt_sha256,1024*1024),
             Self::NativeTools(i)=>(&mut i.receipt_sha256,crate::native_tools::REPORT_LIMIT),
             Self::PublicDocument(i)=>(&mut i.receipt_sha256,crate::public_document::REPORT_LIMIT),
             Self::LiveCad(i)=>(&mut i.receipt_sha256,65536),
@@ -712,14 +714,14 @@ impl Project {
                 format!("Original/{}", input.source.entry)
             }
             (OperationInput::KonnectPcb(input), ArtifactFormat::KonnectEdited) => {
-                format!("Verification/Checked/{}", input.source.entry)
+                format!("{}/Checked/{}", crate::pcb_copy_recovery::verification_name(&directory,input).map_err(io::Error::other)?,input.source.entry)
             }
             (OperationInput::KonnectPcb(_), ArtifactFormat::KonnectReport) => "result.json".into(),
-            (OperationInput::KonnectPcb(_), ArtifactFormat::KicadReport) => {
-                "Verification/Check.json".into()
+            (OperationInput::KonnectPcb(input), ArtifactFormat::KicadReport) => {
+                format!("{}/Check.json",crate::pcb_copy_recovery::verification_name(&directory,input).map_err(io::Error::other)?)
             }
-            (OperationInput::KonnectPcb(_), ArtifactFormat::KicadOutputs) => {
-                "Verification/Exports".into()
+            (OperationInput::KonnectPcb(input), ArtifactFormat::KicadOutputs) => {
+                format!("{}/Exports",crate::pcb_copy_recovery::verification_name(&directory,input).map_err(io::Error::other)?)
             }
             (OperationInput::Konnect(input), ArtifactFormat::KonnectOriginal) => {
                 format!("Original/{}", input.source.entry)
@@ -1088,6 +1090,13 @@ impl Project {
         for mut snapshot in self.history()? {
             let published = self.artifact_directory(snapshot.input.job_id());
             let previous_phase = snapshot.phase;
+            if let OperationInput::KonnectPcb(input)=&snapshot.input{if input.copy_checkpoint_version.is_some(){
+                let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
+                if directory.try_exists()? && crate::pcb_copy_recovery::finish(&directory,input,None,&directory.join("unused-offline-profile"),std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))).is_ok(){
+                    let mut checked=snapshot.input.clone();checked.retain_receipt(&directory)?;
+                    if self.validate_outputs(&directory,&checked).is_ok() && snapshot.input.receipt_sha256()!=checked.receipt_sha256(){snapshot.input=checked;self.save(&snapshot)?;}
+                }
+            }}
             if let OperationInput::NativeTools(input)=&snapshot.input{if input.receipt_sha256.is_none(){
                 let stage=self.store("staging").join(input.job_id.to_string());let directory=if stage.try_exists()?{stage}else{published.clone()};
                 if directory.try_exists()?{let _pin=pin_directory(&directory,false)?;if let Ok(checked)=crate::native_tools::recover_recorded_result(&directory,input){snapshot.input=OperationInput::NativeTools(checked);self.save(&snapshot)?;}}

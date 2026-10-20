@@ -330,8 +330,12 @@ function reviewFinishedOperation() {
   }
   if (job.snapshot.phase !== "completed" || job.error) {
     const input = job.snapshot.input;
+    if(input.konnect_version && input.pcb_move && input.copy_checkpoint_version){
+      if(job.snapshot.phase==="cancelled"){inspectionNotice="La revisión se detuvo. La copia y sus archivos parciales se conservan; no se repite el movimiento ni se inician nuevos pasos.";render();return;}
+      void action(()=>send(`Consulta recover_native_result para job_id ${input.job_id}. La recuperación solo puede comprobar la misma copia editada con su vínculo original; nunca repite el movimiento ni consulta el editor como sustituto. Conserva los intentos parciales y los cambios manuales. Si falta el vínculo o se agotaron los dos intentos de revisión, conserva la pausa y ofrece el siguiente paso. Lee read_verified_result solo si la recuperación confirma la publicación.`,false));return;
+    }
     if(input.konnect_version && input.pcb_move && input.native_origin){
-      void action(()=>send(`La edición de la copia nativa quedó en estado ${job.snapshot.phase}. Conserva los archivos parciales y consulta get_workflow_status. El original abierto no fue el destino del movimiento. No repitas la operación ni sustituyas la captura por el archivo guardado o el estado actual. Explica qué comprobación falta y el siguiente paso útil; no uses read_verified_result para un trabajo incompleto.`,false));return;
+      void action(()=>send(`La edición de la copia nativa quedó en estado ${job.snapshot.phase}. Conserva los archivos parciales y consulta get_workflow_status. No repitas la operación ni sustituyas la captura por el archivo guardado o el estado actual. Explica qué comprobación falta y el siguiente paso útil; no uses read_verified_result para un trabajo incompleto.`,false));return;
     }
     if (input.native_tools_version) {
       if (job.snapshot.phase === "cancelled") { inspectionNotice = "La consulta u operación se detuvo. Revisa el programa antes de continuar; detener la espera no deshace cambios."; render(); return; }

@@ -17,6 +17,12 @@ fn main() {
             fs::write("child.pid", child.id().to_string()).unwrap();
             thread::sleep(Duration::from_secs(60));
         }
+        "tree-exit" => {
+            let child = Command::new(env::current_exe().unwrap()).arg("leaf")
+                .stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null()).spawn().unwrap();
+            fs::write("child.pid", child.id().to_string()).unwrap();
+        }
         "noisy" => {
             let encoded = arguments[1..].iter().map(|argument| {
                 let mut value = String::from("\"");
