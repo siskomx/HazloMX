@@ -558,6 +558,12 @@ FreeCAD working-version verification, its original native-result lookup, and CAD
 
 The [implementation and acceptance notes](../research/cad-copy-dispatch-barrier-2026-10-19.md) record 408 passing desktop-enabled library/binary tests, all-target desktop Clippy, and three explicit native tests: FreeCAD retained-copy verification, offscreen GUI state/Undo/original preservation plus reopen, and CADCraft metric/imperial native roundtrips. Visual/provider/physical acceptance, fresh check-only resume approvals for these engines, expanded bounds and changed/unlinked-copy reconciliation, remaining integration/concurrency/privacy/task/hardware requirements and Windows release checks stay active. No models or runtimes are downloaded/upgraded; the installer and installed application are unchanged. KiCad 10 live schematics remains pending.
 
+## Fresh Arduino check-only approval
+
+The existing chat approval flow can now resume one unused native reader check on a confirmed retained Arduino project. A version-2 check proposal binds the original input/capture/directory identities and remaining original allowance; PCB version-1 identities stay unchanged. Attempts link to their new approval before dispatch and retain a completion only after owned-process closure and native file verification. Explicit offline recovery can repair the exact completed approval's missing parent link without launching another reader. Unknown attempts, changed/unlinked copies and exhausted limits stay preserved and paused. Chat selects the program and explains the check; no editor is added.
+
+The [implementation and acceptance record](../research/arduino-check-only-resume-2026-10-19.md) records 411 passing desktop-enabled tests, Clippy/frontend/approval/headless-chat checks and successful real CLI resumption from an actual-window retained copy with the original editor closed and source hidden. It also records offline parent-link/report repair, the fixed long Windows ticket path and a separate fresh IDE startup timeout. A fresh visual/provider/hardware pass is not claimed. Other engines' fresh resume, expanded bounds, changed/unlinked-copy reconciliation, remaining integration/concurrency/privacy/task/hardware boundaries and Windows release checks remain active. The installer and installed app are unchanged; no AI model is downloaded and KiCad 10 live schematics stays pending.
+
 ## Boundary acceptance cases
 
 These are proposed test expectations, not executed application/device tests.

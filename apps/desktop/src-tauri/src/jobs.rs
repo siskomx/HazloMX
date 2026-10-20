@@ -359,6 +359,7 @@ impl Workflow {
         let mut checked=snapshot.input.clone();
         let mut recovery_check=None;
         if let OperationInput::ResultChecks(input)=&snapshot.input{
+            crate::result_checks::recover_target(&project,input)?;
             crate::result_checks::recover(&project,&directory,input)?;
             checked.retain_receipt(&directory).map_err(|e|e.to_string())?;project.validate_outputs(&directory,&checked).map_err(|e|e.to_string())?;
             let mut saved=snapshot.clone();saved.input=checked.clone();project.save(&saved).map_err(|e|e.to_string())?;
@@ -476,7 +477,7 @@ impl Workflow {
         let mut jobs=project.history().map_err(|_|"No se pudo comprobar el trabajo guardado.")?;jobs.retain(|job|job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map_or(task.legacy,|binding|binding.id==task.id));
         jobs.sort_by_key(|job|(job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),job.input.job_id()));
         if offset>jobs.len(){return Err("Página de progreso no válida.".into());}let next=offset.saturating_add(32).min(jobs.len());
-        Ok(serde_json::json!({"task_id":task.id,"operations":jobs[offset..next].iter().map(|job|serde_json::json!({"job_id":job.input.job_id(),"operation_kind":job.input.integration(),"check_only_resume_supported":matches!(&job.input,OperationInput::KonnectPcb(input) if input.copy_checkpoint_version==Some(1)),"checked_result_job_id":match &job.input{OperationInput::ResultChecks(input)=>Some(input.target_job_id),_=>None},"task_revision":job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),"program":job.input.native_program(),"phase":job.phase,"output_check_recorded":job.audit.as_ref().is_some_and(|audit|audit.files_verified),"current_artifacts_rechecked":false,"conditions_available":job.input.agreement().is_some()})).collect::<Vec<_>>(),"next_offset":if next<jobs.len(){Some(next)}else{None},"read_tool":"read_task_progress","guidance":"These are saved operation records. An operation's completed phase or prior output check does not prove the task complete, current document state, saved-version reopen, or physical function. Use original receipts and fresh native checks; never replay uncertain edits."}))
+        Ok(serde_json::json!({"task_id":task.id,"operations":jobs[offset..next].iter().map(|job|serde_json::json!({"job_id":job.input.job_id(),"operation_kind":job.input.integration(),"check_only_resume_supported":(matches!(&job.input,OperationInput::KonnectPcb(input) if input.copy_checkpoint_version==Some(1)) || matches!(&job.input,OperationInput::LiveAgent(input) if crate::agent_editor::working_plan(input).is_some())),"checked_result_job_id":match &job.input{OperationInput::ResultChecks(input)=>Some(input.target_job_id),_=>None},"task_revision":job.audit.as_ref().and_then(|audit|audit.task.as_ref()).map(|binding|binding.revision),"program":job.input.native_program(),"phase":job.phase,"output_check_recorded":job.audit.as_ref().is_some_and(|audit|audit.files_verified),"current_artifacts_rechecked":false,"conditions_available":job.input.agreement().is_some()})).collect::<Vec<_>>(),"next_offset":if next<jobs.len(){Some(next)}else{None},"read_tool":"read_task_progress","guidance":"These are saved operation records. An operation's completed phase or prior output check does not prove the task complete, current document state, saved-version reopen, or physical function. Use original receipts and fresh native checks; never replay uncertain edits."}))
     }
     pub fn task_state(&self) -> Result<Option<crate::tasks::State>, String> {
         let state=self.state.lock().map_err(|e|e.to_string())?;
@@ -2918,8 +2919,8 @@ impl Workflow {
             }
             match &dispatch.snapshot.input {
                 OperationInput::ResultChecks(input)=>{
-                    let cli=self.kicad_runtime()?.ok_or("Falta conectar el lector KiCad para comprobar la copia conservada.")?;
-                    crate::result_checks::run(&dispatch.project,input,&cli,&stage.path,&profile,dispatch.cancelled.clone(),crate::process::DispatchGate{mutex:&dispatch.dispatch_gate,paused:&dispatch.dispatch_paused})?;
+                    let cli=if input.program.is_none(){self.kicad_runtime()?}else{None};
+                    crate::result_checks::run(&dispatch.project,input,cli.as_deref(),&stage.path,&profile,dispatch.cancelled.clone(),crate::process::DispatchGate{mutex:&dispatch.dispatch_gate,paused:&dispatch.dispatch_paused})?;
                 }
                 OperationInput::Freecad(input) => {
                     freecad::generate(
@@ -3192,6 +3193,19 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn arduino_check_only_approval_is_fresh_and_stop_preserves_the_original_copy(){
+        let (root,stage,original)=crate::agent_editor::tests::retained_copy_fixture();let folder=root.join("task");fs::create_dir(&folder).unwrap();let project=Project::create(&folder).unwrap();let task=crate::tasks::Store::new(&project).unwrap().state().unwrap().active;
+        let target=project.store("staging").join(original.job_id.to_string());assert!(stage.canonicalize().unwrap().starts_with(root.canonicalize().unwrap()) && target.parent().unwrap().canonicalize().unwrap().starts_with(project.root.canonicalize().unwrap()));fs::rename(stage,&target).unwrap();
+        let mut snapshot=project.snapshot(OperationInput::LiveAgent(original.clone()),Phase::Cancelled).unwrap();snapshot.audit.as_mut().unwrap().task=Some(task.binding());snapshot.audit.as_mut().unwrap().native_attempted=Some(true);snapshot.audit.as_mut().unwrap().source=RunSource::Mcp;project.save(&snapshot).unwrap();let selected=(project.id,project.root.clone());
+        let workflow=Workflow::new(root.join("FreeCADCmd.exe"),root.join("profiles")).unwrap();workflow.select_project(project).unwrap();assert!(workflow.kicad_runtime().unwrap().is_none());
+        let pending=workflow.propose_result_checks(selected,original.job_id,crate::native_tools::tests::agreement_fixture()).unwrap();assert!(matches!(&pending.snapshot.input,OperationInput::ResultChecks(i) if i.program==Some(crate::host_tools::Program::Agent)));
+        let token=pending.approval_id.unwrap();let id=pending.snapshot.input.job_id();let dispatch=workflow.begin(token).unwrap();workflow.cancel(id).unwrap();let done=workflow.execute(dispatch).unwrap();assert_eq!(done.snapshot.phase,Phase::Cancelled);assert!(workflow.begin(token).is_err());
+        let record=crate::live_dispatch::read(&target,&OperationInput::LiveAgent(original.clone())).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert!(record.agent_project_check_sha256.is_none());assert_eq!(crate::agent_editor::pending_copy_check(&target,&original).unwrap().1,0);
+        drop(workflow);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn check_only_resume_needs_a_fresh_one_use_approval_and_stop_cannot_repeat_the_edit(){
         use crate::{project::{Project,OperationInput,Phase},tasks::{Store,Request}};

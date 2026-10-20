@@ -53,8 +53,8 @@ export function proposalFacts(run: Snapshot): string[] {
   }
   if(input.result_checks_version){
     facts.push("Reanudar solo la comprobación de la misma copia conservada; esta aprobación no repite la edición ni consulta el editor original como sustituto.",
-      "Un intento nativo de comprobación y exportación mediante el lector KiCad detectado. Se mantiene el límite total original de dos intentos; los archivos parciales anteriores se conservan.",
-      "La revisión puede recalcular las zonas de cobre de otra copia de verificación y generar sus exportaciones. El original y la copia editada conservada quedan intactos.",
+      input.program==="agent"?"Un intento nativo de comprobación mediante el lector Arduino CLI detectado y vinculado a la copia. Se mantiene el límite total original de dos intentos; los archivos parciales anteriores se conservan.":"Un intento nativo de comprobación y exportación mediante el lector KiCad detectado. Se mantiene el límite total original de dos intentos; los archivos parciales anteriores se conservan.",
+      input.program==="agent"?"El lector crea un archivo de lectura en un perfil local aislado y compara los archivos de la misma copia. No vuelve a editar, guardar ni recapturar el editor original; no compila, sube código ni usa hardware. Los originales y la copia conservada quedan intactos.":"La revisión puede recalcular las zonas de cobre de otra copia de verificación y generar sus exportaciones. El original y la copia editada conservada quedan intactos.",
       "Si cambió la copia, su alcance o la tarea, Hazlo pausa y conserva el trabajo. Esta aprobación no permite adoptar archivos sin su vínculo original ni ampliar recursos.",
       "Detener o corregir pausa los siguientes pasos; una llamada admitida puede terminar. El informe queda local y compartirlo con una IA requiere su permiso separado.",
       "Comprobar la copia no certifica su funcionamiento físico ni el resultado completo de la tarea.");return facts;

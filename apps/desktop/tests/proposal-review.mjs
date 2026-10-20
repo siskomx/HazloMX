@@ -127,6 +127,9 @@ assert.match(review({cadpilot_version:"0.7.7",source_name:"Part.FCStd",request:{
 assert.match(review({cadpilot_version:"0.7.7",source_name:"Part.FCStd",request:{operation:"edit_box",object:"Box",units:"in",parameters:{length:1,width:2,height:3}},preview:{measurements:{Box:{dimensions_mm:{length:10,width:20,height:30}}}}}),/actuales en milímetros: largo 10, ancho 20, alto 30[\s\S]*Medidas en pulgadas[\s\S]*Largo: 1/);
 const resumedChecks=review({result_checks_version:1,attempts_before:1,agreement:{kind:"software_operation",outcome:"Check the retained board copy",assumptions:[],constraints:["Preserve the original"],losses:[],verification:"Read the independent native check"}});
 for(const phrase of [/Reanudar solo la comprobación/,/no repite la edición/,/Un intento nativo/,/límite total original de dos intentos/,/zonas de cobre/,/quedan intactos/,/permiso separado/,/no certifica/])assert.match(resumedChecks,phrase);
+const resumedArduino=review({result_checks_version:2,program:"agent",attempts_before:1,agreement:{kind:"software_operation",outcome:"Check the retained sketch",assumptions:[],constraints:["Preserve the original"],losses:[],verification:"Check the native reader roundtrip"}});
+for(const phrase of [/Arduino CLI/,/no repite la edición/,/no compila, sube código ni usa hardware/,/dos intentos/,/permiso separado/])assert.match(resumedArduino,phrase);
+assert.doesNotMatch(resumedArduino,/KiCad|cobre/);
 const schematic=review({konnect_version:"0.13.0",source:{entry:"Circuit.kicad_sch"},edit:{reference:"R1",expected_value:"1k",value:"4.7k"}});
 assert.match(schematic,/R1: 1k → 4.7k/);
 const pcb=review({konnect_version:"0.13.0",source:{entry:"Board.kicad_pcb"},pcb_move:{reference:"J1",expected_x_mm:20,expected_y_mm:-10,x_mm:45.4,y_mm:-10}});

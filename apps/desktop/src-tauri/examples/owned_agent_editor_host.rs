@@ -36,6 +36,11 @@ fn main() {
     } else {
         assert_eq!(std::fs::read(root.join("owned-host-probe")).unwrap(),b"owned");
     }
+    if std::env::var("HAZLOMEXA_ARDUINO_RETAINED_RESUME_ONLY").as_deref()==Ok("1"){
+        assert!(actual);let project_root=std::fs::read_dir(&root).unwrap().filter_map(Result::ok).filter(|e|e.file_name().to_string_lossy().starts_with("project-") && e.path().join(".hazlomexa").is_dir()).map(|e|e.path()).collect::<Vec<_>>();assert_eq!(project_root.len(),1);let project_root=&project_root[0];
+        let project=Project::open(project_root).unwrap();let targets=project.history().unwrap().into_iter().filter(|s|matches!(&s.input,hazlomexa::project::OperationInput::LiveAgent(_)) && matches!(s.phase,Phase::Cancelled|Phase::Interrupted)).map(|s|s.input.job_id()).collect::<Vec<_>>();assert_eq!(targets.len(),1);drop(project);
+        check_retained_copy(&root,&canonical,project_root,&root.join("sketchbook/OwnedSketch/OwnedSketch.ino"),targets[0]);println!("Retained Arduino native copy resume and offline link repair passed; no original editor launched.");return;
+    }
     let discovery=agent_editor::default_directory().unwrap();
     assert_eq!(discovery,root.join("profile/.arduinoIDE/hazlomexa-editor"));
     let registration=if actual {discovery.clone()} else {root.clone()};
@@ -301,11 +306,44 @@ fn main() {
     }
     drop(host);
     drop(workflow);
+
+    let resume_check=std::env::var("HAZLOMEXA_TEST_ARDUINO_CHECK_RESUME").as_deref()==Ok("1");
+    if resume_check{assert!(actual && !saving && !cancelling);check_retained_copy(&root,&canonical,&project_root,&saved_path,copies[0].0);}
+
     let recovered = Project::open(&project_root).unwrap().recover().unwrap();
-    assert_eq!(recovered.len(), if saving || cancelling {3} else {2});
+    assert_eq!(recovered.len(), if saving || cancelling {3} else {2}+usize::from(resume_check));
     assert_eq!(recovered.iter().filter(|run|run.phase==Phase::Cancelled).count(),usize::from(cancelling));
     assert!(recovered
         .iter()
-        .all(|run| matches!(run.phase,Phase::Completed|Phase::Cancelled) && run.schema_version == 15));
+        .all(|run| matches!(run.phase,Phase::Completed|Phase::Cancelled) && (run.schema_version == 15 || resume_check && run.schema_version==19)));
     println!("Rust host and companion protocol: edit/readback/follow-up/stale refusal passed");
+}
+
+fn check_retained_copy(root:&std::path::Path,canonical:&std::path::Path,project_root:&std::path::Path,saved_path:&std::path::Path,target:Uuid){
+        let project=Project::open(project_root).unwrap();let published=project.artifact_directory(target);let stage=project_root.join(".hazlomexa/staging").join(target.to_string());let directory=if published.exists(){published.clone()}else{stage.clone()};
+        let record_path=directory.join("live-dispatch.json");let mut record:serde_json::Value=serde_json::from_slice(&std::fs::read(&record_path).unwrap()).unwrap();
+        record["outcome"]=serde_json::json!("uncertain");record.as_object_mut().unwrap().remove("receipt_sha256");record.as_object_mut().unwrap().remove("agent_project_check_sha256");
+        std::fs::write(&record_path,serde_json::to_vec(&record).unwrap()).unwrap();
+        let version=directory.join(record["agent_project_capture"]["folder"].as_str().unwrap());let capture=std::fs::read(version.join("capture.json")).unwrap();
+        let old_ticket=std::fs::read_dir(&version).unwrap().filter_map(Result::ok).find(|e|e.file_name().to_string_lossy().starts_with("readback-")).unwrap().file_name();let old_bytes=std::fs::read(version.join(&old_ticket)).unwrap();
+        let partial=version.join("preserved-partial.native");if partial.exists(){assert_eq!(std::fs::read(&partial).unwrap(),b"preserve previous check output");}else{std::fs::write(&partial,b"preserve previous check output").unwrap();}
+        let mut snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==target).unwrap();let hazlomexa::project::OperationInput::LiveAgent(original)=&mut snapshot.input else{panic!("Expected retained Arduino result")};original.receipt_sha256=None;snapshot.phase=Phase::Cancelled;snapshot.audit.as_mut().unwrap().files_verified=false;project.save(&snapshot).unwrap();
+        if directory!=stage{assert!(directory.canonicalize().unwrap().starts_with(canonical)&&stage.parent().unwrap().canonicalize().unwrap().starts_with(canonical)&&!stage.exists());std::fs::rename(&directory,&stage).unwrap();}drop(project);
+        let resume=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("check-resume-profiles")).unwrap());resume.select_project(Project::open(project_root).unwrap()).unwrap();let resume_host=HostTools::new(resume.clone());
+        assert!(resume.kicad_runtime().unwrap().is_none());assert!(resume_host.call("recover_native_result",serde_json::json!({"job_id":target})).is_err());
+        let proposed=resume_host.call("propose_result_checks",serde_json::json!({"job_id":target,"agreement":{"kind":"software_operation","outcome":"Check the same retained sketch project without repeating its edit","assumptions":["Physical behavior is unverified"],"constraints":["Preserve the original and retained copy"],"losses":[],"verification":"One unused native sketch-reader archive roundtrip within the original two-attempt bound"}})).unwrap();
+        assert!(proposed.get("approval_id").is_none());let pending=resume.current().unwrap().unwrap();let resume_id=pending.snapshot.input.job_id();assert!(matches!(&pending.snapshot.input,hazlomexa::project::OperationInput::ResultChecks(i) if i.program==Some(hazlomexa::host_tools::Program::Agent) && i.attempts_before==1));
+        let offline=root.join("source-unavailable-during-resume");assert!(saved_path.parent().unwrap().canonicalize().unwrap().starts_with(canonical)&&offline.parent().unwrap().canonicalize().unwrap().as_path()==canonical&&!offline.exists());std::fs::rename(saved_path.parent().unwrap(),&offline).unwrap();
+        let done=resume.execute(resume.begin(pending.approval_id.unwrap()).unwrap()).unwrap();assert!(offline.canonicalize().unwrap().starts_with(canonical)&&saved_path.parent().unwrap().parent().unwrap().canonicalize().unwrap().starts_with(canonical));std::fs::rename(&offline,saved_path.parent().unwrap()).unwrap();assert_eq!(done.snapshot.phase,Phase::Completed,"{:?}",done.error);
+        assert!(resume.kicad_runtime().unwrap().is_none());let status=resume_host.call("recover_native_result",serde_json::json!({"job_id":resume_id})).unwrap();assert_eq!(status["published"],true);assert_eq!(status["checked_result_job_id"],serde_json::json!(target));
+        let original=project_root.join(".hazlomexa/artifacts").join(target.to_string());let version=original.join(record["agent_project_capture"]["folder"].as_str().unwrap());assert_eq!(std::fs::read(version.join("capture.json")).unwrap(),capture);assert_eq!(std::fs::read(version.join(&old_ticket)).unwrap(),old_bytes);assert_eq!(std::fs::read(version.join("preserved-partial.native")).unwrap(),b"preserve previous check output");
+        let tickets=std::fs::read_dir(&version).unwrap().filter_map(Result::ok).filter(|e|e.file_name().to_string_lossy().starts_with("readback-")).collect::<Vec<_>>();assert_eq!(tickets.len(),2);assert_eq!(tickets.iter().filter(|e|serde_json::from_slice::<serde_json::Value>(&std::fs::read(e.path()).unwrap()).unwrap()["approval"]["job_id"]==serde_json::json!(resume_id)).count(),1);
+        let receipt=resume.artifact(resume_id,ArtifactFormat::ResultChecksReport).unwrap();let path=receipt.path.clone();let bytes=std::fs::read(&path).unwrap();drop(receipt);drop(resume_host);drop(resume);
+        // Model a confirmed reader result whose parent link/publication did not commit.
+        let project=Project::open(project_root).unwrap();let parent=project.artifact_directory(target);let mut linked:serde_json::Value=serde_json::from_slice(&std::fs::read(parent.join("live-dispatch.json")).unwrap()).unwrap();linked["outcome"]=serde_json::json!("uncertain");linked.as_object_mut().unwrap().remove("receipt_sha256");linked.as_object_mut().unwrap().remove("agent_project_check_sha256");std::fs::write(parent.join("live-dispatch.json"),serde_json::to_vec(&linked).unwrap()).unwrap();
+        for id in [target,resume_id]{let mut snapshot=project.history().unwrap().into_iter().find(|s|s.input.job_id()==id).unwrap();match &mut snapshot.input{hazlomexa::project::OperationInput::LiveAgent(i)=>i.receipt_sha256=None,hazlomexa::project::OperationInput::ResultChecks(i)=>i.receipt_sha256=None,_=>panic!("Unexpected resume proof")};snapshot.phase=Phase::Interrupted;snapshot.audit.as_mut().unwrap().files_verified=false;project.save(&snapshot).unwrap();let from=project.artifact_directory(id);let to=project_root.join(".hazlomexa/staging").join(id.to_string());assert!(from.canonicalize().unwrap().starts_with(canonical)&&to.parent().unwrap().canonicalize().unwrap().starts_with(canonical)&&!to.exists());std::fs::rename(from,to).unwrap();}drop(project);
+        let repair=Arc::new(Workflow::new(root.join("FreeCADCmd.exe"),root.join("offline-link-repair-profiles")).unwrap());repair.select_project(Project::open(project_root).unwrap()).unwrap();let repair_host=HostTools::new(repair.clone());assert_eq!(repair_host.call("recover_native_result",serde_json::json!({"job_id":resume_id})).unwrap()["published"],true);assert_eq!(std::fs::read_dir(root.join("offline-link-repair-profiles")).unwrap().count(),0);drop(repair_host);drop(repair);
+        let directory=project_root.join(".hazlomexa/artifacts").join(target.to_string()).join(record["agent_project_capture"]["folder"].as_str().unwrap());assert_eq!(std::fs::read_dir(directory).unwrap().filter_map(Result::ok).filter(|e|e.file_name().to_string_lossy().starts_with("readback-")).count(),2);
+        assert!(path.starts_with(root));std::fs::remove_file(&path).unwrap();let restored=Project::open(project_root).unwrap().recover().unwrap();assert_eq!(restored.iter().find(|s|s.input.job_id()==resume_id).unwrap().phase,Phase::Completed);assert_eq!(std::fs::read(path).unwrap(),bytes);
+        std::fs::write(root.join("arduino-check-resume.json"),serde_json::to_vec_pretty(&serde_json::json!({"passed":true,"fresh_human_approval_fixture":true,"no_kicad_setup_required":true,"same_capture_retained":true,"old_attempt_preserved":true,"attempts":2,"new_attempt_owned_by_approval":true,"source_unavailable_during_check":true,"edit_repeated":false,"report_recovered_offline":true,"lost_parent_link_repaired_without_reader":true,"real_provider":false,"visual_approval":false,"physical_function_checked":false})).unwrap()).unwrap();
 }

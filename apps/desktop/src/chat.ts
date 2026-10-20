@@ -297,8 +297,8 @@ function apply(next: DesktopSnapshot) {
     inspectionNotice=route.message ?? `Herramientas de ${programs[program]} conectadas por tu IA.`;
   }
   if(next.job?.snapshot.input.result_checks_version && next.job.snapshot.phase==="awaiting_approval" && next.job.snapshot.input.job_id!==state.job?.snapshot.input.job_id && next.job.snapshot.project_id===next.project?.[0]){
-    program="kicad";sourceContext={};sourceNames={};sourcePreviousJobs={};nativeCatalog=undefined;
-    inspectionNotice="Hazlo detectó el lector KiCad para comprobar la copia conservada; no hace falta volver a conectar el editor original.";
+    program=next.job.snapshot.input.program==="agent"?"agent":"kicad";sourceContext={};sourceNames={};sourcePreviousJobs={};nativeCatalog=undefined;
+    inspectionNotice=program==="agent"?"Hazlo comprobó el lector Arduino CLI de esta copia; no hace falta volver a conectar el editor original.":"Hazlo detectó el lector KiCad para comprobar la copia conservada; no hace falta volver a conectar el editor original.";
   }
   state = next; restore();
   const chat = state.chat;
@@ -667,7 +667,7 @@ function renderConnections(disabled: boolean) {
 }
 function jobProgram(run: Snapshot): Program | undefined {
   const input = run.input;
-  if(input.result_checks_version)return "kicad";
+  if(input.result_checks_version)return input.program==="agent"?"agent":"kicad";
   if(input.public_document_version)return program;
   if (input.konnect_version || input.kicad_version) return "kicad";
   if (input.native_tools_version) return input.program as Program;

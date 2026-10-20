@@ -14,8 +14,12 @@ fn plain(path:&Path)->Result<PathBuf,String>{
 pub(crate) struct Exclusive(windows_sys::Win32::Foundation::HANDLE);
 impl Exclusive{
     pub(crate) fn acquire(input:&Input)->Result<Self,String>{
+        Self::for_job(input.job_id)
+    }
+    pub(crate) fn for_job(job_id:Uuid)->Result<Self,String>{
         use windows_sys::Win32::{System::Threading::{CreateMutexW,WaitForSingleObject},Foundation::{CloseHandle,WAIT_OBJECT_0,WAIT_ABANDONED}};
-        let name=format!("Local\\HazloPcbCopy-{}",input.job_id).encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+        // Retain the historical prefix so earlier hosts share the same per-job lock.
+        let name=format!("Local\\HazloPcbCopy-{}",job_id).encode_utf16().chain(Some(0)).collect::<Vec<_>>();
         // The session-local OS mutex bounds concurrent recovery, including native waits.
         let handle=unsafe{CreateMutexW(std::ptr::null(),0,name.as_ptr())};if handle.is_null(){return Err(PAUSE.into());}
         match unsafe{WaitForSingleObject(handle,0)}{WAIT_OBJECT_0|WAIT_ABANDONED=>Ok(Self(handle)),_=>{unsafe{CloseHandle(handle)};Err("La copia todavía está en uso. Conserva el trabajo y consulta su estado antes de continuar.".into())}}
@@ -251,7 +255,7 @@ pub(crate) mod tests{
     #[test]
     fn check_resume_is_bound_to_one_attempt_and_never_replays_an_unconfirmed_check(){
         let (root,stage,input)=fixture();retain_edit(&stage,&input).unwrap();let (edit_sha256,attempts_before)=pending_checkpoint(&stage,&input).unwrap();
-        let approval=crate::result_checks::Input{result_checks_version:1,job_id:Uuid::new_v4(),target_job_id:input.job_id,target_input_sha256:identity(&input).unwrap(),edit_sha256,attempts_before,agreement:crate::native_tools::tests::agreement_fixture(),receipt_sha256:None};
+        let approval=crate::result_checks::Input{result_checks_version:1,program:None,job_id:Uuid::new_v4(),target_job_id:input.job_id,target_input_sha256:identity(&input).unwrap(),edit_sha256,attempts_before,agreement:crate::native_tools::tests::agreement_fixture(),receipt_sha256:None};
         let proof=fs::read(stage.join(EDIT)).unwrap();let mut record=read(&stage,&input).unwrap();
         record.checks.push(Check{folder:format!("Verification-{}",Uuid::new_v4()),input:input.source.clone(),report_sha256:None,approval:Some(Approval{job_id:approval.job_id,input_sha256:approval.identity().unwrap()})});save(&stage,&record).unwrap();
         let gate=std::sync::Mutex::new(());let paused=AtomicBool::new(false);

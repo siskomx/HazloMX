@@ -592,6 +592,7 @@ pub(crate) fn checked_working_version(directory:&Path,input:&Input,core:&str,buf
     else{crate::arduino_version::validate_capture(plan,directory,link,&scope)?;Ok(json!({"capture_checked":true}))}
 }
 pub(crate) fn finish_working_version(directory:&Path,input:&Input,connection:Option<&Connection>,profile:&Path,cancel:Arc<AtomicBool>,control:(Option<&Arc<crate::live_dispatch::Dispatch>>,Option<crate::process::DispatchGate<'_>>))->Result<(),String>{
+    let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;
     let (dispatch,gate)=control;
     let Some(plan)=working_plan(input) else{return Ok(());};
     let operation=crate::project::OperationInput::LiveAgent(input.clone());let record=crate::live_dispatch::read(directory,&operation)?.ok_or("Falta el envío original del proyecto.")?;
@@ -614,9 +615,58 @@ pub(crate) fn finish_working_version(directory:&Path,input:&Input,connection:Opt
         link
     };
     if let Some(hash)=record.agent_project_check_sha256{crate::arduino_version::validate_check(plan,directory,&link,&scope,&hash)?;return Ok(());}
-    let hash=crate::arduino_version::verify(plan,directory,&link,&scope,profile,(cancel,gate))?;
+    let hash=crate::arduino_version::verify(plan,directory,&link,&scope,profile,(cancel,gate),None)?;
     if let Some(dispatch)=dispatch{dispatch.retain_agent_project_check(input,&hash)?;}
     else{crate::live_dispatch::retain_agent_project_check(directory,input,&hash)?;}Ok(())
+}
+
+pub(crate) fn pending_copy_check(directory:&Path,input:&Input)->Result<(String,usize),String>{
+    let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;
+    let record=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveAgent(input.clone()))?.ok_or("Falta el envío original.")?;
+    if record.agent_project_check_sha256.is_some(){return Err("La copia ya tiene una comprobación vinculada; recupera su resultado local.".into());}
+    let plan=working_plan(input).ok_or("Falta el plan original de copia.")?;
+    let link=record.agent_project_capture.as_ref().ok_or("Falta la captura vinculada del proyecto; conserva el trabajo sin repetir la edición.")?;
+    checked_working_version(directory,input,record.agent_completion_sha256.as_deref().ok_or("Falta el recibo original.")?,record.agent_buffers_sha256.as_deref().ok_or("Faltan los buffers originales.")?,link,None)?;
+    crate::arduino_version::reader_ready(plan)?;
+    let checkpoint=crate::arduino_version::checkpoint(plan,directory,link)?;
+    if checkpoint.1>=2{return Err("Se agotaron los dos intentos originales de comprobación. Conserva la copia; esta propuesta no amplía recursos.".into());}Ok(checkpoint)
+}
+pub(crate) fn approved_copy_check(directory:&Path,input:&Input,approval:&crate::result_checks::Input)->Result<String,String>{
+    let record=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveAgent(input.clone()))?.ok_or("Falta el envío original.")?;
+    let plan=working_plan(input).ok_or("Falta la copia aprobada.")?;
+    let link=record.agent_project_capture.as_ref().ok_or("Falta la captura original.")?;
+    let buffers=record.agent_buffers_sha256.as_deref().ok_or("Faltan los buffers originales.")?;
+    let frame=read_buffer_checkpoint(directory,input,record.agent_completion_sha256.as_deref().ok_or("Falta el recibo original.")?,buffers)?;
+    let data=frame.buffers.into_iter().map(|b|(b.relative_path,b.source)).collect::<Vec<_>>();let identity=completion_identity(input)?;
+    crate::arduino_version::approved_check(plan,directory,link,&crate::arduino_version::Scope{input_sha256:&identity,buffer_sha256:buffers,buffers:&data},approval)
+}
+pub(crate) fn finish_approved_copy_check(directory:&Path,input:&Input,profile:&Path,cancel:Arc<AtomicBool>,gate:crate::process::DispatchGate<'_>,approval:&crate::result_checks::Input)->Result<(),String>{
+    let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;approval.validate()?;
+    if approval.program!=Some(crate::host_tools::Program::Agent) || approval.target_job_id!=input.job_id || approval.target_input_sha256!=completion_identity(input)?{return Err("La revisión no pertenece a esta copia.".into());}
+    let record=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveAgent(input.clone()))?.ok_or("Falta el envío original.")?;
+    let plan=working_plan(input).ok_or("Falta la copia aprobada.")?;
+    let link=record.agent_project_capture.as_ref().ok_or("Falta la captura original; no se recaptura el editor.")?;
+    let buffers=record.agent_buffers_sha256.as_deref().ok_or("Faltan los buffers originales.")?;
+    let frame=read_buffer_checkpoint(directory,input,record.agent_completion_sha256.as_deref().ok_or("Falta el recibo original.")?,buffers)?;
+    let data=frame.buffers.into_iter().map(|b|(b.relative_path,b.source)).collect::<Vec<_>>();let identity=completion_identity(input)?;
+    let scope=crate::arduino_version::Scope{input_sha256:&identity,buffer_sha256:buffers,buffers:&data};
+    let (checkpoint,count)=crate::arduino_version::checkpoint(plan,directory,link)?;
+    if checkpoint!=approval.edit_sha256{return Err("La copia cambió; se conserva sin reemplazarla.".into());}
+    let hash=if count==approval.attempts_before && record.agent_project_check_sha256.is_none(){
+        crate::arduino_version::verify(plan,directory,link,&scope,profile,(cancel,Some(gate)),Some(approval))?
+    }else{approved_copy_check(directory,input,approval)?};
+    retain_approved_copy_check(directory,input,&hash)
+}
+pub(crate) fn recover_approved_copy_check(directory:&Path,input:&Input,approval:&crate::result_checks::Input)->Result<(),String>{
+    let _exclusive=crate::pcb_copy_recovery::Exclusive::for_job(input.job_id)?;
+    let hash=approved_copy_check(directory,input,approval)?;retain_approved_copy_check(directory,input,&hash)
+}
+fn retain_approved_copy_check(directory:&Path,input:&Input,hash:&str)->Result<(),String>{
+    let record=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveAgent(input.clone()))?.ok_or("Falta el envío original.")?;
+    if record.agent_project_check_sha256.as_deref()!=Some(hash){crate::live_dispatch::retain_agent_project_check(directory,input,hash)?;}
+    if !recover_recorded_result(directory,input)?{return Err("La copia está comprobada; falta recuperar el informe original.".into());}
+    let mut checked=crate::project::OperationInput::LiveAgent(input.clone());checked.retain_receipt(directory).map_err(|_|"Falta el informe original.")?;
+    crate::live_dispatch::recover_checked(directory,&checked)
 }
 fn normalized_report(input:&Input,receipt:Receipt)->Result<Value,String>{
     receipt.validate_operation(input.job_id,&input.before,&input.source,input.save).map_err(|error|error.message())?;
@@ -659,7 +709,7 @@ pub(crate) fn recover_result(input:&Input,connection:&Connection,stage:&Path,can
     retain_report(&report,stage,true)?;Ok(true)
 }
 
-fn completion_identity(input:&Input)->Result<String,String>{let mut input=input.clone();input.receipt_sha256=None;Ok(crate::kicad_project::digest(&serde_json::to_vec(&input).map_err(|_|"Entrada del editor no válida.")?))}
+pub(crate) fn completion_identity(input:&Input)->Result<String,String>{let mut input=input.clone();input.receipt_sha256=None;Ok(crate::kicad_project::digest(&serde_json::to_vec(&input).map_err(|_|"Entrada del editor no válida.")?))}
 #[derive(Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Completion{version:u32,input_sha256:String,result:Value}
@@ -914,6 +964,22 @@ pub(crate) mod tests {
         let record=crate::live_dispatch::read(&root,&operation).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert!(record.agent_buffers_sha256.is_none());
         assert!(!root.join("agent-buffers.json").exists());assert!(!root.join("result.json").exists());assert!(!root.join("not-launched").exists());
         drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
+
+    pub(crate) fn retained_copy_fixture()->(PathBuf,PathBuf,Input){
+        use std::{fs,sync::Mutex};
+        let root=std::env::temp_dir().join(format!("hazlo-agent-resume-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
+        let source=root.join("OwnedSketch");fs::create_dir(&source).unwrap();let stage=root.join("stage");fs::create_dir(&stage).unwrap();
+        let verifier=root.join("arduino-cli.exe");fs::write(&verifier,b"owned placeholder, never execute").unwrap();
+        let plan:crate::arduino_version::Plan=serde_json::from_value(json!({"version":1,"verifier":verifier,"verifier_sha256":crate::kicad_project::digest(b"owned placeholder, never execute"),"source_root_id":crate::project::directory_identity(&crate::project::pin_directory(&source,false).unwrap()).unwrap(),"sketch_name":"OwnedSketch","excluded":[]})).unwrap();
+        let mut input=job_fixture();input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:source.clone(),working_version:Some(plan.clone())});
+        fs::write(source.join("OwnedSketch.ino"),&input.before.source).unwrap();fs::write(source.join("Closed.bin"),[0,255,1]).unwrap();
+        let operation=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&stage,&operation,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();drop(fence.enter().unwrap());
+        fence.retain_agent_completion(&input,&report_fixture(&input)).unwrap();let frame=checkpoint_fixture(&input);fence.retain_agent_buffers(&input,&frame).unwrap();
+        let record=crate::live_dispatch::read(&stage,&operation).unwrap().unwrap();let buffers=record.agent_buffers_sha256.unwrap();let identity=completion_identity(&input).unwrap();let frame:ProjectBuffers=serde_json::from_value(frame).unwrap();let data=frame.buffers.into_iter().map(|b|(b.relative_path,b.source)).collect::<Vec<_>>();
+        let (link,capture)=crate::arduino_version::capture(&plan,&source,&stage,&crate::arduino_version::Scope{input_sha256:&identity,buffer_sha256:&buffers,buffers:&data},&AtomicBool::new(false),||Ok(())).unwrap();
+        fence.retain_agent_project_capture(&input,&link,&capture).unwrap();drop(fence);(root,stage,input)
     }
 
     fn checkpoint_fixture(input:&Input)->Value{

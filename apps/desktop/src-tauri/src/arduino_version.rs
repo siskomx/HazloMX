@@ -182,13 +182,61 @@ pub(crate) fn matches_capture(link:&Link,capture:&Capture)->Result<(),String>{
     link.validate()?;if digest(&serde_json::to_vec(capture).map_err(|_|ERROR)?)!=link.sha256{return Err(ERROR.into());}Ok(())
 }
 pub(crate) fn entry(plan:&Plan,stage:&Path,link:&Link)->PathBuf{stage.join(&link.folder).join(&plan.sketch_name).join(plan.main_name())}
-pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_profile:&Path,control:(Arc<AtomicBool>,Option<crate::process::DispatchGate<'_>>))->Result<String,String>{
+
+#[derive(Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Owner{job_id:uuid::Uuid,input_sha256:String}
+#[derive(Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Readback{version:u32,capture_sha256:String,
+    #[serde(default,skip_serializing_if="Option::is_none")]approval:Option<Owner>,
+    #[serde(default,skip_serializing_if="Option::is_none")]result_sha256:Option<String>}
+fn readbacks(destination:&Path)->Result<Vec<Readback>,String>{
+    let destination=destination.canonicalize().map_err(|_|ERROR)?;
+    let mut records=Vec::new();
+    for entry in fs::read_dir(&destination).map_err(|_|ERROR)?{
+        let entry=entry.map_err(|_|ERROR)?;let name=entry.file_name();let name=name.to_str().ok_or(ERROR)?;
+        if !name.starts_with("readback-"){continue;}
+        let id=name.strip_prefix("readback-").and_then(|s|s.strip_suffix(".json")).and_then(|s|uuid::Uuid::parse_str(s).ok()).ok_or(ERROR)?;
+        if name!=format!("readback-{id}.json"){return Err(ERROR.into());}
+        let record:Readback=serde_json::from_slice(&read_regular(&entry.path(),4096).map_err(|_|ERROR)?).map_err(|_|ERROR)?;
+        if record.version!=1 || !crate::kicad_project::valid_hash(&record.capture_sha256)
+            || record.result_sha256.as_ref().is_some_and(|h|!crate::kicad_project::valid_hash(h))
+            || record.approval.as_ref().is_some_and(|a|a.job_id.is_nil() || !crate::kicad_project::valid_hash(&a.input_sha256)){return Err(ERROR.into());}
+        records.push(record);if records.len()>2{return Err(ERROR.into());}
+    }Ok(records)
+}
+pub(crate) fn checkpoint(plan:&Plan,stage:&Path,link:&Link)->Result<(String,usize),String>{
+    plan.validate()?;link.validate()?;let root=stage.join(&link.folder);let pins=pin_lineage(&root).map_err(|_|ERROR)?;let root=root.canonicalize().map_err(|_|ERROR)?;
+    let sketch=pin_directory(&root.join(&plan.sketch_name),false).map_err(|_|ERROR)?;
+    let hash=digest(&serde_json::to_vec(&json!({"capture":link,"directory":directory_identity(pins.last().ok_or(ERROR)?).map_err(|_|ERROR)?,"sketch":directory_identity(&sketch).map_err(|_|ERROR)?})).map_err(|_|ERROR)?);
+    let records=readbacks(&root)?;if records.iter().any(|r|r.capture_sha256!=link.sha256){return Err(ERROR.into());}
+    Ok((hash,records.len()))
+}
+pub(crate) fn reader_ready(plan:&Plan)->Result<(),String>{verifier_pins(plan).map(|_|())}
+pub(crate) fn approved_check(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,approval:&crate::result_checks::Input)->Result<String,String>{
+    approval.validate()?;
+    let (hash,count)=checkpoint(plan,stage,link)?;
+    if approval.program!=Some(crate::host_tools::Program::Agent) || approval.target_input_sha256!=scope.input_sha256 || hash!=approval.edit_sha256 || count!=approval.attempts_before+1{return Err(ERROR.into());}
+    let identity=approval.identity()?;let records=readbacks(&stage.join(&link.folder))?;
+    let owned=records.iter().filter(|r|r.approval.as_ref().is_some_and(|a|a.job_id==approval.job_id && a.input_sha256==identity)).collect::<Vec<_>>();
+    if owned.len()!=1{return Err(ERROR.into());}let result=owned[0].result_sha256.as_deref().ok_or(ERROR)?;
+    validate_check(plan,stage,link,scope,result)?;Ok(result.into())
+}
+pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_profile:&Path,control:(Arc<AtomicBool>,Option<crate::process::DispatchGate<'_>>),approval:Option<&crate::result_checks::Input>)->Result<String,String>{
     let (cancel,gate)=control;
     stop(&cancel)?;drop(gate.map(|g|g.enter(&cancel)).transpose()?);let (_,snapshot)=load(plan,stage,link,scope)?;let _verifier=verifier_pins(plan)?;
     let destination=stage.join(&link.folder).canonicalize().map_err(|_|ERROR)?;
-    let attempts=fs::read_dir(&destination).map_err(|_|ERROR)?.filter_map(Result::ok).filter(|e|e.file_name().to_string_lossy().starts_with("readback-")).count();
+    let attempts=readbacks(&destination)?.len();
+    if let Some(approval)=approval{
+        approval.validate()?;
+        if checkpoint(plan,stage,link)?!=(approval.edit_sha256.clone(),approval.attempts_before)
+            || approval.program!=Some(crate::host_tools::Program::Agent) || approval.target_input_sha256!=scope.input_sha256{return Err(ERROR.into());}
+    }
     if attempts>=2{return Err("Se alcanzó el límite de dos comprobaciones nativas de la copia. Se conservó el trabajo; no repitas la edición.".into());}
-    write_new(&destination.join(format!("readback-{}.json",uuid::Uuid::new_v4())),&serde_json::to_vec(&json!({"version":1,"capture_sha256":link.sha256})).map_err(|_|ERROR)?)?;
+    let ticket=destination.join(format!("readback-{}.json",uuid::Uuid::new_v4()));
+    let mut readback=Readback{version:1,capture_sha256:link.sha256.clone(),approval:approval.map(|a|a.identity().map(|identity|Owner{job_id:a.job_id,input_sha256:identity})).transpose()?,result_sha256:None};
+    write_new(&ticket,&serde_json::to_vec(&readback).map_err(|_|ERROR)?)?;
     let (env,_profile_pins)=profile(private_profile)?;let archive=private_profile.join("native-readback.zip");
     let sketch=stage.join(&link.folder).join(&plan.sketch_name).canonicalize().map_err(|_|ERROR)?;
     let args=["--config-file".into(),private_profile.join("arduino-cli.yaml").into_os_string(),"sketch".into(),"archive".into(),
@@ -211,7 +259,9 @@ pub(crate) fn verify(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,private_
         "gui_state_checked":false,"compilation_checked":false,"physical_function_checked":false,"agreed_task_outcome_checked":false});
     let bytes=serde_json::to_vec(&proof).map_err(|_|ERROR)?;let path=destination.join("verification.json");
     if path.try_exists().map_err(|_|ERROR)?{if read_regular(&path,65536).map_err(|_|ERROR)?!=bytes{return Err(ERROR.into());}}
-    else{write_new(&path,&bytes).map_err(|_|ERROR)?;}Ok(digest(&bytes))
+    else{write_new(&path,&bytes).map_err(|_|ERROR)?;}
+    let hash=digest(&bytes);validate_check(plan,stage,link,scope,&hash)?;
+    readback.result_sha256=Some(hash.clone());crate::project::atomic_json(&ticket,&readback,true).map_err(|_|ERROR)?;Ok(hash)
 }
 pub(crate) fn validate_check(plan:&Plan,stage:&Path,link:&Link,scope:&Scope<'_>,hash:&str)->Result<Value,String>{
     let (capture,_snapshot)=load(plan,stage,link,scope)?;
@@ -246,12 +296,26 @@ mod tests{
     }
     impl Drop for Fixture{fn drop(&mut self){fs::remove_dir_all(&self.root).unwrap();}}
 
+
+    #[test]
+    fn a_consumed_resume_cannot_retry_an_unknown_check_or_adopt_a_different_approval(){
+        let f=Fixture::new();let (link,_)=f.capture();let (edit_sha256,attempts_before)=checkpoint(&f.plan,&f.stage,&link).unwrap();
+        let input=crate::result_checks::Input{result_checks_version:2,program:Some(crate::host_tools::Program::Agent),job_id:uuid::Uuid::new_v4(),target_job_id:uuid::Uuid::new_v4(),target_input_sha256:f.scope().input_sha256.into(),edit_sha256,attempts_before,agreement:crate::native_tools::tests::agreement_fixture(),receipt_sha256:None};
+        let root=f.stage.join(&link.folder);let ticket=root.join(format!("readback-{}.json",uuid::Uuid::new_v4()));
+        let record=Readback{version:1,capture_sha256:link.sha256.clone(),approval:Some(Owner{job_id:input.job_id,input_sha256:input.identity().unwrap()}),result_sha256:None};
+        write_new(&ticket,&serde_json::to_vec(&record).unwrap()).unwrap();assert!(approved_check(&f.plan,&f.stage,&link,&f.scope(),&input).is_err());
+        let profile=f.root.join("never-retry");let error=verify(&f.plan,&f.stage,&link,&f.scope(),&profile,(Arc::new(AtomicBool::new(false)),None),Some(&input)).unwrap_err();assert_eq!(error,ERROR);assert!(!profile.exists());assert_eq!(readbacks(&root).unwrap().len(),1);
+        let mut other=input.clone();other.job_id=uuid::Uuid::new_v4();assert!(approved_check(&f.plan,&f.stage,&link,&f.scope(),&other).is_err());
+        assert_eq!(fs::read(entry(&f.plan,&f.stage,&link)).unwrap(),f.buffers[0].1.as_bytes());
+        let legacy:Readback=serde_json::from_value(json!({"version":1,"capture_sha256":link.sha256})).unwrap();assert_eq!(serde_json::to_value(legacy).unwrap(),json!({"version":1,"capture_sha256":link.sha256}));
+    }
+
     #[test]
     fn paused_reader_keeps_the_copy_and_does_not_consume_a_check_attempt(){
         let f=Fixture::new();let (link,_)=f.capture();let before=fs::read(entry(&f.plan,&f.stage,&link)).unwrap();
         let mutex=std::sync::Mutex::new(());let paused=AtomicBool::new(true);
         let gate=crate::process::DispatchGate{mutex:&mutex,paused:&paused};let private=f.root.join("never-started-reader");
-        assert!(verify(&f.plan,&f.stage,&link,&f.scope(),&private,(Arc::new(AtomicBool::new(false)),Some(gate))).is_err());
+        assert!(verify(&f.plan,&f.stage,&link,&f.scope(),&private,(Arc::new(AtomicBool::new(false)),Some(gate)),None).is_err());
         assert!(!private.exists());assert!(!f.stage.join(&link.folder).join("verification.json").exists());
         assert_eq!(fs::read_dir(f.stage.join(&link.folder)).unwrap().count(),2);
         assert_eq!(fs::read(entry(&f.plan,&f.stage,&link)).unwrap(),before);validate_capture(&f.plan,&f.stage,&link,&f.scope()).unwrap();
@@ -297,5 +361,7 @@ mod tests{
         let mut f=Fixture::new();f.stage=f.stage.join("long-project-directory".repeat(6));fs::create_dir(&f.stage).unwrap();
         let (link,_)=f.capture();assert!(entry(&f.plan,&f.stage,&link).as_os_str().len()>260);
         validate_capture(&f.plan,&f.stage,&link,&f.scope()).unwrap();
+        let root=f.stage.join(&link.folder);fs::write(root.join(format!("readback-{}.json",uuid::Uuid::new_v4())),serde_json::to_vec(&json!({"version":1,"capture_sha256":link.sha256})).unwrap()).unwrap();
+        assert_eq!(checkpoint(&f.plan,&f.stage,&link).unwrap().1,1);
     }
 }
