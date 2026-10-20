@@ -52,6 +52,13 @@ export function proposalFacts(run: Snapshot): string[] {
     }else facts.push("Propuesta anterior sin resultado y supuestos estructurados; pide a Hazlo que la prepare de nuevo antes de continuar.");
   }
   if(input.result_checks_version){
+    if(input.program==="drawing"){
+      facts.push("Reanudar solo la comprobación de la misma copia DXF conservada mediante el lector CADCraft compatible y vinculado. No se repite la edición, la exportación del original ni una captura del dibujo actual.",
+        "Esta nueva aprobación autoriza un intento adicional de lectura independiente de hasta 60 segundos, con un máximo de dos comprobaciones registradas por copia. Los intentos históricos sin registro siguen desconocidos; no se convierten en permiso reutilizable.",
+        "El lector abre la copia en un perfil local aislado y compara geometría, unidades, bytes de la serialización y los metadatos observables de capas, tablas y espacios. El original, sus cambios manuales y la copia conservada quedan intactos. No verifica toda función DWG, recursos visuales ni funcionamiento físico.",
+        "Detener o corregir pausa los siguientes pasos; una llamada admitida puede terminar. Si cambió la copia, su tarea o sus vínculos, Hazlo conserva el trabajo y pausa. Este permiso no amplía el límite registrado.",
+        "El informe queda local; compartirlo con una IA requiere su permiso separado. Comprobar esta copia no certifica su estado visual ni el resultado completo de la tarea.");return facts;
+    }
     if(input.program==="freecad"){
       facts.push("Reanudar solo la comprobación de la misma copia nativa conservada mediante un lector FreeCAD compatible y detectado. No se repite la edición ni se recaptura el editor original.",
         "Esta nueva aprobación autoriza un intento adicional de lectura independiente de hasta 90 segundos, con un máximo de dos comprobaciones registradas por copia. Los intentos históricos sin registro siguen desconocidos; no se reinician ni se convierten en permiso reutilizable.",
@@ -88,7 +95,8 @@ export function proposalFacts(run: Snapshot): string[] {
     facts.push("Cambiar el dibujo abierto en CADCraft.","Dibujo: "+input.before.title,"Objetivo: "+input.description);
     if(op.action==="circle") facts.push(`Crear un círculo de ${number(op.diameter)} ${unit} de diámetro (ancho completo), con centro horizontal ${number(op.center[0])}, vertical ${number(op.center[1])} ${unit}.`);
     else facts.push(`Mover el círculo ${number(op.delta[0])} ${unit} en horizontal y ${number(op.delta[1])} ${unit} en vertical.`);
-    facts.push(input.native_working_version===1?"Verás el cambio en CADCraft y puedes deshacerlo allí. El original permanece sin guardar; Hazlo incluye una nueva copia DXF y comprueba sus datos, geometría y unidades al reabrirla por separado. Se comparan las capas y los nombres de estilos y hojas; no todas sus propiedades. La vista y la función física no se comprueban.":"Verás el cambio en CADCraft y puedes deshacerlo allí. No se guarda ni exporta el dibujo.","Hazlo comprobará la identidad nativa y releerá la geometría. Cancelar detiene la espera y no deshace una edición aceptada.");
+    if(input.native_working_version===2)facts.push("La comprobación de esta copia admite como máximo dos intentos registrados del lector nativo, de hasta 60 segundos cada uno. Un intento incierto queda consumido; no se repite automáticamente. Detener o corregir pausa los siguientes pasos y otra revisión necesita una aprobación actualizada.");
+    facts.push(input.native_working_version?"Verás el cambio en CADCraft y puedes deshacerlo allí. El original permanece sin guardar; Hazlo incluye una nueva copia DXF y comprueba sus datos, geometría y unidades al reabrirla por separado. Se comparan las capas y los nombres de estilos y hojas; no todas sus propiedades. La vista y la función física no se comprueban.":"Verás el cambio en CADCraft y puedes deshacerlo allí. No se guarda ni exporta el dibujo.","Hazlo comprobará la identidad nativa y releerá la geometría. Cancelar detiene la espera y no deshace una edición aceptada.");
   } else if(input.live_agent_version){
     if(input.save) facts.push("Guardar el sketch abierto con Arduino Agent.", "Sketch: " + input.before.name,
       "Objetivo: " + input.description, "Se guardará el código actual, incluida tu nota y los cambios sin guardar.",

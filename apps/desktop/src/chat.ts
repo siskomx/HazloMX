@@ -298,7 +298,7 @@ function apply(next: DesktopSnapshot) {
   }
   if(next.job?.snapshot.input.result_checks_version && next.job.snapshot.phase==="awaiting_approval" && next.job.snapshot.input.job_id!==state.job?.snapshot.input.job_id && next.job.snapshot.project_id===next.project?.[0]){
     program=next.job.snapshot.input.program??"kicad";sourceContext={};sourceNames={};sourcePreviousJobs={};nativeCatalog=undefined;
-    inspectionNotice=program==="freecad"?"Hazlo comprobó el lector FreeCAD compatible para revisar la copia conservada; no hace falta abrir el editor original.":program==="agent"?"Hazlo comprobó el lector Arduino CLI de esta copia; no hace falta volver a conectar el editor original.":"Hazlo detectó el lector KiCad para comprobar la copia conservada; no hace falta volver a conectar el editor original.";
+    inspectionNotice=program==="drawing"?"Hazlo comprobó el lector CADCraft vinculado para revisar la copia conservada; no hace falta abrir el dibujo original.":program==="freecad"?"Hazlo comprobó el lector FreeCAD compatible para revisar la copia conservada; no hace falta abrir el editor original.":program==="agent"?"Hazlo comprobó el lector Arduino CLI de esta copia; no hace falta volver a conectar el editor original.":"Hazlo detectó el lector KiCad para comprobar la copia conservada; no hace falta volver a conectar el editor original.";
   }
   state = next; restore();
   const chat = state.chat;
@@ -393,7 +393,7 @@ function summary(run: Snapshot): string {
 }
 function changeDetails(run: Snapshot): string {
   const input = run.input;
-  if(input.result_checks_version)return JSON.stringify({agreement:input.agreement,scope:"retained_copy_checks_only",new_native_check_attempts:1,...(input.program==="freecad"?{remaining_recorded_allowance:2-input.attempts_before,time_limit_seconds:90,historical_unrecorded_attempts:"unknown"}:{remaining_original_allowance:2-input.attempts_before}),edit_repeated:false},null,2);
+  if(input.result_checks_version)return JSON.stringify({agreement:input.agreement,scope:"retained_copy_checks_only",new_native_check_attempts:1,...(["freecad","drawing"].includes(input.program??"")?{remaining_recorded_allowance:2-input.attempts_before,time_limit_seconds:input.program==="drawing"?60:90,historical_unrecorded_attempts:"unknown"}:{remaining_original_allowance:2-input.attempts_before}),edit_repeated:false},null,2);
   if(input.public_document_version)return JSON.stringify({url:input.url,purpose:input.purpose,response_stays_local:true},null,2);
   if (input.native_tools_version) return JSON.stringify({agreement:input.agreement,guard:input.guard,calls:input.calls,readback:input.readback},null,2);
   if (input.live_agent_version && input.save) return "Código actual que guardará Arduino Agent:\n" + input.before.source;

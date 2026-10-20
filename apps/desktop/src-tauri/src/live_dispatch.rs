@@ -149,7 +149,7 @@ pub(crate) fn read(directory: &Path, input: &OperationInput) -> Result<Option<Re
     }
     if record.drawing_copy_capture_sha256.is_some() || record.drawing_copy_check_sha256.is_some(){
         let OperationInput::LiveDrawing(drawing)=input else{return Err("La copia no pertenece a CADCraft.".into());};
-        if drawing.native_working_version!=Some(1) || record.drawing_completion_sha256.is_none(){return Err("Falta el resultado original de la copia CADCraft.".into());}
+        if !matches!(drawing.native_working_version,Some(1|2)) || record.drawing_completion_sha256.is_none(){return Err("Falta el resultado original de la copia CADCraft.".into());}
         let capture=record.drawing_copy_capture_sha256.as_deref().ok_or("Falta la captura original CADCraft.")?;
         crate::cadcraft_live::confirmed_working_capture(directory,drawing,capture)?;
         if let Some(checked)=&record.drawing_copy_check_sha256{crate::cadcraft_live::confirmed_working_version(directory,drawing,capture,checked)?;}
