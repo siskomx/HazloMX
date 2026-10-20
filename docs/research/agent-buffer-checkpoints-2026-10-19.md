@@ -1,0 +1,35 @@
+# Preserve the original native buffer checkpoint
+
+This checkpoint closes a recovery gap after a confirmed Arduino edit/save. A later inspection can contain newer manual changes; it cannot establish the exact other buffers present when the earlier operation completed.
+
+## Implemented behavior
+
+New typed chat proposals preflight the native companion's completion-checkpoint capability, available bounded storage and selected workspace context. The host binds that workspace root into the approved input. The mutation still targets the exact native document token, version and source digest through the existing one-use dispatch barrier. Legacy inputs omit the optional checkpoint plan and retain their original serialized identities and behavior.
+
+At completion, the companion synchronously snapshots the workspace's open text buffers and keeps an immutable serialized copy beside the exact original attempt. The existing per-read count/byte limits still apply. Checkpoints have an additional combined 8 MiB bound; the existing 128-attempt bound remains. Missing context, exceeded storage or a failed checkpoint never erases a separately confirmed edit/save receipt. Recovery matches all original mutation arguments before returning the cached checkpoint. It does not inspect current buffers, save, repeat an edit, change Undo history or capture a replacement checkpoint after the event. Reopening the same URI or restarting the companion does not recreate its former attempt cache.
+
+The host first anchors the independently validated original edit/save receipt. It then retrieves only that attempt's cached native buffers, validates their active-document state against the receipt and their root against the approved context, writes a new local `agent-buffers.json` and separately anchors its exact bytes. That local wrapper binds both the full input identity and the original completion hash. It rejects missing original admissions, mismatched roots/revisions/source, different existing checkpoint bytes and unrelated proofs. A real journal lock leaves the original body available but unbound; it is not adopted simply because the file looks valid. An identical native cached response can finish the bookkeeping after the lock clears.
+
+A missing checkpoint keeps the known native effect acknowledged, with reporting pending. It does not turn that effect back into an uncertain operation or permit another dispatch. Startup/local recovery can reconstruct an identical missing report once both original links are present, including with the IDE closed or the source folder gone. Historical validation checks the retained snapshot rather than following today's source paths. If the checkpoint was never linked and the original native cache is unavailable, recovery remains paused; a future explicitly reconciled fresh-checkpoint route is still required. Altered local reports/checkpoints remain untouched.
+
+## Simple chat and evidence
+
+The same approval describes a local record of open tabs and clearly distinguishes it from a complete saved project. It says that closed files, dependencies and independent working-version reopen remain unchecked. The capture itself does not save or modify other tabs. Recovery guidance directs the chat to the original cache, prohibits substituting a fresh buffer read and requires published-result confirmation before a follow-up.
+
+`read_verified_result` exposes only validated historical checkpoint metadata alongside the existing native receipt. Absolute workspace roots and source bodies are omitted from that projection. The complete reply and its derivatives still use the existing task/service evidence gate. The source-bearing checkpoint stays local; retaining it does not authorize sharing or a provider switch. No model is downloaded or contacted by these tests.
+
+## Native copy investigation
+
+The program's existing Save As implementation already copies a sketch and applies native dirty-buffer snapshots, but it prompts for the destination and can switch the workspace. It is not an unattended copy interface with a supplied destination. [Arduino Agent 0.7.1 Save As source](https://github.com/mixelpixx/Arduino-Agent/blob/v0.7.1/arduino-ide-extension/src/browser/contributions/save-as-sketch.ts).
+
+The CLI archive implementation opens the sketch and supports including the build directory. [Arduino CLI 1.5.1 archive source](https://github.com/arduino/arduino-cli/blob/v1.5.1/commands/service_sketch_archive.go). The [reproducible native probe](../../tests/arduino/native_archive_probe.py) pins the executable, uses a fresh isolated profile and runs `--include-build-dir`. It requires exact bytes for all eight synthetic files from the earlier fixture, including its build entry, with no duplicate, unexpected or missing archive entries and no changed originals. The default-mode omission remains correctly documented in the earlier record. This is useful evidence for a whole-project checker, not a completed application working-copy path or a dependency/compile/physical-function check.
+
+## Validation and remaining scope
+
+- 375 desktop-enabled Rust library/binary tests pass serially; 76 environment cases are skipped. Agent-specific tests include real Windows file locking, immutable original links, unbound-body refusal, offline report recovery and confirmed edit/save failures before checkpoint completion. The fake native server receives one mutation and then only the exact cached-checkpoint query.
+- All 33 companion/profile/transport tests pass, including later manual edits, editor closure, caller mutation of returned objects, missing/uncertain caches, separate saves and the storage bound without losing earlier receipts/checkpoints.
+- Rebuilt production Rust host acceptance passes against the actual authenticated named-pipe companion and a controlled editor API. Approved edits/follow-up/save retain the unsaved header checkpoint, return bounded historical metadata, omit private roots, preserve disk files and recover saved jobs. This is not a real IDE/provider conversation.
+- All-target desktop Clippy, the frontend production build, Spanish approval-facts checks and the headless durable-task chat fixture pass. The browser fixture covers checkpoint recovery guidance without another approval or edit.
+- The expanded actual-program probe now checks that a retained checkpoint survives native Undo while current buffers differ. Windows is still locked: its supervisor skips launch before any native action. This acceptance remains pending, with private preparation/logs retained. Neither a prepared fixture nor a skipped launch is a pass.
+
+The [bounded acceptance record](agent-buffer-checkpoints-2026-10-19/acceptance.json) excludes user paths and source bodies. Whole-project file/dependency preservation and safe native reopen remain outstanding; an open-buffer checkpoint does not satisfy those requirements. Broader integration/concurrency and task-outcome boundaries, actual native-window acceptance and the Windows release lifecycle remain active. The installed application and installer are unchanged; KiCad 10 live schematics remain pending.

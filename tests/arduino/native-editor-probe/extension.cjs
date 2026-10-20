@@ -93,10 +93,12 @@ async function runProbe() {
     assert.equal(doc.getText(), expectedSetupSource, "The IDE must deliver the setup source change before the actual companion test");
     const tools = await connect(path.join(root, "profile", ".arduinoIDE", "hazlomexa-editor"), {name:path.basename(file),version:doc.version,source:doc.getText()});
     const inspect = async () => { const reply = await tools.request({action:"inspect"}); assert.equal(reply.ok,true); return reply.result; };
+    const originalAttempts=[];
     const apply = async before => {
       const source = before.source.replace(/delay\(\d+\)/, before.source.includes("delay(1000)") ? "delay(500)" : "delay(250)");
-      const reply = await tools.request({action:"apply", job_id:crypto.randomUUID(), instance_id:before.instance_id,
-        document_token:before.document_token, version:before.version, state_sha256:before.state_sha256, source});
+      const request={action:"apply", job_id:crypto.randomUUID(), instance_id:before.instance_id,
+        document_token:before.document_token, version:before.version, state_sha256:before.state_sha256, source};
+      const reply = await tools.request(request);originalAttempts.push(request);
       assert.equal(reply.ok, true, "Native edit/readback must confirm");
       return reply.result.after;
     };
@@ -148,6 +150,12 @@ async function runProbe() {
     assert(restored.version > beforeUndo.version);
     assert.equal(restored.source, original.source, "Native undo must preserve the earlier user note");
     result.native_undo_verified = true;
+    const historical=await tools.request({action:"recover_project_buffers",original:originalAttempts[0]});
+    assert.equal(historical.ok,true,"The original native checkpoint must survive Undo without rereading today's buffers");
+    assert.equal(historical.result.buffers.find(item=>item.relative_path==="OwnedSketch.ino").source,beforeUndo.source);
+    assert.equal(historical.result.buffers.find(item=>item.relative_path==="Helper.h").source,headerSource);
+    assert.equal((await inspect()).source,restored.source);
+    result.historical_native_buffers_verified=true;
     result.stage = "native edit and follow-up"; save();
     const first = await apply(await inspect()), second = await apply(await inspect());
     assert(first.source.includes("delay(500)") && second.source.includes("delay(250)"));

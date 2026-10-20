@@ -129,6 +129,60 @@ test("native recovery preserves completed edits and later manual changes without
   }
   const restarted=createEditorTools(f.api);assert.equal((await restarted.request({action:"recover",original:request})).ok,false);assert.equal(f.editor.calls,1);
 });
+test("completion checkpoint retains unsaved tabs after later changes and editor closure without rereading",async()=>{
+  const f=fixture(),h=header(f);workspace(f,[f.doc,h]);
+  const before=await read(f),request=apply(before,before.source.replace("1000","500"));
+  const done=await f.tools.request(request);assert.equal(done.ok,true);
+  const frame=await f.tools.request({action:"recover_project_buffers",original:request});assert.equal(frame.ok,true);
+  assert.equal(frame.result.completion_checkpoint_version,1);
+  assert.equal(frame.result.buffers.find(x=>x.relative_path==="Sketch.ino").source,done.result.after.source);
+  assert.equal(frame.result.buffers.find(x=>x.relative_path==="Helper.h").source,h.text);
+  const exact=JSON.parse(JSON.stringify(frame));frame.result.buffers[0].source="caller altered response";
+  f.doc.text+="// later manual edit\n";f.doc.version++;h.text+="// later header edit\n";h.version++;
+  const manual=f.doc.text;f.doc.isClosed=true;h.isClosed=true;f.api.window.activeTextEditor=undefined;
+  f.doc.getText=h.getText=()=>{throw Error("Must not reread current state");};
+  assert.deepEqual(await f.tools.request({action:"recover_project_buffers",original:request}),exact);
+  assert.deepEqual(await f.tools.request({action:"recover",original:request}),done);
+  assert.equal((await f.tools.request({action:"recover_project_buffers",original:{...request,source:request.source+"changed"}})).ok,false);
+  assert.equal((await createEditorTools(f.api).request({action:"recover_project_buffers",original:request})).ok,false);
+  assert.equal(f.doc.text,manual);assert.equal(f.editor.calls,1);
+});
+test("missing or uncertain checkpoints never erase a confirmed receipt or recapture today's buffers",async()=>{
+  const f=fixture(),before=await read(f),request=apply(before,before.source.replace("1000","500"));
+  const done=await f.tools.request(request);assert.equal(done.ok,true);
+  workspace(f,[f.doc,header(f)]);
+  assert.equal((await f.tools.request({action:"recover_project_buffers",original:request})).ok,false);
+  assert.deepEqual(await f.tools.request({action:"recover",original:request}),done);
+  assert.equal(f.editor.calls,1);
+  const uncertain=fixture();workspace(uncertain);const initial=await read(uncertain),attempt=apply(initial,initial.source.replace("1000","500"));
+  uncertain.editor.mode="lost_reply";assert.equal((await uncertain.tools.request(attempt)).outcome,"uncertain");
+  assert.equal((await uncertain.tools.request({action:"recover_project_buffers",original:attempt})).ok,false);
+  assert.equal(uncertain.editor.calls,1);
+});
+test("bounded checkpoint storage preserves prior checkpoints and separately confirmed later effects",async()=>{
+  const f=fixture(),h=header(f,"Large.h","\u0001".repeat(50000));workspace(f,[f.doc,h]);
+  let first,original,last,lastReply;
+  for(let i=0;i<30;i++){
+    const before=await read(f),request=apply(before,before.source+`// local step ${i}\n`);
+    const done=await f.tools.request(request);assert.equal(done.ok,true);
+    if(i===0){first=await f.tools.request({action:"recover_project_buffers",original:request});original=request;}
+    last=request;lastReply=done;
+  }
+  const state=await projectBuffers(f);assert.equal(state.result.checkpoint_capacity_available,false);
+  assert.equal((await f.tools.request({action:"recover_project_buffers",original:last})).ok,false);
+  assert.deepEqual(await f.tools.request({action:"recover",original:last}),lastReply);
+  assert.deepEqual(await f.tools.request({action:"recover_project_buffers",original}),first);
+  assert.equal(f.editor.calls,30);
+});
+test("native save checkpoint records clean active code and preserves the unsaved header",async()=>{
+  const f=fixture(),h=header(f);workspace(f,[f.doc,h]);let saves=0;
+  f.doc.save=async()=>{saves++;f.doc.isDirty=false;return true;};
+  const before=await read(f),request=save(before),done=await f.tools.request(request);assert.equal(done.ok,true);
+  const frame=await f.tools.request({action:"recover_project_buffers",original:request});assert.equal(frame.ok,true);
+  assert.equal(frame.result.buffers.find(x=>x.relative_path==="Sketch.ino").dirty,false);
+  assert.equal(frame.result.buffers.find(x=>x.relative_path==="Helper.h").dirty,true);
+  assert.equal(saves,1);assert.equal(f.editor.calls,0);
+});
 test("native save recovery never saves again and rejects reuse of an attempted identity",async()=>{
   const f=fixture(),before=await read(f),request=save(before);let saves=0;
   f.doc.save=async()=>{saves++;f.doc.isDirty=false;return true;};

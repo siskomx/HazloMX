@@ -242,16 +242,20 @@ pub async fn inspect_open(
     Ok(result)
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct ProjectBuffers {
     project_buffers_version: u32,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    completion_checkpoint_version:Option<u32>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    checkpoint_capacity_available:Option<bool>,
     instance_id: Uuid,
     active_document_token: Uuid,
     root: PathBuf,
     buffers: Vec<OpenBuffer>,
 }
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct OpenBuffer {
     relative_path: String,
@@ -264,13 +268,21 @@ struct OpenBuffer {
 }
 impl ProjectBuffers {
     fn validate(&self, before: &Observation) -> Result<(), Failure> {
+        self.validate_saved(before)?;
+        let _root=crate::project::pin_lineage(&self.root).map_err(|_| Failure::Refused)?;
+        for buffer in &self.buffers {
+            let path=self.root.join(&buffer.relative_path);
+            let _parents=crate::project::pin_lineage(path.parent().ok_or(Failure::Refused)?).map_err(|_|Failure::Refused)?;
+        }
+        Ok(())
+    }
+    fn validate_saved(&self, before: &Observation) -> Result<(), Failure> {
         before.validate()?;
         if self.project_buffers_version != 1 || self.instance_id != before.instance_id
             || self.active_document_token != before.document_token || self.buffers.is_empty() || self.buffers.len() > 32 {
             return Err(Failure::Refused);
         }
         crate::project::valid_location(&self.root).map_err(|_| Failure::Refused)?;
-        let _root = crate::project::pin_lineage(&self.root).map_err(|_| Failure::Refused)?;
         let mut names = std::collections::HashSet::new();
         let mut tokens = std::collections::HashSet::new();
         let mut total = 0;
@@ -283,8 +295,6 @@ impl ProjectBuffers {
             }
             let path = self.root.join(&relative);
             crate::project::valid_location(&path).map_err(|_| Failure::Refused)?;
-            let _parents = crate::project::pin_lineage(path.parent().ok_or(Failure::Refused)?)
-                .map_err(|_| Failure::Refused)?;
             total += buffer.source.len();
             if !names.insert(buffer.relative_path.to_lowercase()) || !tokens.insert(buffer.document_token)
                 || buffer.document_token.is_nil() || buffer.version == 0 || buffer.version > 9007199254740991
@@ -303,6 +313,24 @@ impl ProjectBuffers {
         if !active { return Err(Failure::Refused); }
         Ok(())
     }
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BufferCheckpointPlan {
+    version:u32,
+    root:PathBuf,
+}
+impl BufferCheckpointPlan {
+    fn validate(&self)->Result<(),String>{
+        if self.version!=1{return Err("La captura de buffers no es compatible.".into());}
+        crate::project::valid_location(&self.root).map_err(|_|"La carpeta nativa de captura no es válida.".into())
+    }
+}
+pub async fn buffer_checkpoint_plan(connection:&Connection,before:&Observation,cancel:&AtomicBool)->Result<BufferCheckpointPlan,String>{
+    let buffers=inspect_project_buffers(connection,before,cancel).await.map_err(|_|"No se confirmó el contexto del sketch; prepara el complemento actualizado antes de editar. No se cambió ni guardó el documento.")?;
+    if buffers.completion_checkpoint_version!=Some(1) || buffers.checkpoint_capacity_available!=Some(true){return Err("El complemento no puede conservar otro checkpoint de buffers. Conserva el trabajo y prepara su versión actual antes de editar.".into());}
+    Ok(BufferCheckpointPlan{version:1,root:buffers.root})
 }
 
 async fn inspect_project_buffers(connection: &Connection, before: &Observation, cancel: &AtomicBool) -> Result<ProjectBuffers, Failure> {
@@ -407,9 +435,12 @@ pub struct Input {
     pub agreement:Option<crate::native_tools::Agreement>,
     #[serde(default,skip_serializing_if="Option::is_none")]
     pub native_completion_version:Option<u32>,
+    #[serde(default,skip_serializing_if="Option::is_none")]
+    pub buffer_checkpoint:Option<BufferCheckpointPlan>,
 }
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(plan)=&self.buffer_checkpoint{plan.validate()?;if self.native_completion_version!=Some(1){return Err("La captura necesita el recibo nativo original.".into());}}
         if let Some(agreement)=&self.agreement{agreement.validate()?;}
         self.before.validate().map_err(|error| error.message())?;
         if self.schema_version != 1
@@ -459,6 +490,7 @@ pub fn validate_report(input: &Input, report: &serde_json::Value) -> Result<(), 
 }
 
 pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,cancel:&AtomicBool,dispatch:&Arc<crate::live_dispatch::Dispatch>)->Result<(),String>{
+    let _root_pin=input.buffer_checkpoint.as_ref().map(|plan|crate::project::pin_lineage(&plan.root).map_err(|_|"No se pudo fijar la carpeta aprobada del sketch.")).transpose()?;
     let dispatch=Some(dispatch);
     input.validate()?;
     connection
@@ -480,7 +512,63 @@ pub(crate) fn run_gated(input:&Input,connection:&Connection,stage:&Path,cancel:&
         )) }.map_err(|error| error.message())?;
     let report=normalized_report(input,receipt)?;
     dispatch.ok_or("Falta el envío original del editor.")?.retain_agent_completion(input,&report)?;
+    if input.buffer_checkpoint.is_some(){
+        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel))?;
+        dispatch.ok_or("Falta el envío original del editor.")?.retain_agent_buffers(input,&buffers)?;
+    }
     retain_report(&report,stage,false)
+}
+fn original_request(input:&Input)->Value{
+    let mut original=json!({"action":if input.save{"save"}else{"apply"},"job_id":input.job_id,
+        "instance_id":input.before.instance_id,"document_token":input.before.document_token,
+        "version":input.before.version,"state_sha256":input.before.state_sha256});
+    if !input.save{original["source"]=json!(input.source);}original
+}
+fn report_after(input:&Input,report:&Value)->Result<Observation,String>{
+    validate_report(input,report)?;let mut after=report["after"].clone();after["source"]=json!(input.source);
+    serde_json::from_value(after).map_err(|_|"Falta el estado nativo confirmado del sketch.".into())
+}
+fn validate_buffer_checkpoint(input:&Input,report:&Value,buffers:&ProjectBuffers)->Result<(),String>{
+    let plan=input.buffer_checkpoint.as_ref().ok_or("La propuesta no incluía captura de buffers.")?;
+    plan.validate()?;
+    buffers.validate_saved(&report_after(input,report)?).map_err(|_|"El checkpoint no coincide con el recibo nativo original.")?;
+    if buffers.completion_checkpoint_version!=Some(1) || !buffers.root.as_os_str().eq_ignore_ascii_case(plan.root.as_os_str()){
+        return Err("El checkpoint no pertenece a la carpeta aprobada del sketch.".into());
+    }Ok(())
+}
+async fn recover_buffer_checkpoint(connection:&Connection,input:&Input,report:&Value,cancel:&AtomicBool)->Result<Value,String>{
+    let buffers:ProjectBuffers=exchange(connection,json!({"action":"recover_project_buffers","original":original_request(input)}),false,cancel,Duration::from_secs(15)).await
+        .map_err(|_|"La edición está confirmada, pero falta su checkpoint nativo de buffers. Conserva el trabajo; no repitas la edición ni captures el estado actual como si fuera el original.")?;
+    validate_buffer_checkpoint(input,report,&buffers)?;
+    serde_json::to_value(buffers).map_err(|_|"No se pudo conservar el checkpoint nativo.".into())
+}
+#[derive(Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BufferCheckpoint{version:u32,input_sha256:String,completion_sha256:String,buffers:ProjectBuffers}
+pub(crate) fn write_buffer_checkpoint(directory:&Path,input:&Input,core_hash:&str,value:&Value)->Result<String,String>{
+    let report=confirmed_completion(directory,input,core_hash)?;
+    let buffers:ProjectBuffers=serde_json::from_value(value.clone()).map_err(|_|"El checkpoint nativo no es válido.")?;
+    validate_buffer_checkpoint(input,&report,&buffers)?;
+    let bytes=serde_json::to_vec(&BufferCheckpoint{version:1,input_sha256:completion_identity(input)?,completion_sha256:core_hash.into(),buffers}).map_err(|_|"No se pudo conservar el checkpoint nativo.")?;
+    if bytes.len()>FRAME_LIMIT{return Err("El checkpoint supera el límite local; la edición se conserva sin repetirse.".into());}
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el checkpoint local.")?;
+    let path=directory.join("agent-buffers.json");
+    if path.try_exists().map_err(|_|"No se pudo comprobar el checkpoint local.")?{
+        if crate::kicad_project::read_regular(&path,FRAME_LIMIT as u64)?!=bytes{return Err("El checkpoint local cambió; se conservó sin reemplazarlo.".into());}
+    }else{crate::kicad_project::write_new(&path,&bytes).map_err(|_|"El recibo nativo se conserva; falta almacenar su checkpoint. No repitas la edición.")?;}
+    Ok(crate::kicad_project::digest(&bytes))
+}
+pub(crate) fn confirmed_buffer_checkpoint(directory:&Path,input:&Input,core_hash:&str,hash:&str)->Result<Value,String>{
+    let _pins=crate::project::pin_lineage(directory).map_err(|_|"No se pudo fijar el checkpoint local.")?;
+    let bytes=crate::kicad_project::read_regular(&directory.join("agent-buffers.json"),FRAME_LIMIT as u64)?;
+    if !crate::kicad_project::valid_hash(hash) || crate::kicad_project::digest(&bytes)!=hash{return Err("El checkpoint de buffers cambió; se conserva la pausa.".into());}
+    let proof:BufferCheckpoint=serde_json::from_slice(&bytes).map_err(|_|"El checkpoint de buffers no es válido.")?;
+    if proof.version!=1 || proof.input_sha256!=completion_identity(input)? || proof.completion_sha256!=core_hash{return Err("El checkpoint no está vinculado al recibo original del editor.".into());}
+    let report=confirmed_completion(directory,input,core_hash)?;validate_buffer_checkpoint(input,&report,&proof.buffers)?;
+    Ok(json!({"scope":"historical_native_open_buffers_checkpoint","buffer_count":proof.buffers.buffers.len(),
+        "dirty_buffer_count":proof.buffers.buffers.iter().filter(|b|b.dirty).count(),"sha256":hash,
+        "complete_project":false,"disk_dependencies_checked":false,"working_version_reopen_checked":false,
+        "current_live_document_checked":false,"agreed_task_outcome_checked":false,"physical_function_checked":false}))
 }
 fn normalized_report(input:&Input,receipt:Receipt)->Result<Value,String>{
     receipt.validate_operation(input.job_id,&input.before,&input.source,input.save).map_err(|error|error.message())?;
@@ -507,14 +595,19 @@ pub(crate) fn recover_result(input:&Input,connection:&Connection,stage:&Path,can
     let record=crate::live_dispatch::read(stage,&crate::project::OperationInput::LiveAgent(input.clone()))?;
     if record.as_ref().is_some_and(|record|record.outcome==crate::native_journal::Outcome::Pending) || input.native_completion_version==Some(1) && record.is_none(){return Err("Falta el envío original admitido del editor; no se adoptó otro resultado.".into());}
     connection.validate_for(&input.before).map_err(|error|error.message())?;
-    let mut original=json!({"action":if input.save{"save"}else{"apply"},"job_id":input.job_id,"instance_id":input.before.instance_id,"document_token":input.before.document_token,"version":input.before.version,"state_sha256":input.before.state_sha256});
-    if !input.save{original["source"]=json!(input.source);}
     let runtime=tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_|"No se pudo iniciar la recuperación nativa.")?;
-    let value:serde_json::Value=runtime.block_on(exchange(connection,json!({"action":"recover","original":original}),false,cancel,Duration::from_secs(15))).map_err(|_|"El editor no conserva un resultado comprobado de esa operación. Se conserva el trabajo y la pausa; no repitas la edición.")?;
+    if let Some(core_hash)=record.as_ref().and_then(|r|r.agent_completion_sha256.as_deref()){
+        let report=confirmed_completion(stage,input,core_hash)?;
+        let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel))?;
+        crate::live_dispatch::retain_agent_buffers(stage,input,&buffers)?;
+        retain_report(&report,stage,true)?;return Ok(true);
+    }
+    let value:serde_json::Value=runtime.block_on(exchange(connection,json!({"action":"recover","original":original_request(input)}),false,cancel,Duration::from_secs(15))).map_err(|_|"El editor no conserva un resultado comprobado de esa operación. Se conserva el trabajo y la pausa; no repitas la edición.")?;
     if value==json!({"editor_recovery_version":1,"status":"running"}){return Ok(false);}
     let receipt:Receipt=serde_json::from_value(value).map_err(|_|"El recibo nativo no es compatible; se conserva la pausa.")?;
     let report=normalized_report(input,receipt)?;
     if record.is_some(){crate::live_dispatch::retain_agent_completion(stage,input,&report)?;}
+    if input.buffer_checkpoint.is_some(){let buffers=runtime.block_on(recover_buffer_checkpoint(connection,input,&report,cancel))?;crate::live_dispatch::retain_agent_buffers(stage,input,&buffers)?;}
     retain_report(&report,stage,true)?;Ok(true)
 }
 
@@ -545,6 +638,7 @@ pub(crate) fn recover_recorded_result(directory:&Path,input:&Input)->Result<bool
     let Some(record)=crate::live_dispatch::read(directory,&crate::project::OperationInput::LiveAgent(input.clone()))? else{return Ok(false);};
     let Some(hash)=record.agent_completion_sha256 else{return Ok(false);};
     let report=confirmed_completion(directory,input,&hash)?;
+    if input.buffer_checkpoint.is_some() && record.agent_buffers_sha256.is_none(){return Ok(false);}
     let bytes=serde_json::to_vec_pretty(&report).map_err(|_|"Recibo del editor no compatible.")?;
     let path=directory.join("result.json");
     if path.try_exists().map_err(|_|"No se pudo comprobar el informe del editor.")?{if crate::kicad_project::read_regular(&path,65536)?!=bytes{return Err("El informe del editor cambió; se conserva sin reemplazarlo.".into());}}
@@ -713,6 +807,100 @@ async fn save_with_dispatch(connection:&Connection,job:Uuid,before:&Observation,
 pub(crate) mod tests {
     use super::*;
     use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
+
+    fn checkpoint_fixture(input:&Input)->Value{
+        let report=report_fixture(input);let after=report_after(input,&report).unwrap();
+        json!({"project_buffers_version":1,"completion_checkpoint_version":1,"checkpoint_capacity_available":true,
+            "instance_id":after.instance_id,"active_document_token":after.document_token,
+            "root":input.buffer_checkpoint.as_ref().unwrap().root,"buffers":[
+                {"relative_path":after.name,"document_token":after.document_token,"version":after.version,"state_sha256":after.state_sha256,
+                    "source":after.source,"eol":after.eol,"dirty":after.dirty},
+                {"relative_path":"Helper.h","document_token":Uuid::new_v4(),"version":7,"state_sha256":digest("// PRIVATE_UNSAVED_HEADER\n"),
+                    "source":"// PRIVATE_UNSAVED_HEADER\n","eol":1,"dirty":true}]})
+    }
+    #[test]
+    fn buffer_checkpoints_require_the_original_core_and_dispatch_and_preserve_altered_files(){
+        use std::{fs,sync::Mutex};
+        use std::os::windows::fs::OpenOptionsExt;
+        let root=std::env::temp_dir().join(format!("hazlo-buffer-anchor-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
+        let native=root.join("native-sketch");fs::create_dir(&native).unwrap();
+        let mut input=job_fixture();input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native.clone()});
+        input.validate().unwrap();let frame=checkpoint_fixture(&input);let report=report_fixture(&input);
+        assert!(crate::live_dispatch::retain_agent_buffers(&root,&input,&frame).is_err());assert!(!root.join("agent-buffers.json").exists());
+        let op=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&op,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
+        assert!(fence.retain_agent_buffers(&input,&frame).is_err());drop(fence.enter().unwrap());assert!(fence.retain_agent_buffers(&input,&frame).is_err());
+        fence.retain_agent_completion(&input,&report).unwrap();
+        assert!(!recover_recorded_result(&root,&input).unwrap(),"The core receipt alone does not fulfill the checkpoint requirement");
+        for mode in ["root","active_source","active_version","checkpoint_version"]{
+            let mut changed=frame.clone();match mode{
+                "root"=>changed["root"]=json!(root),"active_source"=>changed["buffers"][0]["source"]=json!("different\n"),
+                "active_version"=>changed["buffers"][0]["version"]=json!(999),_=>changed["completion_checkpoint_version"]=json!(2),
+            }
+            assert!(fence.retain_agent_buffers(&input,&changed).is_err(),"{mode}");assert!(!root.join("agent-buffers.json").exists());
+        }
+        let lock=fs::OpenOptions::new().read(true).share_mode(windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ).open(root.join("live-dispatch.json")).unwrap();
+        assert!(fence.retain_agent_buffers(&input,&frame).is_err());let bytes=fs::read(root.join("agent-buffers.json")).unwrap();
+        assert!(crate::live_dispatch::read(&root,&op).unwrap().unwrap().agent_buffers_sha256.is_none());
+        assert!(!recover_recorded_result(&root,&input).unwrap(),"A plausible unbound file is not adopted");drop(lock);
+        fence.retain_agent_buffers(&input,&frame).unwrap();fence.retain_agent_buffers(&input,&frame).unwrap();
+        assert_eq!(fs::read(root.join("agent-buffers.json")).unwrap(),bytes);
+        let record=crate::live_dispatch::read(&root,&op).unwrap().unwrap();let core=record.agent_completion_sha256.as_deref().unwrap();let hash=record.agent_buffers_sha256.as_deref().unwrap();
+        let checked=confirmed_buffer_checkpoint(&root,&input,core,hash).unwrap();assert_eq!(checked["buffer_count"],2);assert_eq!(checked["complete_project"],false);
+        assert!(!checked.to_string().contains("PRIVATE_UNSAVED_HEADER"));assert!(!checked.to_string().contains(native.to_str().unwrap()));
+        fs::remove_dir(&native).unwrap();assert!(recover_recorded_result(&root,&input).unwrap(),"Historical recovery does not require today's source folder");
+        let canonical=fs::read(root.join("result.json")).unwrap();fs::rename(root.join("result.json"),root.join("original-report.json")).unwrap();
+        assert!(recover_recorded_result(&root,&input).unwrap());assert_eq!(fs::read(root.join("result.json")).unwrap(),canonical);
+        let mut changed=frame;changed["buffers"][1]["source"]=json!("// later manual header\n");changed["buffers"][1]["state_sha256"]=json!(digest("// later manual header\n"));
+        assert!(fence.retain_agent_buffers(&input,&changed).is_err());assert_eq!(fs::read(root.join("agent-buffers.json")).unwrap(),bytes);
+        fs::write(root.join("agent-buffers.json"),b"preserve altered checkpoint").unwrap();assert!(recover_recorded_result(&root,&input).is_err());
+        assert_eq!(fs::read(root.join("agent-buffers.json")).unwrap(),b"preserve altered checkpoint");assert_eq!(fs::read(root.join("result.json")).unwrap(),canonical);
+        drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn a_known_effect_recovers_only_the_original_cached_buffers_without_repeating_an_edit(){
+        use std::{fs,sync::Mutex};
+        let root=std::env::temp_dir().join(format!("hazlo-buffer-recovery-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
+        let native=root.join("native-sketch");fs::create_dir(&native).unwrap();let (connection,mut server)=fixture();
+        let mut input=job_fixture();input.before=observation(connection.instance_id);input.source=input.before.source.replace("1000","500");
+        input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native.clone()});
+        let op=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&op,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
+        drop(fence.enter().unwrap());fence.retain_agent_completion(&input,&report_fixture(&input)).unwrap();
+        let frame=checkpoint_fixture(&input);let expected=original_request(&input);
+        let worker=tokio::spawn(async move{let request=receive(&mut server).await;assert_eq!(request["request"],json!({"action":"recover_project_buffers","original":expected}));server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":frame})).unwrap()).await.unwrap();});
+        fs::write(native.join("manual.h"),b"later manual work").unwrap();let checked=input.clone();let directory=root.clone();let connected=connection.clone();
+        assert!(tokio::task::spawn_blocking(move||recover_result(&checked,&connected,&directory,&AtomicBool::new(false))).await.unwrap().unwrap());worker.await.unwrap();
+        let record=crate::live_dispatch::read(&root,&op).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some() && record.agent_buffers_sha256.is_some());
+        assert_eq!(fs::read(native.join("manual.h")).unwrap(),b"later manual work");
+        let mut closed=connection;closed.editor_version=0;fs::remove_file(root.join("result.json")).unwrap();assert!(recover_result(&input,&closed,&root,&AtomicBool::new(false)).unwrap());
+        drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+    }
+    #[tokio::test]
+    async fn missing_native_checkpoint_keeps_a_confirmed_edit_or_save_acknowledged_and_pending(){
+        use std::{fs,sync::Mutex};
+        for saving in [false,true]{
+            let root=std::env::temp_dir().join(format!("hazlo-buffer-missing-{}",Uuid::new_v4()));fs::create_dir(&root).unwrap();
+            let native=root.join("native-sketch");fs::create_dir(&native).unwrap();let (connection,mut server)=fixture();
+            let mut input=job_fixture();input.before=observation(connection.instance_id);input.save=saving;
+            input.source=if saving{input.before.source.clone()}else{input.before.source.replace("1000","500")};
+            input.native_completion_version=Some(1);input.buffer_checkpoint=Some(BufferCheckpointPlan{version:1,root:native});
+            let mut reply=report_fixture(&input);reply["after"]["source"]=json!(input.source);let expected=input.clone();let pipe=connection.pipe.clone();
+            let worker=tokio::spawn(async move{
+                let request=receive(&mut server).await;assert_eq!(request["request"]["action"],if saving{"save"}else{"apply"});
+                let mut next=ServerOptions::new().reject_remote_clients(true).create(&pipe).unwrap();
+                server.write_all(&serde_json::to_vec(&json!({"ok":true,"result":reply})).unwrap()).await.unwrap();drop(server);
+                let request=receive(&mut next).await;assert_eq!(request["request"],json!({"action":"recover_project_buffers","original":original_request(&expected)}));
+                next.write_all(br#"{"ok":false,"outcome":"refused","error":"native_editor_not_confirmed"}"#).await.unwrap();
+            });
+            let op=crate::project::OperationInput::LiveAgent(input.clone());let fence=crate::live_dispatch::Dispatch::start(&root,&op,Arc::new(Mutex::new(())),Arc::new(AtomicBool::new(false)),Arc::new(AtomicBool::new(false))).unwrap();
+            let checked=input.clone();let directory=root.clone();let dispatch=fence.clone();let connected=connection.clone();
+            assert!(tokio::task::spawn_blocking(move||run_gated(&checked,&connected,&directory,&AtomicBool::new(false),&dispatch)).await.unwrap().is_err());worker.await.unwrap();
+            let record=crate::live_dispatch::read(&root,&op).unwrap().unwrap();assert!(record.agent_completion_sha256.is_some());assert!(record.agent_buffers_sha256.is_none());
+            assert_eq!(record.summary(&op).acknowledged,1);assert_eq!(record.summary(&op).uncertain,0);assert!(record.summary(&op).needs_review);
+            assert!(!root.join("result.json").exists());assert!(fence.enter().is_err());assert!(!recover_recorded_result(&root,&input).unwrap());
+            drop(fence);assert!(root.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap()));fs::remove_dir_all(root).unwrap();
+        }
+    }
 
     #[test]
     fn project_buffers_validate_native_binding_paths_content_and_limits_without_disk_fallback() {
@@ -991,7 +1179,7 @@ pub(crate) mod tests {
 
     pub(crate) fn job_fixture() -> Input {
         let before = observation(Uuid::new_v4());
-        Input {native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
+        Input {buffer_checkpoint:None,native_completion_version:None,agreement:Some(crate::native_tools::tests::agreement_fixture()),
             schema_version: 1,
             live_agent_version: 1,
             job_id: Uuid::new_v4(),

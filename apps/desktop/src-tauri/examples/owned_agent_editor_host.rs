@@ -149,6 +149,16 @@ fn main() {
             )
             .unwrap();
         assert_eq!(verified["format"], "live_agent_report");
+        assert_eq!(verified["checks"]["native_buffer_checkpoint"]["scope"],"historical_native_open_buffers_checkpoint");
+        assert!(verified["checks"]["native_buffer_checkpoint"]["buffer_count"].as_u64().unwrap()>=2);
+        assert_eq!(verified["checks"]["native_buffer_checkpoint"]["complete_project"],false);
+        assert_eq!(verified["checks"]["native_buffer_checkpoint"]["working_version_reopen_checked"],false);
+        let published=workflow.current().unwrap().unwrap();
+        // Use the artifact's actual directory; workspace storage paths are host-owned.
+        let checkpoint=workflow.artifact(job_id,ArtifactFormat::LiveAgentReport).unwrap().path.parent().unwrap().join("agent-buffers.json");
+        let retained:serde_json::Value=serde_json::from_slice(&std::fs::read(&checkpoint).unwrap()).unwrap();
+        assert!(retained.to_string().contains("unsaved header stays local"));
+        assert!(matches!(&published.snapshot.input,hazlomexa::project::OperationInput::LiveAgent(input) if input.buffer_checkpoint.is_some()));
         assert!(!verified
             .to_string()
             .contains(&root.to_string_lossy().to_string()));

@@ -87,6 +87,7 @@ export function proposalFacts(run: Snapshot): string[] {
       "El IDE conserva su historial de deshacer y sus preferencias de guardado. No se carga código a una placa.",
       "Hazlo releerá el código nativo y comprobará que coincide con el cambio aprobado.");
     }
+    if(input.buffer_checkpoint) facts.push("Hazlo conserva en este proyecto un registro local del código de las pestañas abiertas al terminar, incluidos sus cambios sin guardar. La captura no guarda ni modifica las otras pestañas.","Ese registro no es una copia completa del proyecto: los archivos cerrados, sus dependencias y una reapertura por separado siguen sin comprobarse. Su contenido permanece local salvo que apruebes compartirlo.");
   } else if(input.live_pcb_version){
     if(input.export_copy) facts.push("Exportar una copia editable de la PCB abierta de KiCad.", "PCB: "+input.board_name, "Objetivo: "+input.description, "KiCad aporta el documento actual, incluidos sus cambios sin guardar. Hazlo conserva una copia nueva y verificada en este proyecto.", "No se guarda ni se cambia el documento abierto, ni sus ajustes de proyecto. No se incluyen archivos externos ni se vuelven a trazar pistas.", "Hazlo comprobará la copia completa y que el documento abierto conserve su estado aprobado.");
     else {

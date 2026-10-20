@@ -95,6 +95,12 @@ assert.match(review({fqbn:"arduino:avr:uno",source:"code"}),/No se carga código
 assert.match(review({agent_version:"0.7.1",source_name:"Sketch.ino"}),/copia con el código propuesto/);
 const nativeAgent=review({live_agent_version:1,description:"Reduce el tiempo de espera",before:{name:"Sketch.ino",dirty:true}});
 const nativeSave=review({live_agent_version:1,save:true,description:"Guarda mi sketch",before:{name:"Sketch.ino",dirty:true}});
+for(const save of [false,true]){
+ const facts=review({live_agent_version:1,buffer_checkpoint:{version:1,root:"C:/private-owned-sketch"},save,description:"Conservar trabajo",before:{name:"Sketch.ino",dirty:true}});
+ assert.match(facts,/registro local del código de las pestañas/);assert.match(facts,/no es una copia completa/);
+ assert.match(facts,/reapertura por separado siguen sin comprobarse/);assert.match(facts,/permanece local/);
+ assert.doesNotMatch(facts,/private-owned-sketch/);
+}
 assert.match(nativeSave,/Guardar el sketch abierto/);assert.match(nativeSave,/no se elige otra ruta/);
 assert.match(nativeSave,/Guardar no se deshace/);assert.match(nativeSave,/sin cambios pendientes/);
 assert(!nativeSave.includes("Código propuesto"));

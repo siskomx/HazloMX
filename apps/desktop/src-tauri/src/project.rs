@@ -936,6 +936,7 @@ impl Project {
         if let OperationInput::LiveAgent(input) = input {
             let record=crate::live_dispatch::read(directory,&OperationInput::LiveAgent(input.clone())).map_err(io::Error::other)?;
             if input.native_completion_version==Some(1) && record.as_ref().is_none_or(|record|record.agent_completion_sha256.is_none()){return Err(error("Falta el recibo original del editor; el resultado sigue pendiente."));}
+            if input.buffer_checkpoint.is_some() && record.as_ref().is_none_or(|record|record.agent_buffers_sha256.is_none()){return Err(error("La edición se conserva; falta su checkpoint de buffers."));}
             let bytes=crate::kicad_project::read_regular(&directory.join("result.json"),65536).map_err(io::Error::other)?;
             if input.receipt_sha256.as_deref()!=Some(&crate::kicad_project::digest(&bytes)) {
                 return Err(error("El informe de la edición del sketch cambió."));

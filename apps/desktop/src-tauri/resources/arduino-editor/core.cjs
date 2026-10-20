@@ -12,7 +12,7 @@ function fields(value, expected) {
 
 function createEditorTools(api) {
   const instance = crypto.randomUUID(), documents = new WeakMap(), attempts = new Map();
-  let busy = false;
+  let busy = false, checkpointBytes = 0;
   const identity = input => hash(JSON.stringify(Object.keys(input).sort().map(key=>[key,input[key]])));
   function reserve(input) {
     if (attempts.has(input.job_id) || attempts.size >= 128) throw Error("attempt");
@@ -20,7 +20,17 @@ function createEditorTools(api) {
   }
   function completed(input, result) {
     const reply={ok:true,result};
-    attempts.set(input.job_id,{identity:identity(input),status:"completed",reply:JSON.stringify(reply)});
+    const retained={identity:identity(input),status:"completed",reply:JSON.stringify(reply)};
+    // A failed checkpoint must not erase a separately confirmed native effect.
+    try {
+      const checkpoint=JSON.stringify(projectBuffers({instance_id:instance,document_token:result.after.document_token,
+        version:result.after.version,state_sha256:result.after.state_sha256}));
+      const bytes=Buffer.byteLength(checkpoint,"utf8");
+      if (checkpointBytes + bytes <= 8 * 1024 * 1024) {
+        retained.checkpoint=checkpoint;checkpointBytes+=bytes;
+      }
+    } catch {}
+    attempts.set(input.job_id,retained);
     return reply;
   }
 
@@ -74,7 +84,9 @@ function createEditorTools(api) {
     if (JSON.stringify(before) !== JSON.stringify(after)
         || !snapshots.some(item => item.document_token === before.document_token && item.source === before.source
           && item.version === before.version && item.dirty === before.dirty && item.eol === before.eol)) throw Error("changed");
-    const result = {project_buffers_version:1, instance_id:instance, active_document_token:before.document_token,
+    const result = {project_buffers_version:1, completion_checkpoint_version:1,
+      checkpoint_capacity_available:checkpointBytes + 384 * 1024 <= 8 * 1024 * 1024,
+      instance_id:instance, active_document_token:before.document_token,
       root, buffers:snapshots};
     // Bound the encoded reply as well as source bytes; escaped control characters can expand it.
     if (Buffer.byteLength(JSON.stringify(result),"utf8") > 384 * 1024) throw Error("limit");
@@ -91,7 +103,7 @@ function createEditorTools(api) {
           && input.action === "inspect_project_buffers" && !busy) {
         return {ok:true,result:projectBuffers(input)};
       }
-      if (fields(input,["action","original"]) && input.action === "recover") {
+      if (fields(input,["action","original"]) && ["recover","recover_project_buffers"].includes(input.action)) {
         const original=input.original;
         const expected=["action","job_id","instance_id","document_token","version","state_sha256"];
         if (original?.action === "apply") expected.push("source");
@@ -100,6 +112,10 @@ function createEditorTools(api) {
         if (!previous || previous.identity!==identity(original)) throw Error("attempt");
         if (previous.status === "running") return {ok:true,result:{editor_recovery_version:1,status:"running"}};
         if (previous.status !== "completed") throw Error("uncertain");
+        if (input.action === "recover_project_buffers") {
+          if (!previous.checkpoint) throw Error("checkpoint_unavailable");
+          return {ok:true,result:JSON.parse(previous.checkpoint)};
+        }
         return JSON.parse(previous.reply);
       }
       if (fields(input, ["action", "job_id", "instance_id", "document_token", "version", "state_sha256"])
